@@ -1,0 +1,108 @@
+@model IEnumerable<KRSDealerManagement.Domain.Entities.StatusLookup>
+@using KRSDealerManagement.Shared.Constants
+@{
+    ViewData["Title"] = "Status Master";
+    var categories = ViewBag.Categories as IReadOnlyList<(string Code, string Name)> ?? StatusCategories.All;
+    var selectedCategory = ViewBag.SelectedCategory as string;
+}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h1 class="m-0"><i class="bi bi-tags"></i> Status Master</h1>
+        <p class="text-muted">Order, payment, return, commission, and vehicle statuses from database</p>
+    </div>
+    <div class="col-md-6 text-end">
+        <partial name="_ExportExcel" />
+        <a href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Create", new { category = selectedCategory })" class="btn btn-primary">
+            <i class="bi bi-plus"></i> Add Status
+        </a>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label form-label-sm mb-0">Category</label>
+                <select name="category" class="form-select form-select-sm">
+                    <option value="">All Categories</option>
+                    @foreach (var c in categories)
+                    {
+                        <option value="@c.Code" selected="@(selectedCategory == c.Code)">@c.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-filter"></i> Filter</button>
+                <a href="@Url.Action("Index")" class="btn btn-sm btn-secondary"><i class="bi bi-arrow-clockwise"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-striped table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Category</th>
+                    <th>Value</th>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Badge</th>
+                    <th>Sort</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ int i = 1; }
+                @foreach (var s in Model)
+                {
+                    <tr class="@(!s.IsActive ? "table-secondary" : "")">
+                        <td>@(i++)</td>
+                        <td><small class="text-muted">@StatusCategories.GetDisplayName(s.Category)</small></td>
+                        <td><code>@s.StatusValue</code></td>
+                        <td><code>@s.StatusCode</code></td>
+                        <td><strong>@s.StatusName</strong></td>
+                        <td><span class="badge @s.BadgeClass">@s.StatusName</span></td>
+                        <td>@s.SortOrder</td>
+                        <td>
+                            <span class="badge @(s.IsActive ? "bg-success" : "bg-secondary")">
+                                @(s.IsActive ? "Active" : "Inactive")
+                            </span>
+                        </td>
+                        <td class="text-nowrap">
+                            <a href="@Url.EAction(QueryCrypto, "Edit", new { id = s.StatusLookupId })" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="post" asp-action="ToggleActive" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@s.StatusLookupId" />
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                    @(s.IsActive ? "Deactivate" : "Activate")
+                                </button>
+                            </form>
+                            <form method="post" asp-action="Delete" class="d-inline"
+                                  onsubmit="return confirm('Delete this status?');">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@s.StatusLookupId" />
+                                <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        @if (!Model.Any())
+        {
+            <div class="p-3 text-muted">No statuses found. <a href="@Url.Action("Create")">Add one</a>.</div>
+        }
+        <div class="p-3">
+            <partial name="_Pagination" />
+        </div>
+    </div>
+</div>

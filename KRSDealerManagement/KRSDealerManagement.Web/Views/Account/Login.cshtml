@@ -1,0 +1,315 @@
+@{
+    ViewData["Title"] = "Login - KRS Dealer Management";
+    Layout = null; // No layout for login page
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
+    
+    <!-- AdminLTE CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/admin-lte@3/dist/css/adminlte.min.css" rel="stylesheet">
+    
+    <link rel="shortcut icon" href="~/images/krslogo.png" type="image/png" />
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .login-header {
+            text-align: center;
+            padding: 30px 20px 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .login-logo {
+            margin-bottom: 20px;
+        }
+
+        .login-logo img {
+            max-width: 351px;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .login-logo-text h3 {
+            margin: 0;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .login-logo-text p {
+            margin: 5px 0 0 0;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .login-body {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .form-control {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px 15px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .input-group-text {
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+            color: #667eea;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .form-check {
+            font-size: 14px;
+        }
+
+        .forgot-password {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .forgot-password a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+
+        .login-footer {
+            text-align: center;
+            padding: 20px;
+            border-top: 1px solid #f0f0f0;
+            background-color: #f9f9f9;
+            font-size: 13px;
+            color: #999;
+            border-radius: 0 0 10px 10px;
+        }
+
+        .alert-error {
+            border-left: 4px solid #dc3545;
+            background-color: #fff5f5;
+            color: #842029;
+            border-radius: 5px;
+            padding: 12px;
+            margin-bottom: 20px;
+        }
+
+        .alert-error i {
+            margin-right: 8px;
+        }
+
+        @@media (max-width: 576px) {
+            .login-box {
+                padding: 20px;
+            }
+
+            .login-header {
+                padding: 20px 15px 15px;
+            }
+
+            .login-body {
+                padding: 20px;
+            }
+
+            .login-logo img {
+                max-width: 100px;
+            }
+
+            .login-logo-text h3 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <div class="card login-card">
+            <!-- Login Header with Logo -->
+            <div class="login-header">
+                <div class="login-logo">
+                    <img src="~/images/krslogo.png" alt="KRS Logo" />
+                </div>
+                <div class="login-logo-text">
+                    <h3>KRS Dealer Management</h3>
+                    <p>Professional Vehicle Dealership Platform</p>
+                </div>
+            </div>
+
+            <!-- Login Form -->
+            <div class="login-body">
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert alert-error" role="alert">
+                        <i class="bi bi-exclamation-circle"></i>
+                        @TempData["Error"]
+                    </div>
+                }
+
+                <form method="post" action="@Url.Action("Login", "Account")">
+                    <!-- Username Field -->
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <div class="input-group">
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="username" 
+                                   name="username" 
+                                   placeholder="Enter your username" 
+                                   required 
+                                   autofocus />
+                            <span class="input-group-text">
+                                <i class="bi bi-person"></i>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Password Field -->
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <div class="input-group">
+                            <input type="password" 
+                                   class="form-control" 
+                                   id="password" 
+                                   name="password" 
+                                   placeholder="Enter your password" 
+                                   required />
+                            <span class="input-group-text" id="togglePassword" style="cursor: pointer;">
+                                <i class="bi bi-eye"></i>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Remember Me -->
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" 
+                               type="checkbox" 
+                               id="rememberMe" 
+                               name="rememberMe" />
+                        <label class="form-check-label" for="rememberMe">
+                            Remember me
+                        </label>
+                    </div>
+
+                    <!-- Login Button -->
+                    <button type="submit" class="btn btn-login">
+                        <i class="bi bi-box-arrow-in-right"></i> Sign In
+                    </button>
+
+                    <!-- Forgot Password Link -->
+                    <div class="forgot-password">
+                        @* <a href="@Url.Action("ForgotPassword", "Account")">Forgot Password?</a> *@
+                    </div>
+                </form>
+            </div>
+
+            <!-- Login Footer -->
+            <div class="login-footer">
+               @*  <div class="mb-2">Demo Credentials:</div>
+                <div>Admin: <strong>admin</strong> / <strong>Admin@123</strong></div>
+                <div>Subdealer: <strong>subdealer_001</strong> / <strong>Subdealers@123</strong></div> *@
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Toggle password visibility
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('password');
+            const icon = this.querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        });
+
+        // Prevent form submission on enter in password field for demo
+        document.getElementById('rememberMe').addEventListener('change', function() {
+            localStorage.setItem('rememberMe', this.checked);
+        });
+
+        // Load remember me state on page load
+        window.addEventListener('load', function() {
+            const rememberMe = localStorage.getItem('rememberMe') === 'true';
+            document.getElementById('rememberMe').checked = rememberMe;
+        });
+    </script>
+</body>
+</html>

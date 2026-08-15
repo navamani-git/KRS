@@ -1,0 +1,145 @@
+@model IEnumerable<KRSDealerManagement.Application.DTOs.PurchaseOrderDto>
+@using KRSDealerManagement.Application.DTOs
+@using KRSDealerManagement.Domain.Entities
+@using KRSDealerManagement.Shared.Constants
+@using KRSDealerManagement.Web.Helpers
+@{
+    ViewData["Title"] = "My Orders";
+    var statuses = ViewBag.Statuses as IEnumerable<StatusLookup> ?? Enumerable.Empty<StatusLookup>();
+    var statusOptions = StatusViewHelper.ToSelectList(statuses, ViewBag.SelectedStatus as int?, "All");
+    var itemsByOrder = ViewBag.ItemsByOrder as IDictionary<int, List<PurchaseOrderItemDto>>
+        ?? new Dictionary<int, List<PurchaseOrderItemDto>>();
+}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h1 class="m-0"><i class="bi bi-list-check"></i> My Purchase Orders</h1>
+    </div>
+    <div class="col-md-6 text-end">
+        <partial name="_ExportExcel" view-data='new ViewDataDictionary(ViewData) { { "ExportAction", "ExportMyOrders" } }' />
+        <a href="@Url.Action("Create")" class="btn btn-primary">
+            <i class="bi bi-cart-plus"></i> New Order
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label form-label-sm mb-0">From</label>
+                <input type="date" name="fromDate" class="form-control form-control-sm" value="@ViewBag.FromDate" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label form-label-sm mb-0">To</label>
+                <input type="date" name="toDate" class="form-control form-control-sm" value="@ViewBag.ToDate" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label form-label-sm mb-0">Status</label>
+                <select name="status" class="form-select form-select-sm" asp-items="statusOptions">
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-filter"></i> Filter</button>
+                <a href="@Url.Action("MyOrders")" class="btn btn-sm btn-secondary"><i class="bi bi-arrow-clockwise"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Orders (@(ViewBag.TotalItems ?? Model.Count()))</h3>
+    </div>
+    <div class="card-body">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Order No.</th>
+                            <th>Created</th>
+                            <th>Last Allocation</th>
+                            <th class="text-center">Qty</th>
+                            <th class="text-end">Amount (₹)</th>
+                            <th>Status</th>
+                            <th>Vehicles</th>
+                            <th>Admin Remarks</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var order in Model)
+                        {
+                            var badgeClass = order.GetBadgeClass();
+                            itemsByOrder.TryGetValue(order.OrderId, out var lineItems);
+                            lineItems ??= new List<PurchaseOrderItemDto>();
+                            <tr>
+                                <td>
+                                    <strong>@order.OrderNumber</strong>
+                                    @if (order.CreatedByDealer)
+                                    {
+                                        <span class="badge bg-secondary ms-1" title="Created by dealer">Dealer</span>
+                                    }
+                                </td>
+                                <td><small>@order.CreatedDate.ToString("yyyy-MM-dd HH:mm")</small></td>
+                                <td>
+                                    @if (order.LastAllocatedDate.HasValue)
+                                    {
+                                        <small>@order.LastAllocatedDate.Value.ToString("yyyy-MM-dd HH:mm")</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td class="text-center">@order.TotalQuantity</td>
+                                <td class="text-end fw-bold">₹@order.TotalAmount.ToString("N2")</td>
+                                <td><span class="badge @badgeClass">@order.GetStatusDisplay()</span></td>
+                                <td>
+                                    @if (lineItems.Any())
+                                    {
+                                        <ul class="list-unstyled mb-0 small">
+                                            @foreach (var li in lineItems)
+                                            {
+                                                <li>
+                                                    @li.ModelName / @li.ColorName —
+                                                    <span class="badge @li.GetBadgeClass()">@li.GetStatusDisplay()</span>
+                                                    @if (!string.IsNullOrWhiteSpace(li.ChassisNumber) && !li.ChassisNumber.StartsWith("PENDING-", StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        <code class="ms-1">@li.ChassisNumber</code>
+                                                    }
+                                                </li>
+                                            }
+                                        </ul>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td><small class="text-muted">@(order.AdminNotes ?? "-")</small></td>
+                                <td>
+                                    <a href="@Url.EAction(QueryCrypto, "Details", new { id = order.OrderId })"
+                                       class="btn btn-sm btn-info">
+                                        <i class="bi bi-eye"></i> Details
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No orders found.
+                <a href="@Url.Action("Create")">Create your first order.</a>
+            </div>
+        }
+        <partial name="_Pagination" />
+    </div>
+</div>

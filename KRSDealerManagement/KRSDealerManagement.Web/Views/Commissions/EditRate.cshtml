@@ -1,0 +1,47 @@
+@model KRSDealerManagement.Domain.Entities.CommissionRate
+@using KRSDealerManagement.Application.DTOs
+@{
+    ViewData["Title"] = "Edit Commission Rate";
+    var models = ViewBag.Models as IEnumerable<VehicleModelDto> ?? Enumerable.Empty<VehicleModelDto>();
+    var modelName = models.FirstOrDefault(m => m.ModelId == Model.ModelId)?.ModelName ?? $"Model #{Model.ModelId}";
+}
+
+<div class="row mb-3">
+    <div class="col-md-8"><h1 class="m-0">Edit Commission Rate</h1></div>
+    <div class="col-md-4 text-end"><a href="@Url.Action("Index")" class="btn btn-secondary">Back</a></div>
+</div>
+
+<div class="card">
+    <form method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.CommissionRateId" />
+        <div class="card-body">
+            <p><strong>@modelName</strong> · from @Model.StartMonth/@Model.StartYear</p>
+            <div class="mb-3">
+                <label class="fw-bold">Commission Amount (₹) <span class="text-danger">*</span></label>
+                <input type="number" name="commissionAmount" class="form-control" step="0.01" min="0.01" value="@Model.CommissionAmount" required />
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="fw-bold">Expiry Month</label>
+                    <select name="expiryMonth" class="form-select">
+                        <option value="0">None</option>
+                        @for (int m = 1; m <= 12; m++)
+                        {
+                            <option value="@m" selected="@(Model.ExpiryMonth == m)">@m</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="fw-bold">Expiry Year</label>
+                    <input type="number" name="expiryYear" class="form-control" value="@Model.ExpiryYear" min="2020" max="2040" />
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="fw-bold">Notes</label>
+                <textarea name="notes" class="form-control" rows="2">@Model.Notes</textarea>
+            </div>
+        </div>
+        <div class="card-footer"><button type="submit" class="btn btn-primary">Save</button></div>
+    </form>
+</div>

@@ -1,0 +1,255 @@
+using MediatR;
+using KRSDealerManagement.Application.Commands;
+using KRSDealerManagement.Application.Services;
+using KRSDealerManagement.Domain.Repositories;
+using KRSDealerManagement.Domain.Entities;
+using KRSDealerManagement.Shared.Constants;
+using KRSDealerManagement.Shared.Helpers;
+using System.Text.Json;
+
+namespace KRSDealerManagement.Application.Handlers.Commands
+{
+    public class CreateReturnRequestCommandHandler : IRequestHandler<CreateReturnRequestCommand, int>
+    {
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IAuditService _auditService;
+
+        public CreateReturnRequestCommandHandler(IUnitOfWork unitOfWork, IAuditService auditService)
+        {
+            _unitOfWork = unitOfWork;
+            _auditService = auditService;
+        }
+
+        public async Task<int> Handle(CreateReturnRequestCommand request, CancellationToken cancellationToken)
+        {
+            var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(request.VehicleId);
+            if (vehicle == null)
+                throw new InvalidOperationException("Vehicle not found.");
+
+            if (!UnifiedVehicleStatus.CanRequestReturn(vehicle.Status))
+                throw new InvalidOperationException("Return can only be requested after dealer approval and before booking.");
+
+            var order = await _unitOfWork.PurchaseOrders.GetByIdAsync(request.OrderId);
+            if (order?.CreatedByDealer == true)
+                throw new InvalidOperationException("Dealer-created vehicles cannot be returned.");
+
+            var existing = (await _unitOfWork.ReturnRequests.GetAllAsync())
+                .Any(r => r.VehicleId == request.VehicleId && r.Status == 0);
+            if (existing)
+                throw new InvalidOperationException("A return request is already pending for this vehicle.");
+
+            vehicle.Status = UnifiedVehicleStatus.ReturnRequested;
+            vehicle.ModifiedDate = DateTime.UtcNow;
+            await _unitOfWork.Vehicles.UpdateAsync(vehicle);
+
+            var returnRequest = new ReturnRequest
+            {
+                AccountId = request.AccountId,
+                OrderId = request.OrderId,
+                VehicleId = request.VehicleId,
+                RefundAmount = vehicle.CurrentPrice,
+                ReturnReason = request.ReturnReason,
+                Status = 0,
+                CreatedDate = DateTime.UtcNow,
+                ModifiedDate = DateTime.UtcNow
+            };
+
+            var returnId = await _unitOfWork.ReturnRequests.AddAsync(returnRequest);
+            if (returnId <= 0)
+                throw new InvalidOperationException("Failed to create return request (invalid ID). Please try again or contact support.");
+
+            await _unitOfWork.SaveChangesAsync();
+
+            await _auditService.LogActionAsync(
+                entityType: "ReturnRequest", entityId: returnId, action: "Create",
+                userId: request.CreatedBy, userRole: "Subdealer",
+                newValue: JsonSerializer.Serialize(new
+                {
+                    request.OrderId,
+                    request.VehicleId,
+                    ChassisNumber = TransactionReasonHelper.FormatChassis(vehicle.ChassisNumber),
+                    SuggestedRefund = vehicle.CurrentPrice
+                }));
+
+            return returnId;
+        }
+    }
+
+    public class ApproveReturnRequestCommandHandler : IRequestHandler<ApproveReturnRequestCommand, bool>
+    {
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IAuditService _auditService;
+
+        public ApproveReturnRequestCommandHandler(IUnitOfWork unitOfWork, IAuditService auditService)
+        {
+            _unitOfWork = unitOfWork;
+            _auditService = auditService;
+        }
+
+        public async Task<bool> Handle(ApproveReturnRequestCommand request, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var returnRequest = await _unitOfWork.ReturnRequests.GetByIdAsync(request.ReturnRequestId);
+                if (returnRequest == null || returnRequest.Status == 2)
+                    return false;
+
+                var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(returnRequest.VehicleId);
+                if (vehicle == null || vehicle.Status != UnifiedVehicleStatus.ReturnRequested)
+                    return false;
+
+                var existingTransactions = (await _unitOfWork.AccountTransactions.GetAllAsync()).ToList();
+                var refundAlreadyCredited = existingTransactions.Any(t =>
+                    t.ReferenceType == "ReturnRequest"
+                    && t.ReferenceId == returnRequest.ReturnRequestId
+                    && t.AccountId == returnRequest.AccountId);
+
+                returnRequest.RefundAmount = request.RefundAmount;
+
+                if (returnRequest.Status == 0)
+                {
+                    returnRequest.Approve(request.ApprovedBy, request.Remarks);
+                }
+                else
+                {
+                    returnRequest.AdminRemarks = request.Remarks;
+                    returnRequest.ModifiedDate = DateTime.UtcNow;
+                }
+
+                if (request.ReassignToSubdealerId.HasValue)
+                {
+                    var target = await _unitOfWork.Users.GetByIdAsync(request.ReassignToSubdealerId.Value);
+                    if (target == null || !target.IsActive)
+                        throw new InvalidOperationException("Selected subdealer is not available for reassignment.");
+
+                    if (vehicle.SubdealerId == request.ReassignToSubdealerId.Value)
+                        throw new InvalidOperationException("Vehicle is already assigned to this subdealer.");
+
+                    vehicle.SubdealerId = request.ReassignToSubdealerId.Value;
+                }
+                else
+                {
+                    vehicle.SubdealerId = null;
+                }
+
+                vehicle.Status = UnifiedVehicleStatus.ApprovedByDealer;
+                vehicle.ModifiedDate = DateTime.UtcNow;
+                await _unitOfWork.Vehicles.UpdateAsync(vehicle);
+
+                await _unitOfWork.ReturnRequests.UpdateAsync(returnRequest);
+
+                var balances = (await _unitOfWork.AccountBalances.GetAllAsync()).ToList();
+                AccountBalance? balance = null;
+
+                if (!refundAlreadyCredited)
+                {
+                    balance = balances.FirstOrDefault(b => b.SubdealerAccountId == returnRequest.AccountId);
+                    if (balance != null)
+                    {
+                        balance.CurrentBalance += returnRequest.RefundAmount;
+                        balance.AvailableBalance = balance.CurrentBalance - balance.ReservedAmount;
+                        balance.LastTransactionDate = DateTime.UtcNow;
+                        balance.ModifiedDate = DateTime.UtcNow;
+                        await _unitOfWork.AccountBalances.UpdateAsync(balance);
+                    }
+                }
+
+                AccountBalance? targetBalance = null;
+                int? targetAccountId = null;
+
+                if (request.ReassignToSubdealerId.HasValue)
+                {
+                    var accounts = (await _unitOfWork.SubdealerAccounts.GetAllAsync())
+                        .Where(a => a.SubdealerId == request.ReassignToSubdealerId.Value && a.IsActive)
+                        .ToList();
+                    var targetAccount = accounts.FirstOrDefault()
+                        ?? throw new InvalidOperationException("Selected subdealer has no active account.");
+
+                    targetAccountId = targetAccount.AccountId;
+                    targetBalance = balances.FirstOrDefault(b => b.SubdealerAccountId == targetAccount.AccountId)
+                        ?? throw new InvalidOperationException("Target subdealer account balance not found.");
+
+                    if (targetBalance.AvailableBalance < returnRequest.RefundAmount)
+                        throw new InvalidOperationException(
+                            $"Target subdealer has insufficient balance. Available: ₹{targetBalance.AvailableBalance:N2}, required: ₹{returnRequest.RefundAmount:N2}.");
+
+                    targetBalance.CurrentBalance -= returnRequest.RefundAmount;
+                    targetBalance.AvailableBalance = targetBalance.CurrentBalance - targetBalance.ReservedAmount;
+                    targetBalance.LastTransactionDate = DateTime.UtcNow;
+                    targetBalance.ModifiedDate = DateTime.UtcNow;
+                    await _unitOfWork.AccountBalances.UpdateAsync(targetBalance);
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                if (!refundAlreadyCredited)
+                {
+                    await _auditService.LogTransactionAsync(
+                        accountId: returnRequest.AccountId, transactionType: 2,
+                        amount: returnRequest.RefundAmount, balanceAfter: balance?.CurrentBalance ?? 0,
+                        reason: TransactionReasonHelper.Return(vehicle.ChassisNumber),
+                        referenceType: "ReturnRequest", referenceId: returnRequest.ReturnRequestId,
+                        remarks: request.Remarks, initiatedBy: request.ApprovedBy);
+                }
+
+                if (targetAccountId.HasValue && targetBalance != null)
+                {
+                    await _auditService.LogTransactionAsync(
+                        accountId: targetAccountId.Value, transactionType: 1,
+                        amount: returnRequest.RefundAmount, balanceAfter: targetBalance.CurrentBalance,
+                        reason: TransactionReasonHelper.Reassignment(vehicle.ChassisNumber),
+                        referenceType: "ReturnRequest", referenceId: returnRequest.ReturnRequestId,
+                        remarks: request.Remarks, initiatedBy: request.ApprovedBy);
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw new ApplicationException($"Error approving return: {ex.Message}", ex);
+            }
+        }
+    }
+
+    public class RejectReturnRequestCommandHandler : IRequestHandler<RejectReturnRequestCommand, bool>
+    {
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IAuditService _auditService;
+
+        public RejectReturnRequestCommandHandler(IUnitOfWork unitOfWork, IAuditService auditService)
+        {
+            _unitOfWork = unitOfWork;
+            _auditService = auditService;
+        }
+
+        public async Task<bool> Handle(RejectReturnRequestCommand request, CancellationToken cancellationToken)
+        {
+            var returnRequest = await _unitOfWork.ReturnRequests.GetByIdAsync(request.ReturnRequestId);
+            if (returnRequest == null || returnRequest.IsFinal())
+                return false;
+
+            var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(returnRequest.VehicleId);
+            if (vehicle == null || vehicle.Status != UnifiedVehicleStatus.ReturnRequested)
+                return false;
+
+            vehicle.Status = UnifiedVehicleStatus.ApprovedByDealer;
+            vehicle.ModifiedDate = DateTime.UtcNow;
+            await _unitOfWork.Vehicles.UpdateAsync(vehicle);
+
+            returnRequest.Reject(request.RejectedBy, request.Remarks);
+            await _unitOfWork.ReturnRequests.UpdateAsync(returnRequest);
+            await _unitOfWork.SaveChangesAsync();
+
+            await _auditService.LogActionAsync(
+                entityType: "ReturnRequest", entityId: returnRequest.ReturnRequestId,
+                action: "Reject", userId: request.RejectedBy, userRole: "Admin",
+                newValue: JsonSerializer.Serialize(new { Remarks = request.Remarks }));
+
+            return true;
+        }
+    }
+}

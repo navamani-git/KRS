@@ -1,0 +1,53 @@
+Admin screens
+1) To enter Vehicle models
+        Fileds - Vehicle model
+2) To enter Vehicle Colors
+        Fields - Select Model, Add Color
+3) To enter Price
+        Fields - Select Vehicle Model, Select Vehicle Colors, Enter Price , Select date/month/year - > For a single month the price will added multiple times 
+4) Create Sub deralers 
+        Fields - Sub Delaer Name ,Sub Dealer Location , Sub Dealer Primary Phone 1, Sub Dealer Secondary Phone, Sub Dealer Sales Rep Mobile, Sub Dealer Service Rep Mobile - Here name, Locaion and prmary phone is manditary
+5) Create Sub DealerAccount ( Here thiink and decide how to handle the menu access)
+        Fields - Dealer Name select , Dealer Location Select ,user name, password                     
+6) Enter Commission Amount
+        Fileds - Vehicle Model , Commission amount , date start and expiry  - Each month should have entry and it will vary for each moth or would be same
+
+6) Dealer Accounts
+         1) One account for owner , owner should access verything of dealer and sub dealers, admin etc..
+         2) Owner admin  can create vehicle models , colors ,price etc...   
+         3) KRS employee - Say Dealer employee, Can see sub dealers closing balance only, say available balance only
+        Delaer - Main Dealer (KRS)
+
+7) To manage Dealer Account 
+
+Sub dealer screens
+  1) A screen to create Order
+          Fields  - Select Model, Select Color like add multile until they have balance and place Order - (The accounts amount should be locked for the purchase order they have placed and once the admin pprove/reject the amount should get locked) 
+                        Once purchase order get cretaed it will store like order and order details and for single purchase order sincle entery in order and each vehcile entry should be aded in order details)
+  2) A screen To enter Commission
+          Fields - Select Model , Select color , Enter Chasis , Select Month , Aftter moth selected Commission amount should be auto filled and click submit
+  
+  3) Account Details
+          See how he accounts maintained currently in via Excel "Current Account Maintained in Excel.png", Refer one more "One More Subdealer Account" 
+
+  4) Screen should view the Purchase orders 
+           Say they can return a vehicle to main dealer in that case they can click that particular vehicle in the prchase order and they can raise a return request , Once the admin aprroved the return request the amount get added into the account
+ 
+  5) A screen should be used to mainain payment to dealer
+            A grid should should show the payment that they maintained
+            A screen to add payment Fileds amout, Payment type - Cash, Gpay, NEFT, Others- If others textbox , The payment date 
+
+Dealer
+  1) Maintain Order
+         Here they can view the purchase order that created by sub dealer  - Say a purchase order contains 5 vehicle then can approve each vehicle and each vehicle amont should be detected from sub dealer account and once approved the amont get minuses and if it is rejected/cancelled and that single vechle amount should be released) 
+  2) Create Order For Sub dealer 
+          A screen that dealer can allcate vehicle to sub dealer like sub dleaer creating purchae order the delaer can aso create a purchase order and allocate vehicles , here the approval is not required because the dealer itslef creating purchase order to sub dealer the amount should be detected to sub dealer account        
+          
+  3) Some where the admin/dealer should be approve the return request and once approved here then only the amount get credited against the sub dealer
+    
+  4) Screen to approve the payment that made by sub dealer , they can even appove, reject , if reject a remork should be entered
+    
+    
+ Note :For each thing here should have remarks textbox like during cancel, approve, reject and who did when did all should be trackable
+    
+    

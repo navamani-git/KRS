@@ -1,0 +1,49 @@
+@model KRSDealerManagement.Domain.Entities.Dealership
+@{
+    ViewData["Title"] = "Edit Dealership";
+}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1 class="m-0">Edit Dealership</h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="@Url.Action("Index")" class="btn btn-secondary">Back</a>
+    </div>
+</div>
+
+<div class="card card-primary">
+    <form method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.DealershipId" />
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="fw-bold">Code</label>
+                <input class="form-control" value="@Model.DealershipCode" readonly />
+            </div>
+            <div class="mb-3">
+                <label class="fw-bold">Name <span class="text-danger">*</span></label>
+                <input name="dealershipName" class="form-control" value="@Model.DealershipName" required />
+            </div>
+            <div class="mb-3">
+                <label class="fw-bold">Location</label>
+                <input name="location" class="form-control" value="@Model.Location" />
+            </div>
+            <div class="mb-3">
+                <label class="fw-bold">Phone</label>
+                <input name="contactPhone" class="form-control" value="@Model.ContactPhone" />
+            </div>
+            <div class="mb-3">
+                <label class="fw-bold">Email</label>
+                <input name="email" type="email" class="form-control" value="@Model.Email" />
+            </div>
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" name="isActive" value="true" id="isActive" @(Model.IsActive ? "checked" : "") />
+                <label class="form-check-label" for="isActive">Active</label>
+            </div>
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+    </form>
+</div>

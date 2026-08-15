@@ -1,0 +1,37 @@
+@model KRSDealerManagement.Application.DTOs.ReturnRequestDto
+@{
+    ViewData["Title"] = $"Reject Return #{Model.ReturnRequestId}";
+}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1 class="m-0"><i class="bi bi-x-circle text-danger"></i> Reject Return #@Model.ReturnRequestId</h1>
+        <p class="text-muted mb-0">@Model.AccountName · @Model.VehicleChassisNumber · Order @Model.OrderNumber</p>
+        <p class="text-muted mb-0"><small>Requested @Model.CreatedDate.ToString("yyyy-MM-dd HH:mm")</small></p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="@Url.Action("Index")" class="btn btn-secondary">Back to list</a>
+    </div>
+</div>
+
+<div class="card">
+    <form method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.ReturnRequestId" />
+        <div class="card-body">
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i>
+                Rejecting will cancel this return request. The vehicle will remain with the subdealer.
+            </div>
+            <label class="fw-bold">Rejection reason <span class="text-danger">*</span></label>
+            <textarea name="remarks" class="form-control" rows="3" required
+                      placeholder="Enter reason for rejecting return..."></textarea>
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-danger">
+                <i class="bi bi-x-circle"></i> Reject Return
+            </button>
+            <a href="@Url.Action("Index")" class="btn btn-secondary ms-2">Cancel</a>
+        </div>
+    </form>
+</div>

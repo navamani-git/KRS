@@ -1,0 +1,116 @@
+@{
+    ViewData["Title"] = "Add Staff User";
+    var dealerships = ViewBag.Dealerships as IEnumerable<KRSDealerManagement.Application.Queries.DealershipDto>
+        ?? Enumerable.Empty<KRSDealerManagement.Application.Queries.DealershipDto>();
+}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h1 class="m-0"><i class="bi bi-person-plus"></i> Add Staff User</h1>
+        <p class="text-muted">Create Finance Admin or Branch Manager login</p>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="@Url.Action("Index")" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-7">
+        <div class="card card-primary">
+            <div class="card-header"><h3 class="card-title">Staff Login Details</h3></div>
+            <form method="post">
+                @Html.AntiForgeryToken()
+                <div class="card-body">
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" name="fullName" class="form-control" placeholder="e.g., Rajesh Kumar" required autofocus />
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Role <span class="text-danger">*</span></label>
+                            <select name="staffRole" class="form-select" required>
+                                <option value="">-- Select role --</option>
+                                <option value="4">Branch Manager</option>
+                                <option value="3">Finance Admin</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Dealership <span class="text-danger">*</span></label>
+                            <select name="dealershipId" class="form-select" required>
+                                <option value="">-- Select location --</option>
+                                @foreach (var d in dealerships)
+                                {
+                                    <option value="@d.DealershipId">@d.DealershipName (@d.DealershipCode)</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">Username <span class="text-danger">*</span></label>
+                        <input type="text" name="username" class="form-control" placeholder="e.g., karur_finance" required />
+                        <small class="text-muted">Used for login (lowercase recommended)</small>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">Password <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="password" name="password" id="password" class="form-control" required minlength="6" />
+                            <button type="button" class="btn btn-outline-secondary" id="togglePwd" title="Show / hide">
+                                <i class="bi bi-eye" id="togglePwdIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Email</label>
+                            <input type="email" name="email" class="form-control" placeholder="optional@example.com" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Phone</label>
+                            <input type="tel" name="phoneNumber" class="form-control" placeholder="Optional" />
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-person-plus"></i> Create Staff User</button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary ms-2">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-md-5">
+        <div class="card card-info">
+            <div class="card-header"><h3 class="card-title"><i class="bi bi-info-circle"></i> Role Access</h3></div>
+            <div class="card-body">
+                <p class="fw-bold mb-1">Branch Manager</p>
+                <ul class="small">
+                    <li>Subdealers, Orders, Vehicles, Bookings, Returns</li>
+                    <li>Scoped to selected dealership only</li>
+                </ul>
+                <p class="fw-bold mb-1 mt-3">Finance Admin</p>
+                <ul class="small mb-0">
+                    <li>Balances, Payment Approvals, Reports</li>
+                    <li>Scoped to selected dealership</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.getElementById('togglePwd').addEventListener('click', function () {
+        const input = document.getElementById('password');
+        const icon = document.getElementById('togglePwdIcon');
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        icon.className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
+    });
+</script>
+}

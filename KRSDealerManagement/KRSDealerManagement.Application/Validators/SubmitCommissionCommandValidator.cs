@@ -1,0 +1,35 @@
+using FluentValidation;
+using KRSDealerManagement.Application.Commands;
+
+namespace KRSDealerManagement.Application.Validators
+{
+    public class SubmitCommissionCommandValidator : AbstractValidator<SubmitCommissionCommand>
+    {
+        public SubmitCommissionCommandValidator()
+        {
+            RuleFor(x => x.ChassisNumber)
+                .NotEmpty().WithMessage("Chassis number is required");
+
+            RuleFor(x => x.SubdealerId)
+                .GreaterThan(0).WithMessage("Valid subdealer ID is required");
+
+            RuleFor(x => x.ModelId)
+                .GreaterThan(0).WithMessage("Valid model ID is required");
+
+            RuleFor(x => x.ColorId)
+                .GreaterThan(0).WithMessage("Valid color ID is required");
+
+            RuleFor(x => x.Month)
+                .InclusiveBetween(1, 12).WithMessage("Month must be between 1 and 12");
+
+            RuleFor(x => x.Year)
+                .GreaterThanOrEqualTo(DateTime.Now.Year - 1).WithMessage("Year must be current or recent");
+
+            RuleFor(x => x.CommissionAmount)
+                .GreaterThan(0).WithMessage("Commission amount must be greater than 0");
+
+            RuleFor(x => x.SubmittedBy)
+                .GreaterThan(0).WithMessage("Valid user ID is required");
+        }
+    }
+}

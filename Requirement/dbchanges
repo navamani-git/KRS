@@ -1,0 +1,15 @@
+# Database connections — ALWAYS apply schema changes to BOTH:
+
+# 1) Production
+"DefaultConnection": "Server=krsenterprise.in;Database=KRSDealerManagementDB;User Id=krs;Password=Fd*4xfRobB#brg15;Encrypt=true;TrustServerCertificate=true;Connection Timeout=60;"
+
+# 2) Local dev
+"DefaultConnection": "Server=localhost\\SQLEXPRESS;Database=KRSDealerManagementDB;Trusted_Connection=true;Encrypt=false;TrustServerCertificate=true;Connection Timeout=60;"
+
+# How to run a migration on both:
+#   cd Requirement
+#   .\run-db-changes.ps1 -Script "..\KRSDealerManagement\APPLY_RECENT_DB_CHANGES.sql"
+#
+# Or manually:
+#   sqlcmd -S krsenterprise.in -d KRSDealerManagementDB -U krs -P "..." -i <script.sql> -C
+#   sqlcmd -S localhost\SQLEXPRESS -d KRSDealerManagementDB -i <script.sql> -C -E

@@ -1,0 +1,36 @@
+@model KRSDealerManagement.Domain.Entities.VehicleBooking
+@{
+    ViewData["Title"] = "Subsidy Documents";
+    var vehicle = ViewBag.Vehicle as KRSDealerManagement.Domain.Entities.Vehicle;
+    var chassis = vehicle?.ChassisNumber;
+}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1 class="m-0">Subsidy Documents</h1>
+        <p class="text-muted">Chassis: @chassis · Subsidy ID: @Model.SubsidyId</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="@Url.EAction(QueryCrypto, "Manage", new { id = Model.VehicleBookingId }, "VehicleBookings")" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+        <a href="@Url.Action("Index", "Vehicles")" class="btn btn-outline-secondary">My Vehicles</a>
+    </div>
+</div>
+
+<div class="alert alert-info">
+    Customer Name (CAPS): <strong>@ViewBag.CustomerNameCaps</strong> — auto-filled from booking name.
+</div>
+
+<form method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" value="@Model.VehicleBookingId" />
+    <div class="card"><div class="card-body row g-3">
+        <div class="col-md-6"><label class="fw-bold">Face Verification Screenshot *</label><input name="faceVerification" type="file" accept="image/*" class="form-control" required /></div>
+        <div class="col-md-6"><label class="fw-bold">RC Image (Front & Back, single image) *</label><input name="rcImage" type="file" accept="image/*" class="form-control" required /></div>
+        <div class="col-md-6"><label class="fw-bold">Booth Photo *</label><input name="boothPhoto" type="file" accept="image/*" class="form-control" required /></div>
+        <div class="col-md-6"><label class="fw-bold">Subsidy Undertaking (clear image) *</label><input name="subsidyUndertaking" type="file" accept="image/*" class="form-control" required /></div>
+    </div>
+    <div class="card-footer"><button type="submit" class="btn btn-primary">Submit Subsidy Documents</button></div>
+    </div>
+</form>

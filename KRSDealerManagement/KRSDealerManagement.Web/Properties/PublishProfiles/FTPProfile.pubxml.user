@@ -1,0 +1,301 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- https://go.microsoft.com/fwlink/?LinkID=208121. -->
+<Project>
+  <PropertyGroup>
+    <TimeStampOfAssociatedLegacyPublishXmlFile />
+    <EncryptedPassword>AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAAZ1RBZPuVPUqz9cMeQoUEmAAAAAACAAAAAAAQZgAAAAEAACAAAACLhEzsc327yNdn9NvN/a2C0meiHQF4I3wUPpTY6kgjngAAAAAOgAAAAAIAACAAAAAib+bCiILtlYoQXWvYXR5LYT2tqrNtBHdTHOO8pXOMGiAAAACNhsjGE4NRQLhwL8TW1wVR4tAUbk6Rf9RvKPkG2lXQgEAAAADxDNe3qotNPUq1Ww3nIdpdMGai0Y+q27AhiPVFZCYFgA/FkAwl9pIePB8yRcVLA5Mw1u7HMQUowulmLbGuD8fF</EncryptedPassword>
+    <_PublishTargetUrl>ftp://krsenterprise.in/httpdocs</_PublishTargetUrl>
+    <History>True|2026-08-09T17:08:20.7394350Z||;False|2026-08-09T22:24:56.9364029+05:30||;False|2026-08-08T16:35:07.7054014+05:30||;True|2026-08-08T16:23:22.2973821+05:30||;</History>
+    <LastFailureDetails />
+  </PropertyGroup>
+  <ItemGroup>
+    <File Include="appsettings.Development.json">
+      <publishTime>07/08/2026 17:02:24</publishTime>
+    </File>
+    <File Include="appsettings.json">
+      <publishTime>08/09/2026 21:53:49</publishTime>
+    </File>
+    <File Include="appsettings.Production.json">
+      <publishTime>08/08/2026 16:31:55</publishTime>
+    </File>
+    <File Include="AutoMapper.dll">
+      <publishTime>07/02/2026 19:24:44</publishTime>
+    </File>
+    <File Include="Azure.Core.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="Azure.Identity.dll">
+      <publishTime>05/07/2024 22:52:04</publishTime>
+    </File>
+    <File Include="ClosedXML.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="ClosedXML.Parser.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="Dapper.dll">
+      <publishTime>11/03/2021 19:37:40</publishTime>
+    </File>
+    <File Include="de/Microsoft.Data.SqlClient.resources.dll">
+      <publishTime>06/01/2024 01:03:58</publishTime>
+    </File>
+    <File Include="DocumentFormat.OpenXml.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="DocumentFormat.OpenXml.Framework.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="dotnet-tools.json">
+      <publishTime>08/08/2026 16:18:01</publishTime>
+    </File>
+    <File Include="es/Microsoft.Data.SqlClient.resources.dll">
+      <publishTime>06/01/2024 01:03:56</publishTime>
+    </File>
+    <File Include="ExcelNumberFormat.dll">
+      <publishTime>02/10/2020 14:12:28</publishTime>
+    </File>
+    <File Include="FluentValidation.DependencyInjectionExtensions.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="FluentValidation.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="fr/Microsoft.Data.SqlClient.resources.dll">
+      <publishTime>06/01/2024 01:03:56</publishTime>
+    </File>
+    <File Include="it/Microsoft.Data.SqlClient.resources.dll">
+      <publishTime>06/01/2024 01:03:54</publishTime>
+    </File>
+    <File Include="ja/Microsoft.Data.SqlClient.resources.dll">
+      <publishTime>06/01/2024 01:03:56</publishTime>
+    </File>
+    <File Include="ko/Microsoft.Data.SqlClient.resources.dll">
+      <publishTime>06/01/2024 01:03:56</publishTime>
+    </File>
+    <File Include="KRSDealerManagement.Application.dll">
+      <publishTime>08/09/2026 21:54:58</publishTime>
+    </File>
+    <File Include="KRSDealerManagement.Application.pdb">
+      <publishTime>08/09/2026 21:54:57</publishTime>
+    </File>
+    <File Include="KRSDealerManagement.Domain.dll">
+      <publishTime>08/09/2026 21:54:53</publishTime>
+    </File>
+    <File Include="KRSDealerManagement.Domain.pdb">
+      <publishTime>08/09/2026 21:54:53</publishTime>
+    </File>
+    <File Include="KRSDealerManagement.Infrastructure.dll">
+      <publishTime>08/09/2026 22:00:47</publishTime>
+    </File>
+    <File Include="KRSDealerManagement.Infrastructure.pdb">
+      <publishTime>08/09/2026 22:00:47</publishTime>
+    </File>
+    <File Include="KRSDealerManagement.Shared.dll">
+      <publishTime>08/09/2026 21:54:50</publishTime>
+    </File>
+    <File Include="KRSDealerManagement.Shared.pdb">
+      <publishTime>08/09/2026 21:54:50</publishTime>
+    </File>
+    <File Include="KRSDealerManagement.Web.deps.json">
+      <publishTime>08/09/2026 22:36:01</publishTime>
+    </File>
+    <File Include="KRSDealerManagement.Web.dll">
+      <publishTime>08/09/2026 22:35:59</publishTime>
+    </File>
+    <File Include="KRSDealerManagement.Web.exe">
+      <publishTime>08/09/2026 22:35:59</publishTime>
+    </File>
+    <File Include="KRSDealerManagement.Web.pdb">
+      <publishTime>08/09/2026 22:35:59</publishTime>
+    </File>
+    <File Include="KRSDealerManagement.Web.runtimeconfig.json">
+      <publishTime>08/09/2026 22:01:12</publishTime>
+    </File>
+    <File Include="KRSDealerManagement.Web.staticwebassets.endpoints.json">
+      <publishTime>08/09/2026 22:01:14</publishTime>
+    </File>
+    <File Include="MediatR.Contracts.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="MediatR.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="Microsoft.Bcl.AsyncInterfaces.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="Microsoft.Data.SqlClient.dll">
+      <publishTime>06/01/2024 01:04:14</publishTime>
+    </File>
+    <File Include="Microsoft.Extensions.DependencyInjection.Abstractions.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="Microsoft.Extensions.Logging.Abstractions.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="Microsoft.Extensions.Options.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="Microsoft.Extensions.Primitives.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="Microsoft.Identity.Client.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="Microsoft.Identity.Client.Extensions.Msal.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="Microsoft.IdentityModel.Abstractions.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="Microsoft.IdentityModel.JsonWebTokens.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="Microsoft.IdentityModel.Logging.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="Microsoft.IdentityModel.Protocols.dll">
+      <publishTime>12/01/2023 10:07:28</publishTime>
+    </File>
+    <File Include="Microsoft.IdentityModel.Protocols.OpenIdConnect.dll">
+      <publishTime>12/01/2023 10:18:08</publishTime>
+    </File>
+    <File Include="Microsoft.IdentityModel.Tokens.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="Microsoft.SqlServer.Server.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="pt-BR/Microsoft.Data.SqlClient.resources.dll">
+      <publishTime>06/01/2024 01:03:56</publishTime>
+    </File>
+    <File Include="RBush.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="ru/Microsoft.Data.SqlClient.resources.dll">
+      <publishTime>06/01/2024 01:04:14</publishTime>
+    </File>
+    <File Include="runtimes/unix/lib/net8.0/Microsoft.Data.SqlClient.dll">
+      <publishTime>06/01/2024 01:03:58</publishTime>
+    </File>
+    <File Include="runtimes/win-arm/native/Microsoft.Data.SqlClient.SNI.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="runtimes/win-arm64/native/Microsoft.Data.SqlClient.SNI.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="runtimes/win-x64/native/Microsoft.Data.SqlClient.SNI.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="runtimes/win-x86/native/Microsoft.Data.SqlClient.SNI.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="runtimes/win/lib/net8.0/Microsoft.Data.SqlClient.dll">
+      <publishTime>06/01/2024 01:03:56</publishTime>
+    </File>
+    <File Include="runtimes/win/lib/net8.0/System.Runtime.Caching.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="SixLabors.Fonts.dll">
+      <publishTime>11/08/2023 17:34:44</publishTime>
+    </File>
+    <File Include="System.ClientModel.dll">
+      <publishTime>01/03/2024 23:13:00</publishTime>
+    </File>
+    <File Include="System.Configuration.ConfigurationManager.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="System.Diagnostics.DiagnosticSource.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="System.IdentityModel.Tokens.Jwt.dll">
+      <publishTime>12/01/2023 10:01:48</publishTime>
+    </File>
+    <File Include="System.IO.Packaging.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="System.Memory.Data.dll">
+      <publishTime>04/08/2021 22:15:54</publishTime>
+    </File>
+    <File Include="System.Runtime.Caching.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="System.Security.Cryptography.ProtectedData.dll">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="Views/Account/Login.cshtml">
+      <publishTime>08/09/2026 22:43:36</publishTime>
+    </File>
+    <File Include="web.config">
+      <publishTime>08/09/2026 22:36:01</publishTime>
+    </File>
+    <File Include="wwwroot/css/site.css">
+      <publishTime>08/07/2026 14:11:03</publishTime>
+    </File>
+    <File Include="wwwroot/Files/vehicle_booking/2026_08_08/637822623750000856.pdf">
+      <publishTime>08/08/2026 14:01:09</publishTime>
+    </File>
+    <File Include="wwwroot/Files/vehicle_booking/2026_08_08/637822623750000856_165911629.pdf">
+      <publishTime>08/08/2026 21:53:34</publishTime>
+    </File>
+    <File Include="wwwroot/Files/vehicle_booking/2026_08_08/637822623750000924.pdf">
+      <publishTime>08/08/2026 14:01:09</publishTime>
+    </File>
+    <File Include="wwwroot/Files/vehicle_booking/2026_08_08/639217825053886707_WhatsApp_Image_2026-05-20_at_1.20.57_PM.jpeg">
+      <publishTime>08/08/2026 21:53:34</publishTime>
+    </File>
+    <File Include="wwwroot/Files/vehicle_booking/2026_08_08/639217825053886707_WhatsApp_Image_2026-05-20_at_1.20.57_PM_215334483.jpeg">
+      <publishTime>08/08/2026 21:53:34</publishTime>
+    </File>
+    <File Include="wwwroot/Files/vehicle_booking/2026_08_08/639217825053886707_WhatsApp_Image_2026-05-20_at_1.20.57_PM_215334495.jpeg">
+      <publishTime>08/08/2026 21:53:34</publishTime>
+    </File>
+    <File Include="wwwroot/Files/vehicle_booking/2026_08_08/639217825054067510_Vijayalakshmi_VIJA.jpg">
+      <publishTime>08/08/2026 22:03:28</publishTime>
+    </File>
+    <File Include="wwwroot/Files/vehicle_booking/2026_08_08/639217825054067510_Vijayalakshmi_VIJA_220328835.jpg">
+      <publishTime>08/08/2026 22:03:28</publishTime>
+    </File>
+    <File Include="wwwroot/Files/vehicle_booking/2026_08_08/639217825054067510_Vijayalakshmi_VIJA_220328871.jpg">
+      <publishTime>08/08/2026 22:03:28</publishTime>
+    </File>
+    <File Include="wwwroot/Files/vehicle_booking/2026_08_08/639217825054067510_Vijayalakshmi_VIJA_220328905.jpg">
+      <publishTime>08/08/2026 22:03:28</publishTime>
+    </File>
+    <File Include="wwwroot/Files/vehicle_booking/2026_08_08/Invoice- VENKATACHALAM PONNUSAMI.pdf">
+      <publishTime>08/08/2026 21:53:34</publishTime>
+    </File>
+    <File Include="wwwroot/Files/vehicle_booking/2026_08_08/WhatsApp Image 2026-05-20 at 8.47.20 AM.jpeg">
+      <publishTime>08/08/2026 14:01:09</publishTime>
+    </File>
+    <File Include="wwwroot/Files/vehicle_booking/2026_08_08/WhatsApp Image 2026-05-20 at 8.48.37 AM.jpeg">
+      <publishTime>08/08/2026 14:06:27</publishTime>
+    </File>
+    <File Include="wwwroot/Files/vehicle_booking/2026_08_08/WhatsApp Image 2026-05-20 at 8.54.14 AM.jpeg">
+      <publishTime>08/08/2026 14:01:09</publishTime>
+    </File>
+    <File Include="wwwroot/Files/vehicle_booking/2026_08_08/WhatsApp Image 2026-05-20 at 8.54.14 AM_140627247.jpeg">
+      <publishTime>08/08/2026 14:06:27</publishTime>
+    </File>
+    <File Include="wwwroot/Files/vehicle_booking/2026_08_08/WhatsApp Image 2026-05-20 at 9.17.05 AM.jpeg">
+      <publishTime>08/08/2026 14:01:09</publishTime>
+    </File>
+    <File Include="wwwroot/Files/vehicle_booking/2026_08_08/WhatsApp Image 2026-06-02 at 1.26.54 PM.jpeg">
+      <publishTime>08/08/2026 14:06:27</publishTime>
+    </File>
+    <File Include="wwwroot/Files/vehicle_booking/2026_08_08/WhatsApp Image 2026-06-02 at 1.47.29 PM.jpeg">
+      <publishTime>08/08/2026 14:06:27</publishTime>
+    </File>
+    <File Include="wwwroot/images/krslogo.png">
+      <publishTime>08/07/2026 14:07:26</publishTime>
+    </File>
+    <File Include="wwwroot/js/query-string.js">
+      <publishTime>08/08/2026 12:48:33</publishTime>
+    </File>
+    <File Include="zh-Hans/Microsoft.Data.SqlClient.resources.dll">
+      <publishTime>06/01/2024 01:04:14</publishTime>
+    </File>
+    <File Include="zh-Hant/Microsoft.Data.SqlClient.resources.dll">
+      <publishTime>06/01/2024 01:03:56</publishTime>
+    </File>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,17 @@
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Infrastructure\bin\Release\net8.0\KRSDealerManagement.Infrastructure.deps.json
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Infrastructure\bin\Release\net8.0\KRSDealerManagement.Infrastructure.dll
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Infrastructure\bin\Release\net8.0\KRSDealerManagement.Infrastructure.pdb
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Infrastructure\bin\Release\net8.0\KRSDealerManagement.Domain.dll
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Infrastructure\bin\Release\net8.0\KRSDealerManagement.Shared.dll
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Infrastructure\bin\Release\net8.0\KRSDealerManagement.Domain.pdb
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Infrastructure\bin\Release\net8.0\KRSDealerManagement.Shared.pdb
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Infrastructure\obj\Release\net8.0\KRSDealerManagement.Infrastructure.csproj.AssemblyReference.cache
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Infrastructure\obj\Release\net8.0\KRSDealerManagement.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Infrastructure\obj\Release\net8.0\KRSDealerManagement.Infrastructure.AssemblyInfoInputs.cache
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Infrastructure\obj\Release\net8.0\KRSDealerManagement.Infrastructure.AssemblyInfo.cs
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Infrastructure\obj\Release\net8.0\KRSDealerManagement.Infrastructure.csproj.CoreCompileInputs.cache
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Infrastructure\obj\Release\net8.0\KRSDeale.B4769E93.Up2Date
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Infrastructure\obj\Release\net8.0\KRSDealerManagement.Infrastructure.dll
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Infrastructure\obj\Release\net8.0\refint\KRSDealerManagement.Infrastructure.dll
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Infrastructure\obj\Release\net8.0\KRSDealerManagement.Infrastructure.pdb
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Infrastructure\obj\Release\net8.0\ref\KRSDealerManagement.Infrastructure.dll

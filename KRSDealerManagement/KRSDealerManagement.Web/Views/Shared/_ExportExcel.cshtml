@@ -1,0 +1,9 @@
+@{
+    var qs = Context.Request.QueryString.Value ?? "";
+    if (qs.StartsWith("?")) qs = qs[1..];
+    var actionName = ViewData["ExportAction"] as string ?? "Export";
+    var exportUrl = Url.Action(actionName) + (string.IsNullOrEmpty(qs) ? "" : "?" + qs);
+}
+<a href="@exportUrl" class="btn btn-sm btn-success">
+    <i class="bi bi-file-earmark-excel"></i> Export Excel
+</a>

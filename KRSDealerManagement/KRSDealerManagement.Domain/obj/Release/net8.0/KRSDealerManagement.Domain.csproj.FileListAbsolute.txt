@@ -1,0 +1,15 @@
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Domain\bin\Release\net8.0\KRSDealerManagement.Domain.deps.json
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Domain\bin\Release\net8.0\KRSDealerManagement.Domain.dll
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Domain\bin\Release\net8.0\KRSDealerManagement.Domain.pdb
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Domain\bin\Release\net8.0\KRSDealerManagement.Shared.dll
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Domain\bin\Release\net8.0\KRSDealerManagement.Shared.pdb
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Domain\obj\Release\net8.0\KRSDealerManagement.Domain.csproj.AssemblyReference.cache
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Domain\obj\Release\net8.0\KRSDealerManagement.Domain.GeneratedMSBuildEditorConfig.editorconfig
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Domain\obj\Release\net8.0\KRSDealerManagement.Domain.AssemblyInfoInputs.cache
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Domain\obj\Release\net8.0\KRSDealerManagement.Domain.AssemblyInfo.cs
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Domain\obj\Release\net8.0\KRSDealerManagement.Domain.csproj.CoreCompileInputs.cache
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Domain\obj\Release\net8.0\KRSDeale.97C9BC8D.Up2Date
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Domain\obj\Release\net8.0\KRSDealerManagement.Domain.dll
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Domain\obj\Release\net8.0\refint\KRSDealerManagement.Domain.dll
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Domain\obj\Release\net8.0\KRSDealerManagement.Domain.pdb
+D:\KRS\KRSDealerManagement\KRSDealerManagement.Domain\obj\Release\net8.0\ref\KRSDealerManagement.Domain.dll

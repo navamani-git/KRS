@@ -1,0 +1,25 @@
+@model KRSDealerManagement.Domain.Entities.FinanceNameMaster
+@{ ViewData["Title"] = "Edit Finance Name"; }
+
+<div class="row mb-3">
+    <div class="col-md-8"><h1 class="m-0">Edit Finance Name</h1></div>
+    <div class="col-md-4 text-end"><a href="@Url.Action("Index")" class="btn btn-secondary">Back</a></div>
+</div>
+
+<div class="card">
+    <form method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.FinanceNameId" />
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="fw-bold">Finance Name <span class="text-danger">*</span></label>
+                <input name="financeName" class="form-control" value="@Model.FinanceName" required />
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="isActive" value="true" id="isActive" @(Model.IsActive ? "checked" : "") />
+                <label class="form-check-label" for="isActive">Active</label>
+            </div>
+        </div>
+        <div class="card-footer"><button type="submit" class="btn btn-primary">Save</button></div>
+    </form>
+</div>

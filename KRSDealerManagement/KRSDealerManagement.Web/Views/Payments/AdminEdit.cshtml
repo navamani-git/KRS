@@ -1,0 +1,159 @@
+@model KRSDealerManagement.Domain.Entities.Payment
+@using KRSDealerManagement.Domain.Entities
+@using KRSDealerManagement.Web.Helpers
+@{
+    ViewData["Title"] = "Admin Payment Correction";
+    var paymentTypes = ViewBag.PaymentTypes as IEnumerable<PaymentType> ?? Enumerable.Empty<PaymentType>();
+    var financeNames = ViewBag.FinanceNames as IEnumerable<FinanceNameMaster> ?? Enumerable.Empty<FinanceNameMaster>();
+    var statuses = ViewBag.Statuses as IEnumerable<StatusLookup> ?? Enumerable.Empty<StatusLookup>();
+    var subdealerName = ViewBag.SubdealerName as string ?? $"Subdealer #{Model.SubdealerId}";
+    var selectedTypeId = Model.PaymentTypeId ?? paymentTypes.FirstOrDefault(t => t.TypeName == Model.PaymentType)?.PaymentTypeId ?? 0;
+}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1 class="m-0"><i class="bi bi-pencil-square"></i> Admin Payment Correction</h1>
+        <p class="text-muted">Correct payment details. All changes are logged for subdealer visibility.</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="@Url.Action("Index")" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back to Payments</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card card-warning">
+            <div class="card-header">
+                <h3 class="card-title"><i class="bi bi-credit-card"></i> Payment #@Model.PaymentId — @subdealerName</h3>
+            </div>
+            <form method="post" asp-action="AdminEdit" id="adminPaymentForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="paymentId" value="@Model.PaymentId" />
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Amount (₹) <span class="text-danger">*</span></label>
+                            <input type="number" name="amount" class="form-control" step="0.01" min="0.01" value="@Model.Amount" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Payment Date <span class="text-danger">*</span></label>
+                            <input type="date" name="paymentDate" class="form-control" value="@Model.PaymentDate.ToString("yyyy-MM-dd")" required />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Payment Type <span class="text-danger">*</span></label>
+                            <select name="paymentTypeId" id="paymentTypeId" class="form-select" required onchange="onPaymentTypeChange()">
+                                @foreach (var t in paymentTypes)
+                                {
+                                    <option value="@t.PaymentTypeId"
+                                            selected="@(t.PaymentTypeId == selectedTypeId)"
+                                            data-requires-finance="@(t.RequiresFinanceDetails ? "1" : "0")">
+                                        @t.TypeName
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Status <span class="text-danger">*</span></label>
+                            <select name="status" class="form-select" required>
+                                @foreach (var s in statuses.OrderBy(x => x.SortOrder))
+                                {
+                                    <option value="@s.StatusValue" selected="@(s.StatusValue == Model.Status)">@s.StatusName</option>
+                                }
+                            </select>
+                            @if (Model.IsApplied)
+                            {
+                                <small class="text-warning"><i class="bi bi-exclamation-triangle"></i> Amount was already applied to subdealer balance.</small>
+                            }
+                        </div>
+                    </div>
+
+                    <div id="financeFields" class="border rounded p-3 mb-3 bg-light">
+                        <p class="fw-bold mb-2 text-primary"><i class="bi bi-bank"></i> Finance details</p>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Customer Name</label>
+                            <input type="text" name="customerName" id="customerName" class="form-control text-uppercase"
+                                   value="@Model.CustomerName" style="text-transform:uppercase" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Finance Name</label>
+                            <select name="financeNameId" id="financeNameId" class="form-select">
+                                <option value="">-- None --</option>
+                                @foreach (var f in financeNames)
+                                {
+                                    <option value="@f.FinanceNameId" selected="@(f.FinanceNameId == Model.FinanceNameId)">@f.FinanceName</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label fw-bold">VIN / Chassis</label>
+                            <input type="text" name="vinNumber" id="vinNumber" class="form-control text-uppercase"
+                                   value="@Model.VinNumber" style="text-transform:uppercase" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Subdealer Remarks</label>
+                        <textarea name="subdealerRemarks" class="form-control" rows="2">@Model.SubdealerRemarks</textarea>
+                    </div>
+
+                    <div class="mb-0">
+                        <label class="form-label fw-bold">Correction Reason <span class="text-danger">*</span></label>
+                        <textarea name="correctionReason" class="form-control" rows="3" required
+                                  placeholder="Why is this correction being made? (visible to subdealer)"></textarea>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-warning"><i class="bi bi-save"></i> Save Correction</button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary ms-2">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card card-secondary">
+            <div class="card-header">
+                <h3 class="card-title"><i class="bi bi-clock-history"></i> Correction History</h3>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-2">Visible to subdealer on My Payments.</p>
+                @if (!string.IsNullOrWhiteSpace(Model.DealerRemarks))
+                {
+                    <pre class="small bg-light p-2 border rounded mb-0" style="white-space: pre-wrap; max-height: 400px; overflow-y: auto;">@Model.DealerRemarks</pre>
+                }
+                else
+                {
+                    <p class="text-muted mb-0"><em>No admin corrections recorded yet.</em></p>
+                }
+            </div>
+        </div>
+        <div class="card card-info mt-3">
+            <div class="card-body py-2">
+                <table class="table table-sm mb-0">
+                    <tr><td><strong>Applied</strong></td><td>@(Model.IsApplied ? "Yes" : "No")</td></tr>
+                    <tr><td><strong>Submitted</strong></td><td>@Model.CreatedDate.ToString("yyyy-MM-dd HH:mm")</td></tr>
+                    @if (Model.ProcessedDate.HasValue)
+                    {
+                        <tr><td><strong>@(Model.Status == 2 ? "Rejected" : "Approved") On</strong></td><td>@Model.ProcessedDate.Value.ToString("yyyy-MM-dd HH:mm")</td></tr>
+                    }
+                    <tr><td><strong>Last Modified</strong></td><td>@Model.ModifiedDate.ToString("yyyy-MM-dd HH:mm")</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function onPaymentTypeChange() {
+        const sel = document.getElementById('paymentTypeId');
+        const opt = sel.options[sel.selectedIndex];
+        const requires = opt.getAttribute('data-requires-finance') === '1';
+        document.getElementById('financeFields').classList.toggle('d-none', !requires);
+    }
+    onPaymentTypeChange();
+</script>
+}

@@ -1,0 +1,9 @@
+@{
+    ViewData["Title"] = "Add Document Type";
+}
+<div class="row mb-3"><div class="col-md-8"><h1>Add Document Type</h1></div>
+<div class="col-md-4 text-end"><a href="@Url.Action("Index")" class="btn btn-secondary">Back</a></div></div>
+<div class="card" style="max-width:480px"><div class="card-body">
+<form method="post">@Html.AntiForgeryToken()
+<div class="mb-3"><label class="fw-bold">Type Name</label><input name="typeName" class="form-control" required /></div>
+<button type="submit" class="btn btn-primary">Save</button></form></div></div>

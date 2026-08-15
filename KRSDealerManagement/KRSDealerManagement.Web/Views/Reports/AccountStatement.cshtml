@@ -1,0 +1,144 @@
+@model IEnumerable<KRSDealerManagement.Application.DTOs.AccountTransactionDto>
+@using KRSDealerManagement.Application.DTOs
+@{
+    ViewData["Title"] = "Account Statement";
+    var balance = ViewBag.Balance as AccountBalanceDto;
+}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h1 class="m-0"><i class="bi bi-file-text"></i> Account Statement</h1>
+        @if (balance != null)
+        {
+            <p class="text-muted">Your balance & transaction history</p>
+        }
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="@Url.Action("Index", "Dashboard")" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+    </div>
+</div>
+
+<!-- Date Filter -->
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get">
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">From Date</label>
+                    <input type="date" name="fromDate" class="form-control" value="@ViewBag.FromDate" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">To Date</label>
+                    <input type="date" name="toDate" class="form-control" value="@ViewBag.ToDate" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary d-block w-100">
+                        <i class="bi bi-search"></i> Filter
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Balance Summary -->
+@if (balance != null)
+{
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <div class="info-box bg-success">
+                <span class="info-box-icon"><i class="bi bi-wallet2"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text text-white">Current Balance</span>
+                    <span class="info-box-number text-white">₹@balance.CurrentBalance.ToString("N2")</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="info-box bg-info">
+                <span class="info-box-icon"><i class="bi bi-unlock"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text text-white">Available</span>
+                    <span class="info-box-number text-white">₹@balance.AvailableBalance.ToString("N2")</span>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Statement Table (Excel-style ledger) -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between">
+        <h3 class="card-title">Transactions (@Model.Count())</h3>
+    </div>
+    <div class="card-body">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Reference</th>
+                            <th class="text-end text-danger">Debit (₹)</th>
+                            <th class="text-end text-success">Credit (₹)</th>
+                            <th class="text-end">Balance (₹)</th>
+                            <th>Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{ int sr = 1; }
+                        @foreach (var t in Model)
+                        {
+                            <tr class="@(t.IsDebit() ? "table-danger" : "table-success") bg-opacity-25">
+                                <td>@(sr++)</td>
+                                <td>
+                                    <small>@t.CreatedDate.ToString("yyyy-MM-dd")</small><br/>
+                                    <small class="text-muted">@t.CreatedDate.ToString("HH:mm")</small>
+                                </td>
+                                <td><span class="badge bg-secondary">@t.CategoryLabel</span></td>
+                                <td>@t.Reason</td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(t.ChassisNumber))
+                                    {
+                                        <small class="badge bg-dark"><code>@t.ChassisNumber</code></small>
+                                    }
+                                    else if (!string.IsNullOrEmpty(t.ReferenceType))
+                                    {
+                                        <small><span class="badge bg-secondary">@t.ReferenceType</span> #@t.ReferenceId</small>
+                                    }
+                                </td>
+                                <td class="text-end text-danger fw-bold">
+                                    @(t.IsDebit() ? $"₹{t.Amount:N2}" : "")
+                                </td>
+                                <td class="text-end text-success fw-bold">
+                                    @(t.IsCredit() ? $"₹{t.Amount:N2}" : "")
+                                </td>
+                                <td class="text-end fw-bold">₹@t.BalanceAfterTransaction.ToString("N2")</td>
+                                <td><small class="text-muted">@t.Remarks</small></td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-light fw-bold">
+                        <tr>
+                            <td colspan="5">Total</td>
+                            <td class="text-end text-danger">₹@Model.Where(t => t.IsDebit()).Sum(t => t.Amount).ToString("N2")</td>
+                            <td class="text-end text-success">₹@Model.Where(t => t.IsCredit()).Sum(t => t.Amount).ToString("N2")</td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No transactions found for the selected period.
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,121 @@
+@model IEnumerable<KRSDealerManagement.Application.DTOs.VehicleColorDto>
+@{
+    ViewData["Title"] = "Vehicle Colors";
+}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h1 class="m-0"><i class="bi bi-palette"></i> Vehicle Colors</h1>
+        <p class="text-muted">Manage colors available for vehicle models</p>
+    </div>
+    <div class="col-md-6 text-end">
+        <partial name="_ExportExcel" />
+        <a href="@Url.Action("Create")" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Add New Color
+        </a>
+    </div>
+</div>
+
+<!-- Search -->
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get">
+            <div class="row">
+                <div class="col-md-4">
+                    <input type="text" name="searchTerm" class="form-control" placeholder="Search color..."
+                           value="@ViewBag.SearchTerm" />
+                </div>
+                <div class="col-md-3">
+                    <select name="isActive" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="true" selected="@(ViewBag.IsActive == true)">Active</option>
+                        <option value="false" selected="@(ViewBag.IsActive == false)">Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Search</button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary"><i class="bi bi-arrow-clockwise"></i> Reset</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Colors Table -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="bi bi-list"></i> All Colors (@Model.Count())</h3>
+    </div>
+    <div class="card-body">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Color</th>
+                            <th>Color Name</th>
+                            <th>Hex Code</th>
+                            <th>Status</th>
+                            <th>Created Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var color in Model)
+                        {
+                            <tr>
+                                <td>@color.ColorId</td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(color.HexCode))
+                                    {
+                                        <span style="display:inline-block; width:28px; height:28px; background-color:@color.HexCode;
+                                              border-radius:50%; border:1px solid #ccc;"></span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">N/A</span>
+                                    }
+                                </td>
+                                <td><strong>@color.ColorName</strong></td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(color.HexCode))
+                                    {
+                                        <code>@color.HexCode</code>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge @(color.IsActive ? "bg-success" : "bg-danger")">
+                                        @(color.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                                <td><small class="text-muted">@color.CreatedDate.ToString("yyyy-MM-dd")</small></td>
+                                <td>
+                                    @{
+                                        ViewData["CrudId"] = color.ColorId;
+                                        ViewData["CrudController"] = "VehicleColors";
+                                        ViewData["CrudEncrypted"] = true;
+                                    }
+                                    <partial name="_CrudActions" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No colors found.
+                <a href="@Url.Action("Create")">Add the first color.</a>
+            </div>
+        }
+        <partial name="_Pagination" />
+    </div>
+</div>

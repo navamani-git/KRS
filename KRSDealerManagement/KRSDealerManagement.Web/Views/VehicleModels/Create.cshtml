@@ -1,0 +1,85 @@
+@{
+    ViewData["Title"] = "Add Vehicle Model";
+}
+
+<!-- Page Header -->
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h1 class="m-0"><i class="bi bi-car-front"></i> Add Vehicle Model</h1>
+        <p class="text-muted">Add a new Ampere electric scooter model</p>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="@Url.Action("Index")" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title"><i class="bi bi-plus-circle"></i> New Vehicle Model</h3>
+            </div>
+            <form method="post" asp-action="Create">
+                @Html.AntiForgeryToken()
+                <div class="card-body">
+                    <div class="form-group mb-3">
+                        <label for="modelName" class="form-label fw-bold">
+                            Model Name <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="modelName" 
+                               name="modelName" 
+                               placeholder="e.g., Ampere Nexus EX, Ampere Magnus Pro"
+                               required 
+                               autofocus />
+                        <small class="text-muted">Enter the full vehicle model name</small>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="description" class="form-label fw-bold">Description</label>
+                        <textarea class="form-control" 
+                                  id="description" 
+                                  name="description" 
+                                  rows="4"
+                                  placeholder="Enter optional description about this model..."></textarea>
+                        <small class="text-muted">Optional: Additional details about the vehicle model</small>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Save Model
+                    </button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary ms-2">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Help Card -->
+    <div class="col-md-6">
+        <div class="card card-info">
+            <div class="card-header">
+                <h3 class="card-title"><i class="bi bi-info-circle"></i> Help</h3>
+            </div>
+            <div class="card-body">
+                <p><strong>Model Name:</strong> Enter the exact vehicle model name as it will appear throughout the system.</p>
+                <p><strong>Examples:</strong></p>
+                <ul>
+                    <li>Ampere Magnus EX</li>
+                    <li>Ampere Magnus Pro</li>
+                    <li>Ampere Magnus Neo</li>
+                    <li>Ampere Nexus EX</li>
+                    <li>Ampere Nexus ST</li>
+                    <li>Ampere Reo Li / Reo Elite</li>
+                    <li>Ampere Zeal EX</li>
+                </ul>
+                <p class="mb-0"><strong>Note:</strong> After adding a model, you can add colors and prices for it.</p>
+            </div>
+        </div>
+    </div>
+</div>

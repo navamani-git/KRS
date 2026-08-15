@@ -1,0 +1,29 @@
+@using KRSDealerManagement.Shared.Constants
+@{
+    var groups = ViewBag.MenuGroups as IReadOnlyList<MenuGroupDefinition> ?? MenuKeys.GetSubdealerMenuGroups();
+    var permMap = ViewBag.PermMap as IDictionary<string, bool> ?? new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+    var idPrefix = ViewBag.MenuIdPrefix as string ?? "menu";
+    var useDefaults = ViewBag.UseMenuDefaults as bool? ?? true;
+}
+
+@foreach (var group in groups)
+{
+    <div class="mb-3 border rounded p-3 bg-light">
+        <div class="fw-bold text-primary mb-2">
+            <i class="bi @(group.Icon ?? "bi-folder") me-1"></i> @group.ParentName
+        </div>
+        @foreach (var item in group.Children)
+        {
+            var on = permMap.TryGetValue(item.Key, out var allowed)
+                ? allowed
+                : (useDefaults && item.DefaultAccessible);
+            <div class="form-check ms-3 mb-1">
+                <input class="form-check-input" type="checkbox" name="accessibleMenus"
+                       value="@item.Key" id="@(idPrefix)_@item.Key" @(on ? "checked" : null) />
+                <label class="form-check-label" for="@(idPrefix)_@item.Key">
+                    @item.Name <code class="small text-muted">(@item.Key)</code>
+                </label>
+            </div>
+        }
+    </div>
+}

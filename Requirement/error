@@ -1,0 +1,54 @@
+An unhandled exception occurred while processing the request.
+InvalidOperationException: The ConnectionString property has not been initialized.
+Microsoft.Data.SqlClient.SqlConnection.PermissionDemand()
+
+Stack Query Cookies Headers Routing
+InvalidOperationException: The ConnectionString property has not been initialized.
+Microsoft.Data.SqlClient.SqlConnection.PermissionDemand()
+Microsoft.Data.SqlClient.SqlConnectionFactory.PermissionDemand(DbConnection outerConnection)
+Microsoft.Data.ProviderBase.DbConnectionInternal.TryOpenConnectionInternal(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource<DbConnectionInternal> retry, DbConnectionOptions userOptions)
+Microsoft.Data.ProviderBase.DbConnectionClosed.TryOpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource<DbConnectionInternal> retry, DbConnectionOptions userOptions)
+Microsoft.Data.SqlClient.SqlConnection.TryOpen(TaskCompletionSource<DbConnectionInternal> retry, SqlConnectionOverrides overrides)
+Microsoft.Data.SqlClient.SqlConnection.InternalOpenAsync(CancellationToken cancellationToken)
+Dapper.SqlMapper.QueryAsync<T>(IDbConnection cnn, Type effectiveType, CommandDefinition command) in SqlMapper.Async.cs
+KRSDealerManagement.Infrastructure.Repositories.Repository<T>.<GetAllAsync>b__7_0(IDbConnection connection, IDbTransaction transaction) in Repository.cs
++
+                await connection.QueryAsync<T>($"SELECT * FROM {_tableName}", transaction: transaction));
+KRSDealerManagement.Infrastructure.Repositories.Repository<T>.WithConnectionAsync<TResult>(Func<IDbConnection, IDbTransaction, Task<TResult>> action) in Repository.cs
++
+                return await action(connection, _context.CurrentTransaction);
+KRSDealerManagement.Infrastructure.Repositories.Repository<T>.GetAllAsync() in Repository.cs
++
+            return await WithConnectionAsync(async (connection, transaction) =>
+KRSDealerManagement.Application.Handlers.Queries.GetReturnRequestsQueryHandler.Handle(GetReturnRequestsQuery request, CancellationToken cancellationToken) in GetReturnRequestsQueryHandler.cs
++
+            var returns = await _unitOfWork.ReturnRequests.GetAllAsync();
+KRSDealerManagement.Application.Behaviors.ValidationBehavior<TRequest, TResponse>.Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken) in ValidationBehavior.cs
++
+            return await next();
+KRSDealerManagement.Web.Controllers.ReturnsController.Index(Nullable<int> status, Nullable<int> page) in ReturnsController.cs
++
+            var returns = await _mediator.Send(new GetReturnRequestsQuery { Status = status });
+Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor+TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, object controller, object[] arguments)
+System.Threading.Tasks.ValueTask<TResult>.get_Result()
+Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask<IActionResult> actionResultValueTask)
+Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, object state, bool isCompleted)
+Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(ref State next, ref Scope scope, ref object state, ref bool isCompleted)
+Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResourceFilter>g__Awaited|25_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, object state, bool isCompleted)
+Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResourceExecutedContextSealed context)
+Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Next(ref State next, ref Scope scope, ref object state, ref bool isCompleted)
+Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeFilterPipelineAsync()
+Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+KRSDealerManagement.Web.Middleware.QueryStringEncryptionMiddleware.InvokeAsync(HttpContext context) in QueryStringEncryptionMiddleware.cs
++
+            await _next(context);
+Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)
+
+Show raw exception details

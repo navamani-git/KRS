@@ -1,0 +1,369 @@
+@model KRSDealerManagement.Application.DTOs.PurchaseOrderDto
+
+@using KRSDealerManagement.Application.DTOs
+
+@{
+
+    ViewData["Title"] = "Allocate Vehicles";
+
+    var items = ViewBag.Items as IEnumerable<PurchaseOrderItemDto> ?? Enumerable.Empty<PurchaseOrderItemDto>();
+
+    var pending = items.Where(i => i.CanBeAllocated()).ToList();
+
+}
+
+
+
+<div class="row mb-3">
+
+    <div class="col-md-8">
+
+        <h1 class="m-0"><i class="bi bi-box-seam"></i> Allocate / Approve — @Model.OrderNumber</h1>
+
+        <p class="text-muted">@Model.SubdealerName · Ordered @Model.TotalQuantity · Pending @pending.Count · Approved @Model.ApprovedItemCount</p>
+
+    </div>
+
+    <div class="col-md-4 text-end">
+
+        <a href="@Url.EAction(QueryCrypto, "Details", new { id = Model.OrderId })" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+
+    </div>
+
+</div>
+
+
+
+@if (!pending.Any())
+
+{
+
+    <div class="alert alert-info">No pending vehicles to allocate on this order.</div>
+
+}
+
+else
+
+{
+
+<form method="post" asp-action="Allocate" id="allocForm" novalidate>
+
+    @Html.AntiForgeryToken()
+
+    <input type="hidden" name="orderId" value="@Model.OrderId" />
+
+
+
+    <div class="card mb-3">
+
+        <div class="card-header d-flex justify-content-between flex-wrap gap-2">
+
+            <h3 class="card-title mb-0">Pending vehicles (@pending.Count)</h3>
+
+            <div>
+
+                <button type="button" class="btn btn-sm btn-outline-success" onclick="markAll('approve')">Approve all</button>
+
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="markAll('reject')">Reject all</button>
+
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="markAll('pending')">Clear all</button>
+
+            </div>
+
+        </div>
+
+        <div class="card-body p-0">
+
+            <div class="table-responsive">
+
+                <table class="table table-sm table-bordered mb-0 align-middle">
+
+                    <thead class="table-dark">
+
+                        <tr>
+
+                            <th>#</th>
+
+                            <th>Model</th>
+
+                            <th>Color</th>
+
+                            <th class="text-end">Price</th>
+
+                            <th>Action</th>
+
+                            <th>Chassis No</th>
+
+                            <th>Motor No</th>
+
+                            <th>Battery No</th>
+
+                            <th>Charger No</th>
+
+                            <th>Controller No</th>
+
+                            <th>Converter No</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        @{ int idx = 0; }
+
+                        @foreach (var item in pending)
+
+                        {
+
+                            <tr>
+
+                                <td>
+
+                                    @(idx + 1)
+
+                                    <input type="hidden" name="orderItemIds[@idx]" value="@item.OrderItemId" />
+
+                                </td>
+
+                                <td>@item.ModelName</td>
+
+                                <td>@item.ColorName</td>
+
+                                <td class="text-end">₹@item.UnitPrice.ToString("N2")</td>
+
+                                <td style="min-width:140px">
+
+                                    <select name="actionFlags[@idx]" class="form-select form-select-sm action-flag" data-idx="@idx" onchange="toggleSerials(@idx)">
+
+                                        <option value="pending" selected>Pending</option>
+
+                                        <option value="approve">Approve</option>
+
+                                        <option value="reject">Reject</option>
+
+                                    </select>
+
+                                </td>
+
+                                <td><input type="text" name="chassisNumbers[@idx]" id="chassis_@idx" class="form-control form-control-sm serial" maxlength="50" disabled /></td>
+
+                                <td><input type="text" name="motorNos[@idx]" id="motor_@idx" class="form-control form-control-sm serial" disabled /></td>
+
+                                <td><input type="text" name="batteryNos[@idx]" id="battery_@idx" class="form-control form-control-sm serial" disabled /></td>
+
+                                <td><input type="text" name="chargerNos[@idx]" id="charger_@idx" class="form-control form-control-sm serial" disabled /></td>
+
+                                <td><input type="text" name="controllerNos[@idx]" id="controller_@idx" class="form-control form-control-sm serial" disabled /></td>
+
+                                <td><input type="text" name="converterNos[@idx]" id="converter_@idx" class="form-control form-control-sm serial" disabled /></td>
+
+                            </tr>
+
+                            idx++;
+
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+        <div class="card-footer">
+
+            <div class="mb-2">
+
+                <label class="fw-bold">Remarks</label>
+
+                <input type="text" name="remarks" class="form-control" placeholder="Optional overall remarks" />
+
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg">
+
+                <i class="bi bi-check2-all"></i> Submit Allocation
+
+            </button>
+
+            <p class="text-muted small mt-2 mb-0">
+
+                Set each row to <strong>Approve</strong> or <strong>Reject</strong> before submit. Rows left as <strong>Pending</strong> are skipped — allocate one vehicle or many in the same submit.
+
+                Approved rows require Chassis No plus all 5 component serials.
+
+            </p>
+
+        </div>
+
+    </div>
+
+</form>
+
+}
+
+
+
+<!-- Already processed items -->
+
+@{
+
+    var done = items.Where(i => !i.CanBeAllocated()).ToList();
+
+}
+
+@if (done.Any())
+
+{
+
+    <div class="card">
+
+        <div class="card-header"><h3 class="card-title mb-0">Already processed (@done.Count)</h3></div>
+
+        <div class="card-body p-0">
+
+            <table class="table table-sm mb-0">
+
+                <thead class="table-light">
+
+                    <tr>
+
+                        <th>Model</th><th>Color</th><th>Status</th><th>Chassis</th>
+
+                        <th>Motor</th><th>Battery</th><th>Charger</th><th>Controller</th><th>Converter</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    @foreach (var i in done)
+
+                    {
+
+                        <tr>
+
+                            <td>@i.ModelName</td>
+
+                            <td>@i.ColorName</td>
+
+                            <td><span class="badge @i.GetBadgeClass()">@i.GetStatusDisplay()</span></td>
+
+                            <td><small>@i.ChassisNumber</small></td>
+
+                            <td><small>@i.MotorNo</small></td>
+
+                            <td><small>@i.BatteryNo</small></td>
+
+                            <td><small>@i.ChargerNo</small></td>
+
+                            <td><small>@i.ControllerNo</small></td>
+
+                            <td><small>@i.ConverterNo</small></td>
+
+                        </tr>
+
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+}
+
+
+
+@section Scripts {
+
+<script>
+
+    function toggleSerials(idx) {
+
+        const action = document.querySelector(`select[name="actionFlags[${idx}]"]`).value;
+
+        const approve = action === 'approve';
+
+        ['chassis','motor','battery','charger','controller','converter'].forEach(p => {
+
+            const el = document.getElementById(`${p}_${idx}`);
+
+            el.required = approve;
+
+            el.disabled = action === 'pending';
+
+            if (action !== 'approve') el.value = '';
+
+        });
+
+    }
+
+    function markAll(action) {
+
+        document.querySelectorAll('.action-flag').forEach(sel => {
+
+            sel.value = action;
+
+            toggleSerials(sel.dataset.idx);
+
+        });
+
+    }
+
+    document.getElementById('allocForm')?.addEventListener('submit', function (e) {
+
+        let hasWork = false;
+
+        document.querySelectorAll('.action-flag').forEach(sel => {
+
+            const action = sel.value;
+
+            if (action === 'approve' || action === 'reject') hasWork = true;
+
+            if (action === 'approve') {
+
+                const idx = sel.dataset.idx;
+
+                ['chassis','motor','battery','charger','controller','converter'].forEach(p => {
+
+                    const el = document.getElementById(`${p}_${idx}`);
+
+                    if (!el.value.trim()) {
+
+                        e.preventDefault();
+
+                        el.focus();
+
+                        alert('Fill all serial numbers for rows set to Approve.');
+
+                    }
+
+                });
+
+            }
+
+        });
+
+        if (!hasWork) {
+
+            e.preventDefault();
+
+            alert('Set at least one row to Approve or Reject before submitting.');
+
+        }
+
+    });
+
+    document.querySelectorAll('.action-flag').forEach(sel => toggleSerials(sel.dataset.idx));
+
+</script>
+
+}
+
+

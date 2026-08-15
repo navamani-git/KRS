@@ -1,0 +1,133 @@
+@model KRSDealerManagement.Application.DTOs.VehicleModelDto
+@{
+    ViewData["Title"] = "Edit Vehicle Model";
+}
+
+<!-- Page Header -->
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h1 class="m-0"><i class="bi bi-pencil"></i> Edit Vehicle Model</h1>
+        <p class="text-muted">Modify existing vehicle model details</p>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="@Url.Action("Index")" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-7">
+        <div class="card card-warning">
+            <div class="card-header">
+                <h3 class="card-title"><i class="bi bi-pencil"></i> Edit: @Model.ModelName</h3>
+            </div>
+            <form method="post" asp-action="Edit">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.ModelId" />
+                <div class="card-body">
+                    <div class="form-group mb-3">
+                        <label for="modelName" class="form-label fw-bold">
+                            Model Name <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="modelName" 
+                               name="modelName" 
+                               value="@Model.ModelName"
+                               required />
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="description" class="form-label fw-bold">Description</label>
+                        <textarea class="form-control" 
+                                  id="description" 
+                                  name="description" 
+                                  rows="4">@Model.Description</textarea>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" 
+                                   type="checkbox" 
+                                   id="isActive" 
+                                   name="isActive" 
+                                   value="true"
+                                   @(Model.IsActive ? "checked" : "") />
+                            <label class="form-check-label fw-bold" for="isActive">
+                                Active
+                            </label>
+                        </div>
+                        <small class="text-muted">Inactive models will not be available for new orders</small>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="remarks" class="form-label fw-bold">
+                            Remarks <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="remarks" 
+                               name="remarks" 
+                               placeholder="Reason for modification (required for audit trail)"
+                               required />
+                        <small class="text-muted">This will be logged in the audit trail</small>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-save"></i> Update Model
+                    </button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary ms-2">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
+                    <a href="@Url.EAction(QueryCrypto, "Details", new { id = Model.ModelId })" class="btn btn-info ms-2">
+                        <i class="bi bi-eye"></i> View Details
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Audit Info -->
+    <div class="col-md-5">
+        <div class="card card-secondary">
+            <div class="card-header">
+                <h3 class="card-title"><i class="bi bi-clock-history"></i> Record Info</h3>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <td><strong>Model ID:</strong></td>
+                        <td>@Model.ModelId</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Created By:</strong></td>
+                        <td>User #@Model.CreatedBy</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Created Date:</strong></td>
+                        <td>@Model.CreatedDate.ToString("yyyy-MM-dd HH:mm")</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Last Modified:</strong></td>
+                        <td>@Model.ModifiedDate.ToString("yyyy-MM-dd HH:mm")</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Status:</strong></td>
+                        <td>
+                            @if (Model.IsActive)
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Inactive</span>
+                            }
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,287 @@
+---
+import Head from "@components/_head.astro"
+import Footer from "@components/dashboard/_footer.astro"
+import Topbar from "@components/dashboard/_topbar.astro"
+import Sidenav from "@components/dashboard/_sidenav.astro"
+import Scripts from "@components/_scripts.astro"
+
+const title = "AdminLTE 4 | Advanced Form Elements"
+const path = "../../../dist"
+const mainPage = "forms"
+const page = "advanced";
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <Head title={title} path={path} />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/tom-select@2.6.1/dist/css/tom-select.bootstrap5.min.css"
+      integrity="sha384-qNqaCnsmyTrYVwmqv4/4PcwMK8ZFAQnYPpVjWor+6cX6rKsPhebzu8vO2J3s+VZg"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css"
+      integrity="sha384-RkASv+6KfBMW9eknReJIJ6b3UnjKOKC5bOUaNgIY778NFbQ8MtWq9Lr/khUgqtTt"
+      crossorigin="anonymous"
+    />
+  </head>
+  <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+    <div class="app-wrapper">
+      <Topbar path={path} />
+      <Sidenav path={path} mainPage={mainPage} page={page} />
+      <main class="app-main">
+        <div class="app-content-header">
+          <div class="container-fluid">
+            <div class="row">
+              <div class="col-sm-6">
+                <h1 class="mb-0 fs-3">Advanced Elements</h1>
+              </div>
+              <div class="col-sm-6">
+                <nav aria-label="breadcrumb">
+                  <ol class="breadcrumb float-sm-end">
+                    <li class="breadcrumb-item"><a href="#">Home</a></li>
+                    <li class="breadcrumb-item"><a href="#">Forms</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Advanced Elements</li>
+                  </ol>
+                </nav>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="app-content">
+          <div class="container-fluid">
+            <div class="row g-4">
+              <div class="col-12">
+                <div class="callout callout-info">
+                  AdminLTE deliberately doesn't bundle form widgets. The controls on
+                  this page use the recommended third-party integrations &mdash;
+                  <a
+                    href="https://tom-select.js.org/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="callout-link"
+                  >Tom Select</a>
+                  and
+                  <a
+                    href="https://flatpickr.js.org/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="callout-link"
+                  >Flatpickr</a>.
+                  See the
+                  <a href="../docs/integrations.html" class="callout-link">Recommended Integrations</a>
+                  page for the full list with install snippets.
+                </div>
+              </div>
+
+              <!-- Tom Select -->
+              <div class="col-md-6">
+                <div class="card card-primary card-outline mb-4">
+                  <div class="card-header">
+                    <div class="card-title">Tom Select</div>
+                  </div>
+                  <div class="card-body">
+                    <div class="mb-4">
+                      <label for="country" class="form-label">Single select with search</label>
+                      <select id="country" class="form-control" aria-label="Single select with search">
+                        <option value="">Select a country&hellip;</option>
+                        <option>Australia</option>
+                        <option>Brazil</option>
+                        <option>Canada</option>
+                        <option>France</option>
+                        <option>Germany</option>
+                        <option>Italy</option>
+                        <option>Japan</option>
+                        <option>Latvia</option>
+                        <option>Netherlands</option>
+                        <option>Spain</option>
+                        <option>United Kingdom</option>
+                        <option>United States</option>
+                      </select>
+                      <div class="form-text">Start typing to filter the list.</div>
+                    </div>
+                    <div class="mb-4">
+                      <label for="post-tags" class="form-label">Multi-select with tags</label>
+                      <select id="post-tags" class="form-control" aria-label="Multi-select with tags" multiple>
+                        <option value="bootstrap" selected>Bootstrap</option>
+                        <option value="javascript" selected>JavaScript</option>
+                        <option value="css">CSS</option>
+                        <option value="accessibility">Accessibility</option>
+                        <option value="performance">Performance</option>
+                        <option value="tooling">Tooling</option>
+                      </select>
+                      <div class="form-text">
+                        Type to filter, press Enter to create a new tag, use the
+                        &times; button to remove one.
+                      </div>
+                    </div>
+                    <div>
+                      <label for="reviewer" class="form-label">Option groups, loaded on demand</label>
+                      <select id="reviewer" class="form-control" aria-label="Option groups, loaded on demand"></select>
+                      <div class="form-text">
+                        Options arrive through Tom Select's <code>load</code> callback
+                        (a simulated API here) and are grouped by team.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="card-footer text-body-secondary small">
+                    Powered by
+                    <a
+                      href="https://tom-select.js.org/"
+                      target="_blank"
+                      rel="noopener"
+                      class="link-body-emphasis"
+                    >Tom Select</a>
+                    &mdash; vanilla JS, no jQuery required.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Flatpickr -->
+              <div class="col-md-6">
+                <div class="card card-success card-outline mb-4">
+                  <div class="card-header">
+                    <div class="card-title">Flatpickr</div>
+                  </div>
+                  <div class="card-body">
+                    <div class="mb-4">
+                      <label for="delivery-date" class="form-label">Date picker</label>
+                      <input
+                        type="text"
+                        id="delivery-date"
+                        class="form-control"
+                        placeholder="Select a delivery date"
+                      />
+                    </div>
+                    <div class="mb-4">
+                      <label for="meeting-start" class="form-label">Date &amp; time picker</label>
+                      <input
+                        type="text"
+                        id="meeting-start"
+                        class="form-control"
+                        placeholder="Select date and time"
+                      />
+                    </div>
+                    <div class="mb-4">
+                      <label for="report-period" class="form-label">Range picker</label>
+                      <input
+                        type="text"
+                        id="report-period"
+                        class="form-control"
+                        placeholder="Select a reporting period"
+                      />
+                      <div class="form-text">Pick a start date, then an end date.</div>
+                    </div>
+                    <div>
+                      <label for="reminder-time" class="form-label">Time picker</label>
+                      <input
+                        type="text"
+                        id="reminder-time"
+                        class="form-control"
+                        placeholder="Select a time"
+                      />
+                    </div>
+                  </div>
+                  <div class="card-footer text-body-secondary small">
+                    Powered by
+                    <a
+                      href="https://flatpickr.js.org/"
+                      target="_blank"
+                      rel="noopener"
+                      class="link-body-emphasis"
+                    >Flatpickr</a>
+                    &mdash; vanilla JS, no jQuery required.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+    <Scripts path={path} />
+    <script
+      src="https://cdn.jsdelivr.net/npm/tom-select@2.6.1/dist/js/tom-select.complete.min.js"
+      integrity="sha384-OgdLxftmuTHirLYFRbvXsKJxgSVqpU4ZdZ07tRiBC+Z4GjtQ5Al0uika0gtMfeQw"
+      crossorigin="anonymous"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"
+      integrity="sha384-5JqMv4L/Xa0hfvtF06qboNdhvuYXUku9ZrhZh3bSk8VXF0A/RuSLHpLsSV9Zqhl6"
+      crossorigin="anonymous"></script>
+    <script is:inline>
+      document.addEventListener("DOMContentLoaded", () => {
+        // Tom Select: single select with search
+        new TomSelect("#country", {
+          sortField: { field: "text", direction: "asc" }
+        });
+
+        // Tom Select: multi-select with removable tags (type to add new ones)
+        new TomSelect("#post-tags", {
+          plugins: ["remove_button"],
+          create: true,
+          persist: false
+        });
+
+        // Tom Select: options fetched on demand and rendered in option groups.
+        // Swap the timeout for fetch("/api/users?q=" + encodeURIComponent(query))
+        // against a real endpoint in production.
+        const reviewers = [
+          { id: 1, name: "Olivia Bennett", team: "Frontend" },
+          { id: 2, name: "Liam Carter", team: "Frontend" },
+          { id: 3, name: "Emma Dawson", team: "Backend" },
+          { id: 4, name: "Noah Evans", team: "Backend" },
+          { id: 5, name: "Ava Foster", team: "Design" },
+          { id: 6, name: "Ethan Grant", team: "Design" }
+        ];
+        new TomSelect("#reviewer", {
+          valueField: "id",
+          labelField: "name",
+          searchField: ["name"],
+          optgroupField: "team",
+          optgroups: [
+            { value: "Frontend", label: "Frontend" },
+            { value: "Backend", label: "Backend" },
+            { value: "Design", label: "Design" }
+          ],
+          placeholder: "Type to search people…",
+          preload: "focus",
+          load(query, callback) {
+            setTimeout(() => {
+              const q = query.toLowerCase();
+              callback(reviewers.filter((person) => person.name.toLowerCase().includes(q)));
+            }, 300);
+          }
+        });
+
+        // Flatpickr: date picker
+        flatpickr("#delivery-date", {
+          dateFormat: "Y-m-d"
+        });
+
+        // Flatpickr: date & time picker
+        flatpickr("#meeting-start", {
+          enableTime: true,
+          dateFormat: "Y-m-d H:i"
+        });
+
+        // Flatpickr: range picker
+        flatpickr("#report-period", {
+          mode: "range",
+          dateFormat: "Y-m-d"
+        });
+
+        // Flatpickr: time-only picker
+        flatpickr("#reminder-time", {
+          enableTime: true,
+          noCalendar: true,
+          dateFormat: "H:i",
+          time_24hr: true
+        });
+      });
+    </script>
+  </body>
+</html>

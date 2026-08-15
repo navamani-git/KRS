@@ -1,0 +1,163 @@
+@{
+    ViewData["Title"] = "Add Subdealer";
+}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h1 class="m-0"><i class="bi bi-person-plus"></i> Add Subdealer</h1>
+        <p class="text-muted">Register a new subdealer — set password and menu access</p>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="@Url.Action("Index")" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-7">
+        <div class="card card-primary">
+            <div class="card-header"><h3 class="card-title">Subdealer Information</h3></div>
+            <form method="post">
+                @Html.AntiForgeryToken()
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label class="form-label fw-bold">Subdealer Name <span class="text-danger">*</span></label>
+                                <input type="text" name="subdealerName" class="form-control"
+                                       placeholder="e.g., Ampere Showroom Salem" required autofocus />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label class="form-label fw-bold">Location <span class="text-danger">*</span></label>
+                                <input type="text" name="location" class="form-control"
+                                       placeholder="e.g., Coimbatore, Tamil Nadu" required />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">Email</label>
+                        <input type="email" name="email" class="form-control" placeholder="dealer@example.com" />
+                        <small class="text-muted">Leave blank to auto-generate</small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label class="form-label fw-bold">Primary Phone <span class="text-danger">*</span></label>
+                                <input type="tel" name="primaryPhone" class="form-control" placeholder="9876543210" required />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label class="form-label fw-bold">Secondary Phone</label>
+                                <input type="tel" name="secondaryPhone" class="form-control" placeholder="Optional" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label class="form-label fw-bold">Sales Rep Mobile</label>
+                                <input type="tel" name="salesRepMobile" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label class="form-label fw-bold">Service Rep Mobile</label>
+                                <input type="tel" name="serviceRepMobile" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">Dealership Location <span class="text-danger">*</span></label>
+                        @{
+                            var dealerships = ViewBag.Dealerships as IEnumerable<KRSDealerManagement.Application.Queries.DealershipDto>
+                                ?? Enumerable.Empty<KRSDealerManagement.Application.Queries.DealershipDto>();
+                            var lockedId = ViewBag.LockedDealershipId as int?;
+                        }
+                        @if (lockedId.HasValue)
+                        {
+                            <input type="hidden" name="dealershipId" value="@lockedId.Value" />
+                            <input type="text" class="form-control" value="@(dealerships.FirstOrDefault()?.DealershipName ?? "Your location")" readonly />
+                        }
+                        else
+                        {
+                            <select name="dealershipId" class="form-select" required>
+                                <option value="">-- Select location --</option>
+                                @foreach (var d in dealerships)
+                                {
+                                    <option value="@d.DealershipId">@d.DealershipName (@d.DealershipCode)</option>
+                                }
+                            </select>
+                        }
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">Initial Balance (₹)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₹</span>
+                            <input type="number" name="initialBalance" class="form-control"
+                                   value="1000000" min="0" step="0.01" />
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">Login Password <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="password" name="password" id="password" class="form-control"
+                                   placeholder="Set password for this subdealer" required minlength="6" />
+                            <button type="button" class="btn btn-outline-secondary" id="togglePwd" title="Show / hide">
+                                <i class="bi bi-eye" id="togglePwdIcon"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted">Admin-set password — you can view it later on Details.</small>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">Menu Access (Parent → Sub-menu)</label>
+                        <partial name="_MenuPermissionGroups" />
+                        <small class="text-muted">Unchecked sub-menus are hidden for this subdealer.</small>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-person-plus"></i> Create Subdealer
+                    </button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary ms-2">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-md-5">
+        <div class="card card-info">
+            <div class="card-header"><h3 class="card-title"><i class="bi bi-info-circle"></i> Notes</h3></div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>Username is auto-generated from the name</li>
+                    <li>Password is set by admin (eye icon to show/hide)</li>
+                    <li>One balance wallet is created automatically</li>
+                    <li>Menu permissions control what appears in their sidebar</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.getElementById('togglePwd').addEventListener('click', function () {
+        const input = document.getElementById('password');
+        const icon = document.getElementById('togglePwdIcon');
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        icon.className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
+    });
+</script>
+}

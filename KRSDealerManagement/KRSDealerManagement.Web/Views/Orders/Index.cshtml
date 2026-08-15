@@ -1,0 +1,164 @@
+@model IEnumerable<KRSDealerManagement.Application.DTOs.PurchaseOrderDto>
+@using KRSDealerManagement.Application.DTOs
+@using KRSDealerManagement.Domain.Entities
+@using KRSDealerManagement.Shared.Constants
+@using KRSDealerManagement.Web.Helpers
+@{
+    ViewData["Title"] = "Manage Orders";
+    var subdealers = ViewBag.Subdealers as IEnumerable<UserDto>;
+    var statuses = ViewBag.Statuses as IEnumerable<StatusLookup> ?? Enumerable.Empty<StatusLookup>();
+}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h1 class="m-0"><i class="bi bi-cart-check"></i> Manage Purchase Orders</h1>
+        <p class="text-muted">Allocate vehicles per line item with serial numbers</p>
+    </div>
+    <div class="col-md-6 text-end">
+        <partial name="_ExportExcel" />
+        <a href="@Url.Action("CreateForSubdealer")" class="btn btn-primary">
+            <i class="bi bi-cart-plus"></i> Create Order for Subdealer
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label form-label-sm mb-0">From</label>
+                <input type="date" name="fromDate" class="form-control form-control-sm" value="@ViewBag.FromDate" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label form-label-sm mb-0">To</label>
+                <input type="date" name="toDate" class="form-control form-control-sm" value="@ViewBag.ToDate" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label form-label-sm mb-0">Subdealer</label>
+                <select name="subdealerId" class="form-select form-select-sm">
+                    <option value="">All Subdealers</option>
+                    @if (subdealers != null)
+                    {
+                        @foreach (var s in subdealers)
+                        {
+                            <option value="@s.UserId" selected="@(ViewBag.SelectedSubdealerId?.ToString() == s.UserId.ToString())">
+                                @s.GetFullName()
+                            </option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label form-label-sm mb-0">Status</label>
+                <select name="status" class="form-select form-select-sm" asp-items="StatusViewHelper.ToSelectList(statuses, ViewBag.SelectedStatus as int?)">
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label form-label-sm mb-0">Search</label>
+                <input type="text" name="searchTerm" class="form-control form-control-sm"
+                       placeholder="Order number..." value="@ViewBag.SearchTerm" />
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-filter"></i> Filter</button>
+                <a href="@Url.Action("Index")" class="btn btn-sm btn-secondary"><i class="bi bi-arrow-clockwise"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Orders (@(ViewBag.TotalItems ?? Model.Count()))
+            <span class="badge bg-warning text-dark ms-2">@(ViewBag.PendingCount ?? 0) Pending</span>
+        </h3>
+    </div>
+    <div class="card-body">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Order No.</th>
+                            <th>Subdealer</th>
+                            <th>Created</th>
+                            <th>Last Allocation</th>
+                            <th class="text-center">Qty</th>
+                            <th class="text-center">Pending</th>
+                            <th class="text-end">Amount (₹)</th>
+                            <th>Status</th>
+                            <th>Notes</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var order in Model)
+                        {
+                            var badgeClass = order.GetBadgeClass();
+                            <tr class="@(order.Status == UnifiedVehicleStatus.Submitted ? "table-warning bg-opacity-25" : "")">
+                                <td>
+                                    <a href="@Url.EAction(QueryCrypto, "Details", new { id = order.OrderId })">
+                                        <strong>@order.OrderNumber</strong>
+                                    </a>
+                                    @if (order.CreatedByDealer)
+                                    {
+                                        <span class="badge bg-secondary ms-1" title="Created by dealer">Dealer</span>
+                                    }
+                                </td>
+                                <td>@order.SubdealerName</td>
+                                <td><small>@order.CreatedDate.ToString("yyyy-MM-dd HH:mm")</small></td>
+                                <td>
+                                    @if (order.LastAllocatedDate.HasValue)
+                                    {
+                                        <small>@order.LastAllocatedDate.Value.ToString("yyyy-MM-dd HH:mm")</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td class="text-center">@order.TotalQuantity</td>
+                                <td class="text-center">
+                                    @if (order.PendingItemCount > 0)
+                                    {
+                                        <span class="badge bg-warning text-dark">@order.PendingItemCount</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">0</span>
+                                    }
+                                </td>
+                                <td class="text-end fw-bold">₹@order.TotalAmount.ToString("N2")</td>
+                                <td><span class="badge @badgeClass">@order.GetStatusDisplay()</span></td>
+                                <td><small class="text-muted">@(order.AdminNotes ?? order.SubdealerNotes ?? "-")</small></td>
+                                <td>
+                                    @if (order.PendingItemCount > 0)
+                                    {
+                                        <a href="@Url.EAction(QueryCrypto, "Allocate", new { id = order.OrderId })"
+                                           class="btn btn-sm btn-success" title="Allocate / Approve vehicles">
+                                            <i class="bi bi-box-seam"></i> Allocate
+                                        </a>
+                                    }
+                                    <a href="@Url.EAction(QueryCrypto, "Details", new { id = order.OrderId })"
+                                       class="btn btn-sm btn-info">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info"><i class="bi bi-info-circle"></i> No orders found.</div>
+        }
+        <partial name="_Pagination" />
+    </div>
+</div>
+
+@section Scripts {
+}
+

@@ -1,0 +1,157 @@
+@model KRSDealerManagement.Domain.Entities.Vehicle
+@using KRSDealerManagement.Application.DTOs
+@using KRSDealerManagement.Domain.Entities
+@using KRSDealerManagement.Web.Helpers
+@{
+    ViewData["Title"] = "Admin Vehicle Correction";
+    var models = ViewBag.Models as IEnumerable<VehicleModelDto> ?? Enumerable.Empty<VehicleModelDto>();
+    var colors = ViewBag.Colors as IEnumerable<VehicleColorDto> ?? Enumerable.Empty<VehicleColorDto>();
+    var vehicleStatuses = ViewBag.VehicleStatuses as IEnumerable<StatusLookup> ?? Enumerable.Empty<StatusLookup>();
+    var bookingStatuses = ViewBag.BookingStatuses as IEnumerable<StatusLookup> ?? Enumerable.Empty<StatusLookup>();
+    var booking = ViewBag.Booking as VehicleBooking;
+}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1 class="m-0"><i class="bi bi-pencil-square"></i> Admin Vehicle Correction</h1>
+        <p class="text-muted">Correct vehicle details regardless of current status. All changes are logged for subdealer visibility.</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="@Url.Action("Index")" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back to Vehicles</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card card-warning">
+            <div class="card-header">
+                <h3 class="card-title"><i class="bi bi-ev-front"></i> Vehicle #@Model.VehicleId — <code>@Model.ChassisNumber</code></h3>
+            </div>
+            <form method="post" asp-action="AdminEdit">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="vehicleId" value="@Model.VehicleId" />
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Model <span class="text-danger">*</span></label>
+                            <select name="modelId" class="form-select" required>
+                                @foreach (var m in models)
+                                {
+                                    <option value="@m.ModelId" selected="@(m.ModelId == Model.ModelId)">@m.ModelName</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Color <span class="text-danger">*</span></label>
+                            <select name="colorId" class="form-select" required>
+                                @foreach (var c in colors)
+                                {
+                                    <option value="@c.ColorId" selected="@(c.ColorId == Model.ColorId)">@c.GetColorDisplay()</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Chassis Number <span class="text-danger">*</span></label>
+                            <input type="text" name="chassisNumber" class="form-control text-uppercase" value="@Model.ChassisNumber" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Vehicle Status <span class="text-danger">*</span></label>
+                            <select name="status" class="form-select" required>
+                                @foreach (var s in vehicleStatuses.OrderBy(x => x.SortOrder))
+                                {
+                                    <option value="@s.StatusValue" selected="@(s.StatusValue == Model.Status)">@s.StatusName</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Current Price (₹) <span class="text-danger">*</span></label>
+                            <input type="number" name="currentPrice" class="form-control" step="0.01" min="0" value="@Model.CurrentPrice" required />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Motor No</label>
+                            <input type="text" name="motorNo" class="form-control" value="@Model.MotorNo" />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Battery No</label>
+                            <input type="text" name="batteryNo" class="form-control" value="@Model.BatteryNo" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Charger No</label>
+                            <input type="text" name="chargerNo" class="form-control" value="@Model.ChargerNo" />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Controller No</label>
+                            <input type="text" name="controllerNo" class="form-control" value="@Model.ControllerNo" />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Converter No</label>
+                            <input type="text" name="converterNo" class="form-control" value="@Model.ConverterNo" />
+                        </div>
+                    </div>
+
+                    @if (booking != null)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Booking Phase Status</label>
+                            <select name="bookingStatus" class="form-select">
+                                @foreach (var s in bookingStatuses.OrderBy(x => x.SortOrder))
+                                {
+                                    <option value="@s.StatusValue" selected="@(s.StatusValue == Model.Status)">@s.StatusName</option>
+                                }
+                            </select>
+                            <small class="text-muted">Booking #@booking.VehicleBookingId — @booking.CustomerName</small>
+                        </div>
+                    }
+
+                    <div class="mb-0">
+                        <label class="form-label fw-bold">Correction Reason <span class="text-danger">*</span></label>
+                        <textarea name="correctionReason" class="form-control" rows="3" required
+                                  placeholder="Why is this correction being made? (visible to subdealer)"></textarea>
+                        <small class="text-muted">Who, when, and what changed will be recorded automatically.</small>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-warning"><i class="bi bi-save"></i> Save Correction</button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary ms-2">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card card-secondary">
+            <div class="card-header">
+                <h3 class="card-title"><i class="bi bi-clock-history"></i> Change History</h3>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-2">Visible to subdealer in vehicle details (chassis modal).</p>
+                @if (!string.IsNullOrWhiteSpace(Model.Notes))
+                {
+                    <pre class="small bg-light p-2 border rounded mb-0" style="white-space: pre-wrap; max-height: 400px; overflow-y: auto;">@Model.Notes</pre>
+                }
+                else
+                {
+                    <p class="text-muted mb-0"><em>No corrections recorded yet.</em></p>
+                }
+            </div>
+        </div>
+        <div class="card card-info mt-3">
+            <div class="card-body py-2">
+                <table class="table table-sm mb-0">
+                    <tr><td><strong>Original Price</strong></td><td>₹@Model.OriginalPrice.ToString("N2")</td></tr>
+                    <tr><td><strong>Subdealer ID</strong></td><td>@(Model.SubdealerId?.ToString() ?? "-")</td></tr>
+                    <tr><td><strong>Last Modified</strong></td><td>@Model.ModifiedDate.ToString("yyyy-MM-dd HH:mm")</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

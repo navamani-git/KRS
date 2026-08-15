@@ -1,0 +1,81 @@
+@using KRSDealerManagement.Application.DTOs
+@{
+    ViewData["Title"] = "Create Subdealer Account";
+    var subdealers = ViewBag.Subdealers as IEnumerable<UserDto>;
+    var selectedSubdealerId = ViewBag.SelectedSubdealerId as int?;
+}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h1 class="m-0"><i class="bi bi-plus-circle"></i> Create Subdealer Account</h1>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="@Url.Action("Index")" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card card-primary">
+            <div class="card-header"><h3 class="card-title">Account Details</h3></div>
+            <form method="post">
+                @Html.AntiForgeryToken()
+                <div class="card-body">
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">Subdealer <span class="text-danger">*</span></label>
+                        <select name="subdealerId" class="form-select" required>
+                            <option value="">-- Select Subdealer --</option>
+                            @if (subdealers != null)
+                            {
+                                @foreach (var s in subdealers)
+                                {
+                                    <option value="@s.UserId"
+                                            selected="@(selectedSubdealerId == s.UserId)">
+                                        @s.GetFullName() — @s.LastName
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">Account Name <span class="text-danger">*</span></label>
+                        <input type="text" name="accountName" class="form-control"
+                               placeholder="e.g., Main Account, Fleet Account" required />
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">Account Type</label>
+                        <select name="accountType" class="form-select">
+                            <option value="Main">Main</option>
+                            <option value="Fleet">Fleet</option>
+                            <option value="Corporate">Corporate</option>
+                            <option value="General">General</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">Description</label>
+                        <textarea name="description" class="form-control" rows="2"
+                                  placeholder="Optional description"></textarea>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">Initial Balance (₹)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₹</span>
+                            <input type="number" name="initialBalance" class="form-control"
+                                   value="0" min="0" step="0.01" />
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Create Account</button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary ms-2">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

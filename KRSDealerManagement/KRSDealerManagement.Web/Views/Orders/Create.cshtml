@@ -1,0 +1,199 @@
+@using KRSDealerManagement.Application.DTOs
+@{
+    ViewData["Title"] = "Create Purchase Order";
+    var models = ViewBag.Models as IEnumerable<VehicleModelDto>;
+    var colors = ViewBag.Colors as IEnumerable<VehicleColorDto>;
+    var account = ViewBag.Account as SubdealerAccountDto;
+    var availableBalance = account?.AvailableBalance ?? 0m;
+}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h1 class="m-0"><i class="bi bi-cart-plus"></i> Create Purchase Order</h1>
+        <p class="text-muted">Select vehicles to order. Amount will be reserved from your balance.</p>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="@Url.Action("MyOrders")" class="btn btn-secondary">
+            <i class="bi bi-list-check"></i> My Orders
+        </a>
+    </div>
+</div>
+
+@if (account == null)
+{
+    <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle"></i> No account found for your profile. Please contact administrator.
+    </div>
+}
+else
+{
+<form method="post" id="orderForm">
+    @Html.AntiForgeryToken()
+    <div class="row">
+        <!-- Balance + Notes -->
+        <div class="col-md-4">
+            <div class="card card-primary">
+                <div class="card-header"><h3 class="card-title">Balance</h3></div>
+                <div class="card-body">
+                    <div id="balanceSummary">
+                        <div class="alert alert-success p-2 mb-2">
+                            <small>Available Balance:</small>
+                            <strong id="availableBalance" class="d-block fs-5">₹@availableBalance.ToString("N2")</strong>
+                        </div>
+                        <div class="alert alert-warning p-2 mb-0">
+                            <small>Order Total:</small>
+                            <strong id="orderTotal" class="d-block fs-5">₹0.00</strong>
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label class="fw-bold">Notes</label>
+                        <textarea name="subdealerNotes" class="form-control" rows="3"
+                                  placeholder="Optional notes for this order"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Items -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">Order Items</h3>
+                    <button type="button" class="btn btn-sm btn-success" onclick="addItem()">
+                        <i class="bi bi-plus-circle"></i> Add Vehicle
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="itemsTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Model</th>
+                                    <th>Color</th>
+                                    <th>Qty</th>
+                                    <th>Unit Price (₹)</th>
+                                    <th>Total (₹)</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="itemsBody">
+                                <!-- Rows added by JS -->
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-light fw-bold">
+                                    <td colspan="4" class="text-end">Grand Total:</td>
+                                    <td id="grandTotal" class="text-success">₹0.00</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div id="noItemsMsg" class="alert alert-warning">
+                        <i class="bi bi-info-circle"></i> Click "Add Vehicle" to add items to your order.
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary btn-lg" id="placeOrderBtn" disabled>
+                        <i class="bi bi-cart-check"></i> Place Order
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+}
+
+@section Scripts {
+    <script>
+        const models = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+            (ViewBag.Models as IEnumerable<VehicleModelDto> ?? new List<VehicleModelDto>())
+            .Select(m => new { id = m.ModelId, name = m.ModelName })));
+
+        const colors = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+            (ViewBag.Colors as IEnumerable<VehicleColorDto> ?? new List<VehicleColorDto>())
+            .Select(c => new { id = c.ColorId, name = c.ColorName })));
+
+        const availableBalance = @availableBalance.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        let itemCount = 0;
+
+        function buildSelect(id, name, options, onChange) {
+            let opts = `<option value="">-- Select --</option>`;
+            options.forEach(o => opts += `<option value="${o.id}">${o.name}</option>`);
+            return `<select name="${name}" id="${id}" class="form-select form-select-sm" required onchange="${onChange}">${opts}</select>`;
+        }
+
+        function addItem() {
+            itemCount++;
+            const id = itemCount;
+            const row = document.createElement('tr');
+            row.id = `row_${id}`;
+            row.innerHTML = `
+                <td>${buildSelect(`model_${id}`, 'modelIds', models, `loadPrice(${id})`)}</td>
+                <td>${buildSelect(`color_${id}`, 'colorIds', colors, `loadPrice(${id})`)}</td>
+                <td><input type="number" name="quantities" id="qty_${id}" class="form-control form-control-sm"
+                    value="1" min="1" style="width:70px" onchange="calcRow(${id})"/></td>
+                <td><input type="number" name="unitPrices" id="price_${id}" class="form-control form-control-sm"
+                    value="0" min="0" step="0.01" readonly style="width:130px"/></td>
+                <td id="total_${id}" class="fw-bold">₹0.00</td>
+                <td><button type="button" class="btn btn-sm btn-danger" onclick="removeItem(${id})">
+                    <i class="bi bi-trash"></i></button></td>`;
+            document.getElementById('itemsBody').appendChild(row);
+            document.getElementById('noItemsMsg').classList.add('d-none');
+            updateTotals();
+        }
+
+        function removeItem(id) {
+            document.getElementById(`row_${id}`)?.remove();
+            if (document.getElementById('itemsBody').rows.length === 0) {
+                document.getElementById('noItemsMsg').classList.remove('d-none');
+            }
+            updateTotals();
+        }
+
+        function loadPrice(id) {
+            const modelId = document.getElementById(`model_${id}`).value;
+            const colorId = document.getElementById(`color_${id}`).value;
+            if (!modelId || !colorId) return;
+
+            KrsQueryString.fetchGet('/Orders/GetPrice', { modelId, colorId })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById(`price_${id}`).value = data.price;
+                        calcRow(id);
+                    } else {
+                        document.getElementById(`price_${id}`).value = 0;
+                        calcRow(id);
+                        alert(data.message);
+                    }
+                });
+        }
+
+        function calcRow(id) {
+            const qty = parseFloat(document.getElementById(`qty_${id}`)?.value || 0);
+            const price = parseFloat(document.getElementById(`price_${id}`)?.value || 0);
+            const total = qty * price;
+            document.getElementById(`total_${id}`).textContent = `₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+            updateTotals();
+        }
+
+        function updateTotals() {
+            let grand = 0;
+            document.querySelectorAll('[id^="total_"]').forEach(el => {
+                grand += parseFloat(el.textContent.replace(/[₹,]/g, '') || 0);
+            });
+            document.getElementById('grandTotal').textContent = `₹${grand.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+            document.getElementById('orderTotal').textContent = `₹${grand.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+
+            const btn = document.getElementById('placeOrderBtn');
+            const hasItems = document.getElementById('itemsBody').rows.length > 0;
+            btn.disabled = !(hasItems && grand > 0 && grand <= availableBalance);
+        }
+
+        @if (account != null)
+        {
+            <text>addItem();</text>
+        }
+    </script>
+}

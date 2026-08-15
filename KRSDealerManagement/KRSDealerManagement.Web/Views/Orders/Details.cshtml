@@ -1,0 +1,202 @@
+@model KRSDealerManagement.Application.DTOs.PurchaseOrderDto
+@using KRSDealerManagement.Application.DTOs
+@using KRSDealerManagement.Shared.Constants
+@{
+    ViewData["Title"] = "Order Details";
+    var isSubdealer = Context.Session.GetInt32("UserRole") == 2;
+    var returns = isSubdealer
+        ? new List<ReturnRequestDto>()
+        : ViewBag.ReturnRequests as List<ReturnRequestDto> ?? new List<ReturnRequestDto>();
+}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h1 class="m-0"><i class="bi bi-receipt"></i> @Model.OrderNumber</h1>
+        <p class="text-muted">@Model.SubdealerName — @Model.AccountName</p>
+    </div>
+    <div class="col-md-6 text-end">
+        @if (!isSubdealer && Model.PendingItemCount > 0)
+        {
+            <a href="@Url.EAction(QueryCrypto, "Allocate", new { id = Model.OrderId })" class="btn btn-success">
+                <i class="bi bi-box-seam"></i> Allocate Vehicles
+            </a>
+        }
+        <a href="@(isSubdealer ? Url.Action("MyOrders") : Url.Action("Index"))" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+</div>
+
+@{
+    var lineItems = ViewBag.Items as IEnumerable<PurchaseOrderItemDto> ?? Enumerable.Empty<PurchaseOrderItemDto>();
+}
+
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title mb-0">Line items (@lineItems.Count())</h3></div>
+            <div class="card-body p-0">
+                @if (lineItems.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Model</th>
+                                    <th>Color</th>
+                                    <th class="text-end">Price</th>
+                                    <th>Status</th>
+                                    <th>Allocated On</th>
+                                    <th>Chassis</th>
+                                    <th>Motor</th>
+                                    <th>Battery</th>
+                                    <th>Charger</th>
+                                    <th>Controller</th>
+                                    <th>Converter</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{ int n = 1; }
+                                @foreach (var li in lineItems)
+                                {
+                                    <tr>
+                                        <td>@(n++)</td>
+                                        <td>@li.ModelName</td>
+                                        <td>@li.ColorName</td>
+                                        <td class="text-end">₹@li.UnitPrice.ToString("N2")</td>
+                                        <td>
+                                            <span class="badge @li.GetBadgeClass()">
+                                                @li.GetStatusDisplay()
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @if (li.GetAllocatedOn().HasValue)
+                                            {
+                                                <small>@li.GetAllocatedOn()!.Value.ToString("yyyy-MM-dd HH:mm")</small>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">—</span>
+                                            }
+                                        </td>
+                                        <td><small>@(li.ChassisNumber ?? "-")</small></td>
+                                        <td><small>@(li.MotorNo ?? "-")</small></td>
+                                        <td><small>@(li.BatteryNo ?? "-")</small></td>
+                                        <td><small>@(li.ChargerNo ?? "-")</small></td>
+                                        <td><small>@(li.ControllerNo ?? "-")</small></td>
+                                        <td><small>@(li.ConverterNo ?? "-")</small></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="p-3 text-muted">No line items (older orders created before line-item support).</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Order Summary -->
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">Order Summary</h3></div>
+            <div class="card-body">
+                <table class="table table-sm table-bordered">
+                    <tr><td><strong>Order Number</strong></td><td>@Model.OrderNumber</td></tr>
+                    <tr><td><strong>Subdealer</strong></td><td>@Model.SubdealerName</td></tr>
+                    <tr><td><strong>Account</strong></td><td>@Model.AccountName</td></tr>
+                    <tr><td><strong>Total Qty</strong></td><td>@Model.TotalQuantity vehicles</td></tr>
+                    <tr><td><strong>Total Amount</strong></td><td class="fw-bold text-danger">₹@Model.TotalAmount.ToString("N2")</td></tr>
+                    <tr>
+                        <td><strong>Status</strong></td>
+                        <td>
+                            <span class="badge @Model.GetBadgeClass()">@Model.GetStatusDisplay()</span>
+                        </td>
+                    </tr>
+                    <tr><td><strong>Placed On</strong></td><td>@Model.CreatedDate.ToString("yyyy-MM-dd HH:mm")</td></tr>
+                    @if (Model.LastAllocatedDate.HasValue)
+                    {
+                        <tr><td><strong>Last Allocation</strong></td><td>@Model.LastAllocatedDate.Value.ToString("yyyy-MM-dd HH:mm")</td></tr>
+                    }
+                    else if (Model.ApprovedDate.HasValue)
+                    {
+                        <tr><td><strong>Approved On</strong></td><td>@Model.ApprovedDate.Value.ToString("yyyy-MM-dd HH:mm")</td></tr>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.SubdealerNotes))
+                    {
+                        <tr><td><strong>Your Notes</strong></td><td>@Model.SubdealerNotes</td></tr>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.AdminNotes))
+                    {
+                        <tr><td><strong>Admin Remarks</strong></td><td class="text-danger">@Model.AdminNotes</td></tr>
+                    }
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Return Requests (staff view only) -->
+    @if (!isSubdealer)
+    {
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0">Return Requests (@returns.Count)</h3>
+            </div>
+            <div class="card-body">
+                @if (returns.Any())
+                {
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Vehicle</th>
+                                <th>Refund (₹)</th>
+                                <th>Status</th>
+                                <th>Requested</th>
+                                <th>Processed</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var r in returns)
+                            {
+                                <tr>
+                                    <td><small>@r.VehicleChassisNumber</small></td>
+                                    <td>₹@r.RefundAmount.ToString("N2")</td>
+                                    <td>
+                                        <span class="badge @r.GetBadgeClass()">
+                                            @r.GetStatusDisplay()
+                                        </span>
+                                    </td>
+                                    <td><small>@r.CreatedDate.ToString("yyyy-MM-dd HH:mm")</small></td>
+                                    <td>
+                                        @if (r.ProcessedDate.HasValue)
+                                        {
+                                            <small>@r.ProcessedDate.Value.ToString("yyyy-MM-dd HH:mm")</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                    <td><small>@r.ReturnReason</small></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p class="text-muted">No return requests for this order.</p>
+                }
+            </div>
+        </div>
+    </div>
+    }
+</div>

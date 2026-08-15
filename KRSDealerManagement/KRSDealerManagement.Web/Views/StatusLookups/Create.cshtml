@@ -1,0 +1,70 @@
+@using KRSDealerManagement.Shared.Constants
+@{
+    ViewData["Title"] = "Add Status";
+    var categories = ViewBag.Categories as IReadOnlyList<(string Code, string Name)> ?? StatusCategories.All;
+    var badgeOptions = ViewBag.BadgeOptions as IReadOnlyList<(string Value, string Label)>;
+    var selectedCategory = ViewBag.SelectedCategory as string;
+}
+
+<div class="row mb-3">
+    <div class="col-md-8"><h1 class="m-0">Add Status</h1></div>
+    <div class="col-md-4 text-end">
+        <a href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Index", new { category = selectedCategory })" class="btn btn-secondary">Back</a>
+    </div>
+</div>
+
+<div class="card card-primary" style="max-width:640px">
+    <form method="post">
+        @Html.AntiForgeryToken()
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="fw-bold">Category <span class="text-danger">*</span></label>
+                <select name="category" class="form-select" required>
+                    <option value="">-- Select --</option>
+                    @foreach (var c in categories)
+                    {
+                        <option value="@c.Code" selected="@(selectedCategory == c.Code)">@c.Name (@c.Code)</option>
+                    }
+                </select>
+                <small class="text-muted">Which module uses this status (order, payment, etc.)</small>
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="fw-bold">Status Value <span class="text-danger">*</span></label>
+                    <input type="number" name="statusValue" class="form-control" min="0" required placeholder="e.g. 0" />
+                    <small class="text-muted">INT stored in DB (0, 1, 2…)</small>
+                </div>
+                <div class="col-md-8 mb-3">
+                    <label class="fw-bold">Status Code <span class="text-danger">*</span></label>
+                    <input name="statusCode" class="form-control text-uppercase" style="text-transform:uppercase"
+                           oninput="this.value=this.value.toUpperCase()" required placeholder="e.g. PENDING" />
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="fw-bold">Display Name <span class="text-danger">*</span></label>
+                <input name="statusName" class="form-control" required placeholder="e.g. Pending Approval" />
+            </div>
+            <div class="row">
+                <div class="col-md-8 mb-3">
+                    <label class="fw-bold">Badge Style</label>
+                    <select name="badgeClass" class="form-select">
+                        @if (badgeOptions != null)
+                        {
+                            @foreach (var b in badgeOptions)
+                            {
+                                <option value="@b.Value">@b.Label</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="fw-bold">Sort Order</label>
+                    <input type="number" name="sortOrder" class="form-control" value="99" min="0" />
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+    </form>
+</div>

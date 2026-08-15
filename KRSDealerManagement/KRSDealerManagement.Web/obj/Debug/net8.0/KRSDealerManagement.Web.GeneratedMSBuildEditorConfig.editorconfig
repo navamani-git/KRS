@@ -1,0 +1,320 @@
+is_global = true
+build_property.TargetFramework = net8.0
+build_property.TargetFrameworkIdentifier = .NETCoreApp
+build_property.TargetFrameworkVersion = v8.0
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = true
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = 
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property.EntryPointFilePath = 
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property.RootNamespace = KRSDealerManagement.Web
+build_property.RootNamespace = KRSDealerManagement.Web
+build_property.ProjectDir = D:\KRS\KRSDealerManagement\KRSDealerManagement.Web\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.RazorLangVersion = 8.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = 
+build_property.MSBuildProjectDirectory = D:\KRS\KRSDealerManagement\KRSDealerManagement.Web
+build_property._RazorSourceGeneratorDebug = 
+build_property.EffectiveAnalysisLevelStyle = 8.0
+build_property.EnableCodeStyleSeverity = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Accounts/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudHNcQ3JlYXRlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Accounts/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudHNcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Accounts/Statement.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudHNcU3RhdGVtZW50LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Account/AccessDenied.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxBY2Nlc3NEZW5pZWQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Account/Login.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxMb2dpbi5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Commissions/Approvals.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ29tbWlzc2lvbnNcQXBwcm92YWxzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Commissions/CreateRate.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ29tbWlzc2lvbnNcQ3JlYXRlUmF0ZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Commissions/EditRate.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ29tbWlzc2lvbnNcRWRpdFJhdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Commissions/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ29tbWlzc2lvbnNcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Commissions/MyCommissions.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ29tbWlzc2lvbnNcTXlDb21taXNzaW9ucy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Commissions/Submit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQ29tbWlzc2lvbnNcU3VibWl0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Dashboard/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRGFzaGJvYXJkXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Dealerships/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRGVhbGVyc2hpcHNcQ3JlYXRlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Dealerships/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRGVhbGVyc2hpcHNcRWRpdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Dealerships/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRGVhbGVyc2hpcHNcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/DocumentTypes/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRG9jdW1lbnRUeXBlc1xDcmVhdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/DocumentTypes/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRG9jdW1lbnRUeXBlc1xFZGl0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/DocumentTypes/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRG9jdW1lbnRUeXBlc1xJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/FinanceNames/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRmluYW5jZU5hbWVzXENyZWF0ZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/FinanceNames/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRmluYW5jZU5hbWVzXEVkaXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/FinanceNames/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRmluYW5jZU5hbWVzXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Orders/Allocate.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT3JkZXJzXEFsbG9jYXRlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Orders/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT3JkZXJzXENyZWF0ZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Orders/CreateForSubdealer.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT3JkZXJzXENyZWF0ZUZvclN1YmRlYWxlci5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Orders/Details.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT3JkZXJzXERldGFpbHMuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Orders/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT3JkZXJzXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Orders/MyOrders.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcT3JkZXJzXE15T3JkZXJzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Payments/AdminEdit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGF5bWVudHNcQWRtaW5FZGl0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Payments/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGF5bWVudHNcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Payments/MyPayments.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGF5bWVudHNcTXlQYXltZW50cy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/PaymentTypes/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGF5bWVudFR5cGVzXENyZWF0ZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/PaymentTypes/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGF5bWVudFR5cGVzXEVkaXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/PaymentTypes/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGF5bWVudFR5cGVzXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Prices/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUHJpY2VzXENyZWF0ZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Prices/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUHJpY2VzXEVkaXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Prices/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUHJpY2VzXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Reports/AccountStatement.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUmVwb3J0c1xBY2NvdW50U3RhdGVtZW50LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Reports/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUmVwb3J0c1xJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Returns/Approve.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUmV0dXJuc1xBcHByb3ZlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Returns/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUmV0dXJuc1xJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Returns/MyReturns.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUmV0dXJuc1xNeVJldHVybnMuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Returns/Reject.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUmV0dXJuc1xSZWplY3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/RtoLocations/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUnRvTG9jYXRpb25zXENyZWF0ZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/RtoLocations/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUnRvTG9jYXRpb25zXEVkaXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/RtoLocations/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUnRvTG9jYXRpb25zXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Shared/_CrudActions.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9DcnVkQWN0aW9ucy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Shared/_ExportExcel.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9FeHBvcnRFeGNlbC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Shared/_Layout.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9MYXlvdXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Shared/_Pagination.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9QYWdpbmF0aW9uLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/StaffUsers/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3RhZmZVc2Vyc1xDcmVhdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/StaffUsers/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3RhZmZVc2Vyc1xFZGl0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/StaffUsers/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3RhZmZVc2Vyc1xJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/StatusLookups/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3RhdHVzTG9va3Vwc1xDcmVhdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/StatusLookups/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3RhdHVzTG9va3Vwc1xFZGl0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/StatusLookups/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3RhdHVzTG9va3Vwc1xJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Subdealers/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3ViZGVhbGVyc1xDcmVhdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Subdealers/Details.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3ViZGVhbGVyc1xEZXRhaWxzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Subdealers/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3ViZGVhbGVyc1xJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Subdealers/_MenuPermissionGroups.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3ViZGVhbGVyc1xfTWVudVBlcm1pc3Npb25Hcm91cHMuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/VehicleBookings/Book.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVmVoaWNsZUJvb2tpbmdzXEJvb2suY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/VehicleBookings/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVmVoaWNsZUJvb2tpbmdzXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/VehicleBookings/Manage.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVmVoaWNsZUJvb2tpbmdzXE1hbmFnZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/VehicleBookings/SubsidyDocs.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVmVoaWNsZUJvb2tpbmdzXFN1YnNpZHlEb2NzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/VehicleColors/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVmVoaWNsZUNvbG9yc1xDcmVhdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/VehicleColors/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVmVoaWNsZUNvbG9yc1xFZGl0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/VehicleColors/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVmVoaWNsZUNvbG9yc1xJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/VehicleModels/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVmVoaWNsZU1vZGVsc1xDcmVhdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/VehicleModels/Details.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVmVoaWNsZU1vZGVsc1xEZXRhaWxzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/VehicleModels/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVmVoaWNsZU1vZGVsc1xFZGl0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/VehicleModels/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVmVoaWNsZU1vZGVsc1xJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Vehicles/AdminEdit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVmVoaWNsZXNcQWRtaW5FZGl0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Vehicles/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVmVoaWNsZXNcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/_ViewImports.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcX1ZpZXdJbXBvcnRzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/_ViewStart.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcX1ZpZXdTdGFydC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 

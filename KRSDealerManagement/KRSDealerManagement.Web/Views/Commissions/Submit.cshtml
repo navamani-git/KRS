@@ -1,0 +1,197 @@
+@using KRSDealerManagement.Application.DTOs
+@{
+    ViewData["Title"] = "Submit Commission";
+    var models = ViewBag.Models as IEnumerable<VehicleModelDto>;
+    var colors = ViewBag.Colors as IEnumerable<VehicleColorDto>;
+    var currentMonth = (int)(ViewBag.CurrentMonth ?? DateTime.Now.Month);
+    var currentYear = (int)(ViewBag.CurrentYear ?? DateTime.Now.Year);
+}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h1 class="m-0"><i class="bi bi-cash-stack"></i> Submit Commission</h1>
+        <p class="text-muted">Submit commission for a vehicle you have sold</p>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="@Url.Action("MyCommissions")" class="btn btn-secondary">
+            <i class="bi bi-list"></i> My Commissions
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card card-success">
+            <div class="card-header"><h3 class="card-title">Commission Entry</h3></div>
+            <form method="post" id="commissionForm">
+                @Html.AntiForgeryToken()
+                <div class="card-body">
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">Vehicle Model <span class="text-danger">*</span></label>
+                        <select name="modelId" id="modelId" class="form-select" required onchange="loadCommissionRate()">
+                            <option value="">-- Select Model --</option>
+                            @if (models != null)
+                            {
+                                @foreach (var m in models)
+                                {
+                                    <option value="@m.ModelId">@m.ModelName</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">Color <span class="text-danger">*</span></label>
+                        <select name="colorId" id="colorId" class="form-select" required>
+                            <option value="">-- Select Color --</option>
+                            @if (colors != null)
+                            {
+                                @foreach (var c in colors)
+                                {
+                                    <option value="@c.ColorId">@c.ColorName</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">Chassis Number <span class="text-danger">*</span></label>
+                        <input type="text" name="chassisNumber" id="chassisNumber" class="form-control"
+                               placeholder="e.g., MA3EWDE1S00123456"
+                               style="text-transform:uppercase" required />
+                        <small id="chassisMessage" class="text-muted">Enter chassis and tab out to validate</small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label class="form-label fw-bold">Month <span class="text-danger">*</span></label>
+                                <select name="month" id="month" class="form-select" required onchange="loadCommissionRate()">
+                                    @for (int m = 1; m <= 12; m++)
+                                    {
+                                        <option value="@m" selected="@(m == currentMonth)">
+                                            @System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(m)
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label class="form-label fw-bold">Year <span class="text-danger">*</span></label>
+                                <select name="year" id="year" class="form-select" required onchange="loadCommissionRate()">
+                                    @for (int y = currentYear - 1; y <= currentYear + 1; y++)
+                                    {
+                                        <option value="@y" selected="@(y == currentYear)">@y</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">Commission Amount (₹)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₹</span>
+                            <input type="number" name="commissionAmount" id="commissionAmount"
+                                   class="form-control" step="0.01" readonly
+                                   placeholder="Select model and month to auto-fill" />
+                        </div>
+                        <small id="rateMessage" class="text-muted">Select model and month to auto-fill amount</small>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-success" id="submitBtn" disabled>
+                        <i class="bi bi-send"></i> Submit Commission
+                    </button>
+                    <a href="@Url.Action("MyCommissions")" class="btn btn-secondary ms-2">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let chassisValid = false;
+
+        function updateSubmitState() {
+            const submitBtn = document.getElementById('submitBtn');
+            const amt = document.getElementById('commissionAmount').value;
+            submitBtn.disabled = !(chassisValid && amt);
+        }
+
+        async function validateChassis() {
+            const chassis = document.getElementById('chassisNumber').value.trim();
+            const modelId = document.getElementById('modelId').value;
+            const colorId = document.getElementById('colorId').value;
+            const msg = document.getElementById('chassisMessage');
+            chassisValid = false;
+            updateSubmitState();
+
+            if (!chassis) {
+                msg.textContent = 'Enter chassis number.';
+                msg.className = 'text-muted';
+                return;
+            }
+
+            msg.textContent = 'Validating chassis...';
+            msg.className = 'text-muted';
+
+            try {
+                const resp = await KrsQueryString.fetchGet('/Commissions/ValidateChassis', { chassisNumber: chassis, modelId, colorId });
+                const data = await resp.json();
+                if (data.success) {
+                    chassisValid = true;
+                    msg.textContent = '✓ ' + data.message;
+                    msg.className = 'text-success fw-bold';
+                } else {
+                    msg.textContent = '⚠ ' + data.message;
+                    msg.className = 'text-danger';
+                }
+            } catch {
+                msg.textContent = 'Error validating chassis.';
+                msg.className = 'text-danger';
+            }
+            updateSubmitState();
+        }
+
+        document.getElementById('chassisNumber').addEventListener('blur', validateChassis);
+        document.getElementById('modelId').addEventListener('change', () => { chassisValid = false; validateChassis(); loadCommissionRate(); });
+        document.getElementById('colorId').addEventListener('change', () => { chassisValid = false; validateChassis(); });
+
+        function loadCommissionRate() {
+            const modelId = document.getElementById('modelId').value;
+            const month = document.getElementById('month').value;
+            const year = document.getElementById('year').value;
+            const amtField = document.getElementById('commissionAmount');
+            const msgField = document.getElementById('rateMessage');
+            const submitBtn = document.getElementById('submitBtn');
+
+            if (!modelId || !month || !year) return;
+
+            msgField.textContent = 'Loading rate...';
+            msgField.className = 'text-muted';
+
+            KrsQueryString.fetchGet('/Commissions/GetRate', { modelId, month, year })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        amtField.value = data.amount;
+                        msgField.textContent = `✓ Commission rate: ₹${parseFloat(data.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+                        msgField.className = 'text-success fw-bold';
+                    } else {
+                        amtField.value = '';
+                        msgField.textContent = '⚠ ' + data.message;
+                        msgField.className = 'text-danger';
+                    }
+                    updateSubmitState();
+                })
+                .catch(() => {
+                    msgField.textContent = 'Error loading rate.';
+                    msgField.className = 'text-danger';
+                    updateSubmitState();
+                });
+        }
+    </script>
+}

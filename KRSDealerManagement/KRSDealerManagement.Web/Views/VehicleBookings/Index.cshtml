@@ -1,0 +1,38 @@
+@using KRSDealerManagement.Domain.Entities
+@using KRSDealerManagement.Shared.Constants
+@model IEnumerable<dynamic>
+@{
+    ViewData["Title"] = "Vehicle Bookings";
+    var statuses = ViewBag.Statuses as IEnumerable<StatusLookup> ?? Enumerable.Empty<StatusLookup>();
+    var subdealers = ViewBag.Subdealers as IEnumerable<KRSDealerManagement.Application.DTOs.UserDto>;
+}
+
+<div class="row mb-3">
+    <div class="col-md-6"><h1 class="m-0"><i class="bi bi-journal-check"></i> Vehicle Bookings</h1></div>
+    <div class="col-md-6 text-end"><partial name="_ExportExcel" /></div>
+</div>
+
+<div class="card mb-3"><div class="card-body py-2">
+<form method="get" class="row g-2 align-items-end">
+<div class="col-md-2"><label class="form-label form-label-sm mb-0">Status</label>
+<select name="status" class="form-select form-select-sm"><option value="">All</option>
+@foreach(var s in statuses){<option value="@s.StatusValue" selected="@(ViewBag.SelectedStatus?.ToString()==s.StatusValue.ToString())">@s.StatusName</option>}</select></div>
+<div class="col-md-3"><label class="form-label form-label-sm mb-0">Subdealer</label>
+<select name="subdealerId" class="form-select form-select-sm"><option value="">All</option>
+@if(subdealers!=null){@foreach(var sd in subdealers){<option value="@sd.UserId" selected="@(ViewBag.SelectedSubdealerId?.ToString()==sd.UserId.ToString())">@sd.GetFullName()</option>}}</select></div>
+<div class="col-md-3"><label class="form-label form-label-sm mb-0">Search</label><input name="searchTerm" class="form-control form-control-sm" value="@ViewBag.SearchTerm" /></div>
+<div class="col-md-2"><button class="btn btn-sm btn-primary">Filter</button></div>
+</form></div></div>
+
+<div class="card"><div class="card-body p-0">
+<table class="table table-sm table-hover mb-0"><thead class="table-dark"><tr>
+<th>ID</th><th>Chassis</th><th>Subdealer</th><th>Customer</th><th>Status</th><th>Submitted</th><th></th></tr></thead><tbody>
+@foreach(var row in Model){ var b = row.Booking as KRSDealerManagement.Domain.Entities.VehicleBooking;
+    var vehicleStatus = (int)row.VehicleStatus;
+    var statusLabel = statuses.FirstOrDefault(s => s.StatusValue == vehicleStatus)?.StatusName ?? vehicleStatus.ToString();
+<tr><td>@b.VehicleBookingId</td><td><code>@row.Chassis</code></td><td>@row.Subdealer</td><td>@b.CustomerName</td>
+<td><span class="badge bg-info">@statusLabel</span></td><td><small>@b.SubmittedDate.ToString("yyyy-MM-dd")</small></td>
+<td><a href="@Url.EAction(QueryCrypto, "Manage", new { id = b.VehicleBookingId }, "VehicleBookings")" class="btn btn-sm btn-info">Manage</a></td></tr>}
+</tbody></table>
+<div class="p-3"><partial name="_Pagination" /></div>
+</div></div>

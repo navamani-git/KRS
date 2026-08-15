@@ -1,0 +1,76 @@
+@model IEnumerable<KRSDealerManagement.Domain.Entities.PaymentType>
+@{
+    ViewData["Title"] = "Payment Types";
+}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h1 class="m-0"><i class="bi bi-wallet2"></i> Payment Types</h1>
+        <p class="text-muted">Master list for payment type dropdown</p>
+    </div>
+    <div class="col-md-6 text-end">
+        <partial name="_ExportExcel" />
+        <a href="@Url.Action("Create")" class="btn btn-primary"><i class="bi bi-plus"></i> Add Payment Type</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-striped mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Finance Details</th>
+                    <th>Sort</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ int i = 1; }
+                @foreach (var t in Model)
+                {
+                    <tr>
+                        <td>@(i++)</td>
+                        <td><code>@t.TypeCode</code></td>
+                        <td><strong>@t.TypeName</strong></td>
+                        <td>
+                            @if (t.RequiresFinanceDetails)
+                            {
+                                <span class="badge bg-primary">Required</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td>@t.SortOrder</td>
+                        <td>
+                            <span class="badge @(t.IsActive ? "bg-success" : "bg-secondary")">
+                                @(t.IsActive ? "Active" : "Inactive")
+                            </span>
+                        </td>
+                        <td><small>@t.CreatedDate.ToString("yyyy-MM-dd")</small></td>
+                        <td>
+                            @{
+                                ViewData["CrudId"] = t.PaymentTypeId;
+                                ViewData["CrudController"] = "PaymentTypes";
+                            }
+                            <partial name="_CrudActions" />
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        @if (!Model.Any())
+        {
+            <div class="p-3 text-muted">No payment types yet. <a href="@Url.Action("Create")">Add one</a>.</div>
+        }
+        <div class="p-3">
+            <partial name="_Pagination" />
+        </div>
+    </div>
+</div>

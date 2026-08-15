@@ -1,0 +1,34 @@
+@{
+    var id = (int)ViewData["CrudId"]!;
+    var controller = (string)ViewData["CrudController"]!;
+    var editAction = ViewData["CrudEditAction"] as string ?? "Edit";
+    var deleteAction = ViewData["CrudDeleteAction"] as string ?? "Delete";
+    var showDelete = ViewData["CrudShowDelete"] as bool? ?? true;
+    var useEncrypted = ViewData["CrudEncrypted"] as bool? ?? false;
+}
+
+<div class="btn-group btn-group-sm" role="group">
+    @if (useEncrypted)
+    {
+        <a href="@Url.EAction(QueryCrypto, editAction, new { id }, controller)" class="btn btn-warning" title="Edit">
+            <i class="bi bi-pencil"></i>
+        </a>
+    }
+    else
+    {
+        <a href="@Url.Action(editAction, controller, new { id })" class="btn btn-warning" title="Edit">
+            <i class="bi bi-pencil"></i>
+        </a>
+    }
+    @if (showDelete)
+    {
+        <form method="post" asp-controller="@controller" asp-action="@deleteAction" class="d-inline"
+              onsubmit="return confirm('Are you sure you want to delete this record?');">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@id" />
+            <button type="submit" class="btn btn-danger" title="Delete">
+                <i class="bi bi-trash"></i>
+            </button>
+        </form>
+    }
+</div>

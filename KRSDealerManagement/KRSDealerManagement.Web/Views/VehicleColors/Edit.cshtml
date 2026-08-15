@@ -1,0 +1,66 @@
+@model KRSDealerManagement.Application.DTOs.VehicleColorDto
+@{
+    ViewData["Title"] = "Edit Color";
+}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h1 class="m-0"><i class="bi bi-pencil"></i> Edit Color: @Model.ColorName</h1>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="@Url.Action("Index")" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card card-warning">
+            <div class="card-header"><h3 class="card-title">Edit: @Model.ColorName</h3></div>
+            <form method="post" asp-action="Edit">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.ColorId" />
+                <div class="card-body">
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">Color Name <span class="text-danger">*</span></label>
+                        <input type="text" name="colorName" class="form-control" value="@Model.ColorName" required />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">Hex Color Code</label>
+                        <div class="input-group">
+                            <input type="color" id="hexCodePicker" class="form-control form-control-color"
+                                   value="@(Model.HexCode ?? "#FFFFFF")" />
+                            <input type="text" name="hexCode" id="hexCode" class="form-control"
+                                   value="@Model.HexCode" placeholder="#FFFFFF (optional)" />
+                        </div>
+                    </div>
+                    <div class="form-group mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="isActive"
+                                   value="true" @(Model.IsActive ? "checked" : "") />
+                            <label class="form-check-label fw-bold">Active</label>
+                        </div>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">Remarks <span class="text-danger">*</span></label>
+                        <input type="text" name="remarks" class="form-control"
+                               placeholder="Reason for modification" required />
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-warning"><i class="bi bi-save"></i> Update</button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary ms-2">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('hexCodePicker').addEventListener('input', function() {
+            document.getElementById('hexCode').value = this.value;
+        });
+    </script>
+}

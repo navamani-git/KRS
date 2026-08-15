@@ -1,0 +1,56 @@
+@model IEnumerable<KRSDealerManagement.Application.Queries.DealershipDto>
+@{
+    ViewData["Title"] = "Dealerships";
+}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h1 class="m-0"><i class="bi bi-geo-alt"></i> Dealership Locations</h1>
+        <p class="text-muted">KRS locations — add a row when a new city opens</p>
+    </div>
+    <div class="col-md-6 text-end">
+        <partial name="_ExportExcel" />
+        <a href="@Url.Action("Create")" class="btn btn-primary"><i class="bi bi-plus"></i> Add Location</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-striped mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Location</th>
+                    <th>Phone</th>
+                    <th>Subdealers</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var d in Model)
+            {
+                <tr>
+                    <td><code>@d.DealershipCode</code></td>
+                    <td>@d.DealershipName</td>
+                    <td>@d.Location</td>
+                    <td>@d.ContactPhone</td>
+                    <td>@d.SubDealerCount</td>
+                    <td><span class="badge @(d.IsActive?"bg-success":"bg-secondary")">@(d.IsActive?"Active":"Inactive")</span></td>
+                    <td>
+                        @{
+                            ViewData["CrudId"] = d.DealershipId;
+                            ViewData["CrudController"] = "Dealerships";
+                        }
+                        <partial name="_CrudActions" />
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+        <div class="p-3">
+            <partial name="_Pagination" />
+        </div>
+    </div>
+</div>

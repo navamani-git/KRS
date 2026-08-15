@@ -1,0 +1,13 @@
+Changed database context to 'KRSDealerManagementDB'.
+Msg 1046, Level 15, State 1, Server DESKTOP-RB1VR8T\SQLEXPRESS, Line 427
+Subqueries are not allowed in this context. Only scalar expressions are allowed.
+Msg 1046, Level 15, State 1, Server DESKTOP-RB1VR8T\SQLEXPRESS, Line 428
+Subqueries are not allowed in this context. Only scalar expressions are allowed.
+Msg 1046, Level 15, State 1, Server DESKTOP-RB1VR8T\SQLEXPRESS, Line 429
+Subqueries are not allowed in this context. Only scalar expressions are allowed.
+Msg 1046, Level 15, State 1, Server DESKTOP-RB1VR8T\SQLEXPRESS, Line 430
+Subqueries are not allowed in this context. Only scalar expressions are allowed.
+Msg 1046, Level 15, State 1, Server DESKTOP-RB1VR8T\SQLEXPRESS, Line 431
+Subqueries are not allowed in this context. Only scalar expressions are allowed.
+Msg 1046, Level 15, State 1, Server DESKTOP-RB1VR8T\SQLEXPRESS, Line 432
+Subqueries are not allowed in this context. Only scalar expressions are allowed.

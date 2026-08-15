@@ -1,0 +1,129 @@
+@model KRSDealerManagement.Domain.Entities.VehicleBooking
+@using KRSDealerManagement.Domain.Entities
+@using KRSDealerManagement.Shared.Constants
+@{
+    ViewData["Title"] = "Vehicle Booking";
+    var isStaff = ViewBag.IsStaff ?? false;
+    var statuses = ViewBag.Statuses as IEnumerable<StatusLookup> ?? Enumerable.Empty<StatusLookup>();
+    var vehicleStatus = (int)(ViewBag.VehicleStatus ?? Model.BookingStatus);
+}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1 class="m-0"><i class="bi bi-journal-text"></i> Booking #@Model.VehicleBookingId</h1>
+        <p class="text-muted">@ViewBag.Chassis · @ViewBag.ModelName · @ViewBag.ColorName · @ViewBag.PaymentModeLabel</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="@Url.Action("Index", "Vehicles")" class="btn btn-secondary">Vehicles</a>
+        @if (isStaff) { <a href="@Url.Action("Index")" class="btn btn-outline-primary">All Bookings</a> }
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-7">
+        <div class="card mb-3"><div class="card-header"><h3 class="card-title">Customer & Nominee</h3></div>
+        <div class="card-body">
+            <table class="table table-sm">
+                <tr><td width="35%"><strong>Customer</strong></td><td>@Model.CustomerName @(Model.IsCompanyBooking ? "(Company)" : "")</td></tr>
+                <tr><td><strong>Mobile</strong></td><td>@Model.CustomerMobile / @Model.AlternativeMobile</td></tr>
+                <tr><td><strong>Email</strong></td><td>@Model.CustomerEmail</td></tr>
+                <tr><td><strong>Nominee</strong></td><td>@Model.NomineeName (@Model.NomineeRelationship) — @Model.NomineeDob.ToString("yyyy-MM-dd")</td></tr>
+                <tr><td><strong>Submitted</strong></td><td>@Model.SubmittedDate.ToString("yyyy-MM-dd HH:mm")</td></tr>
+                <tr><td><strong>Subsidy ID</strong></td><td>@(Model.SubsidyId ?? "-")</td></tr>
+            </table>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-sm btn-outline-secondary" href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Download", new { path = Model.EAadhaarPath }, "VehicleBookings")">E-Aadhaar</a>
+                <a class="btn btn-sm btn-outline-secondary" href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Download", new { path = Model.DocumentPath }, "VehicleBookings")">ID Doc</a>
+                @if (!string.IsNullOrEmpty(Model.GstCertificatePath)) {
+                    <a class="btn btn-sm btn-outline-secondary" href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Download", new { path = Model.GstCertificatePath }, "VehicleBookings")">GST</a> }
+                <a class="btn btn-sm btn-outline-secondary" href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Download", new { path = Model.CustomerPhotoPath }, "VehicleBookings")">Photo</a>
+                <a class="btn btn-sm btn-outline-secondary" href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Download", new { path = Model.ChassisPhotoPath }, "VehicleBookings")">Chassis Img</a>
+                <a class="btn btn-sm btn-outline-secondary" href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Download", new { path = Model.CustomerSignPath }, "VehicleBookings")">Sign/Seal</a>
+            </div>
+        </div></div>
+
+        @if (ViewBag.CanSubmitSubsidyDocs == true)
+        {
+            <div class="alert alert-info">
+                Subsidy ID assigned. <a href="@Url.Action("SubsidyDocs", new { id = Model.VehicleBookingId })" class="alert-link">Upload subsidy documents</a>
+            </div>
+        }
+        @if (Model.SubsidyDocsSubmittedDate.HasValue)
+        {
+            <div class="card mb-3"><div class="card-header">Subsidy Documents</div><div class="card-body d-flex gap-2 flex-wrap">
+                <a class="btn btn-sm btn-outline-primary" href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Download", new { path = Model.FaceVerificationPath }, "VehicleBookings")">Face Verification</a>
+                <a class="btn btn-sm btn-outline-primary" href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Download", new { path = Model.RcImagePath }, "VehicleBookings")">RC Image</a>
+                <a class="btn btn-sm btn-outline-primary" href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Download", new { path = Model.BoothPhotoPath }, "VehicleBookings")">Booth Photo</a>
+                <a class="btn btn-sm btn-outline-primary" href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Download", new { path = Model.SubsidyUndertakingPath }, "VehicleBookings")">Undertaking</a>
+                <p class="w-100 mb-0"><small>Customer (CAPS): @Model.SubsidyCustomerNameCaps</small></p>
+            </div></div>
+        }
+
+        @if (ViewBag.CanMarkDelivered == true)
+        {
+            <div class="card mb-3 border-success">
+                <div class="card-header bg-success text-white"><h3 class="card-title mb-0">Confirm Delivery</h3></div>
+                <div class="card-body">
+                    <p class="mb-3">Subsidy has been applied. Mark this vehicle as <strong>Delivered</strong> once handed over to the customer.</p>
+                    <form method="post" asp-action="MarkDelivered">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.VehicleBookingId" />
+                        <button type="submit" class="btn btn-success" onclick="return confirm('Mark this vehicle as delivered to customer?');">
+                            <i class="bi bi-check-circle"></i> Mark as Delivered
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+        @if (!isStaff && vehicleStatus == UnifiedVehicleStatus.Delivered)
+        {
+            <div class="alert alert-success"><i class="bi bi-check-circle"></i> This vehicle has been marked as <strong>Delivered</strong>.</div>
+        }
+    </div>
+
+    @if (isStaff)
+    {
+        <div class="col-md-5">
+            <div class="card card-primary"><div class="card-header"><h3 class="card-title">Staff Processing</h3></div>
+            <div class="card-body">
+                <form method="post">@Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.VehicleBookingId" />
+                    <div class="mb-2"><label class="fw-bold">Status</label>
+                        @if (vehicleStatus == UnifiedVehicleStatus.Delivered)
+                        {
+                            <p class="form-control-plaintext mb-0">
+                                <span class="badge bg-success">Delivered</span>
+                                <small class="text-muted ms-1">(set by subdealer)</small>
+                            </p>
+                        }
+                        else
+                        {
+                        <select name="bookingStatus" class="form-select">
+                            @foreach (var s in statuses)
+                            {
+                                if (vehicleStatus == s.StatusValue)
+                                {
+                                    <option value="@s.StatusValue" selected>@s.StatusName</option>
+                                }
+                                else
+                                {
+                                    <option value="@s.StatusValue">@s.StatusName</option>
+                                }
+                            }
+                        </select>
+                        }
+                    </div>
+                    <div class="mb-2"><label>Paper Received Date</label><input type="date" name="paperReceivedDate" class="form-control" value="@Model.PaperReceivedDate?.ToString("yyyy-MM-dd")" /></div>
+                    <div class="mb-2"><label>Invoice Date</label><input type="date" name="invoiceDate" class="form-control" value="@Model.InvoiceDate?.ToString("yyyy-MM-dd")" /></div>
+                    <div class="mb-2"><label>Insurance Date</label><input type="date" name="insuranceDate" class="form-control" value="@Model.InsuranceDate?.ToString("yyyy-MM-dd")" /></div>
+                    <div class="mb-2"><label>Agent Date</label><input type="date" name="agentDate" class="form-control" value="@Model.AgentDate?.ToString("yyyy-MM-dd")" /></div>
+                    <div class="mb-2"><label>Registration Date</label><input type="date" name="registrationDate" class="form-control" value="@Model.RegistrationDate?.ToString("yyyy-MM-dd")" /></div>
+                    <div class="mb-2"><label>RTO Number</label><input name="rtoNumber" class="form-control" value="@Model.RtoNumber" /></div>
+                    <div class="mb-2"><label>Number Plate Received</label><input type="date" name="numberPlateReceivedDate" class="form-control" value="@Model.NumberPlateReceivedDate?.ToString("yyyy-MM-dd")" /></div>
+                    <div class="mb-3"><label>Subsidy ID</label><input name="subsidyId" class="form-control" value="@Model.SubsidyId" placeholder="Enter after invoice & insurance" /></div>
+                    <button type="submit" class="btn btn-primary w-100">Save</button>
+                </form>
+            </div></div>
+        </div>
+    }
+</div>

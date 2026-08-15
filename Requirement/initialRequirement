@@ -1,0 +1,35 @@
+I am planning to develop a web application in .net core, Not api and ui as seperate , I want both the code in single project like different alyer daa, business logic, ui like that( Need to create application, DB, tables , Sp scripts everything
+)
+
+Cretae a folder say Progress and add a file what was done so that i will use that to continue the work
+
+Requirement:
+I am ampere dealer and i have 28 sub dealers , Say if i purchase a vehicle for 1 llaks i would see to my sub dealers for 1.2 lakhs and for each vehicle selling i will give commission of each month. 
+
+The commision they will enter on each month the admin will approve once approved the approved amount will get added into there accounts screen
+
+I wanted beow screens
+
+1) Login screens
+2) Admin screen
+       2.1 ) To enter model , color of the vehicle
+       2.2) To enter price of each model, The price will increase / decrease mutiple times in each month
+3) Sub Dealer screen to purchase vehicle from dealer
+
+4) The subdealer can purchase vehicle untill the amount have in their account. fr eg ) i am raise a request to purchase 10 vehicle and i have 10 lakhs in my account and each vehicle cost is 1 lakhs i can raise a request of 10 vehicles only then the admin from dealer have verify the request and approve , Say admin have approved for 9 vehicles and reject one vehicle then only the 1lakhs will credited back to subdealer account and they can order again , MEans the amount get released once the admin have approved or reject, But the dealer can give the vehicle in minus amount but the subderaler cannot raise a purchase order in minus amount
+
+
+The vechle should be from multiple status
+
+say i purchased 5 vehicle for 5laks for each one laks
+once purchase i sold 4 vehicle and 1 vehicle in the sub dealer showroom and say a rate increased to 2000 more then for that one vehicle the subder should pay 2000 mre to dealer
+
+The status would be like
+1) Purchased
+2) Invoiced
+3) RTO initiated
+4) RTO number given
+
+
+Untill the vehcile get invoiced the amout will may ncrease / decrease
+

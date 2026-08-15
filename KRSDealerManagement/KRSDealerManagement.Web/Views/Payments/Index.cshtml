@@ -1,0 +1,236 @@
+@model IEnumerable<KRSDealerManagement.Application.DTOs.PaymentDto>
+@using KRSDealerManagement.Application.DTOs
+@using KRSDealerManagement.Domain.Entities
+@using KRSDealerManagement.Web.Helpers
+@{
+    ViewData["Title"] = "Payment Approvals";
+    var subdealers = ViewBag.Subdealers as IEnumerable<UserDto>;
+    var statuses = ViewBag.Statuses as IEnumerable<StatusLookup> ?? Enumerable.Empty<StatusLookup>();
+    var isAdmin = SessionHelper.IsAdmin(Context.Session);
+}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h1 class="m-0"><i class="bi bi-credit-card"></i> Payment Approvals</h1>
+        <p class="text-muted">Review and approve payments from subdealers</p>
+    </div>
+    <div class="col-md-6 text-end">
+        <partial name="_ExportExcel" />
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label form-label-sm mb-0">From</label>
+                <input type="date" name="fromDate" class="form-control form-control-sm" value="@ViewBag.FromDate" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label form-label-sm mb-0">To</label>
+                <input type="date" name="toDate" class="form-control form-control-sm" value="@ViewBag.ToDate" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label form-label-sm mb-0">Subdealer</label>
+                <select name="subdealerId" class="form-select form-select-sm">
+                    <option value="">All Subdealers</option>
+                    @if (subdealers != null)
+                    {
+                        @foreach (var s in subdealers)
+                        {
+                            <option value="@s.UserId" selected="@(ViewBag.SelectedSubdealerId?.ToString() == s.UserId.ToString())">
+                                @s.GetFullName()
+                            </option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label form-label-sm mb-0">Status</label>
+                <select name="status" class="form-select form-select-sm" asp-items="StatusViewHelper.ToSelectList(statuses, ViewBag.SelectedStatus as int?)">
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-filter"></i> Filter</button>
+                <a href="@Url.Action("Index")" class="btn btn-sm btn-secondary"><i class="bi bi-arrow-clockwise"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Payments (@(ViewBag.TotalItems ?? Model.Count()))
+            <span class="badge bg-warning text-dark ms-2">@(ViewBag.PendingCount ?? 0) Pending</span>
+        </h3>
+    </div>
+    <div class="card-body">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Subdealer</th>
+                            <th>Amount (₹)</th>
+                            <th>Type</th>
+                            <th>Customer</th>
+                            <th>Finance</th>
+                            <th>VIN</th>
+                            <th>Proof</th>
+                            <th>Payment Date</th>
+                            <th>Status</th>
+                            <th>Submitted</th>
+                            <th>Processed</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model)
+                        {
+                            var badgeClass = p.GetBadgeClass();
+                            <tr class="@(p.Status == 0 ? "table-warning bg-opacity-25" : "")">
+                                <td>@p.PaymentId</td>
+                                <td><strong>@p.SubdealerName</strong></td>
+                                <td class="fw-bold text-success">₹@p.Amount.ToString("N2")</td>
+                                <td><span class="badge bg-info">@p.GetPaymentTypeDisplay()</span></td>
+                                <td><small>@(p.CustomerName ?? "-")</small></td>
+                                <td><small>@(p.FinanceName ?? "-")</small></td>
+                                <td><code class="small">@(p.VinNumber ?? "-")</code></td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(p.PaymentProofPath))
+                                    {
+                                        <a href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "DownloadProof", new { path = p.PaymentProofPath })" class="btn btn-sm btn-outline-secondary" title="Proof 1"><i class="bi bi-paperclip"></i></a>
+                                    }
+                                    @if (!string.IsNullOrEmpty(p.PaymentProof2Path))
+                                    {
+                                        <a href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "DownloadProof", new { path = p.PaymentProof2Path })" class="btn btn-sm btn-outline-secondary" title="Proof 2"><i class="bi bi-paperclip"></i>2</a>
+                                    }
+                                </td>
+                                <td><small>@p.PaymentDate.ToString("yyyy-MM-dd")</small></td>
+                                <td>
+                                    <span class="badge @badgeClass">@p.GetStatusDisplay()</span>
+                                    @if (p.IsApplied) { <span class="badge bg-primary ms-1">Applied</span> }
+                                </td>
+                                <td><small>@p.CreatedDate.ToString("yyyy-MM-dd HH:mm")</small></td>
+                                <td>
+                                    @if (p.ProcessedDate.HasValue)
+                                    {
+                                        <small>@p.ProcessedDate.Value.ToString("yyyy-MM-dd HH:mm")</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (p.CanBeApproved())
+                                    {
+                                        <button class="btn btn-sm btn-success"
+                                                onclick="showApprove(@p.PaymentId, @p.Amount)">
+                                            <i class="bi bi-check-circle"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger"
+                                                onclick="showReject(@p.PaymentId)">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    }
+                                    @if (isAdmin)
+                                    {
+                                        <a href="@Url.EAction(QueryCrypto, "AdminEdit", new { id = p.PaymentId })" class="btn btn-sm btn-warning" title="Admin correction">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                    }
+                                    @if (!p.CanBeApproved() && !isAdmin)
+                                    {
+                                        <small class="text-muted">@p.DealerRemarks</small>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info"><i class="bi bi-info-circle"></i> No payments found.</div>
+        }
+        <partial name="_Pagination" />
+    </div>
+</div>
+
+<!-- Approve Modal -->
+<div class="modal fade" id="approveModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Approve Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-action="Approve">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <input type="hidden" name="id" id="approveId" />
+                    <p>Approving payment of <strong id="approveAmtDisplay">₹0</strong></p>
+                    <div class="form-group mb-3">
+                        <label class="fw-bold">Remarks <span class="text-danger">*</span></label>
+                        <textarea name="remarks" class="form-control" rows="2" required></textarea>
+                    </div>
+                    <div class="alert alert-success mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        Amount will be credited to the subdealer balance on approval.
+                    </div>
+                    <input type="hidden" name="applyToBalance" value="true" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Approve</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Reject Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-action="Reject">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <input type="hidden" name="id" id="rejectId" />
+                    <div class="form-group">
+                        <label class="fw-bold">Rejection Reason <span class="text-danger">*</span></label>
+                        <textarea name="remarks" class="form-control" rows="2" required
+                                  placeholder="Enter reason for rejection..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Reject</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function showApprove(id, amount) {
+            document.getElementById('approveId').value = id;
+            document.getElementById('approveAmtDisplay').textContent = `₹${parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+            new bootstrap.Modal(document.getElementById('approveModal')).show();
+        }
+        function showReject(id) {
+            document.getElementById('rejectId').value = id;
+            new bootstrap.Modal(document.getElementById('rejectModal')).show();
+        }
+    </script>
+}

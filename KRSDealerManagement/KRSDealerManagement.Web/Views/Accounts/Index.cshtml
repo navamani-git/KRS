@@ -1,0 +1,152 @@
+@model IEnumerable<KRSDealerManagement.Application.DTOs.SubdealerAccountDto>
+@using KRSDealerManagement.Application.DTOs
+@{
+    ViewData["Title"] = "Balances";
+    var subdealers = ViewBag.Subdealers as IEnumerable<UserDto>;
+}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h1 class="m-0"><i class="bi bi-person-badge"></i> Balances</h1>
+        <p class="text-muted">View subdealer balances and statements</p>
+    </div>
+    <div class="col-md-6 text-end">
+        <partial name="_ExportExcel" />
+    </div>
+</div>
+
+<!-- Filter by Subdealer -->
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get">
+            <div class="row">
+                <div class="col-md-5">
+                    <select name="subdealerId" class="form-select">
+                        <option value="">All Subdealers</option>
+                        @if (subdealers != null)
+                        {
+                            @foreach (var s in subdealers)
+                            {
+                                <option value="@s.UserId"
+                                        selected="@(ViewBag.SelectedSubdealerId?.ToString() == s.UserId.ToString())">
+                                    @s.GetFullName() — @s.LastName
+                                </option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-filter"></i> Filter</button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary"><i class="bi bi-arrow-clockwise"></i> Reset</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Stats -->
+@if ((ViewBag.GrandTotalAccounts as int? ?? 0) > 0)
+{
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <div class="info-box bg-primary">
+                <span class="info-box-icon"><i class="bi bi-person-badge"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text text-white">Total Accounts</span>
+                    <span class="info-box-number text-white">@(ViewBag.GrandTotalAccounts ?? ViewBag.TotalItems ?? 0)</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="info-box bg-success">
+                <span class="info-box-icon"><i class="bi bi-currency-rupee"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text text-white">Total Balance</span>
+                    <span class="info-box-number text-white">₹@(((decimal)(ViewBag.GrandCurrent ?? 0m)).ToString("N0"))</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="info-box bg-info">
+                <span class="info-box-icon"><i class="bi bi-unlock"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text text-white">Available</span>
+                    <span class="info-box-number text-white">₹@(((decimal)(ViewBag.GrandAvailable ?? 0m)).ToString("N0"))</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="info-box bg-warning">
+                <span class="info-box-icon"><i class="bi bi-lock"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text text-white">Reserved</span>
+                    <span class="info-box-number text-white">₹@(((decimal)(ViewBag.GrandReserved ?? 0m)).ToString("N0"))</span>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Accounts Table -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="bi bi-table"></i> Balances (@(ViewBag.TotalItems ?? Model.Count()))</h3>
+    </div>
+    <div class="card-body">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-striped table-hover table-sm">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Subdealer</th>
+                            <th class="text-end">Current Balance</th>
+                            <th class="text-end">Reserved</th>
+                            <th class="text-end">Available</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var acc in Model.OrderBy(a => a.SubdealerName))
+                        {
+                            <tr>
+                                <td><strong>@acc.SubdealerName</strong></td>
+                                <td class="text-end">₹@acc.CurrentBalance.ToString("N2")</td>
+                                <td class="text-end text-warning">₹@acc.ReservedAmount.ToString("N2")</td>
+                                <td class="text-end text-success fw-bold">₹@acc.AvailableBalance.ToString("N2")</td>
+                                <td>
+                                    <span class="badge @(acc.IsActive ? "bg-success" : "bg-danger")">
+                                        @(acc.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="@Url.EAction(QueryCrypto, "Statement", new { id = acc.AccountId })"
+                                       class="btn btn-sm btn-info" title="Statement">
+                                        <i class="bi bi-file-text"></i> Statement
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-light fw-bold">
+                        <tr>
+                            <td>Grand Total</td>
+                            <td class="text-end">₹@(((decimal)(ViewBag.GrandCurrent ?? 0m)).ToString("N2"))</td>
+                            <td class="text-end text-warning">₹@(((decimal)(ViewBag.GrandReserved ?? 0m)).ToString("N2"))</td>
+                            <td class="text-end text-success">₹@(((decimal)(ViewBag.GrandAvailable ?? 0m)).ToString("N2"))</td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No accounts found.
+            </div>
+        }
+        <partial name="_Pagination" />
+    </div>
+</div>
