@@ -10,10 +10,8 @@ namespace KRSDealerManagement.Application.Commands
     {
         public int ModelId { get; set; }
         public decimal CommissionAmount { get; set; }
-        public int StartMonth { get; set; }
-        public int StartYear { get; set; }
-        public int? ExpiryMonth { get; set; }
-        public int? ExpiryYear { get; set; }
+        public DateTime EffectiveFrom { get; set; }
+        public DateTime EffectiveTo { get; set; }
         public string? Notes { get; set; }
         public int CreatedBy { get; set; }
     }

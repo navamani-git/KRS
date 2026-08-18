@@ -15,22 +15,34 @@ namespace KRSDealerManagement.Web.Controllers
         private readonly IMediator _mediator;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IStatusLookupService _statuses;
+        private readonly ICommissionRateService _commissionRates;
 
-        public CommissionsController(IMediator mediator, IUnitOfWork unitOfWork, IStatusLookupService statuses)
+        public CommissionsController(
+            IMediator mediator,
+            IUnitOfWork unitOfWork,
+            IStatusLookupService statuses,
+            ICommissionRateService commissionRates)
         {
             _mediator = mediator;
             _unitOfWork = unitOfWork;
             _statuses = statuses;
+            _commissionRates = commissionRates;
         }
 
         // GET: Commissions (Admin - Commission Rates)
         [AuthorizeRole(1)]
-        public async Task<IActionResult> Index(int? modelId, bool? activeOnly, int? page)
+        public async Task<IActionResult> Index(int? modelId, bool? activeOnly, DateTime? effectiveFrom, DateTime? effectiveTo, int? page)
         {
+            var now = DateTime.Now;
+            var filterFrom = effectiveFrom?.Date ?? new DateTime(now.Year, now.Month, 1);
+            var filterTo = effectiveTo?.Date ?? new DateTime(now.Year, now.Month, DateTime.DaysInMonth(now.Year, now.Month));
+
             var rates = await _mediator.Send(new GetCommissionRatesQuery
             {
                 ModelId = modelId,
-                ActiveOnly = activeOnly
+                ActiveOnly = activeOnly,
+                EffectiveFrom = filterFrom,
+                EffectiveTo = filterTo
             });
 
             var models = await _mediator.Send(new GetVehicleModelsQuery { IsActive = true });
@@ -39,24 +51,59 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.Models = models;
             ViewBag.SelectedModelId = modelId;
             ViewBag.ActiveOnly = activeOnly;
+            ViewBag.EffectiveFrom = filterFrom.ToString("yyyy-MM-dd");
+            ViewBag.EffectiveTo = filterTo.ToString("yyyy-MM-dd");
 
             return View(pageItems);
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         [AuthorizeRole(1)]
-        public async Task<IActionResult> Export(int? modelId, bool? activeOnly)
+        public async Task<IActionResult> CarryForward()
         {
+            var userId = SessionHelper.GetUserId(HttpContext.Session);
+            if (!userId.HasValue) return RedirectToAction("Login", "Account");
+
+            try
+            {
+                var count = await _mediator.Send(new CarryForwardCommissionRatesCommand
+                {
+                    CreatedBy = userId.Value
+                });
+
+                TempData[count > 0 ? "Success" : "Info"] = count > 0
+                    ? $"Carried forward {count} commission rate(s) for the current month."
+                    : "No models needed carry-forward — current month already has rates for all applicable models.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        [AuthorizeRole(1)]
+        public async Task<IActionResult> Export(int? modelId, bool? activeOnly, DateTime? effectiveFrom, DateTime? effectiveTo)
+        {
+            var now = DateTime.Now;
+            var filterFrom = effectiveFrom?.Date ?? new DateTime(now.Year, now.Month, 1);
+            var filterTo = effectiveTo?.Date ?? new DateTime(now.Year, now.Month, DateTime.DaysInMonth(now.Year, now.Month));
+
             var rates = (await _mediator.Send(new GetCommissionRatesQuery
             {
                 ModelId = modelId,
-                ActiveOnly = activeOnly
+                ActiveOnly = activeOnly,
+                EffectiveFrom = filterFrom,
+                EffectiveTo = filterTo
             })).ToList();
-            var headers = new[] { "Model", "Amount", "Start", "Expiry", "Notes", "Created" };
+            var headers = new[] { "Model", "Amount", "Effective From", "Effective To", "Notes", "Created" };
             var rows = rates.Select(r => (IReadOnlyList<object?>)new List<object?>
             {
                 r.ModelName, r.CommissionAmount,
-                $"{r.StartYear}-{r.StartMonth:D2}",
-                r.ExpiryYear.HasValue && r.ExpiryMonth.HasValue ? $"{r.ExpiryYear}-{r.ExpiryMonth:D2}" : "Ongoing",
+                r.EffectiveFrom.ToString("yyyy-MM-dd"),
+                r.EffectiveTo.ToString("yyyy-MM-dd"),
                 r.Notes ?? "", r.CreatedDate
             });
             return ExcelExportHelper.ToFileResult(this, $"commission_rates_{DateTime.Now:yyyyMMdd}.xlsx", headers, rows, "Commission Rates");
@@ -68,8 +115,9 @@ namespace KRSDealerManagement.Web.Controllers
         {
             var models = await _mediator.Send(new GetVehicleModelsQuery { IsActive = true });
             ViewBag.Models = models;
-            ViewBag.CurrentMonth = DateTime.Now.Month;
-            ViewBag.CurrentYear = DateTime.Now.Year;
+            var now = DateTime.Now;
+            ViewBag.EffectiveFrom = new DateTime(now.Year, now.Month, 1).ToString("yyyy-MM-dd");
+            ViewBag.EffectiveTo = new DateTime(now.Year, now.Month, DateTime.DaysInMonth(now.Year, now.Month)).ToString("yyyy-MM-dd");
             return View();
         }
 
@@ -78,7 +126,7 @@ namespace KRSDealerManagement.Web.Controllers
         [ValidateAntiForgeryToken]
         [AuthorizeRole(1)]
         public async Task<IActionResult> CreateRate(int modelId, decimal commissionAmount,
-            int startMonth, int startYear, int? expiryMonth, int? expiryYear, string notes)
+            DateTime effectiveFrom, DateTime effectiveTo, string notes)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
@@ -89,16 +137,20 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction(nameof(CreateRate));
             }
 
+            if (effectiveTo.Date < effectiveFrom.Date)
+            {
+                TempData["Error"] = "Effective to must be on or after effective from.";
+                return RedirectToAction(nameof(CreateRate));
+            }
+
             try
             {
                 await _mediator.Send(new CreateCommissionRateCommand
                 {
                     ModelId = modelId,
                     CommissionAmount = commissionAmount,
-                    StartMonth = startMonth,
-                    StartYear = startYear,
-                    ExpiryMonth = expiryMonth == 0 ? null : expiryMonth,
-                    ExpiryYear = expiryYear == 0 ? null : expiryYear,
+                    EffectiveFrom = effectiveFrom.Date,
+                    EffectiveTo = effectiveTo.Date,
                     Notes = notes?.Trim(),
                     CreatedBy = userId.Value
                 });
@@ -131,17 +183,11 @@ namespace KRSDealerManagement.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AuthorizeRole(1)]
-        public async Task<IActionResult> EditRate(int id, decimal commissionAmount, int? expiryMonth, int? expiryYear, string? notes)
+        public async Task<IActionResult> EditRate(int id, decimal commissionAmount,
+            DateTime effectiveFrom, DateTime effectiveTo, string? notes)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
-
-            var row = await _unitOfWork.CommissionRates.GetByIdAsync(id);
-            if (row == null)
-            {
-                TempData["Error"] = "Commission rate not found.";
-                return RedirectToAction(nameof(Index));
-            }
 
             if (commissionAmount <= 0)
             {
@@ -149,14 +195,33 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction(nameof(EditRate), new { id });
             }
 
-            row.CommissionAmount = commissionAmount;
-            row.ExpiryMonth = expiryMonth == 0 ? null : expiryMonth;
-            row.ExpiryYear = expiryYear == 0 ? null : expiryYear;
-            row.Notes = notes?.Trim();
-            row.ModifiedBy = userId.Value;
-            row.ModifiedDate = DateTime.UtcNow;
-            await _unitOfWork.CommissionRates.UpdateAsync(row);
-            TempData["Success"] = "Commission rate updated.";
+            if (effectiveTo.Date < effectiveFrom.Date)
+            {
+                TempData["Error"] = "Effective to must be on or after effective from.";
+                return RedirectToAction(nameof(EditRate), new { id });
+            }
+
+            try
+            {
+                var result = await _mediator.Send(new UpdateCommissionRateCommand
+                {
+                    CommissionRateId = id,
+                    CommissionAmount = commissionAmount,
+                    EffectiveFrom = effectiveFrom.Date,
+                    EffectiveTo = effectiveTo.Date,
+                    Notes = notes?.Trim(),
+                    ModifiedBy = userId.Value
+                });
+
+                TempData[result ? "Success" : "Error"] = result
+                    ? "Commission rate updated."
+                    : "Commission rate not found.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+
             return RedirectToAction(nameof(Index));
         }
 
@@ -172,8 +237,11 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            row.ExpiryMonth = DateTime.UtcNow.Month;
-            row.ExpiryYear = DateTime.UtcNow.Year;
+            row.EffectiveTo = DateTime.UtcNow.Date;
+            if (row.EffectiveTo < row.EffectiveFrom.Date)
+                row.EffectiveTo = row.EffectiveFrom.Date;
+            row.ExpiryMonth = row.EffectiveTo.Month;
+            row.ExpiryYear = row.EffectiveTo.Year;
             row.ModifiedDate = DateTime.UtcNow;
             await _unitOfWork.CommissionRates.UpdateAsync(row);
             TempData["Success"] = "Commission rate ended.";
@@ -185,13 +253,46 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeMenu(MenuKeys.CommissionSubmit)]
         public async Task<IActionResult> Submit()
         {
-            var models = await _mediator.Send(new GetVehicleModelsQuery { IsActive = true });
-            var colors = await _mediator.Send(new GetVehicleColorsQuery { IsActive = true });
-            ViewBag.Models = models;
-            ViewBag.Colors = colors;
-            ViewBag.CurrentMonth = DateTime.Now.Month;
-            ViewBag.CurrentYear = DateTime.Now.Year;
-            return View();
+            var userId = SessionHelper.GetUserId(HttpContext.Session);
+            if (!userId.HasValue) return RedirectToAction("Login", "Account");
+
+            var now = DateTime.Now;
+            var monthStart = new DateTime(now.Year, now.Month, 1);
+            var monthEnd = new DateTime(now.Year, now.Month, DateTime.DaysInMonth(now.Year, now.Month));
+
+            var pending = await _mediator.Send(new GetCommissionPreviewQuery
+            {
+                SubdealerId = userId.Value,
+                PendingOnly = true
+            });
+
+            var rates = await _mediator.Send(new GetCommissionRatesQuery
+            {
+                EffectiveFrom = monthStart,
+                EffectiveTo = monthEnd,
+                ActiveOnly = true
+            });
+
+            ViewBag.Pending = pending;
+            ViewBag.CommissionRates = rates;
+            ViewBag.RatePeriodLabel = $"{monthStart:MMMM yyyy}";
+
+            return View(pending);
+        }
+
+        [AuthorizeRole(2)]
+        [AuthorizeMenuAny(MenuKeys.CommissionInvoiced, MenuKeys.CommissionSubmit)]
+        public async Task<IActionResult> InvoicedVehicles()
+        {
+            var userId = SessionHelper.GetUserId(HttpContext.Session);
+            if (!userId.HasValue) return RedirectToAction("Login", "Account");
+
+            var rows = await _mediator.Send(new GetCommissionPreviewQuery
+            {
+                SubdealerId = userId.Value
+            });
+
+            return View(rows);
         }
 
         // GET: Commissions/ValidateChassis (AJAX — subdealer chassis check)
@@ -223,44 +324,124 @@ namespace KRSDealerManagement.Web.Controllers
             if (booking == null || !booking.InvoiceDate.HasValue)
                 return Json(new { success = false, message = "Vehicle must be invoiced by the dealer before commission can be submitted." });
 
+            if (!booking.RegistrationDate.HasValue)
+                return Json(new { success = false, message = "RTO registration date must be recorded by the dealer before commission can be submitted." });
+
+            var invoiceDate = booking.InvoiceDate.Value.Date;
+            var rate = await _commissionRates.GetRateAsOfAsync(vehicle.ModelId, invoiceDate);
+            if (rate == null)
+                return Json(new
+                {
+                    success = false,
+                    message = $"No commission rate found for {vehicle.ModelName} effective on {invoiceDate:yyyy-MM-dd}."
+                });
+
             return Json(new
             {
                 success = true,
-                message = "Chassis validated. Vehicle invoiced on " + booking.InvoiceDate.Value.ToString("yyyy-MM-dd") + ".",
+                message = $"Chassis validated. Invoice date: {invoiceDate:yyyy-MM-dd}.",
                 vehicleId = vehicle.VehicleId,
                 modelName = vehicle.ModelName,
                 colorName = vehicle.ColorName,
-                invoiceDate = booking.InvoiceDate.Value.ToString("yyyy-MM-dd")
+                invoiceDate = invoiceDate.ToString("yyyy-MM-dd"),
+                month = invoiceDate.Month,
+                year = invoiceDate.Year,
+                amount = rate.CommissionAmount
             });
         }
 
-        // GET: Commissions/GetRate?modelId=1&month=1&year=2026 (AJAX)
+        // GET: Commissions/GetRate?modelId=1&invoiceDate=2026-01-10 (AJAX)
         [AuthorizeRole(2)]
-        public async Task<IActionResult> GetRate(int modelId, int month, int year)
+        public async Task<IActionResult> GetRate(int modelId, DateTime? invoiceDate, int? month, int? year)
         {
-            var rates = await _mediator.Send(new GetCommissionRatesQuery { ModelId = modelId });
-            var rate = rates.FirstOrDefault(r => r.IsEffectiveForMonthYear(month, year));
+            if (invoiceDate.HasValue)
+            {
+                var rate = await _commissionRates.GetRateAsOfAsync(modelId, invoiceDate.Value);
+                if (rate == null)
+                    return Json(new { success = false, message = $"No commission rate found for invoice date {invoiceDate:yyyy-MM-dd}." });
 
-            if (rate == null)
+                return Json(new { success = true, amount = rate.CommissionAmount });
+            }
+
+            if (!month.HasValue || !year.HasValue)
+                return Json(new { success = false, message = "Invoice date or month/year is required." });
+
+            var rates = await _mediator.Send(new GetCommissionRatesQuery { ModelId = modelId });
+            var legacyRate = rates.FirstOrDefault(r => r.IsEffectiveForMonthYear(month.Value, year.Value));
+
+            if (legacyRate == null)
                 return Json(new { success = false, message = "No commission rate found for this model and month." });
 
-            return Json(new { success = true, amount = rate.CommissionAmount });
+            return Json(new { success = true, amount = legacyRate.CommissionAmount });
         }
 
-        // POST: Commissions/Submit (Subdealer)
+        // GET: Commissions/Preview?fromDate&toDate (AJAX — cross-verification grid)
+        [AuthorizeRole(2)]
+        public async Task<IActionResult> Preview(DateTime? fromDate, DateTime? toDate)
+        {
+            var userId = SessionHelper.GetUserId(HttpContext.Session);
+            if (!userId.HasValue) return Unauthorized();
+
+            var from = fromDate?.Date ?? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            var to = toDate?.Date ?? DateTime.Now.Date;
+
+            var rows = await _mediator.Send(new GetCommissionPreviewQuery
+            {
+                SubdealerId = userId.Value,
+                FromDate = from,
+                ToDate = to
+            });
+
+            return Json(rows.Select(r => new
+            {
+                r.ChassisNumber,
+                r.ModelName,
+                r.ColorName,
+                invoiceDate = r.InvoiceDate.ToString("yyyy-MM-dd"),
+                r.Month,
+                r.Year,
+                applicableRate = r.ApplicableRate,
+                r.CommissionStatus,
+                submittedAmount = r.SubmittedAmount
+            }));
+        }
+
+        // POST: Commissions/SubmitRow (Subdealer — submit one vehicle from grid)
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.CommissionSubmit)]
-        public async Task<IActionResult> Submit(int modelId, int colorId, string chassisNumber,
-            int month, int year, decimal commissionAmount)
+        public async Task<IActionResult> SubmitRow(int vehicleId)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
-            if (string.IsNullOrWhiteSpace(chassisNumber))
+            var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(vehicleId);
+            if (vehicle == null || vehicle.SubdealerId != userId.Value)
             {
-                TempData["Error"] = "Chassis number is required.";
+                TempData["Error"] = "Vehicle not found or not allocated to your account.";
+                return RedirectToAction(nameof(Submit));
+            }
+
+            var booking = (await _unitOfWork.VehicleBookings.GetAllAsync())
+                .FirstOrDefault(b => b.VehicleId == vehicleId);
+            if (booking?.InvoiceDate == null)
+            {
+                TempData["Error"] = "Vehicle must be invoiced before commission can be submitted.";
+                return RedirectToAction(nameof(Submit));
+            }
+
+            if (booking.RegistrationDate == null)
+            {
+                TempData["Error"] = "RTO registration date must be recorded before commission can be submitted.";
+                return RedirectToAction(nameof(Submit));
+            }
+
+            var invoice = booking.InvoiceDate.Value.Date;
+            var rate = await _commissionRates.GetRateAsOfAsync(vehicle.ModelId, invoice);
+            if (rate == null)
+            {
+                TempData["Error"] = $"No commission rate configured for invoice date {invoice:yyyy-MM-dd}.";
                 return RedirectToAction(nameof(Submit));
             }
 
@@ -269,23 +450,23 @@ namespace KRSDealerManagement.Web.Controllers
                 await _mediator.Send(new SubmitCommissionCommand
                 {
                     SubdealerId = userId.Value,
-                    ChassisNumber = chassisNumber.Trim(),
-                    ModelId = modelId,
-                    ColorId = colorId,
-                    Month = month,
-                    Year = year,
-                    CommissionAmount = commissionAmount,
+                    ChassisNumber = vehicle.ChassisNumber ?? "",
+                    ModelId = vehicle.ModelId,
+                    ColorId = vehicle.ColorId,
+                    Month = invoice.Month,
+                    Year = invoice.Year,
+                    CommissionAmount = rate.CommissionAmount,
                     SubmittedBy = userId.Value
                 });
 
-                TempData["Success"] = $"Commission of ₹{commissionAmount:N2} submitted successfully for chassis {chassisNumber}!";
-                return RedirectToAction(nameof(MyCommissions));
+                TempData["Success"] = $"Commission of ₹{rate.CommissionAmount:N2} submitted for chassis {vehicle.ChassisNumber}. Pending admin approval.";
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Error: {ex.Message}";
-                return RedirectToAction(nameof(Submit));
+                TempData["Error"] = ex.Message;
             }
+
+            return RedirectToAction(nameof(Submit));
         }
 
         // GET: Commissions/Approvals (Admin — review submitted commissions)
@@ -405,6 +586,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         // GET: Commissions/MyCommissions (Subdealer)
         [AuthorizeRole(2)]
+        [AuthorizeMenuAny(MenuKeys.CommissionSubmit, MenuKeys.CommissionView)]
         public async Task<IActionResult> MyCommissions()
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);

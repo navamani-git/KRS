@@ -1,6 +1,8 @@
 @model KRSDealerManagement.Application.DTOs.VehicleModelDto
 @{
     ViewData["Title"] = "Edit Vehicle Model";
+    var allColors = ViewBag.AllColors as IEnumerable<KRSDealerManagement.Application.DTOs.VehicleColorDto>
+        ?? Enumerable.Empty<KRSDealerManagement.Application.DTOs.VehicleColorDto>();
 }
 
 <!-- Page Header -->
@@ -60,6 +62,8 @@
                         </div>
                         <small class="text-muted">Inactive models will not be available for new orders</small>
                     </div>
+
+                    <partial name="_ModelColorCheckboxes" model="allColors" />
 
                     <div class="form-group mb-3">
                         <label for="remarks" class="form-label fw-bold">

@@ -1,8 +1,8 @@
 using MediatR;
 using KRSDealerManagement.Application.DTOs;
 using KRSDealerManagement.Application.Queries;
+using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Repositories;
-using KRSDealerManagement.Shared.Constants;
 
 namespace KRSDealerManagement.Application.Handlers.Queries
 {
@@ -14,44 +14,72 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
         public async Task<SubdealerDetailDto?> Handle(GetSubdealerDetailQuery request, CancellationToken cancellationToken)
         {
-            var user = await _unitOfWork.Users.GetByIdAsync(request.UserId);
-            if (user == null || user.UserRole != 2) return null;
+            int? orgId = request.SubDealerId;
+            if (!orgId.HasValue && request.UserId.HasValue)
+                orgId = await SubdealerOrgService.GetOrgIdForUserAsync(_unitOfWork, request.UserId.Value);
 
-            var assignment = (await _unitOfWork.UserOrgRoles.GetAllAsync())
-                .Where(a => a.UserId == request.UserId)
-                .OrderByDescending(a => a.IsActive)
-                .ThenByDescending(a => a.IsPrimary)
-                .FirstOrDefault();
-            if (assignment == null) return null;
+            if (!orgId.HasValue) return null;
 
-            if (request.DealershipId.HasValue && assignment.DealershipId != request.DealershipId)
+            var org = await _unitOfWork.SubDealers.GetByIdAsync(orgId.Value);
+            if (org == null) return null;
+
+            if (request.DealershipId.HasValue && org.DealershipId != request.DealershipId)
                 return null;
 
-            var org = assignment.SubDealerId.HasValue
-                ? await _unitOfWork.SubDealers.GetByIdAsync(assignment.SubDealerId.Value)
-                : null;
+            var dealership = await _unitOfWork.Dealerships.GetByIdAsync(org.DealershipId);
+            var loginAssignments = await SubdealerOrgService.GetLoginsForOrgAsync(_unitOfWork, org.SubDealerId);
+            var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
+            var accounts = (await _unitOfWork.SubdealerAccounts.GetAllAsync()).ToList();
 
-            var dealership = assignment.DealershipId.HasValue
-                ? await _unitOfWork.Dealerships.GetByIdAsync(assignment.DealershipId.Value)
-                : null;
+            var logins = new List<SubdealerLoginDto>();
+            foreach (var assignment in loginAssignments)
+            {
+                if (!users.TryGetValue(assignment.UserId, out var user)) continue;
+
+                var permAccount = accounts
+                    .Where(a => a.SubdealerId == user.UserId && a.IsActive)
+                    .OrderByDescending(a => string.Equals(a.AccountType, "Login", StringComparison.OrdinalIgnoreCase) ? 1 : 0)
+                    .FirstOrDefault();
+                if (permAccount == null) continue;
+
+                logins.Add(new SubdealerLoginDto
+                {
+                    UserId = user.UserId,
+                    Username = user.Username,
+                    DisplayName = user.FirstName,
+                    PasswordHash = user.PasswordHash,
+                    IsPrimary = assignment.IsPrimary,
+                    IsActive = user.IsActive && assignment.IsActive,
+                    PermissionAccountId = permAccount.AccountId,
+                    CreatedDate = user.CreatedDate
+                });
+            }
+
+            var primaryUserId = await SubdealerOrgService.GetPrimaryUserIdForOrgAsync(_unitOfWork, org.SubDealerId);
+            int? walletAccountId = null;
+            if (primaryUserId.HasValue)
+            {
+                var wallet = await SubdealerOrgService.GetWalletAccountAsync(_unitOfWork, primaryUserId.Value);
+                walletAccountId = wallet?.AccountId;
+            }
 
             return new SubdealerDetailDto
             {
-                UserId = user.UserId,
-                SubDealerId = org?.SubDealerId,
-                DealershipId = assignment.DealershipId ?? org?.DealershipId ?? 0,
+                SubDealerId = org.SubDealerId,
+                DealershipId = org.DealershipId,
                 DealershipName = dealership?.DealershipName,
-                Username = user.Username,
-                PasswordHash = user.PasswordHash,
-                SubdealerName = org?.SubDealerName ?? user.FirstName,
-                Location = org?.Location ?? user.LastName ?? "",
-                Email = org?.Email ?? user.Email,
-                PrimaryPhone = org?.PrimaryPhone ?? user.PhoneNumber ?? "",
-                SecondaryPhone = org?.SecondaryPhone,
-                SalesRepMobile = org?.SalesRepMobile,
-                ServiceRepMobile = org?.ServiceRepMobile,
-                IsActive = user.IsActive,
-                CreatedDate = user.CreatedDate
+                SubdealerName = org.SubDealerName,
+                Location = org.Location ?? "",
+                Email = org.Email ?? "",
+                PrimaryPhone = org.PrimaryPhone ?? "",
+                SecondaryPhone = org.SecondaryPhone,
+                SalesRepMobile = org.SalesRepMobile,
+                ServiceRepMobile = org.ServiceRepMobile,
+                IsActive = org.IsActive,
+                CreatedDate = org.CreatedDate,
+                PrimaryUserId = primaryUserId,
+                WalletAccountId = walletAccountId,
+                Logins = logins
             };
         }
     }

@@ -10,3 +10,16 @@ D:\KRS\KRSDealerManagement\KRSDealerManagement.Shared\obj\Release\net8.0\KRSDeal
 D:\KRS\KRSDealerManagement\KRSDealerManagement.Shared\obj\Release\net8.0\refint\KRSDealerManagement.Shared.dll
 D:\KRS\KRSDealerManagement\KRSDealerManagement.Shared\obj\Release\net8.0\KRSDealerManagement.Shared.pdb
 D:\KRS\KRSDealerManagement\KRSDealerManagement.Shared\obj\Release\net8.0\ref\KRSDealerManagement.Shared.dll
+D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Shared\bin\Release\net8.0\KRSDealerManagement.Shared.deps.json
+D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Shared\bin\Release\net8.0\KRSDealerManagement.Shared.dll
+D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Shared\bin\Release\net8.0\KRSDealerManagement.Shared.pdb
+D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Shared\obj\Release\net8.0\KRSDealerManagement.Shared.csproj.AssemblyReference.cache
+D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Shared\obj\Release\net8.0\KRSDealerManagement.Shared.GeneratedMSBuildEditorConfig.editorconfig
+D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Shared\obj\Release\net8.0\KRSDealerManagement.Shared.AssemblyInfoInputs.cache
+D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Shared\obj\Release\net8.0\KRSDealerManagement.Shared.AssemblyInfo.cs
+D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Shared\obj\Release\net8.0\KRSDealerManagement.Shared.csproj.CoreCompileInputs.cache
+D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Shared\obj\Release\net8.0\KRSDealerManagement.Shared.sourcelink.json
+D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Shared\obj\Release\net8.0\KRSDealerManagement.Shared.dll
+D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Shared\obj\Release\net8.0\refint\KRSDealerManagement.Shared.dll
+D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Shared\obj\Release\net8.0\KRSDealerManagement.Shared.pdb
+D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Shared\obj\Release\net8.0\ref\KRSDealerManagement.Shared.dll

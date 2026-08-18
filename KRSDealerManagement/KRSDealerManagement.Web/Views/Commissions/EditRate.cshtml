@@ -16,30 +16,34 @@
         @Html.AntiForgeryToken()
         <input type="hidden" name="id" value="@Model.CommissionRateId" />
         <div class="card-body">
-            <p><strong>@modelName</strong> · from @Model.StartMonth/@Model.StartYear</p>
+            <p class="mb-3"><strong>@modelName</strong></p>
+
             <div class="mb-3">
                 <label class="fw-bold">Commission Amount (₹) <span class="text-danger">*</span></label>
                 <input type="number" name="commissionAmount" class="form-control" step="0.01" min="0.01" value="@Model.CommissionAmount" required />
             </div>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="fw-bold">Expiry Month</label>
-                    <select name="expiryMonth" class="form-select">
-                        <option value="0">None</option>
-                        @for (int m = 1; m <= 12; m++)
-                        {
-                            <option value="@m" selected="@(Model.ExpiryMonth == m)">@m</option>
-                        }
-                    </select>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="fw-bold">Effective From <span class="text-danger">*</span></label>
+                    <input type="date" name="effectiveFrom" class="form-control"
+                           value="@Model.EffectiveFrom.ToString("yyyy-MM-dd")" required />
                 </div>
-                <div class="col-md-6 mb-3">
-                    <label class="fw-bold">Expiry Year</label>
-                    <input type="number" name="expiryYear" class="form-control" value="@Model.ExpiryYear" min="2020" max="2040" />
+                <div class="col-md-6">
+                    <label class="fw-bold">Effective To <span class="text-danger">*</span></label>
+                    <input type="date" name="effectiveTo" class="form-control"
+                           value="@Model.EffectiveTo.ToString("yyyy-MM-dd")" required />
                 </div>
             </div>
+
             <div class="mb-3">
                 <label class="fw-bold">Notes</label>
                 <textarea name="notes" class="form-control" rows="2">@Model.Notes</textarea>
+            </div>
+
+            <div class="alert alert-info mb-0">
+                <i class="bi bi-info-circle"></i>
+                Overlapping date ranges for the same model are not allowed. Adjacent ranges (e.g. 01–15 then 15–30) are permitted.
             </div>
         </div>
         <div class="card-footer"><button type="submit" class="btn btn-primary">Save</button></div>

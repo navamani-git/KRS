@@ -21,6 +21,7 @@ namespace KRSDealerManagement.Shared.Constants
         public const string Commissions = "commissions";
         public const string CommissionSubmit = "commissions_submit";
         public const string CommissionView = "commissions_view";
+        public const string CommissionInvoiced = "commissions_invoiced";
         public const string CommissionApprove = "commissions_approve";
 
         // Vehicles (Subdealer features)
@@ -56,7 +57,7 @@ namespace KRSDealerManagement.Shared.Constants
             {
                 Dashboard, Home,
                 PurchaseOrders, PurchaseOrderCreate, PurchaseOrderView, PurchaseOrderEdit, PurchaseOrderApprove,
-                Commissions, CommissionSubmit, CommissionView, CommissionApprove,
+                Commissions, CommissionSubmit, CommissionView, CommissionInvoiced, CommissionApprove,
                 Vehicles, VehiclesView, VehiclesCreate, VehiclesEdit, MyReturns,
                 Account, AccountBalance, AccountTransactions, AccountStatements, MyPayments, Reports,
                 AdminPanel, SubdealerManagement, AccountManagement, PermissionManagement,
@@ -137,6 +138,16 @@ namespace KRSDealerManagement.Shared.Constants
                         },
                         new MenuItemDefinition
                         {
+                            Key = CommissionInvoiced, Name = GetDisplayName(CommissionInvoiced),
+                            DefaultAccessible = true, Controller = "Commissions", Action = "InvoicedVehicles", Icon = "bi-table"
+                        },
+                        new MenuItemDefinition
+                        {
+                            Key = CommissionView, Name = GetDisplayName(CommissionView),
+                            DefaultAccessible = true, Controller = "Commissions", Action = "MyCommissions", Icon = "bi-list-check"
+                        },
+                        new MenuItemDefinition
+                        {
                             Key = MyPayments, Name = GetDisplayName(MyPayments),
                             DefaultAccessible = true, Controller = "Payments", Action = "MyPayments", Icon = "bi-wallet2"
                         }
@@ -183,6 +194,7 @@ namespace KRSDealerManagement.Shared.Constants
                 PurchaseOrderApprove => "Approve Purchase Orders",
                 Commissions => "Commissions",
                 CommissionSubmit => "Submit Commission",
+                CommissionInvoiced => "Invoiced Vehicles",
                 CommissionView => "View Commissions",
                 CommissionApprove => "Approve Commissions",
                 Vehicles => "Vehicles",

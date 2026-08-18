@@ -5,10 +5,10 @@
 @{
     ViewData["Title"] = "Admin Vehicle Correction";
     var models = ViewBag.Models as IEnumerable<VehicleModelDto> ?? Enumerable.Empty<VehicleModelDto>();
-    var colors = ViewBag.Colors as IEnumerable<VehicleColorDto> ?? Enumerable.Empty<VehicleColorDto>();
     var vehicleStatuses = ViewBag.VehicleStatuses as IEnumerable<StatusLookup> ?? Enumerable.Empty<StatusLookup>();
     var bookingStatuses = ViewBag.BookingStatuses as IEnumerable<StatusLookup> ?? Enumerable.Empty<StatusLookup>();
     var booking = ViewBag.Booking as VehicleBooking;
+    var modelColorMapJson = ViewBag.ModelColorMapJson as string ?? "{}";
 }
 
 <div class="row mb-3">
@@ -34,7 +34,7 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Model <span class="text-danger">*</span></label>
-                            <select name="modelId" class="form-select" required>
+                            <select name="modelId" id="modelId" class="form-select" required>
                                 @foreach (var m in models)
                                 {
                                     <option value="@m.ModelId" selected="@(m.ModelId == Model.ModelId)">@m.ModelName</option>
@@ -43,11 +43,8 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Color <span class="text-danger">*</span></label>
-                            <select name="colorId" class="form-select" required>
-                                @foreach (var c in colors)
-                                {
-                                    <option value="@c.ColorId" selected="@(c.ColorId == Model.ColorId)">@c.GetColorDisplay()</option>
-                                }
+                            <select name="colorId" id="colorId" class="form-select" required>
+                                <option value="">-- Select --</option>
                             </select>
                         </div>
                     </div>
@@ -155,3 +152,16 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="~/js/model-color-filter.js"></script>
+    <script>
+        KrsModelColors.init(@Html.Raw(modelColorMapJson));
+        const modelSelect = document.getElementById('modelId');
+        const colorSelect = document.getElementById('colorId');
+        KrsModelColors.populateSelect(colorSelect, modelSelect.value, @Model.ColorId);
+        modelSelect.addEventListener('change', () => {
+            KrsModelColors.populateSelect(colorSelect, modelSelect.value, null);
+        });
+    </script>
+}

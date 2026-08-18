@@ -11,6 +11,10 @@ namespace KRSDealerManagement.Application.Commands
         public int PaymentId { get; set; }
         public int ApprovedBy { get; set; }
         public required string Remarks { get; set; }
-        public bool ApplyToBalance { get; set; } // Whether to credit account immediately
+        public bool ApplyToBalance { get; set; } = true;
+        /// <summary>Amount actually received; defaults to requested amount when not specified.</summary>
+        public decimal? ActualReceivedAmount { get; set; }
+        /// <summary>Date payment was actually received in bank/account.</summary>
+        public DateTime ActualReceivedDate { get; set; }
     }
 }

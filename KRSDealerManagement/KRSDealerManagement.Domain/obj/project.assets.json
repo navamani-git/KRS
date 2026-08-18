@@ -531,11 +531,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "d:\\KRS\\KRSDealerManagement\\KRSDealerManagement.Domain\\KRSDealerManagement.Domain.csproj",
+      "projectUniqueName": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Domain\\KRSDealerManagement.Domain.csproj",
       "projectName": "KRSDealerManagement.Domain",
-      "projectPath": "d:\\KRS\\KRSDealerManagement\\KRSDealerManagement.Domain\\KRSDealerManagement.Domain.csproj",
+      "projectPath": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Domain\\KRSDealerManagement.Domain.csproj",
       "packagesPath": "C:\\Users\\USER\\.nuget\\packages\\",
-      "outputPath": "d:\\KRS\\KRSDealerManagement\\KRSDealerManagement.Domain\\obj\\",
+      "outputPath": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Domain\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -558,8 +558,8 @@
           "framework": "net8.0",
           "targetAlias": "net8.0",
           "projectReferences": {
-            "D:\\KRS\\KRSDealerManagement\\KRSDealerManagement.Shared\\KRSDealerManagement.Shared.csproj": {
-              "projectPath": "D:\\KRS\\KRSDealerManagement\\KRSDealerManagement.Shared\\KRSDealerManagement.Shared.csproj"
+            "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Shared\\KRSDealerManagement.Shared.csproj": {
+              "projectPath": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Shared\\KRSDealerManagement.Shared.csproj"
             }
           }
         }

@@ -8,9 +8,16 @@
 <div class="row mb-3">
     <div class="col-md-6">
         <h1 class="m-0"><i class="bi bi-cash-coin"></i> Commission Rates</h1>
-        <p class="text-muted">Set commission amounts per vehicle model per month</p>
+        <p class="text-muted">Set commission amounts per vehicle model by effective date</p>
     </div>
     <div class="col-md-6 text-end">
+        <form method="post" asp-action="CarryForward" class="d-inline"
+              onsubmit="return confirm('Copy previous month rates for models missing current month coverage?');">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-repeat"></i> Carry Forward
+            </button>
+        </form>
         <partial name="_ExportExcel" />
         <a href="@Url.Action("CreateRate")" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> Add Commission Rate
@@ -18,12 +25,21 @@
     </div>
 </div>
 
+@if (TempData["Info"] != null)
+{
+    <div class="alert alert-info alert-dismissible fade show">
+        <i class="bi bi-info-circle"></i> @TempData["Info"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
 <!-- Filters -->
 <div class="card mb-3">
     <div class="card-body">
         <form method="get">
-            <div class="row">
-                <div class="col-md-4">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label form-label-sm mb-0">Model</label>
                     <select name="modelId" class="form-select">
                         <option value="">All Models</option>
                         @if (models != null)
@@ -38,11 +54,21 @@
                         }
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <div class="form-check mt-2">
+                <div class="col-md-2">
+                    <label class="form-label form-label-sm mb-0">Effective From</label>
+                    <input type="date" name="effectiveFrom" class="form-control"
+                           value="@ViewBag.EffectiveFrom" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label form-label-sm mb-0">Effective To</label>
+                    <input type="date" name="effectiveTo" class="form-control"
+                           value="@ViewBag.EffectiveTo" />
+                </div>
+                <div class="col-md-2">
+                    <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="activeOnly"
                                value="true" @(ViewBag.ActiveOnly == true ? "checked" : "") />
-                        <label class="form-check-label">Active Rates Only</label>
+                        <label class="form-check-label">Active Only</label>
                     </div>
                 </div>
                 <div class="col-md-3">
@@ -69,7 +95,7 @@
                             <th>Vehicle Model</th>
                             <th class="text-end">Commission (₹)</th>
                             <th>Effective From</th>
-                            <th>Expires</th>
+                            <th>Effective To</th>
                             <th>Status</th>
                             <th>Notes</th>
                             <th>Created</th>
@@ -86,21 +112,10 @@
                                     <strong class="text-success">₹@rate.CommissionAmount.ToString("N2")</strong>
                                 </td>
                                 <td>
-                                    <span class="badge bg-info">
-                                        @System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(rate.StartMonth) @rate.StartYear
-                                    </span>
+                                    <span class="badge bg-info">@rate.EffectiveFrom.ToString("yyyy-MM-dd")</span>
                                 </td>
                                 <td>
-                                    @if (rate.ExpiryYear.HasValue && rate.ExpiryMonth.HasValue)
-                                    {
-                                        <span class="badge bg-warning text-dark">
-                                            @System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(rate.ExpiryMonth.Value) @rate.ExpiryYear
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-success">Ongoing</span>
-                                    }
+                                    <span class="badge bg-warning text-dark">@rate.EffectiveTo.ToString("yyyy-MM-dd")</span>
                                 </td>
                                 <td>
                                     <span class="badge @(isActive ? "bg-success" : "bg-secondary")">

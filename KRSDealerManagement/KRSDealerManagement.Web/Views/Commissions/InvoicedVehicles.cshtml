@@ -1,0 +1,72 @@
+@using KRSDealerManagement.Application.DTOs
+@model IEnumerable<CommissionPreviewRowDto>
+@{
+    ViewData["Title"] = "Invoiced Vehicles";
+}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h1 class="m-0"><i class="bi bi-table"></i> Invoiced Vehicles</h1>
+        <p class="text-muted">Applicable commission per vehicle based on invoice date</p>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="@Url.Action("Submit")" class="btn btn-success">
+            <i class="bi bi-send"></i> Submit Commission
+        </a>
+        <a href="@Url.Action("MyCommissions")" class="btn btn-secondary">
+            <i class="bi bi-list"></i> My Commissions
+        </a>
+    </div>
+</div>
+
+<div class="card card-info">
+    <div class="card-header">
+        <h3 class="card-title"><i class="bi bi-eye"></i> Invoiced Vehicles &amp; Applicable Commission (@Model.Count())</h3>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Model</th>
+                        <th>Color</th>
+                        <th>Chassis</th>
+                                <th>Invoice Date</th>
+                                <th>RTO Registration</th>
+                                <th class="text-end">Commission (₹)</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        @foreach (var row in Model)
+                        {
+                            <tr>
+                                <td><small>@row.ModelName</small></td>
+                                <td><small>@row.ColorName</small></td>
+                                <td><code class="small">@row.ChassisNumber</code></td>
+                                        <td><small>@row.InvoiceDate.ToString("yyyy-MM-dd")</small></td>
+                                        <td><small>@(row.RegistrationDate?.ToString("yyyy-MM-dd") ?? "—")</small></td>
+                                <td class="text-end fw-bold text-success">
+                                    @(row.ApplicableRate.HasValue ? $"₹{row.ApplicableRate.Value:N2}" : "—")
+                                </td>
+                                <td><small>@row.CommissionStatus</small></td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="text-muted text-center">No eligible vehicles found. Invoice and RTO registration dates are required.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <small class="text-muted">
+            Only vehicles with both <strong>invoice date</strong> and <strong>RTO registration date</strong> appear here.
+            Commission amount is based on the rate effective on the invoice date.
+        </small>
+    </div>
+</div>

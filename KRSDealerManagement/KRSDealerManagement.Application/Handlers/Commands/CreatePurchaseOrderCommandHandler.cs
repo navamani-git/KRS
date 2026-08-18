@@ -1,6 +1,7 @@
 using MediatR;
 using KRSDealerManagement.Application.Commands;
 using KRSDealerManagement.Application.Services;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Domain.Entities;
 using KRSDealerManagement.Shared.Constants;
@@ -39,6 +40,9 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 if (!request.AutoApprove && balance.AvailableBalance < totalAmount)
                     throw new InvalidOperationException(
                         $"Insufficient balance. Available: ₹{balance.AvailableBalance:N2}, Required: ₹{totalAmount:N2}");
+
+                foreach (var item in request.Items)
+                    await ModelColorValidation.EnsureMappedAsync(_unitOfWork, item.ModelId, item.ColorId);
 
                 var allOrders = await _unitOfWork.PurchaseOrders.GetAllAsync();
                 string orderNumber = $"ORD-{DateTime.UtcNow.Year}-{(allOrders.Count() + 1):D5}";

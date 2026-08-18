@@ -45,6 +45,16 @@
 <!-- Balance Summary -->
 @if (balance != null)
 {
+    @if (balance.ReservedAmount > 0)
+    {
+        <div class="alert alert-warning d-flex align-items-center mb-3">
+            <i class="bi bi-lock-fill fs-4 me-3"></i>
+            <div>
+                <strong>₹@balance.ReservedAmount.ToString("N2") reserved</strong> for pending vehicle order(s).
+                This amount is held until orders are approved or rejected; it is not available for new orders.
+            </div>
+        </div>
+    }
     <div class="row mb-3">
         <div class="col-md-4">
             <div class="info-box bg-success">
@@ -52,6 +62,15 @@
                 <div class="info-box-content">
                     <span class="info-box-text text-white">Current Balance</span>
                     <span class="info-box-number text-white">₹@balance.CurrentBalance.ToString("N2")</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="info-box bg-warning">
+                <span class="info-box-icon"><i class="bi bi-lock"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text text-white">Reserved (Orders)</span>
+                    <span class="info-box-number text-white">₹@balance.ReservedAmount.ToString("N2")</span>
                 </div>
             </div>
         </div>
@@ -75,64 +94,7 @@
     <div class="card-body">
         @if (Model.Any())
         {
-            <div class="table-responsive">
-                <table class="table table-bordered table-sm table-hover">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>#</th>
-                            <th>Date</th>
-                            <th>Type</th>
-                            <th>Description</th>
-                            <th>Reference</th>
-                            <th class="text-end text-danger">Debit (₹)</th>
-                            <th class="text-end text-success">Credit (₹)</th>
-                            <th class="text-end">Balance (₹)</th>
-                            <th>Remarks</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @{ int sr = 1; }
-                        @foreach (var t in Model)
-                        {
-                            <tr class="@(t.IsDebit() ? "table-danger" : "table-success") bg-opacity-25">
-                                <td>@(sr++)</td>
-                                <td>
-                                    <small>@t.CreatedDate.ToString("yyyy-MM-dd")</small><br/>
-                                    <small class="text-muted">@t.CreatedDate.ToString("HH:mm")</small>
-                                </td>
-                                <td><span class="badge bg-secondary">@t.CategoryLabel</span></td>
-                                <td>@t.Reason</td>
-                                <td>
-                                    @if (!string.IsNullOrEmpty(t.ChassisNumber))
-                                    {
-                                        <small class="badge bg-dark"><code>@t.ChassisNumber</code></small>
-                                    }
-                                    else if (!string.IsNullOrEmpty(t.ReferenceType))
-                                    {
-                                        <small><span class="badge bg-secondary">@t.ReferenceType</span> #@t.ReferenceId</small>
-                                    }
-                                </td>
-                                <td class="text-end text-danger fw-bold">
-                                    @(t.IsDebit() ? $"₹{t.Amount:N2}" : "")
-                                </td>
-                                <td class="text-end text-success fw-bold">
-                                    @(t.IsCredit() ? $"₹{t.Amount:N2}" : "")
-                                </td>
-                                <td class="text-end fw-bold">₹@t.BalanceAfterTransaction.ToString("N2")</td>
-                                <td><small class="text-muted">@t.Remarks</small></td>
-                            </tr>
-                        }
-                    </tbody>
-                    <tfoot class="table-light fw-bold">
-                        <tr>
-                            <td colspan="5">Total</td>
-                            <td class="text-end text-danger">₹@Model.Where(t => t.IsDebit()).Sum(t => t.Amount).ToString("N2")</td>
-                            <td class="text-end text-success">₹@Model.Where(t => t.IsCredit()).Sum(t => t.Amount).ToString("N2")</td>
-                            <td colspan="2"></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
+            <partial name="_AccountStatementLedger" model="Model" />
         }
         else
         {

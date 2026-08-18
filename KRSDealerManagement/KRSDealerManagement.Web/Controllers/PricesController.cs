@@ -51,13 +51,12 @@ namespace KRSDealerManagement.Web.Controllers
         public async Task<IActionResult> Create(int? modelId)
         {
             var models = await _mediator.Send(new GetVehicleModelsQuery { IsActive = true });
-            var colors = await _mediator.Send(new GetVehicleColorsQuery { IsActive = true });
 
             ViewBag.Models = models;
-            ViewBag.Colors = colors;
             ViewBag.SelectedModelId = modelId;
             ViewBag.CurrentMonth = DateTime.Now.Month;
             ViewBag.CurrentYear = DateTime.Now.Year;
+            await ModelColorViewHelper.SetModelColorMapAsync(this, _mediator);
 
             return View();
         }

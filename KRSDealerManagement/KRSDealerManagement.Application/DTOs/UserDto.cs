@@ -6,6 +6,9 @@ namespace KRSDealerManagement.Application.DTOs
     public class UserDto
     {
         public int UserId { get; set; }
+        /// <summary>Business org id (SubDealers table). Use for admin Details links.</summary>
+        public int SubDealerId { get; set; }
+        public int LoginCount { get; set; }
         public required string Username { get; set; }
         public required string Email { get; set; }
         /// <summary>Stored login password (plain for admin view when not Identity-hashed).</summary>

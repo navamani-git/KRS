@@ -63,4 +63,30 @@ namespace KRSDealerManagement.Web.Filters
             base.OnActionExecuting(context);
         }
     }
+
+    /// <summary>Requires any one of the given RoleMenus MenuKeys (or System Admin).</summary>
+    public class AuthorizeMenuAnyAttribute : ActionFilterAttribute
+    {
+        private readonly string[] _menuKeys;
+
+        public AuthorizeMenuAnyAttribute(params string[] menuKeys) => _menuKeys = menuKeys;
+
+        public override void OnActionExecuting(ActionExecutingContext context)
+        {
+            var session = context.HttpContext.Session;
+            if (!SessionHelper.IsAuthenticated(session))
+            {
+                context.Result = new RedirectToActionResult("Login", "Account", null);
+                return;
+            }
+
+            if (!_menuKeys.Any(k => SessionHelper.HasMenuAccess(session, k)))
+            {
+                context.Result = new RedirectToActionResult("AccessDenied", "Account", null);
+                return;
+            }
+
+            base.OnActionExecuting(context);
+        }
+    }
 }

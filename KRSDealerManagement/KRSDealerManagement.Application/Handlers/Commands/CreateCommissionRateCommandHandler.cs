@@ -1,5 +1,6 @@
 using MediatR;
 using KRSDealerManagement.Application.Commands;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Domain.Entities;
@@ -20,14 +21,37 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
         public async Task<int> Handle(CreateCommissionRateCommand request, CancellationToken cancellationToken)
         {
+            var effectiveFrom = request.EffectiveFrom.Date;
+            var effectiveTo = request.EffectiveTo.Date;
+
+            if (effectiveTo < effectiveFrom)
+                throw new InvalidOperationException("Effective to must be on or after effective from.");
+
+            var existing = (await _unitOfWork.CommissionRates.GetAllAsync())
+                .Where(r => r.ModelId == request.ModelId)
+                .ToList();
+
+            foreach (var other in existing)
+            {
+                if (CommissionRateOverlapHelper.RangesOverlap(
+                        effectiveFrom, effectiveTo, other.EffectiveFrom, other.EffectiveTo))
+                {
+                    throw new InvalidOperationException(
+                        CommissionRateOverlapHelper.OverlapMessage(
+                            effectiveFrom, effectiveTo, other.EffectiveFrom, other.EffectiveTo));
+                }
+            }
+
             var rate = new CommissionRate
             {
                 ModelId = request.ModelId,
                 CommissionAmount = request.CommissionAmount,
-                StartMonth = request.StartMonth,
-                StartYear = request.StartYear,
-                ExpiryMonth = request.ExpiryMonth,
-                ExpiryYear = request.ExpiryYear,
+                EffectiveFrom = effectiveFrom,
+                EffectiveTo = effectiveTo,
+                StartMonth = effectiveFrom.Month,
+                StartYear = effectiveFrom.Year,
+                ExpiryMonth = effectiveTo.Month,
+                ExpiryYear = effectiveTo.Year,
                 Notes = request.Notes,
                 CreatedBy = request.CreatedBy,
                 CreatedDate = DateTime.UtcNow,
@@ -47,8 +71,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 {
                     ModelId = request.ModelId,
                     Amount = request.CommissionAmount,
-                    Start = $"{request.StartYear}-{request.StartMonth:D2}",
-                    Expiry = request.ExpiryYear.HasValue ? $"{request.ExpiryYear}-{request.ExpiryMonth:D2}" : "Ongoing"
+                    From = effectiveFrom.ToString("yyyy-MM-dd"),
+                    To = effectiveTo.ToString("yyyy-MM-dd")
                 })
             );
 

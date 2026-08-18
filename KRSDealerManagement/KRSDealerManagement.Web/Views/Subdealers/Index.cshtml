@@ -7,7 +7,7 @@
 <div class="row mb-3">
     <div class="col-md-6">
         <h1 class="m-0"><i class="bi bi-people"></i> Subdealers</h1>
-        <p class="text-muted">Manage subdealer accounts and information</p>
+        <p class="text-muted">Unique businesses — each can have multiple logins with different menu access</p>
     </div>
     <div class="col-md-6 text-end">
         <partial name="_ExportExcel" />
@@ -17,7 +17,6 @@
     </div>
 </div>
 
-<!-- Search -->
 <div class="card mb-3">
     <div class="card-body">
         <form method="get">
@@ -56,7 +55,6 @@
     </div>
 </div>
 
-<!-- Subdealers Table -->
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="bi bi-list"></i> All Subdealers (@(ViewBag.TotalItems ?? Model.Count()))</h3>
@@ -71,7 +69,7 @@
                             <th>#</th>
                             <th>Subdealer Name</th>
                             <th>Location</th>
-                            <th>Username</th>
+                            <th>Logins</th>
                             <th>Phone</th>
                             <th>Status</th>
                             <th>Created</th>
@@ -89,7 +87,13 @@
                                     <br /><small class="text-muted">@s.Email</small>
                                 </td>
                                 <td>@s.LastName</td>
-                                <td><code>@s.Username</code></td>
+                                <td>
+                                    <span class="badge bg-info">@s.LoginCount</span>
+                                    @if (!string.IsNullOrEmpty(s.Username) && s.Username != "—")
+                                    {
+                                        <br /><small class="text-muted"><code>@s.Username</code></small>
+                                    }
+                                </td>
                                 <td>@s.PhoneNumber</td>
                                 <td>
                                     <span class="badge @(s.IsActive ? "bg-success" : "bg-danger")">
@@ -98,19 +102,15 @@
                                 </td>
                                 <td><small>@s.CreatedDate.ToString("yyyy-MM-dd")</small></td>
                                 <td>
-                                    <a href="@Url.EAction(QueryCrypto, "Details", new { id = s.UserId })"
-                                       class="btn btn-sm btn-info" title="View Details">
+                                    <a href="@Url.EAction(QueryCrypto, "Details", new { id = s.SubDealerId })"
+                                       class="btn btn-sm btn-info" title="Manage">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <a href="@Url.EAction(QueryCrypto, "Details", new { id = s.UserId })"
-                                       class="btn btn-sm btn-warning" title="Edit">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
                                     <form method="post" asp-action="Delete" class="d-inline"
-                                          onsubmit="return confirm('Deactivate this subdealer?');">
+                                          onsubmit="return confirm('Deactivate this subdealer and all its logins?');">
                                         @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@s.UserId" />
-                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                        <input type="hidden" name="id" value="@s.SubDealerId" />
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Deactivate">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>

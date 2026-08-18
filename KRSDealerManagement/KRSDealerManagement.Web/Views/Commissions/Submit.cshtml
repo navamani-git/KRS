@@ -1,197 +1,156 @@
 @using KRSDealerManagement.Application.DTOs
+@model IEnumerable<CommissionPreviewRowDto>
 @{
     ViewData["Title"] = "Submit Commission";
-    var models = ViewBag.Models as IEnumerable<VehicleModelDto>;
-    var colors = ViewBag.Colors as IEnumerable<VehicleColorDto>;
-    var currentMonth = (int)(ViewBag.CurrentMonth ?? DateTime.Now.Month);
-    var currentYear = (int)(ViewBag.CurrentYear ?? DateTime.Now.Year);
+    var pending = ViewBag.Pending as IEnumerable<CommissionPreviewRowDto> ?? Model ?? Enumerable.Empty<CommissionPreviewRowDto>();
+    var rates = ViewBag.CommissionRates as IEnumerable<CommissionRateDto> ?? Enumerable.Empty<CommissionRateDto>();
+    var ratePeriod = ViewBag.RatePeriodLabel as string ?? DateTime.Now.ToString("MMMM yyyy");
 }
 
 <div class="row mb-3">
     <div class="col-md-6">
         <h1 class="m-0"><i class="bi bi-cash-stack"></i> Submit Commission</h1>
-        <p class="text-muted">Submit commission for a vehicle you have sold</p>
+        <p class="text-muted">Submit commission after invoice and RTO registration are recorded by the dealer</p>
     </div>
     <div class="col-md-6 text-end">
+        <a href="@Url.Action("InvoicedVehicles")" class="btn btn-outline-info">
+            <i class="bi bi-table"></i> Invoiced Vehicles
+        </a>
         <a href="@Url.Action("MyCommissions")" class="btn btn-secondary">
             <i class="bi bi-list"></i> My Commissions
         </a>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-6">
-        <div class="card card-success">
-            <div class="card-header"><h3 class="card-title">Commission Entry</h3></div>
-            <form method="post" id="commissionForm">
-                @Html.AntiForgeryToken()
-                <div class="card-body">
-                    <div class="form-group mb-3">
-                        <label class="form-label fw-bold">Vehicle Model <span class="text-danger">*</span></label>
-                        <select name="modelId" id="modelId" class="form-select" required onchange="loadCommissionRate()">
-                            <option value="">-- Select Model --</option>
-                            @if (models != null)
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle"></i> @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle"></i> @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title"><i class="bi bi-cash-coin"></i> Commission Rates — @ratePeriod (view only)</h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Model</th>
+                                <th class="text-end">Commission (₹)</th>
+                                <th>Effective From</th>
+                                <th>Effective To</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (rates.Any())
                             {
-                                @foreach (var m in models)
+                                @foreach (var r in rates.OrderBy(r => r.ModelName).ThenBy(r => r.EffectiveFrom))
                                 {
-                                    <option value="@m.ModelId">@m.ModelName</option>
+                                    <tr>
+                                        <td>@r.ModelName</td>
+                                        <td class="text-end fw-bold text-success">₹@r.CommissionAmount.ToString("N2")</td>
+                                        <td><small>@r.EffectiveFrom.ToString("yyyy-MM-dd")</small></td>
+                                        <td><small>@r.EffectiveTo.ToString("yyyy-MM-dd")</small></td>
+                                    </tr>
                                 }
                             }
-                        </select>
-                    </div>
-
-                    <div class="form-group mb-3">
-                        <label class="form-label fw-bold">Color <span class="text-danger">*</span></label>
-                        <select name="colorId" id="colorId" class="form-select" required>
-                            <option value="">-- Select Color --</option>
-                            @if (colors != null)
+                            else
                             {
-                                @foreach (var c in colors)
-                                {
-                                    <option value="@c.ColorId">@c.ColorName</option>
-                                }
+                                <tr>
+                                    <td colspan="4" class="text-muted text-center">No commission rates configured for @ratePeriod.</td>
+                                </tr>
                             }
-                        </select>
-                    </div>
-
-                    <div class="form-group mb-3">
-                        <label class="form-label fw-bold">Chassis Number <span class="text-danger">*</span></label>
-                        <input type="text" name="chassisNumber" id="chassisNumber" class="form-control"
-                               placeholder="e.g., MA3EWDE1S00123456"
-                               style="text-transform:uppercase" required />
-                        <small id="chassisMessage" class="text-muted">Enter chassis and tab out to validate</small>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group mb-3">
-                                <label class="form-label fw-bold">Month <span class="text-danger">*</span></label>
-                                <select name="month" id="month" class="form-select" required onchange="loadCommissionRate()">
-                                    @for (int m = 1; m <= 12; m++)
-                                    {
-                                        <option value="@m" selected="@(m == currentMonth)">
-                                            @System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(m)
-                                        </option>
-                                    }
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group mb-3">
-                                <label class="form-label fw-bold">Year <span class="text-danger">*</span></label>
-                                <select name="year" id="year" class="form-select" required onchange="loadCommissionRate()">
-                                    @for (int y = currentYear - 1; y <= currentYear + 1; y++)
-                                    {
-                                        <option value="@y" selected="@(y == currentYear)">@y</option>
-                                    }
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group mb-3">
-                        <label class="form-label fw-bold">Commission Amount (₹)</label>
-                        <div class="input-group">
-                            <span class="input-group-text">₹</span>
-                            <input type="number" name="commissionAmount" id="commissionAmount"
-                                   class="form-control" step="0.01" readonly
-                                   placeholder="Select model and month to auto-fill" />
-                        </div>
-                        <small id="rateMessage" class="text-muted">Select model and month to auto-fill amount</small>
-                    </div>
+                        </tbody>
+                    </table>
                 </div>
-                <div class="card-footer">
-                    <button type="submit" class="btn btn-success" id="submitBtn" disabled>
-                        <i class="bi bi-send"></i> Submit Commission
-                    </button>
-                    <a href="@Url.Action("MyCommissions")" class="btn btn-secondary ms-2">Cancel</a>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
 
-@section Scripts {
-    <script>
-        let chassisValid = false;
-
-        function updateSubmitState() {
-            const submitBtn = document.getElementById('submitBtn');
-            const amt = document.getElementById('commissionAmount').value;
-            submitBtn.disabled = !(chassisValid && amt);
-        }
-
-        async function validateChassis() {
-            const chassis = document.getElementById('chassisNumber').value.trim();
-            const modelId = document.getElementById('modelId').value;
-            const colorId = document.getElementById('colorId').value;
-            const msg = document.getElementById('chassisMessage');
-            chassisValid = false;
-            updateSubmitState();
-
-            if (!chassis) {
-                msg.textContent = 'Enter chassis number.';
-                msg.className = 'text-muted';
-                return;
-            }
-
-            msg.textContent = 'Validating chassis...';
-            msg.className = 'text-muted';
-
-            try {
-                const resp = await KrsQueryString.fetchGet('/Commissions/ValidateChassis', { chassisNumber: chassis, modelId, colorId });
-                const data = await resp.json();
-                if (data.success) {
-                    chassisValid = true;
-                    msg.textContent = '✓ ' + data.message;
-                    msg.className = 'text-success fw-bold';
-                } else {
-                    msg.textContent = '⚠ ' + data.message;
-                    msg.className = 'text-danger';
-                }
-            } catch {
-                msg.textContent = 'Error validating chassis.';
-                msg.className = 'text-danger';
-            }
-            updateSubmitState();
-        }
-
-        document.getElementById('chassisNumber').addEventListener('blur', validateChassis);
-        document.getElementById('modelId').addEventListener('change', () => { chassisValid = false; validateChassis(); loadCommissionRate(); });
-        document.getElementById('colorId').addEventListener('change', () => { chassisValid = false; validateChassis(); });
-
-        function loadCommissionRate() {
-            const modelId = document.getElementById('modelId').value;
-            const month = document.getElementById('month').value;
-            const year = document.getElementById('year').value;
-            const amtField = document.getElementById('commissionAmount');
-            const msgField = document.getElementById('rateMessage');
-            const submitBtn = document.getElementById('submitBtn');
-
-            if (!modelId || !month || !year) return;
-
-            msgField.textContent = 'Loading rate...';
-            msgField.className = 'text-muted';
-
-            KrsQueryString.fetchGet('/Commissions/GetRate', { modelId, month, year })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        amtField.value = data.amount;
-                        msgField.textContent = `✓ Commission rate: ₹${parseFloat(data.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-                        msgField.className = 'text-success fw-bold';
-                    } else {
-                        amtField.value = '';
-                        msgField.textContent = '⚠ ' + data.message;
-                        msgField.className = 'text-danger';
-                    }
-                    updateSubmitState();
-                })
-                .catch(() => {
-                    msgField.textContent = 'Error loading rate.';
-                    msgField.className = 'text-danger';
-                    updateSubmitState();
-                });
-        }
-    </script>
-}
+<div class="row">
+    <div class="col-12">
+        <div class="card card-success">
+            <div class="card-header">
+                <h3 class="card-title"><i class="bi bi-send"></i> Pending Submission (@pending.Count())</h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Model</th>
+                                <th>Color</th>
+                                <th>Chassis</th>
+                                <th>Invoice Date</th>
+                                <th>RTO Registration</th>
+                                <th class="text-end">Commission (₹)</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (pending.Any())
+                            {
+                                @foreach (var row in pending)
+                                {
+                                    <tr>
+                                        <td>@row.ModelName</td>
+                                        <td>@row.ColorName</td>
+                                        <td><code>@row.ChassisNumber</code></td>
+                                        <td>@row.InvoiceDate.ToString("yyyy-MM-dd")</td>
+                                        <td>@(row.RegistrationDate?.ToString("yyyy-MM-dd") ?? "—")</td>
+                                        <td class="text-end fw-bold text-success">
+                                            @(row.ApplicableRate.HasValue ? $"₹{row.ApplicableRate.Value:N2}" : "—")
+                                        </td>
+                                        <td class="text-center">
+                                            @if (row.CanSubmit)
+                                            {
+                                                <form method="post" asp-action="SubmitRow" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="vehicleId" value="@row.VehicleId" />
+                                                    <button type="submit" class="btn btn-sm btn-success"
+                                                            onclick="return confirm('Submit commission of ₹@(row.ApplicableRate?.ToString("N2")) for chassis @row.ChassisNumber?');">
+                                                        <i class="bi bi-send"></i> Submit
+                                                    </button>
+                                                </form>
+                                            }
+                                            else if (!row.ApplicableRate.HasValue || row.ApplicableRate.Value <= 0)
+                                            {
+                                                <span class="badge bg-warning text-dark">No rate</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">@row.CommissionStatus</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-muted text-center">
+                                        All invoiced vehicles have been submitted. Check <a href="@Url.Action("MyCommissions")">My Commissions</a> for status.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

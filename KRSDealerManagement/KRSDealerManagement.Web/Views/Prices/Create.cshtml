@@ -2,9 +2,9 @@
 @{
     ViewData["Title"] = "Add / Update Price";
     var models = ViewBag.Models as IEnumerable<VehicleModelDto>;
-    var colors = ViewBag.Colors as IEnumerable<VehicleColorDto>;
     var currentMonth = (int)(ViewBag.CurrentMonth ?? DateTime.Now.Month);
     var currentYear = (int)(ViewBag.CurrentYear ?? DateTime.Now.Year);
+    var modelColorMapJson = ViewBag.ModelColorMapJson as string ?? "{}";
 }
 
 <div class="row mb-3">
@@ -29,7 +29,7 @@
                     <!-- Model -->
                     <div class="form-group mb-3">
                         <label class="form-label fw-bold">Vehicle Model <span class="text-danger">*</span></label>
-                        <select name="modelId" class="form-select" required>
+                        <select name="modelId" id="modelId" class="form-select" required>
                             <option value="">-- Select Model --</option>
                             @if (models != null)
                             {
@@ -46,15 +46,8 @@
                     <!-- Color -->
                     <div class="form-group mb-3">
                         <label class="form-label fw-bold">Color <span class="text-danger">*</span></label>
-                        <select name="colorId" class="form-select" required>
-                            <option value="">-- Select Color --</option>
-                            @if (colors != null)
-                            {
-                                @foreach (var c in colors)
-                                {
-                                    <option value="@c.ColorId">@c.ColorName</option>
-                                }
-                            }
+                        <select name="colorId" id="colorId" class="form-select" required>
+                            <option value="">-- Select Model First --</option>
                         </select>
                     </div>
 
@@ -146,3 +139,13 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="~/js/model-color-filter.js"></script>
+    <script>
+        KrsModelColors.init(@Html.Raw(modelColorMapJson));
+        const modelSelect = document.getElementById('modelId');
+        const colorSelect = document.getElementById('colorId');
+        KrsModelColors.bind(modelSelect, colorSelect);
+    </script>
+}

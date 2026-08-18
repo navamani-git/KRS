@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "dxjjXEvQWsg=",
+  "dgSpecHash": "xSLPnhQ7rZk=",
   "success": true,
-  "projectFilePath": "D:\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj",
+  "projectFilePath": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\USER\\.nuget\\packages\\automapper\\16.2.0\\automapper.16.2.0.nupkg.sha512",
     "C:\\Users\\USER\\.nuget\\packages\\azure.core\\1.38.0\\azure.core.1.38.0.nupkg.sha512",

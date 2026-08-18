@@ -34,7 +34,6 @@ namespace KRSDealerManagement.Web.Controllers
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
             var models = await _mediator.Send(new GetVehicleModelsQuery { IsActive = true });
-            var colors = await _mediator.Send(new GetVehicleColorsQuery { IsActive = true });
             var account = await AccountHelper.GetPrimaryAccountAsync(_mediator, userId.Value);
             var prices = await _mediator.Send(new GetVehiclePricesQuery
             {
@@ -43,9 +42,9 @@ namespace KRSDealerManagement.Web.Controllers
             });
 
             ViewBag.Models = models;
-            ViewBag.Colors = colors;
             ViewBag.Account = account;
             ViewBag.Prices = prices;
+            await ModelColorViewHelper.SetModelColorMapAsync(this, _mediator);
 
             return View();
         }
@@ -365,11 +364,11 @@ namespace KRSDealerManagement.Web.Controllers
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             var subdealers = await _mediator.Send(new GetSubdealersQuery { IsActive = true, DealershipId = scope });
             var models = await _mediator.Send(new GetVehicleModelsQuery { IsActive = true });
-            var colors = await _mediator.Send(new GetVehicleColorsQuery { IsActive = true });
 
             ViewBag.Subdealers = subdealers;
             ViewBag.Models = models;
-            ViewBag.Colors = colors;
+            ViewBag.CanViewBalances = SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Balances);
+            await ModelColorViewHelper.SetModelColorMapAsync(this, _mediator);
 
             return View();
         }
@@ -467,8 +466,9 @@ namespace KRSDealerManagement.Web.Controllers
             }
         }
 
-        // GET: Orders/GetSubdealerAccount (AJAX - load subdealer balance for staff PO form)
-        [AuthorizeRole(1, 4)]
+        // GET: Orders/GetSubdealerAccount (AJAX — finance/admin balance lookup for staff PO form)
+        [AuthorizeRole(1, 3)]
+        [AuthorizeMenu(StaffMenuAccess.Balances)]
         public async Task<IActionResult> GetSubdealerAccount(int subdealerId)
         {
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);

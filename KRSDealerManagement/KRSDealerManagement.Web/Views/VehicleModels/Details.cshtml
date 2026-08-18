@@ -40,6 +40,22 @@
                         <td>@(string.IsNullOrEmpty(Model.Description) ? "-" : Model.Description)</td>
                     </tr>
                     <tr>
+                        <td><strong>Available Colors</strong></td>
+                        <td>
+                            @if (Model.MappedColors.Any())
+                            {
+                                @foreach (var color in Model.MappedColors)
+                                {
+                                    <span class="badge bg-info text-dark me-1 mb-1">@color.ColorName</span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">None mapped yet</span>
+                            }
+                        </td>
+                    </tr>
+                    <tr>
                         <td><strong>Status</strong></td>
                         <td>
                             @if (Model.IsActive)
@@ -73,9 +89,27 @@
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
-                    <a href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Index", new { modelId = Model.ModelId }, "VehicleColors")" class="btn btn-info">
-                        <i class="bi bi-palette"></i> Manage Colors for @Model.ModelName
-                    </a>
+                    @if (Model.MappedColors.Any())
+                    {
+                        <div class="mb-2">
+                            @foreach (var color in Model.MappedColors)
+                            {
+                                <span class="badge bg-secondary me-1 mb-1">
+                                    @if (!string.IsNullOrEmpty(color.HexCode))
+                                    {
+                                        <span style="display:inline-block; width:10px; height:10px; background:@color.HexCode; border-radius:50%;"></span>
+                                    }
+                                    @color.ColorName
+                                </span>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning py-2 mb-2">
+                            No colors mapped. <a href="@Url.EAction(QueryCrypto, "Edit", new { id = Model.ModelId })">Edit model</a> to assign colors.
+                        </div>
+                    }
                     <a href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Index", new { modelId = Model.ModelId }, "Prices")" class="btn btn-success">
                         <i class="bi bi-currency-rupee"></i> Manage Prices for @Model.ModelName
                     </a>

@@ -45,16 +45,54 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var commissions = (await _unitOfWork.Commissions.GetAllAsync()).ToDictionary(c => c.CommissionId);
             var returns = (await _unitOfWork.ReturnRequests.GetAllAsync()).ToDictionary(r => r.ReturnRequestId);
             var vehicles = (await _unitOfWork.Vehicles.GetAllAsync()).ToDictionary(v => v.VehicleId);
-            var payments = (await _unitOfWork.Payments.GetAllAsync()).ToDictionary(p => p.PaymentId);
+            var paymentsList = (await _unitOfWork.Payments.GetAllAsync()).ToList();
+            var payments = paymentsList.ToDictionary(p => p.PaymentId);
+            var paymentsByTransactionId = paymentsList
+                .Where(p => p.TransactionId.HasValue)
+                .GroupBy(p => p.TransactionId!.Value)
+                .ToDictionary(g => g.Key, g => g.First());
             var paymentTypes = (await _unitOfWork.PaymentTypes.GetAllAsync()).ToDictionary(pt => pt.PaymentTypeId);
+            var financeNames = (await _unitOfWork.FinanceNames.GetAllAsync()).ToDictionary(f => f.FinanceNameId);
 
             return filtered.OrderByDescending(t => t.CreatedDate)
                 .Select(t =>
                 {
                     var chassis = ResolveChassis(t.ReferenceType, t.ReferenceId, commissions, returns, vehicles);
                     var reason = EnrichReason(t.Reason, t.ReferenceType, chassis);
+
+                    string? customerName = null;
+                    string? paymentType = null;
+                    string? financeName = null;
+                    string? vinNumber = null;
+                    decimal? requestedAmount = null;
+                    decimal? approvedPaymentAmount = null;
+                    decimal? actualReceivedAmount = null;
+                    DateTime? submittedDate = null;
+                    DateTime? approvedDate = null;
+                    DateTime? receivedDate = null;
+                    var referenceType = t.ReferenceType ?? "";
+                    var referenceId = t.ReferenceId;
+
+                    var pay = PaymentStatementResolver.Resolve(t, payments, paymentsByTransactionId);
+                    if (pay != null && AccountTransactionTypeHelper.IsCredit(t.TransactionType))
+                    {
+                        referenceType = "Payment";
+                        referenceId = pay.PaymentId;
+                        customerName = pay.CustomerName;
+                        paymentType = pay.PaymentType;
+                        vinNumber = pay.VinNumber;
+                        requestedAmount = pay.Amount;
+                        approvedPaymentAmount = pay.ActualReceivedAmount ?? t.Amount;
+                        actualReceivedAmount = approvedPaymentAmount;
+                        submittedDate = pay.CreatedDate;
+                        approvedDate = pay.ProcessedDate;
+                        receivedDate = pay.ActualReceivedDate;
+                        if (pay.FinanceNameId.HasValue && financeNames.TryGetValue(pay.FinanceNameId.Value, out var fn))
+                            financeName = fn.FinanceName;
+                    }
+
                     var category = AccountStatementCategoryHelper.Resolve(
-                        t.TransactionType, t.ReferenceType, t.ReferenceId, t.Reason, payments, paymentTypes);
+                        t.TransactionType, referenceType, referenceId, t.Reason, payments, paymentTypes);
 
                     return new AccountTransactionDto
                     {
@@ -64,14 +102,24 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         Amount = t.Amount,
                         BalanceAfterTransaction = t.BalanceAfterTransaction,
                         Reason = reason,
-                        ReferenceId = t.ReferenceId,
-                        ReferenceType = t.ReferenceType ?? "",
+                        ReferenceId = referenceId,
+                        ReferenceType = referenceType,
                         CategoryLabel = category,
                         ChassisNumber = chassis,
                         Remarks = t.Remarks,
                         InitiatedBy = t.InitiatedBy,
                         InitiatedByName = $"User #{t.InitiatedBy}",
-                        CreatedDate = t.CreatedDate
+                        CreatedDate = t.CreatedDate,
+                        CustomerName = customerName,
+                        PaymentType = paymentType,
+                        FinanceName = financeName,
+                        VinNumber = vinNumber,
+                        RequestedAmount = requestedAmount,
+                        ApprovedPaymentAmount = approvedPaymentAmount,
+                        ActualReceivedAmount = actualReceivedAmount,
+                        PaymentSubmittedDate = submittedDate,
+                        PaymentApprovedDate = approvedDate,
+                        PaymentReceivedDate = receivedDate
                     };
                 }).ToList();
         }

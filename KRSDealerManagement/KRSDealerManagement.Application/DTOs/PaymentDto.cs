@@ -11,6 +11,10 @@ namespace KRSDealerManagement.Application.DTOs
         public int SubdealerId { get; set; }
         public required string SubdealerName { get; set; }
         public decimal Amount { get; set; }
+        /// <summary>Requested amount at submission.</summary>
+        public decimal RequestedAmount => Amount;
+        public decimal? ActualReceivedAmount { get; set; }
+        public DateTime? ActualReceivedDate { get; set; }
         public required string PaymentType { get; set; }
         public int? PaymentTypeId { get; set; }
         public string? CustomerName { get; set; }
@@ -32,6 +36,11 @@ namespace KRSDealerManagement.Application.DTOs
         public int? TransactionId { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime ModifiedDate { get; set; }
+
+        /// <summary>Alias: when payment was submitted.</summary>
+        public DateTime SubmittedDate => CreatedDate;
+        /// <summary>Alias: when payment was approved/rejected.</summary>
+        public DateTime? ApprovedDate => ProcessedDate;
 
         public string GetStatusDisplay()
             => !string.IsNullOrWhiteSpace(StatusName)

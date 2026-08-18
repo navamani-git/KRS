@@ -27,6 +27,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                              ModelId = r.ModelId,
                              ModelName = m.ModelName,
                              CommissionAmount = r.CommissionAmount,
+                             EffectiveFrom = r.EffectiveFrom,
+                             EffectiveTo = r.EffectiveTo,
                              StartMonth = r.StartMonth,
                              StartYear = r.StartYear,
                              ExpiryMonth = r.ExpiryMonth,
@@ -44,8 +46,20 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             if (request.ActiveOnly == true)
                 result = result.Where(r => r.IsActive());
 
-            return result.OrderByDescending(r => r.StartYear)
-                         .ThenByDescending(r => r.StartMonth)
+            if (request.EffectiveFrom.HasValue)
+            {
+                var from = request.EffectiveFrom.Value.Date;
+                result = result.Where(r => r.EffectiveTo.Date >= from);
+            }
+
+            if (request.EffectiveTo.HasValue)
+            {
+                var to = request.EffectiveTo.Value.Date;
+                result = result.Where(r => r.EffectiveFrom.Date <= to);
+            }
+
+            return result.OrderByDescending(r => r.EffectiveFrom)
+                         .ThenByDescending(r => r.EffectiveTo)
                          .ThenBy(r => r.ModelName)
                          .ToList();
         }

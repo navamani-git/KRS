@@ -27,6 +27,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(request.VehicleId);
             if (vehicle == null) return false;
 
+            await ModelColorValidation.EnsureMappedAsync(_unitOfWork, request.ModelId, request.ColorId);
+
             var changes = new List<string>();
             var oldPrice = vehicle.CurrentPrice;
 

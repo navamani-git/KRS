@@ -16,6 +16,12 @@ namespace KRSDealerManagement.Application.Validators
 
             RuleFor(x => x.ModifiedBy)
                 .GreaterThan(0).WithMessage("Valid user ID is required");
+
+            RuleFor(x => x.Remarks)
+                .NotEmpty().WithMessage("Remarks are required for audit trail");
+
+            RuleFor(x => x.ColorIds)
+                .NotEmpty().WithMessage("Select at least one color for this model.");
         }
     }
 }

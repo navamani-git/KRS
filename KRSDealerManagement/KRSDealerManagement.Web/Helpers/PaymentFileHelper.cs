@@ -37,5 +37,25 @@ namespace KRSDealerManagement.Web.Helpers
             // Store relative path with forward slashes for web/download
             return Path.Combine(relativeDir, storedName).Replace('\\', '/');
         }
+
+        public static string GetContentType(string absolutePath)
+        {
+            var ext = Path.GetExtension(absolutePath)?.ToLowerInvariant() ?? "";
+            return ext switch
+            {
+                ".pdf" => "application/pdf",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".webp" => "image/webp",
+                ".gif" => "image/gif",
+                _ => "application/octet-stream"
+            };
+        }
+
+        public static bool CanViewInline(string absolutePath)
+        {
+            var ext = Path.GetExtension(absolutePath)?.ToLowerInvariant() ?? "";
+            return ext is ".pdf" or ".jpg" or ".jpeg" or ".png" or ".webp" or ".gif";
+        }
     }
 }

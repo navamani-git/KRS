@@ -1,13 +1,11 @@
 namespace KRSDealerManagement.Application.DTOs
 {
+    /// <summary>Business subdealer org (e.g. KPN Motors) with multiple login users.</summary>
     public class SubdealerDetailDto
     {
-        public int UserId { get; set; }
-        public int? SubDealerId { get; set; }
+        public int SubDealerId { get; set; }
         public int DealershipId { get; set; }
         public string? DealershipName { get; set; }
-        public required string Username { get; set; }
-        public string? PasswordHash { get; set; }
         public required string SubdealerName { get; set; }
         public required string Location { get; set; }
         public required string Email { get; set; }
@@ -17,12 +15,8 @@ namespace KRSDealerManagement.Application.DTOs
         public string? ServiceRepMobile { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedDate { get; set; }
-
-        public bool CanRevealPassword()
-        {
-            if (string.IsNullOrWhiteSpace(PasswordHash)) return false;
-            return !(PasswordHash.StartsWith("AQAA", StringComparison.Ordinal)
-                     || PasswordHash.StartsWith("AQAAAA", StringComparison.Ordinal));
-        }
+        public int? PrimaryUserId { get; set; }
+        public int? WalletAccountId { get; set; }
+        public List<SubdealerLoginDto> Logins { get; set; } = new();
     }
 }

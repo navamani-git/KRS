@@ -158,19 +158,8 @@ namespace KRSDealerManagement.Shared.Constants
                         },
                         new MenuItemDefinition
                         {
-                            Key = Balances, Name = "Balances",
-                            Controller = "Accounts", Action = "Index", Icon = "bi-person-badge",
-                            Actions = new[] { "Index", "Statement" }
-                        },
-                        new MenuItemDefinition
-                        {
                             Key = CommissionRates, Name = "Commission Rates",
                             Controller = "Commissions", Action = "Index", Icon = "bi-cash-coin"
-                        },
-                        new MenuItemDefinition
-                        {
-                            Key = CommissionApprovals, Name = "Commission Approvals",
-                            Controller = "Commissions", Action = "Approvals", Icon = "bi-check2-square"
                         }
                     }
                 },
@@ -181,6 +170,17 @@ namespace KRSDealerManagement.Shared.Constants
                     Icon = "bi-briefcase",
                     Children = new[]
                     {
+                        new MenuItemDefinition
+                        {
+                            Key = Balances, Name = "Balances",
+                            Controller = "Accounts", Action = "Index", Icon = "bi-person-badge",
+                            Actions = new[] { "Index", "Statement" }
+                        },
+                        new MenuItemDefinition
+                        {
+                            Key = CommissionApprovals, Name = "Commission Approvals",
+                            Controller = "Commissions", Action = "Approvals", Icon = "bi-check2-square"
+                        },
                         new MenuItemDefinition
                         {
                             Key = Orders, Name = "Manage Orders",

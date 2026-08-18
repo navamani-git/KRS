@@ -88,12 +88,25 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
                 payment.Approve(request.ApprovedBy, request.Remarks);
 
+                var creditAmount = request.ActualReceivedAmount ?? payment.Amount;
+                if (creditAmount <= 0)
+                    throw new InvalidOperationException("Actual received amount must be greater than zero.");
+
+                payment.ActualReceivedAmount = creditAmount;
+                payment.ActualReceivedDate = request.ActualReceivedDate.Date;
+
+                var approvalNote = request.Remarks.Trim();
+                if (creditAmount != payment.Amount)
+                {
+                    approvalNote += $" | Requested: ₹{payment.Amount:N2}, Received: ₹{creditAmount:N2}";
+                }
+
                 // Always credit on approval (ApplyToBalance defaults true; keep as safety flag)
                 var shouldApply = request.ApplyToBalance;
                 if (shouldApply)
                 {
                     var balance = await GetOrCreateBalanceAsync(payment);
-                    balance.CurrentBalance += payment.Amount;
+                    balance.CurrentBalance += creditAmount;
                     balance.AvailableBalance = balance.CurrentBalance - balance.ReservedAmount;
                     balance.LastTransactionDate = DateTime.UtcNow;
                     balance.ModifiedDate = DateTime.UtcNow;
@@ -104,12 +117,12 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                     await _auditService.LogTransactionAsync(
                         accountId: payment.AccountId,
                         transactionType: 2, // Credit
-                        amount: payment.Amount,
+                        amount: creditAmount,
                         balanceAfter: balance.CurrentBalance,
-                        reason: $"Payment #{payment.PaymentId} approved and credited",
+                        reason: $"Payment #{payment.PaymentId} approved — customer {payment.CustomerName ?? "N/A"}",
                         referenceType: "Payment",
                         referenceId: payment.PaymentId,
-                        remarks: request.Remarks,
+                        remarks: approvalNote,
                         initiatedBy: request.ApprovedBy
                     );
                 }
@@ -127,6 +140,9 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                     newValue: JsonSerializer.Serialize(new
                     {
                         PaymentId = request.PaymentId,
+                        RequestedAmount = payment.Amount,
+                        ActualReceivedAmount = creditAmount,
+                        ActualReceivedDate = payment.ActualReceivedDate,
                         ApplyToBalance = shouldApply,
                         IsApplied = payment.IsApplied,
                         Remarks = request.Remarks

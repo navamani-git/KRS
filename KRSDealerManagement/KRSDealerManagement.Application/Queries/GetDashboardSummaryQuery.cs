@@ -8,7 +8,11 @@ namespace KRSDealerManagement.Application.Queries
     public class GetDashboardSummaryQuery : IRequest<DashboardSummary>
     {
         public int? SubdealerId { get; set; } // Optional: for subdealer dashboard
+        /// <summary>When set, staff dashboard counts are limited to this dealership's subdealers.</summary>
+        public int? DealershipId { get; set; }
         public bool IncludeRecentActivities { get; set; } // System admin only
+        /// <summary>When false, skip loading payment pending count (e.g. branch manager).</summary>
+        public bool IncludePaymentPending { get; set; } = true;
     }
 
     /// <summary>

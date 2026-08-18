@@ -3,6 +3,8 @@
 @{
     ViewData["Title"] = "Account Statement";
     var balance = ViewBag.Balance as AccountBalanceDto;
+    var backUrl = ViewBag.StatementBackUrl as string ?? Url.Action("Index");
+    var isReadOnly = ViewBag.IsReadOnlyStatement as bool? ?? false;
 }
 
 <div class="row mb-3">
@@ -14,15 +16,32 @@
         }
     </div>
     <div class="col-md-6 text-end">
-        <a href="@Url.Action("Index")" class="btn btn-secondary">
+        <a href="@backUrl" class="btn btn-secondary">
             <i class="bi bi-arrow-left"></i> Back
         </a>
     </div>
 </div>
 
+@if (isReadOnly)
+{
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> Read-only view for branch managers. Payment approvals are handled by finance.
+    </div>
+}
+
 <!-- Balance Summary -->
 @if (balance != null)
 {
+    @if (balance.ReservedAmount > 0)
+    {
+        <div class="alert alert-warning d-flex align-items-center mb-3">
+            <i class="bi bi-lock-fill fs-4 me-3"></i>
+            <div>
+                <strong>₹@balance.ReservedAmount.ToString("N2") reserved</strong> for pending vehicle order(s).
+                This amount is held until orders are approved or rejected; it is not available for new orders.
+            </div>
+        </div>
+    }
     <div class="row mb-3">
         <div class="col-md-4">
             <div class="small-box bg-success">
@@ -31,6 +50,15 @@
                     <p>Current Balance</p>
                 </div>
                 <div class="icon"><i class="bi bi-wallet2"></i></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="small-box bg-warning">
+                <div class="inner">
+                    <h3>₹@balance.ReservedAmount.ToString("N2")</h3>
+                    <p>Reserved (Orders)</p>
+                </div>
+                <div class="icon"><i class="bi bi-lock"></i></div>
             </div>
         </div>
         <div class="col-md-4">
@@ -53,69 +81,7 @@
     <div class="card-body">
         @if (Model.Any())
         {
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover table-sm">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>#</th>
-                            <th>Date</th>
-                            <th>Type</th>
-                            <th>Description</th>
-                            <th>Reference</th>
-                            <th class="text-end text-danger">Debit (₹)</th>
-                            <th class="text-end text-success">Credit (₹)</th>
-                            <th class="text-end">Balance (₹)</th>
-                            <th>Remarks</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @{ int sr = 1; }
-                        @foreach (var t in Model)
-                        {
-                            var rowClass = t.IsDebit() ? "table-danger" : "table-success";
-                            <tr class="@rowClass bg-opacity-25">
-                                <td>@(sr++)</td>
-                                <td>
-                                    <small>@t.CreatedDate.ToString("yyyy-MM-dd")</small><br />
-                                    <small class="text-muted">@t.CreatedDate.ToString("HH:mm")</small>
-                                </td>
-                                <td><span class="badge bg-secondary">@t.CategoryLabel</span></td>
-                                <td>@t.Reason</td>
-                                <td>
-                                    @if (!string.IsNullOrEmpty(t.ChassisNumber))
-                                    {
-                                        <small class="badge bg-dark"><code>@t.ChassisNumber</code></small>
-                                    }
-                                    else if (!string.IsNullOrEmpty(t.ReferenceType))
-                                    {
-                                        <small class="badge bg-secondary">@t.ReferenceType #@t.ReferenceId</small>
-                                    }
-                                </td>
-                                <td class="text-end text-danger fw-bold">
-                                    @(t.IsDebit() ? $"₹{t.Amount:N2}" : "-")
-                                </td>
-                                <td class="text-end text-success fw-bold">
-                                    @(t.IsCredit() ? $"₹{t.Amount:N2}" : "-")
-                                </td>
-                                <td class="text-end fw-bold">₹@t.BalanceAfterTransaction.ToString("N2")</td>
-                                <td><small class="text-muted">@t.Remarks</small></td>
-                            </tr>
-                        }
-                    </tbody>
-                    <tfoot class="table-light fw-bold">
-                        <tr>
-                            <td colspan="5">Total</td>
-                            <td class="text-end text-danger">
-                                ₹@Model.Where(t => t.IsDebit()).Sum(t => t.Amount).ToString("N2")
-                            </td>
-                            <td class="text-end text-success">
-                                ₹@Model.Where(t => t.IsCredit()).Sum(t => t.Amount).ToString("N2")
-                            </td>
-                            <td colspan="2"></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
+            <partial name="_AccountStatementLedger" model="Model" />
         }
         else
         {

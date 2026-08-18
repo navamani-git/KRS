@@ -52,15 +52,17 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         // GET: VehicleModels/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
+            ViewBag.AllColors = await _mediator.Send(new GetVehicleColorsQuery { IsActive = true });
+            ViewBag.SelectedColorIds = new List<int>();
             return View();
         }
 
         // POST: VehicleModels/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(string modelName, string description)
+        public async Task<IActionResult> Create(string modelName, string description, [FromForm] List<int> colorIds)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
 
@@ -72,6 +74,16 @@ namespace KRSDealerManagement.Web.Controllers
             if (string.IsNullOrWhiteSpace(modelName))
             {
                 TempData["Error"] = "Model name is required.";
+                ViewBag.AllColors = await _mediator.Send(new GetVehicleColorsQuery { IsActive = true });
+                ViewBag.SelectedColorIds = colorIds ?? new List<int>();
+                return View();
+            }
+
+            if (colorIds == null || !colorIds.Any())
+            {
+                TempData["Error"] = "Select at least one color for this model.";
+                ViewBag.AllColors = await _mediator.Send(new GetVehicleColorsQuery { IsActive = true });
+                ViewBag.SelectedColorIds = new List<int>();
                 return View();
             }
 
@@ -79,7 +91,8 @@ namespace KRSDealerManagement.Web.Controllers
             {
                 ModelName = modelName.Trim(),
                 Description = description?.Trim() ?? "",
-                CreatedBy = userId.Value
+                CreatedBy = userId.Value,
+                ColorIds = colorIds
             };
 
             try
@@ -91,8 +104,18 @@ namespace KRSDealerManagement.Web.Controllers
             catch (Exception ex)
             {
                 TempData["Error"] = $"Error creating vehicle model: {ex.Message}";
+                ViewBag.AllColors = await _mediator.Send(new GetVehicleColorsQuery { IsActive = true });
+                ViewBag.SelectedColorIds = colorIds ?? new List<int>();
                 return View();
             }
+        }
+
+        // GET: VehicleModels/ColorsForModel/{modelId} — AJAX for cascading dropdowns
+        [HttpGet]
+        public async Task<IActionResult> ColorsForModel(int modelId)
+        {
+            var colors = await _mediator.Send(new GetVehicleColorsQuery { ModelId = modelId, IsActive = true });
+            return Json(colors.Select(c => new { id = c.ColorId, name = c.ColorName, hex = c.HexCode }));
         }
 
         // GET: VehicleModels/Edit/5
@@ -107,13 +130,16 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            ViewBag.AllColors = await _mediator.Send(new GetVehicleColorsQuery { IsActive = true });
+            ViewBag.SelectedColorIds = model.MappedColorIds;
+
             return View(model);
         }
 
         // POST: VehicleModels/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, string modelName, string description, bool isActive, string remarks)
+        public async Task<IActionResult> Edit(int id, string modelName, string description, bool isActive, string remarks, [FromForm] List<int> colorIds)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
 
@@ -128,6 +154,12 @@ namespace KRSDealerManagement.Web.Controllers
                 return this.RedirectEncrypted(nameof(Edit), new { id });
             }
 
+            if (colorIds == null || !colorIds.Any())
+            {
+                TempData["Error"] = "Select at least one color for this model.";
+                return this.RedirectEncrypted(nameof(Edit), new { id });
+            }
+
             var command = new UpdateVehicleModelCommand
             {
                 ModelId = id,
@@ -135,7 +167,8 @@ namespace KRSDealerManagement.Web.Controllers
                 Description = description?.Trim() ?? "",
                 IsActive = isActive,
                 ModifiedBy = userId.Value,
-                Remarks = remarks?.Trim() ?? ""
+                Remarks = remarks?.Trim() ?? "",
+                ColorIds = colorIds
             };
 
             try

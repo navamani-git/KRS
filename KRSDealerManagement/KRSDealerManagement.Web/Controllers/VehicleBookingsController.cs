@@ -459,8 +459,17 @@ namespace KRSDealerManagement.Web.Controllers
         {
             var full = BookingFileHelper.ResolvePath(_env.WebRootPath ?? _env.ContentRootPath, path);
             if (string.IsNullOrEmpty(full)) return NotFound();
-            var contentType = Path.GetExtension(full).ToLowerInvariant() == ".pdf" ? "application/pdf" : "application/octet-stream";
+            var contentType = BookingFileHelper.GetContentType(full);
             return PhysicalFile(full, contentType, Path.GetFileName(full));
+        }
+
+        [AuthorizeRole(1, 2, 4)]
+        public IActionResult ViewFile(string path)
+        {
+            var full = BookingFileHelper.ResolvePath(_env.WebRootPath ?? _env.ContentRootPath, path);
+            if (string.IsNullOrEmpty(full)) return NotFound();
+            var contentType = BookingFileHelper.GetContentType(full);
+            return PhysicalFile(full, contentType);
         }
 
         private async Task<KRSDealerManagement.Application.DTOs.VehicleDto?> LoadVehicleOrNull(int vehicleId, int subdealerId)

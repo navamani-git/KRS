@@ -1,0 +1,22 @@
+@using KRSDealerManagement.Web.Helpers
+@{
+    var path = ViewData["FilePath"] as string;
+    var label = ViewData["FileLabel"] as string ?? "File";
+    var controller = ViewData["FileController"] as string ?? "VehicleBookings";
+    var compact = ViewData["FileCompact"] as bool? ?? false;
+    var btnClass = compact ? "btn btn-xs btn-outline-secondary btn-sm" : "btn btn-sm btn-outline-secondary";
+}
+
+@if (!string.IsNullOrEmpty(path))
+{
+    <span class="d-inline-flex gap-1 align-items-center me-1 mb-1">
+        <a href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "ViewFile", new { path }, controller)"
+           class="@btnClass" title="View @label" target="_blank" rel="noopener">
+            <i class="bi bi-eye"></i> @label
+        </a>
+        <a href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Download", new { path }, controller)"
+           class="@btnClass" title="Download @label">
+            <i class="bi bi-download"></i>
+        </a>
+    </span>
+}

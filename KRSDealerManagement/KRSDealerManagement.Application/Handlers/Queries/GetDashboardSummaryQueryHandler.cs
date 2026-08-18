@@ -23,31 +23,57 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             if (request.SubdealerId.HasValue)
                 await LoadSubdealerDashboard(summary, request.SubdealerId.Value);
             else
-                await LoadAdminDashboard(summary);
+                await LoadAdminDashboard(summary, request);
 
             if (request.IncludeRecentActivities)
-                await LoadRecentActivities(summary, request.SubdealerId);
+                await LoadRecentActivities(summary, request.SubdealerId, request.DealershipId);
 
             return summary;
         }
 
-        private async Task LoadAdminDashboard(DashboardSummary summary)
+        private async Task<HashSet<int>?> GetScopedSubdealerIdsAsync(int? dealershipId)
         {
+            if (!dealershipId.HasValue)
+                return null;
+
+            var roles = await _unitOfWork.Roles.GetAllAsync();
+            var subRole = roles.FirstOrDefault(r =>
+                r.RoleCode.Equals(RoleCodes.Subdealer, StringComparison.OrdinalIgnoreCase));
+            var assignments = (await _unitOfWork.UserOrgRoles.GetAllAsync())
+                .Where(a => subRole == null || a.RoleId == subRole.RoleId)
+                .Where(a => a.DealershipId == dealershipId.Value)
+                .Select(a => a.UserId)
+                .ToHashSet();
+
+            return assignments;
+        }
+
+        private static bool IsInScope(int subdealerId, HashSet<int>? scopedIds)
+            => scopedIds == null || scopedIds.Contains(subdealerId);
+
+        private async Task LoadAdminDashboard(DashboardSummary summary, GetDashboardSummaryQuery request)
+        {
+            var scopedIds = await GetScopedSubdealerIdsAsync(request.DealershipId);
+
             var users = await _unitOfWork.Users.GetAllAsync();
-            summary.TotalSubdealers = users.Count(u => u.UserRole == 2 && u.IsActive);
+            var orgs = await _unitOfWork.SubDealers.GetAllAsync();
+            summary.TotalSubdealers = orgs.Count(o =>
+                o.IsActive && (!request.DealershipId.HasValue || o.DealershipId == request.DealershipId));
 
             var accounts = await _unitOfWork.SubdealerAccounts.GetAllAsync();
-            summary.TotalAccounts = accounts.Count(a => a.IsActive);
+            summary.TotalAccounts = accounts.Count(a => a.IsActive && IsInScope(a.SubdealerId, scopedIds));
 
             var balances = await _unitOfWork.AccountBalances.GetAllAsync();
-            summary.TotalBalance = balances.Sum(b => b.CurrentBalance);
-            summary.TotalReservedAmount = balances.Sum(b => b.ReservedAmount);
+            var scopedBalances = balances.Where(b => IsInScope(b.SubdealerId, scopedIds));
+            summary.TotalBalance = scopedBalances.Sum(b => b.CurrentBalance);
+            summary.TotalReservedAmount = scopedBalances.Sum(b => b.ReservedAmount);
 
             var orders = (await _unitOfWork.PurchaseOrders.GetAllAsync()).ToList();
             var allItems = (await _unitOfWork.PurchaseOrderItems.GetAllAsync()).ToList();
             var allVehicles = (await _unitOfWork.Vehicles.GetAllAsync()).ToList();
             summary.PendingPurchaseOrders = orders.Count(o =>
             {
+                if (!IsInScope(o.SubdealerId, scopedIds)) return false;
                 var orderVehicles = allVehicles.Where(v => v.PurchaseOrderId == o.OrderId).ToList();
                 var orderItems = allItems.Where(i => i.PurchaseOrderId == o.OrderId).ToList();
                 return VehicleStatusResolver.ResolveOrderDisplayStatus(orderVehicles, orderItems)
@@ -55,13 +81,24 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             });
 
             var commissions = await _unitOfWork.Commissions.GetAllAsync();
-            summary.PendingCommissions = commissions.Count(c => c.CanBeApproved());
+            summary.PendingCommissions = commissions.Count(c =>
+                c.CanBeApproved() && IsInScope(c.SubdealerId, scopedIds));
 
-            var vehicles = await _unitOfWork.Vehicles.GetAllAsync();
-            summary.PendingReturnRequests = vehicles.Count(v => v.Status == UnifiedVehicleStatus.ReturnRequested);
+            summary.PendingReturnRequests = allVehicles.Count(v =>
+                v.Status == UnifiedVehicleStatus.ReturnRequested
+                && v.SubdealerId.HasValue
+                && IsInScope(v.SubdealerId.Value, scopedIds));
 
-            var payments = await _unitOfWork.Payments.GetAllAsync();
-            summary.PendingPayments = payments.Count(p => p.Status == 0);
+            if (request.IncludePaymentPending)
+            {
+                var payments = await _unitOfWork.Payments.GetAllAsync();
+                summary.PendingPayments = payments.Count(p =>
+                    p.Status == 0 && IsInScope(p.SubdealerId, scopedIds));
+            }
+            else
+            {
+                summary.PendingPayments = 0;
+            }
         }
 
         private async Task LoadSubdealerDashboard(DashboardSummary summary, int subdealerId)
@@ -99,13 +136,23 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             summary.PendingPayments = payments.Count(p => p.SubdealerId == subdealerId && p.Status == 0);
         }
 
-        private async Task LoadRecentActivities(DashboardSummary summary, int? subdealerId)
+        private async Task LoadRecentActivities(DashboardSummary summary, int? subdealerId, int? dealershipId)
         {
             var auditLogs = await _unitOfWork.AuditLogs.GetAllAsync();
+            HashSet<int>? scopedIds = null;
 
-            var filtered = subdealerId.HasValue
-                ? auditLogs.Where(a => a.UserId == subdealerId.Value)
-                : auditLogs;
+            if (subdealerId.HasValue)
+            {
+                scopedIds = new HashSet<int> { subdealerId.Value };
+            }
+            else if (dealershipId.HasValue)
+            {
+                scopedIds = await GetScopedSubdealerIdsAsync(dealershipId);
+            }
+
+            var filtered = scopedIds == null
+                ? auditLogs
+                : auditLogs.Where(a => scopedIds.Contains(a.UserId));
 
             summary.RecentActivities = filtered
                 .OrderByDescending(a => a.CreatedDate)

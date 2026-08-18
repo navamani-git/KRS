@@ -13,10 +13,16 @@ namespace KRSDealerManagement.Application.Services
             IReadOnlyDictionary<int, Payment> payments,
             IReadOnlyDictionary<int, PaymentType> paymentTypes)
         {
+            Payment? payment = null;
             if (string.Equals(referenceType, "Payment", StringComparison.OrdinalIgnoreCase)
-                && referenceId.HasValue
-                && payments.TryGetValue(referenceId.Value, out var payment)
-                && AccountTransactionTypeHelper.IsCredit(transactionType))
+                && referenceId.HasValue)
+                payments.TryGetValue(referenceId.Value, out payment);
+
+            payment ??= PaymentStatementResolver.TryParsePaymentId(reason) is int pid && payments.TryGetValue(pid, out var p)
+                ? p
+                : null;
+
+            if (payment != null && AccountTransactionTypeHelper.IsCredit(transactionType))
             {
                 if (payment.PaymentTypeId.HasValue
                     && paymentTypes.TryGetValue(payment.PaymentTypeId.Value, out var paymentType))
@@ -34,6 +40,12 @@ namespace KRSDealerManagement.Application.Services
 
             if (string.Equals(referenceType, "PurchaseOrder", StringComparison.OrdinalIgnoreCase)
                 && AccountTransactionTypeHelper.IsDebit(transactionType))
+                return "Order Debit";
+
+            if (string.Equals(referenceType, "Vehicle", StringComparison.OrdinalIgnoreCase)
+                && AccountTransactionTypeHelper.IsDebit(transactionType)
+                && !string.IsNullOrWhiteSpace(reason)
+                && reason.StartsWith("Order ", StringComparison.OrdinalIgnoreCase))
                 return "Order Debit";
 
             if (string.Equals(referenceType, "Commission", StringComparison.OrdinalIgnoreCase))

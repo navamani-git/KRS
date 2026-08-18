@@ -22,6 +22,7 @@ namespace KRSDealerManagement.Infrastructure.Repositories
         private IRepository<Vehicle> _vehicles;
         private IRepository<VehicleModel> _vehicleModels;
         private IRepository<VehicleColor> _vehicleColors;
+        private IVehicleModelColorRepository _vehicleModelColors;
         private IRepository<VehiclePriceHistory> _vehiclePrices;
         private IRepository<PurchaseOrder> _purchaseOrders;
         private IPurchaseOrderItemRepository _purchaseOrderItems;
@@ -56,6 +57,7 @@ namespace KRSDealerManagement.Infrastructure.Repositories
         public IRepository<Vehicle> Vehicles => _vehicles ??= new VehicleRepository(_context);
         public IRepository<VehicleModel> VehicleModels => _vehicleModels ??= new VehicleModelRepository(_context);
         public IRepository<VehicleColor> VehicleColors => _vehicleColors ??= new VehicleColorRepository(_context);
+        public IVehicleModelColorRepository VehicleModelColors => _vehicleModelColors ??= new VehicleModelColorRepository(_context);
         public IRepository<VehiclePriceHistory> VehiclePriceHistories => _vehiclePrices ??= new VehiclePriceHistoryRepository(_context);
         public IRepository<PurchaseOrder> PurchaseOrders => _purchaseOrders ??= new PurchaseOrderRepository(_context);
         public IPurchaseOrderItemRepository PurchaseOrderItems => _purchaseOrderItems ??= new PurchaseOrderItemRepository(_context);

@@ -83,7 +83,9 @@
                             <th>Payment Date</th>
                             <th>Status</th>
                             <th>Submitted</th>
-                            <th>Processed</th>
+                            <th>Approved</th>
+                            <th>Received</th>
+                            <th class="text-end">Received Amt</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -100,14 +102,8 @@
                                 <td><small>@(p.FinanceName ?? "-")</small></td>
                                 <td><code class="small">@(p.VinNumber ?? "-")</code></td>
                                 <td>
-                                    @if (!string.IsNullOrEmpty(p.PaymentProofPath))
-                                    {
-                                        <a href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "DownloadProof", new { path = p.PaymentProofPath })" class="btn btn-sm btn-outline-secondary" title="Proof 1"><i class="bi bi-paperclip"></i></a>
-                                    }
-                                    @if (!string.IsNullOrEmpty(p.PaymentProof2Path))
-                                    {
-                                        <a href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "DownloadProof", new { path = p.PaymentProof2Path })" class="btn btn-sm btn-outline-secondary" title="Proof 2"><i class="bi bi-paperclip"></i>2</a>
-                                    }
+                                    @{ ViewData["ProofPath1"] = p.PaymentProofPath; ViewData["ProofPath2"] = p.PaymentProof2Path; ViewData["ProofCompact"] = true; }
+                                    <partial name="_PaymentProofLinks" />
                                 </td>
                                 <td><small>@p.PaymentDate.ToString("yyyy-MM-dd")</small></td>
                                 <td>
@@ -120,10 +116,25 @@
                                     {
                                         <small>@p.ProcessedDate.Value.ToString("yyyy-MM-dd HH:mm")</small>
                                     }
-                                    else
+                                    else { <span class="text-muted">—</span> }
+                                </td>
+                                <td>
+                                    @if (p.ActualReceivedDate.HasValue)
                                     {
-                                        <span class="text-muted">—</span>
+                                        <small>@p.ActualReceivedDate.Value.ToString("yyyy-MM-dd")</small>
                                     }
+                                    else { <span class="text-muted">—</span> }
+                                </td>
+                                <td class="text-end">
+                                    @if (p.ActualReceivedAmount.HasValue)
+                                    {
+                                        <span class="fw-bold text-success">₹@p.ActualReceivedAmount.Value.ToString("N2")</span>
+                                    }
+                                    else if (p.Status == 1)
+                                    {
+                                        <span class="text-muted">₹@p.Amount.ToString("N2")</span>
+                                    }
+                                    else { <span class="text-muted">—</span> }
                                 </td>
                                 <td>
                                     @if (p.CanBeApproved())
@@ -174,14 +185,28 @@
                 @Html.AntiForgeryToken()
                 <div class="modal-body">
                     <input type="hidden" name="id" id="approveId" />
-                    <p>Approving payment of <strong id="approveAmtDisplay">₹0</strong></p>
+                    <p>Requested amount: <strong id="approveAmtDisplay">₹0</strong></p>
+                    <div class="form-group mb-3">
+                        <label class="fw-bold">Actual Received Amount (₹) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text">₹</span>
+                            <input type="number" name="actualReceivedAmount" id="actualReceivedAmount"
+                                   class="form-control" min="0.01" step="0.01" required />
+                        </div>
+                        <small class="text-muted">Only this amount will be credited if it differs from requested.</small>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="fw-bold">Actual Received Date <span class="text-danger">*</span></label>
+                        <input type="date" name="actualReceivedDate" id="actualReceivedDate"
+                               class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" required />
+                    </div>
                     <div class="form-group mb-3">
                         <label class="fw-bold">Remarks <span class="text-danger">*</span></label>
                         <textarea name="remarks" class="form-control" rows="2" required></textarea>
                     </div>
                     <div class="alert alert-success mb-0">
                         <i class="bi bi-info-circle"></i>
-                        Amount will be credited to the subdealer balance on approval.
+                        Actual received amount will be credited to the subdealer balance on approval.
                     </div>
                     <input type="hidden" name="applyToBalance" value="true" />
                 </div>
@@ -226,6 +251,8 @@
         function showApprove(id, amount) {
             document.getElementById('approveId').value = id;
             document.getElementById('approveAmtDisplay').textContent = `₹${parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+            document.getElementById('actualReceivedAmount').value = parseFloat(amount).toFixed(2);
+            document.getElementById('actualReceivedDate').value = new Date().toISOString().slice(0, 10);
             new bootstrap.Modal(document.getElementById('approveModal')).show();
         }
         function showReject(id) {

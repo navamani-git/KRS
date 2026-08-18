@@ -1,7 +1,6 @@
 using MediatR;
 using KRSDealerManagement.Application.Commands;
 using KRSDealerManagement.Application.Helpers;
-using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Repositories;
 using System.Text.Json;
@@ -11,13 +10,11 @@ namespace KRSDealerManagement.Application.Handlers.Commands
     public class AdminCorrectPaymentCommandHandler : IRequestHandler<AdminCorrectPaymentCommand, bool>
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IMediator _mediator;
         private readonly IAuditService _auditService;
 
-        public AdminCorrectPaymentCommandHandler(IUnitOfWork unitOfWork, IMediator mediator, IAuditService auditService)
+        public AdminCorrectPaymentCommandHandler(IUnitOfWork unitOfWork, IAuditService auditService)
         {
             _unitOfWork = unitOfWork;
-            _mediator = mediator;
             _auditService = auditService;
         }
 
@@ -31,12 +28,27 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             if (type == null) throw new InvalidOperationException("Invalid payment type.");
 
             var changes = new List<string>();
-            var oldAmount = payment.Amount;
             var oldStatus = payment.Status;
             var wasApplied = payment.IsApplied;
+            var oldCredited = GetCreditedAmount(payment);
+            var newCredited = request.Status == 1
+                ? (request.ActualReceivedAmount ?? request.Amount)
+                : 0;
 
             if (payment.Amount != request.Amount)
-                changes.Add(CorrectionNoteHelper.DescribeChange("Amount", $"₹{payment.Amount:N2}", $"₹{request.Amount:N2}"));
+                changes.Add(CorrectionNoteHelper.DescribeChange("Requested Amount", $"₹{payment.Amount:N2}", $"₹{request.Amount:N2}"));
+
+            var oldReceived = payment.ActualReceivedAmount;
+            if (oldReceived != request.ActualReceivedAmount)
+                changes.Add(CorrectionNoteHelper.DescribeChange("Actual Received Amount",
+                    oldReceived.HasValue ? $"₹{oldReceived.Value:N2}" : "(none)",
+                    request.ActualReceivedAmount.HasValue ? $"₹{request.ActualReceivedAmount.Value:N2}" : "(none)"));
+
+            var oldReceivedDate = payment.ActualReceivedDate?.ToString("yyyy-MM-dd");
+            var newReceivedDate = request.ActualReceivedDate?.ToString("yyyy-MM-dd");
+            if (oldReceivedDate != newReceivedDate)
+                changes.Add(CorrectionNoteHelper.DescribeChange("Actual Received Date", oldReceivedDate, newReceivedDate));
+
             if (payment.PaymentTypeId != request.PaymentTypeId)
                 changes.Add(CorrectionNoteHelper.DescribeChange("Payment Type", payment.PaymentType, type.TypeName));
             if (payment.PaymentDate.Date != request.PaymentDate.Date)
@@ -53,6 +65,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 changes.Add(CorrectionNoteHelper.DescribeChange("Subdealer Remarks", payment.SubdealerRemarks, request.SubdealerRemarks));
 
             payment.Amount = request.Amount;
+            payment.ActualReceivedAmount = request.Status == 1 ? request.ActualReceivedAmount ?? request.Amount : null;
+            payment.ActualReceivedDate = request.Status == 1 ? request.ActualReceivedDate?.Date : null;
             payment.PaymentTypeId = request.PaymentTypeId;
             payment.PaymentType = type.TypeName;
             payment.PaymentDate = request.PaymentDate.Date;
@@ -72,20 +86,23 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
             await _unitOfWork.Payments.UpdateAsync(payment);
 
-            if (wasApplied && request.Amount != oldAmount)
+            if (wasApplied && request.Status == 1 && newCredited != oldCredited)
             {
-                var delta = request.Amount - oldAmount;
-                await AdjustBalanceAsync(payment, delta, request.CorrectedBy, noteEntry);
+                await AdjustBalanceAsync(payment, newCredited - oldCredited, request.CorrectedBy, noteEntry);
             }
 
             if (wasApplied && oldStatus == 1 && request.Status != 1)
             {
-                await AdjustBalanceAsync(payment, -oldAmount, request.CorrectedBy,
+                await AdjustBalanceAsync(payment, -oldCredited, request.CorrectedBy,
                     $"Reversed credited amount due to status change to {StatusLabel(request.Status)}.");
+                payment.IsApplied = false;
+                payment.ActualReceivedAmount = null;
+                payment.ActualReceivedDate = null;
+                await _unitOfWork.Payments.UpdateAsync(payment);
             }
             else if (!wasApplied && request.Status == 1 && oldStatus != 1)
             {
-                await AdjustBalanceAsync(payment, request.Amount, request.CorrectedBy,
+                await AdjustBalanceAsync(payment, newCredited, request.CorrectedBy,
                     "Amount credited due to admin status correction to Approved.");
                 payment.IsApplied = true;
                 await _unitOfWork.Payments.UpdateAsync(payment);
@@ -108,6 +125,9 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
             return true;
         }
+
+        private static decimal GetCreditedAmount(Domain.Entities.Payment payment)
+            => payment.ActualReceivedAmount ?? payment.Amount;
 
         private static string StatusLabel(int status) => status switch
         {

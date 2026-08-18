@@ -1,0 +1,30 @@
+@using KRSDealerManagement.Web.Helpers
+@{
+    var path1 = ViewData["ProofPath1"] as string;
+    var path2 = ViewData["ProofPath2"] as string;
+    var compact = ViewData["ProofCompact"] as bool? ?? false;
+    var btnClass = compact ? "btn-xs btn-outline-secondary btn-sm" : "btn btn-sm btn-outline-secondary";
+}
+
+@if (!string.IsNullOrEmpty(path1))
+{
+    <a href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "ViewProof", new { path = path1 }, "Payments")"
+       class="@btnClass" title="View proof 1" target="_blank" rel="noopener">
+        <i class="bi bi-eye"></i>@(!compact ? " View" : "")
+    </a>
+    <a href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "DownloadProof", new { path = path1 }, "Payments")"
+       class="@btnClass" title="Download proof 1">
+        <i class="bi bi-download"></i>
+    </a>
+}
+@if (!string.IsNullOrEmpty(path2))
+{
+    <a href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "ViewProof", new { path = path2 }, "Payments")"
+       class="@btnClass" title="View proof 2" target="_blank" rel="noopener">
+        <i class="bi bi-eye"></i>2
+    </a>
+    <a href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "DownloadProof", new { path = path2 }, "Payments")"
+       class="@btnClass" title="Download proof 2">
+        <i class="bi bi-download"></i>2
+    </a>
+}

@@ -41,6 +41,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                              SubdealerId = p.SubdealerId,
                              SubdealerName = user != null ? user.GetFullName() : "Unknown",
                              Amount = p.Amount,
+                             ActualReceivedAmount = p.ActualReceivedAmount,
+                             ActualReceivedDate = p.ActualReceivedDate,
                              PaymentType = p.PaymentType,
                              PaymentTypeId = p.PaymentTypeId,
                              CustomerName = p.CustomerName,

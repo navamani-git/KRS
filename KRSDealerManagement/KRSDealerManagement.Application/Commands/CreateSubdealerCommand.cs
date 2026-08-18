@@ -2,10 +2,7 @@ using MediatR;
 
 namespace KRSDealerManagement.Application.Commands
 {
-    /// <summary>
-    /// Create new subdealer user and main account
-    /// Will automatically log user creation to AuditLog
-    /// </summary>
+    /// <summary>Create a unique subdealer business org under a dealership (no login yet).</summary>
     public class CreateSubdealerCommand : IRequest<int>
     {
         public required string SubdealerName { get; set; }
@@ -13,15 +10,9 @@ namespace KRSDealerManagement.Application.Commands
         public required string Location { get; set; }
         public required string PrimaryPhone { get; set; }
         public string? SecondaryPhone { get; set; }
-        public required string SalesRepMobile { get; set; }
-        public required string ServiceRepMobile { get; set; }
-        public decimal InitialBalance { get; set; }
-        /// <summary>Login password set by admin (stored so admin can view later).</summary>
-        public required string Password { get; set; }
-        /// <summary>Required: which KRS dealership location this subdealer belongs to.</summary>
+        public string? SalesRepMobile { get; set; }
+        public string? ServiceRepMobile { get; set; }
         public int DealershipId { get; set; }
-        /// <summary>Menu keys the subdealer may access. Empty = role default menus.</summary>
-        public List<string>? AccessibleMenuKeys { get; set; }
-        public int CreatedBy { get; set; } // Admin UserId
+        public int CreatedBy { get; set; }
     }
 }

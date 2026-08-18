@@ -41,6 +41,8 @@ UPDATE Payments SET
     VinNumber = @VinNumber,
     ProcessedBy = @ProcessedBy,
     ProcessedDate = @ProcessedDate,
+    ActualReceivedAmount = @ActualReceivedAmount,
+    ActualReceivedDate = @ActualReceivedDate,
     IsApplied = @IsApplied,
     TransactionId = @TransactionId,
     ModifiedDate = @ModifiedDate
@@ -61,6 +63,8 @@ WHERE PaymentId = @PaymentId";
                 entity.VinNumber,
                 entity.ProcessedBy,
                 entity.ProcessedDate,
+                entity.ActualReceivedAmount,
+                entity.ActualReceivedDate,
                 entity.IsApplied,
                 entity.TransactionId,
                 ModifiedDate = entity.ModifiedDate == default ? DateTime.UtcNow : entity.ModifiedDate
@@ -74,6 +78,7 @@ SELECT
     PaymentDate, Status,
     SubdealerRemarks, DealerRemarks,
     ProcessedBy, ProcessedDate,
+    ActualReceivedAmount, ActualReceivedDate,
     IsApplied, TransactionId,
     CustomerName, FinanceNameId, VinNumber,
     PaymentProofPath, PaymentProof2Path,

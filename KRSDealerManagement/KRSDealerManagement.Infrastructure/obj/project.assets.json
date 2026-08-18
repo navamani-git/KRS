@@ -1636,11 +1636,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\KRS\\KRSDealerManagement\\KRSDealerManagement.Infrastructure\\KRSDealerManagement.Infrastructure.csproj",
+      "projectUniqueName": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Infrastructure\\KRSDealerManagement.Infrastructure.csproj",
       "projectName": "KRSDealerManagement.Infrastructure",
-      "projectPath": "D:\\KRS\\KRSDealerManagement\\KRSDealerManagement.Infrastructure\\KRSDealerManagement.Infrastructure.csproj",
+      "projectPath": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Infrastructure\\KRSDealerManagement.Infrastructure.csproj",
       "packagesPath": "C:\\Users\\USER\\.nuget\\packages\\",
-      "outputPath": "D:\\KRS\\KRSDealerManagement\\KRSDealerManagement.Infrastructure\\obj\\",
+      "outputPath": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Infrastructure\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -1663,11 +1663,11 @@
           "framework": "net8.0",
           "targetAlias": "net8.0",
           "projectReferences": {
-            "D:\\KRS\\KRSDealerManagement\\KRSDealerManagement.Domain\\KRSDealerManagement.Domain.csproj": {
-              "projectPath": "D:\\KRS\\KRSDealerManagement\\KRSDealerManagement.Domain\\KRSDealerManagement.Domain.csproj"
+            "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Domain\\KRSDealerManagement.Domain.csproj": {
+              "projectPath": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Domain\\KRSDealerManagement.Domain.csproj"
             },
-            "D:\\KRS\\KRSDealerManagement\\KRSDealerManagement.Shared\\KRSDealerManagement.Shared.csproj": {
-              "projectPath": "D:\\KRS\\KRSDealerManagement\\KRSDealerManagement.Shared\\KRSDealerManagement.Shared.csproj"
+            "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Shared\\KRSDealerManagement.Shared.csproj": {
+              "projectPath": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Shared\\KRSDealerManagement.Shared.csproj"
             }
           }
         }

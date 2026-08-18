@@ -13,6 +13,9 @@ namespace KRSDealerManagement.Application.Validators
 
             RuleFor(x => x.CreatedBy)
                 .GreaterThan(0).WithMessage("Valid user ID is required");
+
+            RuleFor(x => x.ColorIds)
+                .NotEmpty().WithMessage("Select at least one color for this model.");
         }
     }
 }

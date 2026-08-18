@@ -61,5 +61,19 @@ namespace KRSDealerManagement.Web.Helpers
             if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase)) return "";
             return File.Exists(full) ? full : "";
         }
+
+        public static string GetContentType(string absolutePath)
+        {
+            var ext = Path.GetExtension(absolutePath)?.ToLowerInvariant() ?? "";
+            return ext switch
+            {
+                ".pdf" => "application/pdf",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".webp" => "image/webp",
+                ".gif" => "image/gif",
+                _ => "application/octet-stream"
+            };
+        }
     }
 }

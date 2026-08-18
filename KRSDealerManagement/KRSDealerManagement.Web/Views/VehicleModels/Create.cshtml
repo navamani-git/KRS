@@ -1,5 +1,7 @@
 @{
     ViewData["Title"] = "Add Vehicle Model";
+    var allColors = ViewBag.AllColors as IEnumerable<KRSDealerManagement.Application.DTOs.VehicleColorDto>
+        ?? Enumerable.Empty<KRSDealerManagement.Application.DTOs.VehicleColorDto>();
 }
 
 <!-- Page Header -->
@@ -47,6 +49,8 @@
                                   placeholder="Enter optional description about this model..."></textarea>
                         <small class="text-muted">Optional: Additional details about the vehicle model</small>
                     </div>
+
+                    <partial name="_ModelColorCheckboxes" model="allColors" />
                 </div>
                 <div class="card-footer">
                     <button type="submit" class="btn btn-primary">
@@ -78,7 +82,7 @@
                     <li>Ampere Reo Li / Reo Elite</li>
                     <li>Ampere Zeal EX</li>
                 </ul>
-                <p class="mb-0"><strong>Note:</strong> After adding a model, you can add colors and prices for it.</p>
+                <p class="mb-0"><strong>Note:</strong> Select which colors are available for this model. You can also update colors later from Edit.</p>
             </div>
         </div>
     </div>

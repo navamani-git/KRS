@@ -1,0 +1,100 @@
+@model IEnumerable<KRSDealerManagement.Application.DTOs.AccountTransactionDto>
+@using KRSDealerManagement.Application.DTOs
+
+@if (Model.Any())
+{
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover table-sm">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Txn Date</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Customer</th>
+                    <th>Pay Type</th>
+                    <th>Finance</th>
+                    <th>VIN</th>
+                    <th class="text-end">Requested (₹)</th>
+                    <th class="text-end">Approved Amt (₹)</th>
+                    <th class="text-end text-danger">Debit (₹)</th>
+                    <th class="text-end text-success">Credit (₹)</th>
+                    <th class="text-end">Balance (₹)</th>
+                    <th>Submitted</th>
+                    <th>Approved</th>
+                    <th>Received Date</th>
+                    <th>Remarks</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ int sr = 1; }
+                @foreach (var t in Model)
+                {
+                    var rowClass = t.IsDebit() ? "table-danger" : "table-success";
+                    <tr class="@rowClass bg-opacity-25">
+                        <td>@(sr++)</td>
+                        <td>
+                            <small>@t.CreatedDate.ToString("yyyy-MM-dd")</small><br />
+                            <small class="text-muted">@t.CreatedDate.ToString("HH:mm")</small>
+                        </td>
+                        <td><span class="badge bg-secondary">@t.CategoryLabel</span></td>
+                        <td>
+                            @t.Reason
+                            @if (!string.IsNullOrEmpty(t.ChassisNumber))
+                            {
+                                <br /><small class="badge bg-dark"><code>@t.ChassisNumber</code></small>
+                            }
+                            else if (t.IsPaymentTransaction() && t.ReferenceId.HasValue)
+                            {
+                                <br /><small class="text-muted">Payment #@t.ReferenceId</small>
+                            }
+                        </td>
+                        <td><small>@(t.CustomerName ?? "-")</small></td>
+                        <td><small>@(t.PaymentType ?? "-")</small></td>
+                        <td><small>@(t.FinanceName ?? "-")</small></td>
+                        <td><small><code>@(t.VinNumber ?? "-")</code></small></td>
+                        <td class="text-end">
+                            @(t.RequestedAmount.HasValue ? $"₹{t.RequestedAmount.Value:N2}" : "-")
+                        </td>
+                        <td class="text-end text-success fw-bold">
+                            @(t.ApprovedPaymentAmount.HasValue ? $"₹{t.ApprovedPaymentAmount.Value:N2}" : "-")
+                        </td>
+                        <td class="text-end text-danger fw-bold">
+                            @(t.IsDebit() ? $"₹{t.Amount:N2}" : "-")
+                        </td>
+                        <td class="text-end text-success fw-bold">
+                            @(t.IsCredit() ? $"₹{t.Amount:N2}" : "-")
+                        </td>
+                        <td class="text-end fw-bold">₹@t.BalanceAfterTransaction.ToString("N2")</td>
+                        <td><small>@(t.PaymentSubmittedDate?.ToString("yyyy-MM-dd HH:mm") ?? "-")</small></td>
+                        <td><small>@(t.PaymentApprovedDate?.ToString("yyyy-MM-dd HH:mm") ?? "-")</small></td>
+                        <td><small>@(t.PaymentReceivedDate?.ToString("yyyy-MM-dd") ?? "-")</small></td>
+                        <td><small class="text-muted">@t.Remarks</small></td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot class="table-light fw-bold">
+                <tr>
+                    <td colspan="8">Total</td>
+                    <td></td>
+                    <td class="text-end text-success">
+                        ₹@Model.Where(t => t.ApprovedPaymentAmount.HasValue).Sum(t => t.ApprovedPaymentAmount!.Value).ToString("N2")
+                    </td>
+                    <td class="text-end text-danger">
+                        ₹@Model.Where(t => t.IsDebit()).Sum(t => t.Amount).ToString("N2")
+                    </td>
+                    <td class="text-end text-success">
+                        ₹@Model.Where(t => t.IsCredit()).Sum(t => t.Amount).ToString("N2")
+                    </td>
+                    <td colspan="4"></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+}
+else
+{
+    <div class="alert alert-info mb-0">
+        <i class="bi bi-info-circle"></i> No transactions found for this account.
+    </div>
+}

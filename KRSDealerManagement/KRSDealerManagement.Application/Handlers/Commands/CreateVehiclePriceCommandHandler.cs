@@ -1,6 +1,7 @@
 using MediatR;
 using KRSDealerManagement.Application.Commands;
 using KRSDealerManagement.Application.Services;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Domain.Entities;
 using System.Text.Json;
@@ -40,6 +41,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 var color = await _unitOfWork.VehicleColors.GetByIdAsync(request.ColorId);
                 if (color == null)
                     throw new InvalidOperationException($"Vehicle color #{request.ColorId} not found.");
+
+                await ModelColorValidation.EnsureMappedAsync(_unitOfWork, request.ModelId, request.ColorId);
 
                 var effectiveFrom = request.EffectiveFrom == default
                     ? new DateTime(request.Year, request.Month, 1)

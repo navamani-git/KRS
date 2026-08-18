@@ -23,13 +23,6 @@ namespace KRSDealerManagement.Application.Validators
                 .NotEmpty().WithMessage("Phone number is required")
                 .Matches(@"^\d{10}$").WithMessage("Phone number must be 10 digits");
 
-            RuleFor(x => x.InitialBalance)
-                .GreaterThanOrEqualTo(0).WithMessage("Initial balance cannot be negative");
-
-            RuleFor(x => x.Password)
-                .NotEmpty().WithMessage("Password is required")
-                .MinimumLength(6).WithMessage("Password must be at least 6 characters");
-
             RuleFor(x => x.DealershipId)
                 .GreaterThan(0).WithMessage("Dealership location is required");
 

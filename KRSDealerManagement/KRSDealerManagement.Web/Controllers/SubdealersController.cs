@@ -8,7 +8,7 @@ using KRSDealerManagement.Shared.Constants;
 
 namespace KRSDealerManagement.Web.Controllers
 {
-    [AuthorizeRole(1, 4)] // System admin + branch manager
+    [AuthorizeRole(1, 4)]
     [AuthorizeMenu(StaffMenuAccess.Subdealers)]
     public class SubdealersController : Controller
     {
@@ -42,20 +42,18 @@ namespace KRSDealerManagement.Web.Controllers
                 IsActive = isActive,
                 DealershipId = scope
             })).ToList();
-            var headers = new[] { "Name", "Email", "Location", "Username", "Phone", "Status", "Created" };
+            var headers = new[] { "Name", "Email", "Location", "Logins", "Phone", "Status", "Created" };
             var rows = subdealers.Select(s => (IReadOnlyList<object?>)new List<object?>
             {
-                s.GetFullName(), s.Email, s.LastName, s.Username, s.PhoneNumber,
-                s.IsActive ? "Active" : "Inactive", s.CreatedDate
+                s.GetFullName(), s.Email, s.LastName, s.LoginCount,
+                s.PhoneNumber, s.IsActive ? "Active" : "Inactive", s.CreatedDate
             });
             return ExcelExportHelper.ToFileResult(this, $"subdealers_{DateTime.Now:yyyyMMdd}.xlsx", headers, rows, "Subdealers");
         }
 
         public async Task<IActionResult> Create()
         {
-            ViewBag.MenuGroups = MenuKeys.GetSubdealerMenuGroups();
-            ViewBag.UseMenuDefaults = true;
-            ViewBag.MenuIdPrefix = "menu";
+            ViewBag.CanViewBalances = SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Balances);
             await LoadDealershipOptionsAsync();
             return View();
         }
@@ -66,16 +64,12 @@ namespace KRSDealerManagement.Web.Controllers
             string subdealerName, string email, string location,
             string primaryPhone, string secondaryPhone,
             string salesRepMobile, string serviceRepMobile,
-            decimal initialBalance, string password,
-            int dealershipId,
-            string[]? accessibleMenus)
+            int dealershipId)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
-            ViewBag.MenuGroups = MenuKeys.GetSubdealerMenuGroups();
-            ViewBag.UseMenuDefaults = true;
-            ViewBag.MenuIdPrefix = "menu";
+            ViewBag.CanViewBalances = SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Balances);
             await LoadDealershipOptionsAsync();
 
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
@@ -93,18 +87,9 @@ namespace KRSDealerManagement.Web.Controllers
                 return View();
             }
 
-            if (string.IsNullOrWhiteSpace(password) || password.Trim().Length < 6)
-            {
-                TempData["Error"] = "Password is required (min 6 characters).";
-                return View();
-            }
-
             try
             {
-                var menuKeys = accessibleMenus?.Where(m => !string.IsNullOrWhiteSpace(m)).ToList()
-                    ?? MenuKeys.GetSubdealerConfigurableMenus().Select(m => m.Key).ToList();
-
-                var subdealerId = await _mediator.Send(new CreateSubdealerCommand
+                var subDealerId = await _mediator.Send(new CreateSubdealerCommand
                 {
                     SubdealerName = subdealerName.Trim(),
                     Email = string.IsNullOrWhiteSpace(email) ? $"{subdealerName.ToLower().Replace(" ", ".")}@krs.com" : email.Trim(),
@@ -113,15 +98,12 @@ namespace KRSDealerManagement.Web.Controllers
                     SecondaryPhone = string.IsNullOrWhiteSpace(secondaryPhone) ? null : secondaryPhone.Trim(),
                     SalesRepMobile = salesRepMobile?.Trim() ?? "",
                     ServiceRepMobile = serviceRepMobile?.Trim() ?? "",
-                    InitialBalance = initialBalance,
-                    Password = password.Trim(),
                     DealershipId = dealershipId,
-                    AccessibleMenuKeys = menuKeys,
                     CreatedBy = userId.Value
                 });
 
-                TempData["Success"] = $"Subdealer '{subdealerName}' created under selected location.";
-                return this.RedirectEncrypted(nameof(Details), new { id = subdealerId });
+                TempData["Success"] = $"Subdealer '{subdealerName}' created. Add at least one login below.";
+                return this.RedirectEncrypted(nameof(Details), new { id = subDealerId });
             }
             catch (Exception ex)
             {
@@ -135,9 +117,18 @@ namespace KRSDealerManagement.Web.Controllers
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             var subdealer = await _mediator.Send(new GetSubdealerDetailQuery
             {
-                UserId = id,
+                SubDealerId = id,
                 DealershipId = scope
             });
+
+            if (subdealer == null)
+            {
+                subdealer = await _mediator.Send(new GetSubdealerDetailQuery
+                {
+                    UserId = id,
+                    DealershipId = scope
+                });
+            }
 
             if (subdealer == null)
             {
@@ -145,24 +136,31 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var accounts = await _mediator.Send(new GetSubdealerAccountsQuery { SubdealerId = id });
+            IEnumerable<KRSDealerManagement.Application.DTOs.SubdealerAccountDto> accounts = Array.Empty<KRSDealerManagement.Application.DTOs.SubdealerAccountDto>();
+            if (subdealer.PrimaryUserId.HasValue)
+            {
+                accounts = await _mediator.Send(new GetSubdealerAccountsQuery
+                {
+                    SubdealerId = subdealer.PrimaryUserId.Value
+                });
+            }
             ViewBag.Accounts = accounts;
 
-            var primary = accounts.FirstOrDefault(a =>
-                    string.Equals(a.AccountType, "Main", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(a.AccountName, "Main Account", StringComparison.OrdinalIgnoreCase))
-                ?? accounts.FirstOrDefault();
-
-            if (primary != null)
-            {
-                ViewBag.AccountId = primary.AccountId;
-                var permissions = await _mediator.Send(new GetAccountPermissionsQuery { AccountId = primary.AccountId });
-                ViewBag.PermMap = permissions.ToDictionary(p => p.MenuKey, p => p.IsAccessible, StringComparer.OrdinalIgnoreCase);
-            }
-
             ViewBag.MenuGroups = MenuKeys.GetSubdealerMenuGroups();
-            ViewBag.UseMenuDefaults = false;
-            ViewBag.MenuIdPrefix = "perm";
+            ViewBag.UseMenuDefaults = true;
+            ViewBag.MenuIdPrefix = "newlogin";
+
+            var permMaps = new Dictionary<int, Dictionary<string, bool>>();
+            foreach (var login in subdealer.Logins)
+            {
+                var permissions = await _mediator.Send(new GetAccountPermissionsQuery { AccountId = login.PermissionAccountId });
+                permMaps[login.PermissionAccountId] = permissions.ToDictionary(p => p.MenuKey, p => p.IsAccessible, StringComparer.OrdinalIgnoreCase);
+            }
+            ViewBag.LoginPermMaps = permMaps;
+            ViewBag.CanViewBalances = SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Balances);
+            ViewBag.CanViewStatement = SessionHelper.IsSystemAdmin(HttpContext.Session)
+                || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Balances)
+                || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Subdealers);
             await LoadDealershipOptionsAsync();
             return View(subdealer);
         }
@@ -170,7 +168,7 @@ namespace KRSDealerManagement.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Update(
-            int id, string username, string subdealerName, string location, string email,
+            int id, string subdealerName, string location, string email,
             string primaryPhone, string? secondaryPhone, string? salesRepMobile, string? serviceRepMobile,
             int dealershipId)
         {
@@ -182,22 +180,20 @@ namespace KRSDealerManagement.Web.Controllers
 
             var isActive = ParseCheckboxValue(Request.Form, "isActive");
 
-            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(subdealerName)
-                || string.IsNullOrWhiteSpace(location) || string.IsNullOrWhiteSpace(primaryPhone))
+            if (string.IsNullOrWhiteSpace(subdealerName) || string.IsNullOrWhiteSpace(location) || string.IsNullOrWhiteSpace(primaryPhone))
             {
-                TempData["Error"] = "Username, name, location and primary phone are required.";
+                TempData["Error"] = "Name, location and primary phone are required.";
                 return this.RedirectEncrypted(nameof(Details), new { id });
             }
 
             try
             {
-                await _mediator.Send(new UpdateSubdealerCommand
+                await _mediator.Send(new UpdateSubdealerOrgCommand
                 {
-                    UserId = id,
-                    Username = username.Trim(),
+                    SubDealerId = id,
                     SubdealerName = subdealerName.Trim(),
                     Location = location.Trim(),
-                    Email = string.IsNullOrWhiteSpace(email) ? $"{username.Trim()}@krs.com" : email.Trim(),
+                    Email = string.IsNullOrWhiteSpace(email) ? $"{subdealerName.ToLower().Replace(" ", ".")}@krs.com" : email.Trim(),
                     PrimaryPhone = primaryPhone.Trim(),
                     SecondaryPhone = secondaryPhone,
                     SalesRepMobile = salesRepMobile,
@@ -218,7 +214,50 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SetPassword(int id, string password)
+        public async Task<IActionResult> CreateLogin(
+            int id, string username, string password, string? displayName,
+            decimal initialBalance, string[]? accessibleMenus)
+        {
+            var adminId = SessionHelper.GetUserId(HttpContext.Session);
+            if (!adminId.HasValue) return RedirectToAction("Login", "Account");
+
+            if (!SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Balances))
+                initialBalance = 0;
+
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password) || password.Trim().Length < 6)
+            {
+                TempData["Error"] = "Username and password (min 6 chars) are required.";
+                return this.RedirectEncrypted(nameof(Details), new { id });
+            }
+
+            try
+            {
+                var menuKeys = accessibleMenus?.Where(m => !string.IsNullOrWhiteSpace(m)).ToList()
+                    ?? MenuKeys.GetSubdealerConfigurableMenus().Select(m => m.Key).ToList();
+
+                await _mediator.Send(new CreateSubdealerLoginCommand
+                {
+                    SubDealerId = id,
+                    Username = username.Trim().ToLowerInvariant(),
+                    Password = password.Trim(),
+                    DisplayName = displayName?.Trim(),
+                    InitialBalance = initialBalance,
+                    AccessibleMenuKeys = menuKeys,
+                    CreatedBy = adminId.Value
+                });
+                TempData["Success"] = $"Login '{username}' created.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+
+            return this.RedirectEncrypted(nameof(Details), new { id });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SetPassword(int id, int loginUserId, string password)
         {
             var adminId = SessionHelper.GetUserId(HttpContext.Session);
             if (!adminId.HasValue) return RedirectToAction("Login", "Account");
@@ -233,7 +272,7 @@ namespace KRSDealerManagement.Web.Controllers
             {
                 await _mediator.Send(new SetSubdealerPasswordCommand
                 {
-                    SubdealerId = id,
+                    SubdealerId = loginUserId,
                     Password = password.Trim(),
                     UpdatedBy = adminId.Value
                 });
@@ -289,6 +328,7 @@ namespace KRSDealerManagement.Web.Controllers
             return this.RedirectEncrypted(nameof(Details), new { id });
         }
 
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
@@ -296,7 +336,7 @@ namespace KRSDealerManagement.Web.Controllers
             var adminId = SessionHelper.GetUserId(HttpContext.Session);
             if (!adminId.HasValue) return RedirectToAction("Login", "Account");
 
-            var detail = await _mediator.Send(new GetSubdealerDetailQuery { UserId = id });
+            var detail = await _mediator.Send(new GetSubdealerDetailQuery { SubDealerId = id });
             if (detail == null)
             {
                 TempData["Error"] = "Subdealer not found.";
@@ -305,10 +345,9 @@ namespace KRSDealerManagement.Web.Controllers
 
             try
             {
-                await _mediator.Send(new UpdateSubdealerCommand
+                await _mediator.Send(new UpdateSubdealerOrgCommand
                 {
-                    UserId = id,
-                    Username = detail.Username,
+                    SubDealerId = id,
                     SubdealerName = detail.SubdealerName,
                     Location = detail.Location,
                     Email = detail.Email,

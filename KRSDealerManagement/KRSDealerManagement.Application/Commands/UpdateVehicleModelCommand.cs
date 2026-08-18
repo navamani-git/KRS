@@ -14,5 +14,6 @@ namespace KRSDealerManagement.Application.Commands
         public bool IsActive { get; set; }
         public int ModifiedBy { get; set; } // UserId from context
         public required string Remarks { get; set; } // For audit trail
+        public List<int> ColorIds { get; set; } = new();
     }
 }

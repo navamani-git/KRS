@@ -44,6 +44,11 @@ namespace KRSDealerManagement.Domain.Repositories
         IRepository<VehicleColor> VehicleColors { get; }
 
         /// <summary>
+        /// Repository for model-to-color mappings
+        /// </summary>
+        IVehicleModelColorRepository VehicleModelColors { get; }
+
+        /// <summary>
         /// Repository for VehiclePriceHistory entities
         /// </summary>
         IRepository<VehiclePriceHistory> VehiclePriceHistories { get; }

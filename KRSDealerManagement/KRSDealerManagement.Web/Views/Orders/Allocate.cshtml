@@ -319,6 +319,7 @@ else
     document.getElementById('allocForm')?.addEventListener('submit', function (e) {
 
         let hasWork = false;
+        const chassisSeen = new Set();
 
         document.querySelectorAll('.action-flag').forEach(sel => {
 
@@ -345,6 +346,17 @@ else
                     }
 
                 });
+
+                const chassisEl = document.getElementById(`chassis_${idx}`);
+                const chassis = chassisEl?.value.trim().toUpperCase();
+                if (chassis) {
+                    if (chassisSeen.has(chassis)) {
+                        e.preventDefault();
+                        chassisEl.focus();
+                        alert(`Duplicate chassis number "${chassis}" in this form. Each row must have a unique chassis.`);
+                    }
+                    chassisSeen.add(chassis);
+                }
 
             }
 

@@ -1,5 +1,12 @@
-in dealer also i want the parent and child menu structure
+1) "Account Statement" sub dealer "Reversed amount is not shown"
+2) Admin screen move Balance,Commission approval to "Orders and Operations section"
+3) While "Allocate / Approve " make sure no duplicate on chasis means they canot enter duplicate chasis against each row and from DB also the entered chasis should not exixts if exists or duplicate entered show validation message and dont allocate
+4) in Book Vehicle screen 
+5) in View Booking screen i cant able to view the attachment
+6) vehicle bookings should be viwed by each branch manager
+7) Now the transation in account showing as order by i wanted it as line item (say for eg), the debit of order Order ORD-2026-00005: approved 2 vehicle(s) shows a siggle , But i want each line item debut
+8) in "Submit Commission" screen when i click "My Commission" it shows ccess denied
+9) " Invoiced Vehicles & Applicable Commission" put it as seperate screen
+10) in "Submit Commission" show "Commission Rates" in top as view only means for that current month
+11) In admin move "commission approvals" to "order and operations" section
 
-while approve returns geting error as " Error: Validation failed: -- ReturnRequestId: Valid return request ID is required Severity: Error"
-
-while approve returns either they can return to their own showrom or for any other sub dealer , So if it reassigned to other sub dealer then it get added to them and goes with approved status they can initiate booking 

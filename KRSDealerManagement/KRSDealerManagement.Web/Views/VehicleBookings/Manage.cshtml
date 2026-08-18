@@ -32,13 +32,13 @@
                 <tr><td><strong>Subsidy ID</strong></td><td>@(Model.SubsidyId ?? "-")</td></tr>
             </table>
             <div class="d-flex flex-wrap gap-2">
-                <a class="btn btn-sm btn-outline-secondary" href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Download", new { path = Model.EAadhaarPath }, "VehicleBookings")">E-Aadhaar</a>
-                <a class="btn btn-sm btn-outline-secondary" href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Download", new { path = Model.DocumentPath }, "VehicleBookings")">ID Doc</a>
+                <partial name="_FileAttachmentLinks" view-data='new ViewDataDictionary(ViewData) { { "FilePath", Model.EAadhaarPath }, { "FileLabel", "E-Aadhaar" } }' />
+                <partial name="_FileAttachmentLinks" view-data='new ViewDataDictionary(ViewData) { { "FilePath", Model.DocumentPath }, { "FileLabel", "ID Doc" } }' />
                 @if (!string.IsNullOrEmpty(Model.GstCertificatePath)) {
-                    <a class="btn btn-sm btn-outline-secondary" href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Download", new { path = Model.GstCertificatePath }, "VehicleBookings")">GST</a> }
-                <a class="btn btn-sm btn-outline-secondary" href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Download", new { path = Model.CustomerPhotoPath }, "VehicleBookings")">Photo</a>
-                <a class="btn btn-sm btn-outline-secondary" href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Download", new { path = Model.ChassisPhotoPath }, "VehicleBookings")">Chassis Img</a>
-                <a class="btn btn-sm btn-outline-secondary" href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Download", new { path = Model.CustomerSignPath }, "VehicleBookings")">Sign/Seal</a>
+                    <partial name="_FileAttachmentLinks" view-data='new ViewDataDictionary(ViewData) { { "FilePath", Model.GstCertificatePath }, { "FileLabel", "GST" } }' /> }
+                <partial name="_FileAttachmentLinks" view-data='new ViewDataDictionary(ViewData) { { "FilePath", Model.CustomerPhotoPath }, { "FileLabel", "Photo" } }' />
+                <partial name="_FileAttachmentLinks" view-data='new ViewDataDictionary(ViewData) { { "FilePath", Model.ChassisPhotoPath }, { "FileLabel", "Chassis Img" } }' />
+                <partial name="_FileAttachmentLinks" view-data='new ViewDataDictionary(ViewData) { { "FilePath", Model.CustomerSignPath }, { "FileLabel", "Sign/Seal" } }' />
             </div>
         </div></div>
 
@@ -51,10 +51,10 @@
         @if (Model.SubsidyDocsSubmittedDate.HasValue)
         {
             <div class="card mb-3"><div class="card-header">Subsidy Documents</div><div class="card-body d-flex gap-2 flex-wrap">
-                <a class="btn btn-sm btn-outline-primary" href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Download", new { path = Model.FaceVerificationPath }, "VehicleBookings")">Face Verification</a>
-                <a class="btn btn-sm btn-outline-primary" href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Download", new { path = Model.RcImagePath }, "VehicleBookings")">RC Image</a>
-                <a class="btn btn-sm btn-outline-primary" href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Download", new { path = Model.BoothPhotoPath }, "VehicleBookings")">Booth Photo</a>
-                <a class="btn btn-sm btn-outline-primary" href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Download", new { path = Model.SubsidyUndertakingPath }, "VehicleBookings")">Undertaking</a>
+                <partial name="_FileAttachmentLinks" view-data='new ViewDataDictionary(ViewData) { { "FilePath", Model.FaceVerificationPath }, { "FileLabel", "Face Verification" } }' />
+                <partial name="_FileAttachmentLinks" view-data='new ViewDataDictionary(ViewData) { { "FilePath", Model.RcImagePath }, { "FileLabel", "RC Image" } }' />
+                <partial name="_FileAttachmentLinks" view-data='new ViewDataDictionary(ViewData) { { "FilePath", Model.BoothPhotoPath }, { "FileLabel", "Booth Photo" } }' />
+                <partial name="_FileAttachmentLinks" view-data='new ViewDataDictionary(ViewData) { { "FilePath", Model.SubsidyUndertakingPath }, { "FileLabel", "Undertaking" } }' />
                 <p class="w-100 mb-0"><small>Customer (CAPS): @Model.SubsidyCustomerNameCaps</small></p>
             </div></div>
         }

@@ -71,11 +71,12 @@ namespace KRSDealerManagement.Web.Controllers
                 ToDate = to
             })).ToList();
 
-            var headers = new[] { "ID", "Amount", "Type", "Payment Date", "Status", "Customer", "Finance", "VIN", "Remarks", "Submitted", "Processed" };
+            var headers = new[] { "ID", "Amount", "Type", "Payment Date", "Status", "Customer", "Finance", "VIN", "Remarks", "Submitted", "Approved", "Received Date", "Received Amt" };
             var rows = payments.Select(p => (IReadOnlyList<object?>)new List<object?>
             {
                 p.PaymentId, p.Amount, p.GetPaymentTypeDisplay(), p.PaymentDate, p.GetStatusDisplay(),
-                p.CustomerName ?? "", p.FinanceName ?? "", p.VinNumber ?? "", p.SubdealerRemarks ?? "", p.CreatedDate, p.ProcessedDate
+                p.CustomerName ?? "", p.FinanceName ?? "", p.VinNumber ?? "", p.SubdealerRemarks ?? "",
+                p.CreatedDate, p.ProcessedDate, p.ActualReceivedDate, p.ActualReceivedAmount ?? p.Amount
             });
             return ExcelExportHelper.ToFileResult(this, $"my_payments_{DateTime.Now:yyyyMMdd}.xlsx", headers, rows, "My Payments");
         }
@@ -123,13 +124,14 @@ namespace KRSDealerManagement.Web.Controllers
             var requiresFinance = type.RequiresFinanceDetails
                 || type.TypeCode.Equals("FINANCE", StringComparison.OrdinalIgnoreCase);
 
+            if (string.IsNullOrWhiteSpace(customerName))
+            {
+                TempData["Error"] = "Customer name is required for all payments.";
+                return RedirectToAction(nameof(MyPayments));
+            }
+
             if (requiresFinance)
             {
-                if (string.IsNullOrWhiteSpace(customerName))
-                {
-                    TempData["Error"] = "Customer name is required for Finance payments.";
-                    return RedirectToAction(nameof(MyPayments));
-                }
                 if (!financeNameId.HasValue || financeNameId.Value <= 0)
                 {
                     TempData["Error"] = "Finance name is required for Finance payments.";
@@ -184,7 +186,7 @@ namespace KRSDealerManagement.Web.Controllers
                     PaymentDate = paymentDate,
                     SubdealerRemarks = remarks,
                     OtherPaymentType = otherPaymentType,
-                    CustomerName = customerName,
+                    CustomerName = customerName.Trim().ToUpperInvariant(),
                     FinanceNameId = requiresFinance ? financeNameId : null,
                     VinNumber = vinNumber,
                     PaymentProofPath = proof1,
@@ -204,6 +206,20 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         [AuthorizeRole(1, 2, 3, 4)]
+        public IActionResult ViewProof(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path) || path.Contains(".."))
+                return BadRequest();
+
+            var absolute = Path.Combine(_env.ContentRootPath, path.Replace('/', Path.DirectorySeparatorChar));
+            if (!System.IO.File.Exists(absolute))
+                return NotFound();
+
+            var contentType = PaymentFileHelper.GetContentType(absolute);
+            return PhysicalFile(absolute, contentType);
+        }
+
+        [AuthorizeRole(1, 2, 3, 4)]
         public IActionResult DownloadProof(string path)
         {
             if (string.IsNullOrWhiteSpace(path) || path.Contains(".."))
@@ -213,10 +229,12 @@ namespace KRSDealerManagement.Web.Controllers
             if (!System.IO.File.Exists(absolute))
                 return NotFound();
 
-            return PhysicalFile(absolute, "application/octet-stream", Path.GetFileName(absolute));
+            var contentType = PaymentFileHelper.GetContentType(absolute);
+            return PhysicalFile(absolute, contentType, Path.GetFileName(absolute));
         }
 
         [AuthorizeRole(1, 3)]
+        [AuthorizeMenu(StaffMenuAccess.Payments)]
         public async Task<IActionResult> Index(int? status, int? subdealerId, DateTime? fromDate, DateTime? toDate, int? page)
         {
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
@@ -252,6 +270,7 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         [AuthorizeRole(1, 3)]
+        [AuthorizeMenu(StaffMenuAccess.Payments)]
         public async Task<IActionResult> Export(int? status, int? subdealerId, DateTime? fromDate, DateTime? toDate)
         {
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
@@ -272,11 +291,13 @@ namespace KRSDealerManagement.Web.Controllers
             }
 
             var paymentList = payments.ToList();
-            var headers = new[] { "ID", "Subdealer", "Amount", "Type", "Payment Date", "Status", "Applied", "Customer", "Finance", "VIN", "Submitted", "Processed" };
+            var headers = new[] { "ID", "Subdealer", "Requested Amt", "Received Amt", "Type", "Payment Date", "Status", "Applied", "Customer", "Finance", "VIN", "Submitted", "Approved", "Received Date" };
             var rows = paymentList.Select(p => (IReadOnlyList<object?>)new List<object?>
             {
-                p.PaymentId, p.SubdealerName, p.Amount, p.GetPaymentTypeDisplay(), p.PaymentDate, p.GetStatusDisplay(),
-                p.IsApplied ? "Yes" : "No", p.CustomerName ?? "", p.FinanceName ?? "", p.VinNumber ?? "", p.CreatedDate, p.ProcessedDate
+                p.PaymentId, p.SubdealerName, p.Amount, p.ActualReceivedAmount ?? (p.Status == 1 ? p.Amount : null),
+                p.GetPaymentTypeDisplay(), p.PaymentDate, p.GetStatusDisplay(),
+                p.IsApplied ? "Yes" : "No", p.CustomerName ?? "", p.FinanceName ?? "", p.VinNumber ?? "",
+                p.CreatedDate, p.ProcessedDate, p.ActualReceivedDate
             });
             return ExcelExportHelper.ToFileResult(this, $"payments_{DateTime.Now:yyyyMMdd}.xlsx", headers, rows, "Payments");
         }
@@ -284,7 +305,10 @@ namespace KRSDealerManagement.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AuthorizeRole(1, 3)]
-        public async Task<IActionResult> Approve(int id, string remarks, bool applyToBalance)
+        [AuthorizeMenu(StaffMenuAccess.Payments)]
+        public async Task<IActionResult> Approve(
+            int id, string remarks, bool applyToBalance,
+            decimal? actualReceivedAmount, DateTime actualReceivedDate)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
@@ -296,11 +320,13 @@ namespace KRSDealerManagement.Web.Controllers
                     PaymentId = id,
                     ApprovedBy = userId.Value,
                     Remarks = string.IsNullOrWhiteSpace(remarks) ? "Approved" : remarks.Trim(),
-                    ApplyToBalance = applyToBalance
+                    ApplyToBalance = applyToBalance,
+                    ActualReceivedAmount = actualReceivedAmount,
+                    ActualReceivedDate = actualReceivedDate
                 });
 
                 TempData[result ? "Success" : "Error"] = result
-                    ? $"Payment #{id} approved and credited to subdealer balance."
+                    ? $"Payment #{id} approved and credited (received amount applied)."
                     : "Payment not found or cannot be approved.";
             }
             catch (Exception ex)
@@ -314,6 +340,7 @@ namespace KRSDealerManagement.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AuthorizeRole(1, 3)]
+        [AuthorizeMenu(StaffMenuAccess.Payments)]
         public async Task<IActionResult> Reject(int id, string remarks)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
@@ -368,7 +395,8 @@ namespace KRSDealerManagement.Web.Controllers
         [ValidateAntiForgeryToken]
         [AuthorizeRole(1)]
         public async Task<IActionResult> AdminEdit(
-            int paymentId, decimal amount, int paymentTypeId, DateTime paymentDate, int status,
+            int paymentId, decimal amount, decimal? actualReceivedAmount, DateTime? actualReceivedDate,
+            int paymentTypeId, DateTime paymentDate, int status,
             string? customerName, int? financeNameId, string? vinNumber, string? subdealerRemarks,
             string correctionReason)
         {
@@ -387,6 +415,8 @@ namespace KRSDealerManagement.Web.Controllers
                 {
                     PaymentId = paymentId,
                     Amount = amount,
+                    ActualReceivedAmount = actualReceivedAmount,
+                    ActualReceivedDate = actualReceivedDate,
                     PaymentTypeId = paymentTypeId,
                     PaymentDate = paymentDate,
                     Status = status,

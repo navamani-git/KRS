@@ -18,6 +18,13 @@ namespace KRSDealerManagement.Application.Handlers.Queries
         {
             var colors = await _unitOfWork.VehicleColors.GetAllAsync();
 
+            if (request.ModelId.HasValue)
+            {
+                var mappedIds = (await _unitOfWork.VehicleModelColors.GetColorIdsByModelIdAsync(request.ModelId.Value))
+                    .ToHashSet();
+                colors = colors.Where(c => mappedIds.Contains(c.ColorId));
+            }
+
             if (request.IsActive.HasValue)
                 colors = colors.Where(c => c.IsActive == request.IsActive.Value);
 

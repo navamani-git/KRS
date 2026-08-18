@@ -32,12 +32,30 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Amount (₹) <span class="text-danger">*</span></label>
+                            <label class="form-label fw-bold">Requested Amount (₹) <span class="text-danger">*</span></label>
                             <input type="number" name="amount" class="form-control" step="0.01" min="0.01" value="@Model.Amount" required />
+                            <small class="text-muted">Amount submitted by subdealer</small>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Payment Date <span class="text-danger">*</span></label>
                             <input type="date" name="paymentDate" class="form-control" value="@Model.PaymentDate.ToString("yyyy-MM-dd")" required />
+                        </div>
+                    </div>
+
+                    <div class="row border rounded p-3 mb-3 bg-light" id="receivedFields">
+                        <div class="col-12 mb-2">
+                            <p class="fw-bold mb-0 text-success"><i class="bi bi-cash-coin"></i> Actual received (used for balance credit when approved)</p>
+                        </div>
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label class="form-label fw-bold">Actual Received Amount (₹)</label>
+                            <input type="number" name="actualReceivedAmount" id="actualReceivedAmount"
+                                   class="form-control" step="0.01" min="0.01"
+                                   value="@(Model.ActualReceivedAmount?.ToString("0.##") ?? Model.Amount.ToString("0.##"))" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Actual Received Date</label>
+                            <input type="date" name="actualReceivedDate" id="actualReceivedDate" class="form-control"
+                                   value="@(Model.ActualReceivedDate?.ToString("yyyy-MM-dd") ?? Model.PaymentDate.ToString("yyyy-MM-dd"))" />
                         </div>
                     </div>
 
@@ -57,7 +75,7 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Status <span class="text-danger">*</span></label>
-                            <select name="status" class="form-select" required>
+                            <select name="status" id="paymentStatus" class="form-select" required onchange="onStatusChange()">
                                 @foreach (var s in statuses.OrderBy(x => x.SortOrder))
                                 {
                                     <option value="@s.StatusValue" selected="@(s.StatusValue == Model.Status)">@s.StatusName</option>
@@ -139,6 +157,18 @@
                     {
                         <tr><td><strong>@(Model.Status == 2 ? "Rejected" : "Approved") On</strong></td><td>@Model.ProcessedDate.Value.ToString("yyyy-MM-dd HH:mm")</td></tr>
                     }
+                    @if (Model.ActualReceivedDate.HasValue)
+                    {
+                        <tr><td><strong>Received Date</strong></td><td>@Model.ActualReceivedDate.Value.ToString("yyyy-MM-dd")</td></tr>
+                    }
+                    @if (Model.ActualReceivedAmount.HasValue)
+                    {
+                        <tr><td><strong>Received Amt</strong></td><td>₹@Model.ActualReceivedAmount.Value.ToString("N2")</td></tr>
+                    }
+                    <tr><td><strong>Proofs</strong></td><td>
+                        @{ ViewData["ProofPath1"] = Model.PaymentProofPath; ViewData["ProofPath2"] = Model.PaymentProof2Path; ViewData["ProofCompact"] = true; }
+                        <partial name="_PaymentProofLinks" />
+                    </td></tr>
                     <tr><td><strong>Last Modified</strong></td><td>@Model.ModifiedDate.ToString("yyyy-MM-dd HH:mm")</td></tr>
                 </table>
             </div>
@@ -154,6 +184,14 @@
         const requires = opt.getAttribute('data-requires-finance') === '1';
         document.getElementById('financeFields').classList.toggle('d-none', !requires);
     }
+    function onStatusChange() {
+        const approved = document.getElementById('paymentStatus').value === '1';
+        const amt = document.getElementById('actualReceivedAmount');
+        const dt = document.getElementById('actualReceivedDate');
+        if (amt) amt.required = approved;
+        if (dt) dt.required = approved;
+    }
     onPaymentTypeChange();
+    onStatusChange();
 </script>
 }

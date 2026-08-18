@@ -5,6 +5,11 @@
     var isAdmin = ViewBag.IsAdmin ?? false;
     var isSubdealer = ViewBag.IsSubdealer ?? false;
     var fullName = ViewBag.FullName ?? "User";
+    var dealershipName = ViewBag.DealershipName as string;
+    var canViewOrders = ViewBag.CanViewPendingOrders ?? isSubdealer;
+    var canViewReturns = ViewBag.CanViewPendingReturns ?? isSubdealer;
+    var canViewPayments = ViewBag.CanViewPendingPayments ?? isSubdealer;
+    var canViewCommissions = ViewBag.CanViewPendingCommissions ?? isSubdealer;
 
     var pendingOrdersUrl = isSubdealer
         ? Url.Action("MyOrders", "Orders", new { status = UnifiedVehicleStatus.Submitted })
@@ -26,7 +31,13 @@
         <h1 class="m-0">
             <i class="bi bi-speedometer2"></i> Dashboard
         </h1>
-        <p class="text-muted">Welcome back, <strong>@fullName</strong>!</p>
+        <p class="text-muted">
+            Welcome back, <strong>@fullName</strong>!
+            @if (!string.IsNullOrWhiteSpace(dealershipName))
+            {
+                <span class="badge bg-secondary ms-1">@dealershipName</span>
+            }
+        </p>
     </div>
 </div>
 
@@ -157,6 +168,8 @@
     }
 </style>
 <div class="row">
+    @if (canViewOrders)
+    {
     <div class="col-lg-3 col-6">
         <a href="@pendingOrdersUrl" class="text-decoration-none text-dark d-block dashboard-pending-link">
             <div class="info-box mb-0">
@@ -168,7 +181,10 @@
             </div>
         </a>
     </div>
+    }
 
+    @if (canViewReturns)
+    {
     <div class="col-lg-3 col-6">
         <a href="@pendingReturnsUrl" class="text-decoration-none text-dark d-block dashboard-pending-link">
             <div class="info-box mb-0">
@@ -180,7 +196,10 @@
             </div>
         </a>
     </div>
+    }
 
+    @if (canViewPayments)
+    {
     <div class="col-lg-3 col-6">
         <a href="@pendingPaymentsUrl" class="text-decoration-none text-dark d-block dashboard-pending-link">
             <div class="info-box mb-0">
@@ -192,7 +211,10 @@
             </div>
         </a>
     </div>
+    }
 
+    @if (canViewCommissions)
+    {
     <div class="col-lg-3 col-6">
         <a href="@pendingCommissionsUrl" class="text-decoration-none text-dark d-block dashboard-pending-link">
             <div class="info-box mb-0">
@@ -204,6 +226,7 @@
             </div>
         </a>
     </div>
+    }
 </div>
 
 @if (isAdmin)

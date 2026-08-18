@@ -1,6 +1,7 @@
 using MediatR;
 using KRSDealerManagement.Application.Commands;
 using KRSDealerManagement.Application.Services;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Domain.Entities;
 using System.Text.Json;
@@ -26,6 +27,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
         {
             try
             {
+                await ModelColorValidation.EnsureColorsExistAndActiveAsync(_unitOfWork, request.ColorIds);
+
                 // Create entity
                 var model = new VehicleModel
                 {
@@ -39,6 +42,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
                 // Add to repository
                 var modelId = await _unitOfWork.VehicleModels.AddAsync(model);
+                await _unitOfWork.VehicleModelColors.SyncMappingsAsync(modelId, request.ColorIds, request.CreatedBy);
                 await _unitOfWork.SaveChangesAsync();
 
                 // Log to audit trail
@@ -48,7 +52,12 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                     action: "Create",
                     userId: request.CreatedBy,
                     userRole: "Admin",
-                    newValue: JsonSerializer.Serialize(new { ModelName = request.ModelName, Description = request.Description })
+                    newValue: JsonSerializer.Serialize(new
+                    {
+                        ModelName = request.ModelName,
+                        Description = request.Description,
+                        ColorIds = request.ColorIds
+                    })
                 );
 
                 return modelId;

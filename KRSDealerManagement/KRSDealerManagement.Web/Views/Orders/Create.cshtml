@@ -2,9 +2,9 @@
 @{
     ViewData["Title"] = "Create Purchase Order";
     var models = ViewBag.Models as IEnumerable<VehicleModelDto>;
-    var colors = ViewBag.Colors as IEnumerable<VehicleColorDto>;
     var account = ViewBag.Account as SubdealerAccountDto;
     var availableBalance = account?.AvailableBalance ?? 0m;
+    var modelColorMapJson = ViewBag.ModelColorMapJson as string ?? "{}";
 }
 
 <div class="row mb-3">
@@ -105,22 +105,26 @@ else
 }
 
 @section Scripts {
+    <script src="~/js/model-color-filter.js"></script>
     <script>
         const models = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
             (ViewBag.Models as IEnumerable<VehicleModelDto> ?? new List<VehicleModelDto>())
             .Select(m => new { id = m.ModelId, name = m.ModelName })));
 
-        const colors = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-            (ViewBag.Colors as IEnumerable<VehicleColorDto> ?? new List<VehicleColorDto>())
-            .Select(c => new { id = c.ColorId, name = c.ColorName })));
+        KrsModelColors.init(@Html.Raw(modelColorMapJson));
 
         const availableBalance = @availableBalance.ToString(System.Globalization.CultureInfo.InvariantCulture);
         let itemCount = 0;
 
-        function buildSelect(id, name, options, onChange) {
+        function buildModelSelect(id, onChange) {
             let opts = `<option value="">-- Select --</option>`;
-            options.forEach(o => opts += `<option value="${o.id}">${o.name}</option>`);
-            return `<select name="${name}" id="${id}" class="form-select form-select-sm" required onchange="${onChange}">${opts}</select>`;
+            models.forEach(o => opts += `<option value="${o.id}">${o.name}</option>`);
+            return `<select name="modelIds" id="${id}" class="form-select form-select-sm" required onchange="${onChange}">${opts}</select>`;
+        }
+
+        function buildColorSelect(id, onChange) {
+            return `<select name="colorIds" id="${id}" class="form-select form-select-sm" required onchange="${onChange}">
+                <option value="">-- Select Model First --</option></select>`;
         }
 
         function addItem() {
@@ -129,8 +133,8 @@ else
             const row = document.createElement('tr');
             row.id = `row_${id}`;
             row.innerHTML = `
-                <td>${buildSelect(`model_${id}`, 'modelIds', models, `loadPrice(${id})`)}</td>
-                <td>${buildSelect(`color_${id}`, 'colorIds', colors, `loadPrice(${id})`)}</td>
+                <td>${buildModelSelect(`model_${id}`, `onModelChanged(${id})`)}</td>
+                <td>${buildColorSelect(`color_${id}`, `loadPrice(${id})`)}</td>
                 <td><input type="number" name="quantities" id="qty_${id}" class="form-control form-control-sm"
                     value="1" min="1" style="width:70px" onchange="calcRow(${id})"/></td>
                 <td><input type="number" name="unitPrices" id="price_${id}" class="form-control form-control-sm"
@@ -141,6 +145,14 @@ else
             document.getElementById('itemsBody').appendChild(row);
             document.getElementById('noItemsMsg').classList.add('d-none');
             updateTotals();
+        }
+
+        function onModelChanged(id) {
+            const modelSelect = document.getElementById(`model_${id}`);
+            const colorSelect = document.getElementById(`color_${id}`);
+            KrsModelColors.populateSelect(colorSelect, modelSelect.value, null);
+            document.getElementById(`price_${id}`).value = 0;
+            calcRow(id);
         }
 
         function removeItem(id) {

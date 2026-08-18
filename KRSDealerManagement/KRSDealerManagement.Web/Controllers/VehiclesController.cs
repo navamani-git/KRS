@@ -301,11 +301,11 @@ namespace KRSDealerManagement.Web.Controllers
                 .FirstOrDefault(b => b.VehicleId == id);
 
             ViewBag.Models = await _mediator.Send(new GetVehicleModelsQuery { IsActive = true });
-            ViewBag.Colors = await _mediator.Send(new GetVehicleColorsQuery { IsActive = true });
             ViewBag.VehicleStatuses = await _statuses.GetActiveByCategoryAsync(StatusCategories.Vehicle);
             ViewBag.BookingStatuses = (await _statuses.GetActiveByCategoryAsync(StatusCategories.Vehicle))
                 .Where(s => s.StatusValue >= UnifiedVehicleStatus.BookedToCustomer);
             ViewBag.Booking = booking;
+            await ModelColorViewHelper.SetModelColorMapAsync(this, _mediator);
             return View(vehicle);
         }
 

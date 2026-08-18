@@ -24,7 +24,18 @@ namespace KRSDealerManagement.Domain.Entities
         public decimal CommissionAmount { get; set; }
 
         /// <summary>
-        /// Effective start month (1-12)
+        /// Effective start date — rate applies from this date (inclusive).
+        /// Supports multiple rates within the same calendar month.
+        /// </summary>
+        public DateTime EffectiveFrom { get; set; }
+
+        /// <summary>
+        /// Effective end date — rate applies through this date (inclusive).
+        /// </summary>
+        public DateTime EffectiveTo { get; set; }
+
+        /// <summary>
+        /// Effective start month (1-12) — derived from EffectiveFrom for legacy filters
         /// </summary>
         public int StartMonth { get; set; }
 
@@ -75,11 +86,9 @@ namespace KRSDealerManagement.Domain.Entities
         /// </summary>
         public bool IsEffectiveForMonthYear(int month, int year)
         {
-            // Check if rate starts before or at this month/year
             if (year < StartYear || (year == StartYear && month < StartMonth))
                 return false;
 
-            // Check if rate expires after this month/year (if expiry set)
             if (ExpiryYear.HasValue && ExpiryMonth.HasValue)
             {
                 if (year > ExpiryYear || (year == ExpiryYear && month > ExpiryMonth))
@@ -89,17 +98,18 @@ namespace KRSDealerManagement.Domain.Entities
             return true;
         }
 
+        public bool IsEffectiveAsOf(DateTime asOfDate)
+        {
+            var asOf = asOfDate.Date;
+            return EffectiveFrom.Date <= asOf && EffectiveTo.Date >= asOf;
+        }
+
         /// <summary>
         /// Get commission rate display info
         /// </summary>
         public string GetDisplayInfo()
         {
-            string startDate = $"{StartYear}-{StartMonth:D2}";
-            string endDate = ExpiryYear.HasValue && ExpiryMonth.HasValue
-                ? $"{ExpiryYear}-{ExpiryMonth:D2}"
-                : "Ongoing";
-
-            return $"₹{CommissionAmount:N2} ({startDate} to {endDate})";
+            return $"₹{CommissionAmount:N2} ({EffectiveFrom:yyyy-MM-dd} to {EffectiveTo:yyyy-MM-dd})";
         }
 
         /// <summary>
@@ -107,11 +117,7 @@ namespace KRSDealerManagement.Domain.Entities
         /// </summary>
         public bool IsActive()
         {
-            var now = DateTime.UtcNow;
-            int currentMonth = now.Month;
-            int currentYear = now.Year;
-
-            return IsEffectiveForMonthYear(currentMonth, currentYear);
+            return IsEffectiveAsOf(DateTime.UtcNow);
         }
     }
 }

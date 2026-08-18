@@ -7,14 +7,12 @@ namespace KRSDealerManagement.Application.Validators
     {
         public UpdateCommissionRateCommandValidator()
         {
-            RuleFor(x => x.CommissionRateId)
-                .GreaterThan(0).WithMessage("Valid commission rate ID is required");
-
-            RuleFor(x => x.CommissionAmount)
-                .GreaterThan(0).WithMessage("Commission amount must be greater than 0");
-
-            RuleFor(x => x.ModifiedBy)
-                .GreaterThan(0).WithMessage("Valid user ID is required");
+            RuleFor(x => x.CommissionRateId).GreaterThan(0);
+            RuleFor(x => x.CommissionAmount).GreaterThan(0);
+            RuleFor(x => x.EffectiveFrom).NotEmpty();
+            RuleFor(x => x.EffectiveTo).NotEmpty();
+            RuleFor(x => x.EffectiveTo).GreaterThanOrEqualTo(x => x.EffectiveFrom.Date);
+            RuleFor(x => x.ModifiedBy).GreaterThan(0);
         }
     }
 }

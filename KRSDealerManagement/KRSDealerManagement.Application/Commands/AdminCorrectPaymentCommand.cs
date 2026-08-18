@@ -5,7 +5,10 @@ namespace KRSDealerManagement.Application.Commands
     public class AdminCorrectPaymentCommand : IRequest<bool>
     {
         public int PaymentId { get; set; }
+        /// <summary>Requested amount submitted by subdealer.</summary>
         public decimal Amount { get; set; }
+        public decimal? ActualReceivedAmount { get; set; }
+        public DateTime? ActualReceivedDate { get; set; }
         public int PaymentTypeId { get; set; }
         public DateTime PaymentDate { get; set; }
         public int Status { get; set; }

@@ -5,10 +5,10 @@ using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Web.Helpers;
 using KRSDealerManagement.Web.Filters;
 using KRSDealerManagement.Web.Services;
+using KRSDealerManagement.Shared.Constants;
 
 namespace KRSDealerManagement.Web.Controllers
 {
-    [AuthorizeRole(1, 3)] // System admin + finance only (not branch manager)
     public class AccountsController : Controller
     {
         private readonly IMediator _mediator;
@@ -20,7 +20,9 @@ namespace KRSDealerManagement.Web.Controllers
             _queryCrypto = queryCrypto;
         }
 
-        // GET: Accounts - list all subdealer accounts
+        // GET: Accounts — finance/admin balances list (not for branch managers)
+        [AuthorizeRole(1, 3)]
+        [AuthorizeMenu(StaffMenuAccess.Balances)]
         public async Task<IActionResult> Index(int? subdealerId, int? page)
         {
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
@@ -60,6 +62,8 @@ namespace KRSDealerManagement.Web.Controllers
             return View(pageItems);
         }
 
+        [AuthorizeRole(1, 3)]
+        [AuthorizeMenu(StaffMenuAccess.Balances)]
         public async Task<IActionResult> Export(int? subdealerId)
         {
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
@@ -93,33 +97,79 @@ namespace KRSDealerManagement.Web.Controllers
             return ExcelExportHelper.ToFileResult(this, $"accounts_{DateTime.Now:yyyyMMdd}.xlsx", headers, rows, "Accounts");
         }
 
-        // GET: Accounts/Create — multi-account creation disabled (one balance per subdealer)
+        [AuthorizeRole(1, 3)]
+        [AuthorizeMenu(StaffMenuAccess.Balances)]
         public IActionResult Create(int? subdealerId)
         {
             TempData["Info"] = "Each subdealer has a single balance created automatically. Extra accounts are not used.";
             return new RedirectResult(QueryStringUrlHelper.EncryptedAction(Url, _queryCrypto, nameof(Index), new { subdealerId }));
         }
 
-        // POST: Accounts/Create — blocked
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AuthorizeRole(1, 3)]
+        [AuthorizeMenu(StaffMenuAccess.Balances)]
         public IActionResult Create(int subdealerId, string accountName, string accountType, string description, decimal initialBalance)
         {
             TempData["Error"] = "Creating extra accounts is disabled. Each subdealer uses one balance.";
             return new RedirectResult(QueryStringUrlHelper.EncryptedAction(Url, _queryCrypto, nameof(Index), new { subdealerId }));
         }
 
-        // GET: Accounts/Statement/5 - View account statement
+        /// <summary>
+        /// Account statement — read-only for branch managers (their subdealers only).
+        /// Finance admin / system admin can open from Balances or subdealer details.
+        /// </summary>
+        [AuthorizeRole(1, 3, 4)]
         public async Task<IActionResult> Statement(int id)
         {
-            // Load transactions for this account
-            var transactions = await _mediator.Send(new GetAccountTransactionsQuery { AccountId = id });
             var balance = await _mediator.Send(new GetAccountBalanceQuery { SubdealerAccountId = id });
+            if (balance == null)
+            {
+                TempData["Error"] = "Account not found.";
+                return RedirectToAction("AccessDenied", "Account");
+            }
 
+            if (!await IsSubdealerInScopeAsync(balance.SubdealerId))
+            {
+                TempData["Error"] = "This account is outside your dealership scope.";
+                return RedirectToAction("AccessDenied", "Account");
+            }
+
+            var isBranchManager = SessionHelper.IsBranchManager(HttpContext.Session);
+            var isFinanceOrAdmin = SessionHelper.IsSystemAdmin(HttpContext.Session)
+                || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Balances);
+
+            if (isBranchManager && !isFinanceOrAdmin)
+            {
+                ViewBag.IsReadOnlyStatement = true;
+                ViewBag.StatementBackUrl = QueryStringUrlHelper.EncryptedAction(
+                    Url, _queryCrypto, "Details", new { id = balance.SubdealerId }, "Subdealers");
+            }
+            else if (!isFinanceOrAdmin)
+            {
+                return RedirectToAction("AccessDenied", "Account");
+            }
+            else
+            {
+                ViewBag.StatementBackUrl = Url.Action(nameof(Index));
+            }
+
+            var transactions = await _mediator.Send(new GetAccountTransactionsQuery { AccountId = id });
             ViewBag.Balance = balance;
             ViewBag.AccountId = id;
 
             return View(transactions);
+        }
+
+        private async Task<bool> IsSubdealerInScopeAsync(int subdealerUserId)
+        {
+            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
+            var detail = await _mediator.Send(new GetSubdealerDetailQuery
+            {
+                UserId = subdealerUserId,
+                DealershipId = scope
+            });
+            return detail != null;
         }
     }
 }

@@ -1,6 +1,7 @@
 using MediatR;
 using KRSDealerManagement.Application.Commands;
 using KRSDealerManagement.Application.Services;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Domain.Repositories;
 using System.Text.Json;
 
@@ -25,6 +26,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
         {
             try
             {
+                await ModelColorValidation.EnsureColorsExistAndActiveAsync(_unitOfWork, request.ColorIds);
+
                 // Get existing model
                 var model = await _unitOfWork.VehicleModels.GetByIdAsync(request.ModelId);
                 
@@ -48,6 +51,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
                 // Save changes
                 var result = await _unitOfWork.VehicleModels.UpdateAsync(model);
+                await _unitOfWork.VehicleModelColors.SyncMappingsAsync(model.ModelId, request.ColorIds, request.ModifiedBy);
                 await _unitOfWork.SaveChangesAsync();
 
                 // Log to audit trail
@@ -63,7 +67,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                         ModelName = request.ModelName,
                         Description = request.Description,
                         IsActive = request.IsActive,
-                        Remarks = request.Remarks
+                        Remarks = request.Remarks,
+                        ColorIds = request.ColorIds
                     })
                 );
 

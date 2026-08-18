@@ -3,7 +3,8 @@
     ViewData["Title"] = "Create Order for Subdealer";
     var subdealers = ViewBag.Subdealers as IEnumerable<UserDto>;
     var models = ViewBag.Models as IEnumerable<VehicleModelDto>;
-    var colors = ViewBag.Colors as IEnumerable<VehicleColorDto>;
+    var modelColorMapJson = ViewBag.ModelColorMapJson as string ?? "{}";
+    var canViewBalances = ViewBag.CanViewBalances as bool? ?? false;
 }
 
 <div class="row mb-3">
@@ -23,11 +24,11 @@
     <div class="row">
         <div class="col-md-3">
             <div class="card card-primary">
-                <div class="card-header"><h3 class="card-title">Subdealer & Balance</h3></div>
+                <div class="card-header"><h3 class="card-title">@(canViewBalances ? "Subdealer & Balance" : "Subdealer")</h3></div>
                 <div class="card-body">
                     <div class="form-group mb-3">
                         <label class="fw-bold">Subdealer <span class="text-danger">*</span></label>
-                        <select name="subdealerId" id="subdealerId" class="form-select" required onchange="loadAccount()">
+                        <select name="subdealerId" id="subdealerId" class="form-select" required @(canViewBalances ? "onchange=\"loadAccount()\"" : "")>
                             <option value="">-- Select Subdealer --</option>
                             @if (subdealers != null)
                             {
@@ -39,6 +40,8 @@
                         </select>
                     </div>
 
+                    @if (canViewBalances)
+                    {
                     <div id="balancePanel" class="d-none">
                         <div class="alert alert-success p-2 mb-2">
                             <small>Available Balance:</small>
@@ -57,6 +60,7 @@
                     <div id="noAccountMsg" class="alert alert-danger d-none">
                         <i class="bi bi-exclamation-triangle"></i> No account found for selected subdealer.
                     </div>
+                    }
 
                     <div class="form-group mt-3">
                         <label class="fw-bold">Admin Notes</label>
@@ -117,22 +121,27 @@
 </form>
 
 @section Scripts {
+    <script src="~/js/model-color-filter.js"></script>
     <script>
+        const canViewBalances = @(canViewBalances ? "true" : "false");
         const models = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
             (models ?? new List<VehicleModelDto>())
             .Select(m => new { id = m.ModelId, name = m.ModelName })));
 
-        const colors = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-            (colors ?? new List<VehicleColorDto>())
-            .Select(c => new { id = c.ColorId, name = c.ColorName })));
+        KrsModelColors.init(@Html.Raw(modelColorMapJson));
 
         let availableBalance = 0;
         let itemCount = 0;
 
-        function buildSelect(id, name, options, onChange) {
+        function buildModelSelect(id, onChange) {
             let opts = `<option value="">-- Select --</option>`;
-            options.forEach(o => opts += `<option value="${o.id}">${o.name}</option>`);
-            return `<select name="${name}" id="${id}" class="form-select form-select-sm" required onchange="${onChange}">${opts}</select>`;
+            models.forEach(o => opts += `<option value="${o.id}">${o.name}</option>`);
+            return `<select name="modelIds" id="${id}" class="form-select form-select-sm" required onchange="${onChange}">${opts}</select>`;
+        }
+
+        function buildColorSelect(id, onChange) {
+            return `<select name="colorIds" id="${id}" class="form-select form-select-sm" required onchange="${onChange}">
+                <option value="">-- Select Model First --</option></select>`;
         }
 
         function serialInput(name, idx) {
@@ -140,6 +149,8 @@
         }
 
         function loadAccount() {
+            if (!canViewBalances) return;
+
             const subdealerId = document.getElementById('subdealerId').value;
             availableBalance = 0;
             document.getElementById('balancePanel').classList.add('d-none');
@@ -176,8 +187,8 @@
             const row = document.createElement('tr');
             row.id = `row_${id}`;
             row.innerHTML = `
-                <td>${buildSelect(`model_${id}`, 'modelIds', models, `loadPrice(${id})`)}</td>
-                <td>${buildSelect(`color_${id}`, 'colorIds', colors, `loadPrice(${id})`)}</td>
+                <td>${buildModelSelect(`model_${id}`, `onModelChanged(${id})`)}</td>
+                <td>${buildColorSelect(`color_${id}`, `loadPrice(${id})`)}</td>
                 <td>
                     <input type="number" name="unitPrices" id="price_${id}" class="form-control form-control-sm"
                         value="0" min="0" step="0.01" readonly style="width:100px"/>
@@ -201,6 +212,15 @@
             if (document.getElementById('itemsBody').rows.length === 0) {
                 document.getElementById('noItemsMsg').classList.remove('d-none');
             }
+            updateTotals();
+        }
+
+        function onModelChanged(id) {
+            const modelSelect = document.getElementById(`model_${id}`);
+            const colorSelect = document.getElementById(`color_${id}`);
+            KrsModelColors.populateSelect(colorSelect, modelSelect.value, null);
+            document.getElementById(`price_${id}`).value = 0;
+            document.getElementById(`total_${id}`).textContent = 0;
             updateTotals();
         }
 
@@ -232,7 +252,7 @@
             const hasSubdealer = !!document.getElementById('subdealerId').value;
             const warn = document.getElementById('balanceWarning');
             if (warn) {
-                warn.classList.toggle('d-none', !(grand > 0 && grand > availableBalance));
+                warn.classList.toggle('d-none', !(canViewBalances && grand > 0 && grand > availableBalance));
             }
             btn.disabled = !(hasSubdealer && hasItems && grand > 0);
         }

@@ -21,10 +21,7 @@ namespace KRSDealerManagement.Application.Services
             if (!role.RoleCode.Equals(RoleCodes.Subdealer, StringComparison.OrdinalIgnoreCase))
                 return roleMenus;
 
-            var accounts = (await unitOfWork.SubdealerAccounts.GetAllAsync())
-                .Where(a => a.SubdealerId == userId && a.IsActive)
-                .ToList();
-            var account = accounts.FirstOrDefault();
+            var account = await SubdealerOrgService.GetPermissionAccountAsync(unitOfWork, userId);
             if (account == null)
                 return roleMenus;
 
@@ -35,7 +32,6 @@ namespace KRSDealerManagement.Application.Services
             if (!perms.Any())
                 return roleMenus;
 
-            // Subdealer: AccountPermissions are the source of truth when configured
             var allowed = perms
                 .Where(p => p.IsAccessible)
                 .Select(p => p.MenuKey)

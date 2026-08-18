@@ -9,6 +9,8 @@ namespace KRSDealerManagement.Application.DTOs
         public int ModelId { get; set; }
         public required string ModelName { get; set; }
         public decimal CommissionAmount { get; set; }
+        public DateTime EffectiveFrom { get; set; }
+        public DateTime EffectiveTo { get; set; }
         public int StartMonth { get; set; }
         public int StartYear { get; set; }
         public int? ExpiryMonth { get; set; }
@@ -20,36 +22,22 @@ namespace KRSDealerManagement.Application.DTOs
         public DateTime ModifiedDate { get; set; }
 
         public string GetDisplayInfo()
-        {
-            string startDate = $"{StartYear}-{StartMonth:D2}";
-            string endDate = ExpiryYear.HasValue && ExpiryMonth.HasValue
-                ? $"{ExpiryYear}-{ExpiryMonth:D2}"
-                : "Ongoing";
-
-            return $"₹{CommissionAmount:N2} ({startDate} to {endDate})";
-        }
+            => $"₹{CommissionAmount:N2} ({EffectiveFrom:yyyy-MM-dd} to {EffectiveTo:yyyy-MM-dd})";
 
         public bool IsEffectiveForMonthYear(int month, int year)
         {
-            if (year < StartYear || (year == StartYear && month < StartMonth))
-                return false;
-
-            if (ExpiryYear.HasValue && ExpiryMonth.HasValue)
-            {
-                if (year > ExpiryYear || (year == ExpiryYear && month > ExpiryMonth))
-                    return false;
-            }
-
-            return true;
+            var monthStart = new DateTime(year, month, 1);
+            var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+            return EffectiveFrom.Date <= monthEnd && EffectiveTo.Date >= monthStart;
         }
 
         public bool IsActive()
-        {
-            var now = DateTime.UtcNow;
-            int currentMonth = now.Month;
-            int currentYear = now.Year;
+            => IsEffectiveAsOf(DateTime.UtcNow);
 
-            return IsEffectiveForMonthYear(currentMonth, currentYear);
+        public bool IsEffectiveAsOf(DateTime asOfDate)
+        {
+            var asOf = asOfDate.Date;
+            return EffectiveFrom.Date <= asOf && EffectiveTo.Date >= asOf;
         }
     }
 }

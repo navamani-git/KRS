@@ -30,13 +30,17 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
                 var lineItems = (await _unitOfWork.PurchaseOrderItems.GetByOrderIdAsync(request.OrderId)).ToList();
                 var vehicles = await LoadVehiclesForLineItemsAsync(lineItems, _unitOfWork);
+                var models = (await _unitOfWork.VehicleModels.GetAllAsync()).ToDictionary(m => m.ModelId);
                 var balance = await _unitOfWork.AccountBalances.GetByIdAsync(order.AccountId)
                     ?? throw new InvalidOperationException("Account balance not found.");
+
+                ValidateChassisNumbers(request, lineItems, vehicles, await _unitOfWork.Vehicles.GetAllAsync());
 
                 decimal approvedAmount = 0;
                 int approvedCount = 0;
                 decimal rejectedAmount = 0;
                 int rejectedCount = 0;
+                var approvedDebits = new List<(Vehicle Vehicle, PurchaseOrderItem Item, string ModelName)>();
 
                 foreach (var alloc in request.Items)
                 {
@@ -73,6 +77,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
                         approvedAmount += item.UnitPrice;
                         approvedCount++;
+                        models.TryGetValue(vehicle.ModelId, out var model);
+                        approvedDebits.Add((vehicle, item, model?.ModelName ?? "Unknown"));
                     }
                     else
                     {
@@ -124,12 +130,23 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
                 if (approvedAmount > 0)
                 {
-                    await _auditService.LogTransactionAsync(
-                        accountId: order.AccountId, transactionType: 1, amount: approvedAmount,
-                        balanceAfter: balance.CurrentBalance,
-                        reason: $"Order {order.OrderNumber}: approved {approvedCount} vehicle(s)",
-                        referenceType: "PurchaseOrder", referenceId: order.OrderId,
-                        remarks: request.Remarks, initiatedBy: request.ApprovedBy);
+                    // CurrentBalance already reduced by approvedAmount; start from pre-debit balance for running ledger.
+                    var runningBalance = balance.CurrentBalance + approvedAmount;
+                    foreach (var (vehicle, item, modelName) in approvedDebits)
+                    {
+                        runningBalance -= item.UnitPrice;
+                        var chassis = vehicle.ChassisNumber ?? item.ChassisNumber ?? "";
+                        await _auditService.LogTransactionAsync(
+                            accountId: order.AccountId,
+                            transactionType: 1,
+                            amount: item.UnitPrice,
+                            balanceAfter: runningBalance,
+                            reason: $"Order {order.OrderNumber}: {modelName} — {chassis}",
+                            referenceType: "Vehicle",
+                            referenceId: vehicle.VehicleId,
+                            remarks: request.Remarks,
+                            initiatedBy: request.ApprovedBy);
+                    }
                 }
 
                 if (rejectedAmount > 0)
@@ -168,6 +185,48 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             }
 
             return vehicles;
+        }
+
+        private static void ValidateChassisNumbers(
+            AllocatePurchaseOrderItemsCommand request,
+            List<PurchaseOrderItem> lineItems,
+            Dictionary<int, Vehicle> orderVehicles,
+            IEnumerable<Vehicle> allVehicles)
+        {
+            var approved = request.Items
+                .Where(i => i.Approve && !string.IsNullOrWhiteSpace(i.ChassisNumber))
+                .Select(i => i.ChassisNumber!.Trim().ToUpperInvariant())
+                .ToList();
+
+            var dupInForm = approved
+                .GroupBy(c => c)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .ToList();
+
+            if (dupInForm.Count > 0)
+                throw new InvalidOperationException(
+                    $"Duplicate chassis number(s) in this allocation: {string.Join(", ", dupInForm)}.");
+
+            var batchVehicleIds = new HashSet<int>();
+            foreach (var alloc in request.Items.Where(i => i.Approve))
+            {
+                var item = lineItems.FirstOrDefault(x => x.OrderItemId == alloc.OrderItemId);
+                if (item?.VehicleId is int vid)
+                    batchVehicleIds.Add(vid);
+            }
+
+            foreach (var chassis in approved.Distinct())
+            {
+                var conflict = allVehicles.FirstOrDefault(v =>
+                    !string.IsNullOrWhiteSpace(v.ChassisNumber)
+                    && string.Equals(v.ChassisNumber.Trim(), chassis, StringComparison.OrdinalIgnoreCase)
+                    && !batchVehicleIds.Contains(v.VehicleId));
+
+                if (conflict != null)
+                    throw new InvalidOperationException(
+                        $"Chassis {chassis} already exists in the system (vehicle #{conflict.VehicleId}).");
+            }
         }
     }
 

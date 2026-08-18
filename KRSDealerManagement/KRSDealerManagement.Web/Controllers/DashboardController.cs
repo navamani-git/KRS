@@ -3,6 +3,7 @@ using MediatR;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Web.Helpers;
 using KRSDealerManagement.Web.Filters;
+using KRSDealerManagement.Shared.Constants;
 
 namespace KRSDealerManagement.Web.Controllers
 {
@@ -28,14 +29,28 @@ namespace KRSDealerManagement.Web.Controllers
             }
 
             var isAdmin = SessionHelper.IsSystemAdmin(HttpContext.Session);
+            var isSubdealer = SessionHelper.IsSubdealer(HttpContext.Session);
+            var canViewPayments = isSubdealer
+                || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Payments);
+            var canViewOrders = isSubdealer
+                || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Orders);
+            var canViewReturns = isSubdealer
+                || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Returns);
+            var canViewCommissions = isSubdealer || isAdmin;
+
             var query = new GetDashboardSummaryQuery
             {
-                IncludeRecentActivities = isAdmin
+                IncludeRecentActivities = isAdmin,
+                IncludePaymentPending = canViewPayments
             };
 
-            if (userRole.Value == 2) // Subdealer
+            if (isSubdealer)
             {
                 query.SubdealerId = userId.Value;
+            }
+            else if (!isAdmin)
+            {
+                query.DealershipId = SessionHelper.GetDealershipScope(HttpContext.Session);
             }
 
             var summary = await _mediator.Send(query);
@@ -43,7 +58,12 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.FullName = fullName;
             ViewBag.UserRole = userRole.Value;
             ViewBag.IsAdmin = isAdmin;
-            ViewBag.IsSubdealer = userRole.Value == 2;
+            ViewBag.IsSubdealer = isSubdealer;
+            ViewBag.CanViewPendingPayments = canViewPayments;
+            ViewBag.CanViewPendingOrders = canViewOrders;
+            ViewBag.CanViewPendingReturns = canViewReturns;
+            ViewBag.CanViewPendingCommissions = canViewCommissions;
+            ViewBag.DealershipName = SessionHelper.GetDealershipName(HttpContext.Session);
 
             return View(summary);
         }

@@ -13,5 +13,7 @@ namespace KRSDealerManagement.Application.DTOs
         public DateTime CreatedDate { get; set; }
         public int? ModifiedBy { get; set; }
         public DateTime ModifiedDate { get; set; }
+        public List<int> MappedColorIds { get; set; } = new();
+        public List<VehicleColorDto> MappedColors { get; set; } = new();
     }
 }

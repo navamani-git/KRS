@@ -23,9 +23,15 @@ namespace KRSDealerManagement.Domain.Entities
         public int SubdealerId { get; set; }
 
         /// <summary>
-        /// Payment amount in rupees
+        /// Requested payment amount submitted by subdealer (rupees)
         /// </summary>
         public decimal Amount { get; set; }
+
+        /// <summary>Amount actually received and credited on approval (may differ from Amount).</summary>
+        public decimal? ActualReceivedAmount { get; set; }
+
+        /// <summary>Date payment was actually received in bank/account.</summary>
+        public DateTime? ActualReceivedDate { get; set; }
 
         /// <summary>
         /// Payment method display/code (legacy + TypeName)
@@ -34,7 +40,7 @@ namespace KRSDealerManagement.Domain.Entities
 
         public int? PaymentTypeId { get; set; }
 
-        /// <summary>Customer name in CAPS (required when payment type is Finance).</summary>
+        /// <summary>Customer name in CAPS (required for all payment types).</summary>
         public string? CustomerName { get; set; }
 
         public int? FinanceNameId { get; set; }

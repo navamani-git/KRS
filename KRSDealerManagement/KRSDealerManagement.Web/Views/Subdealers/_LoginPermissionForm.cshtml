@@ -1,0 +1,19 @@
+@model KRSDealerManagement.Application.DTOs.SubdealerLoginDto
+@using KRSDealerManagement.Shared.Constants
+@{
+    var permMaps = ViewBag.LoginPermMaps as IDictionary<int, Dictionary<string, bool>>
+        ?? new Dictionary<int, Dictionary<string, bool>>();
+    permMaps.TryGetValue(Model.PermissionAccountId, out var permMap);
+    ViewBag.PermMap = permMap ?? new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+    ViewBag.UseMenuDefaults = false;
+    ViewBag.MenuIdPrefix = $"perm_{Model.PermissionAccountId}";
+    ViewBag.MenuGroups = MenuKeys.GetSubdealerMenuGroups();
+}
+
+<div class="p-2">
+    <div class="fw-bold mb-2">Menu access for <code>@Model.Username</code></div>
+    <partial name="_MenuPermissionGroups" />
+    <button type="submit" class="btn btn-sm btn-primary mt-2">
+        <i class="bi bi-shield-check"></i> Save Permissions
+    </button>
+</div>
