@@ -15,13 +15,13 @@
                     <th>Pay Type</th>
                     <th>Finance</th>
                     <th>VIN</th>
-                    <th class="text-end">Requested (₹)</th>
+                    <th class="text-end">Requested Amt (₹)</th>
                     <th class="text-end">Approved Amt (₹)</th>
                     <th class="text-end text-danger">Debit (₹)</th>
                     <th class="text-end text-success">Credit (₹)</th>
                     <th class="text-end">Balance (₹)</th>
-                    <th>Submitted</th>
-                    <th>Approved</th>
+                    <th>Submitted Date</th>
+                    <th>Approved Date</th>
                     <th>Received Date</th>
                     <th>Remarks</th>
                 </tr>
@@ -39,14 +39,21 @@
                         </td>
                         <td><span class="badge bg-secondary">@t.CategoryLabel</span></td>
                         <td>
-                            @t.Reason
-                            @if (!string.IsNullOrEmpty(t.ChassisNumber))
+                            @if (!string.IsNullOrEmpty(t.Reason) && t.Reason.Contains('\n'))
                             {
-                                <br /><small class="badge bg-dark"><code>@t.ChassisNumber</code></small>
+                                @Html.Raw(System.Net.WebUtility.HtmlEncode(t.Reason).Replace("\n", "<br />"))
                             }
-                            else if (t.IsPaymentTransaction() && t.ReferenceId.HasValue)
+                            else
                             {
-                                <br /><small class="text-muted">Payment #@t.ReferenceId</small>
+                                @t.Reason
+                                @if (!string.IsNullOrEmpty(t.ChassisNumber))
+                                {
+                                    <br /><small class="badge bg-dark"><code>@t.ChassisNumber</code></small>
+                                }
+                                else if (t.IsPaymentTransaction() && t.ReferenceId.HasValue)
+                                {
+                                    <br /><small class="text-muted">Payment #@t.ReferenceId</small>
+                                }
                             }
                         </td>
                         <td><small>@(t.CustomerName ?? "-")</small></td>

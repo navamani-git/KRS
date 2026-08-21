@@ -68,6 +68,10 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
                 var orderId = await _unitOfWork.PurchaseOrders.AddAsync(order);
 
+                var models = (await _unitOfWork.VehicleModels.GetAllAsync()).ToDictionary(m => m.ModelId);
+                var colors = (await _unitOfWork.VehicleColors.GetAllAsync()).ToDictionary(c => c.ColorId);
+                var autoApproveDebits = new List<(int VehicleId, string Chassis, int ModelId, int ColorId, decimal Amount)>();
+
                 foreach (var group in request.Items)
                 {
                     for (int i = 0; i < group.Quantity; i++)
@@ -111,6 +115,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                             item.ConverterNo = group.ConverterNo?.Trim();
                             item.VehicleId = vehicleId;
                             await _unitOfWork.PurchaseOrderItems.UpdateAsync(item);
+
+                            autoApproveDebits.Add((vehicleId, chassis, item.ModelId, item.ColorId, item.UnitPrice));
                         }
                         else
                         {
@@ -145,22 +151,29 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
-                if (request.AutoApprove)
+                if (request.AutoApprove && autoApproveDebits.Count > 0)
                 {
-                    await _auditService.LogTransactionAsync(
-                        accountId: request.AccountId, transactionType: 1, amount: totalAmount,
-                        balanceAfter: balance.CurrentBalance,
-                        reason: $"Dealer order {orderNumber} ({totalQty} vehicles)",
-                        referenceType: "PurchaseOrder", referenceId: orderId,
-                        remarks: request.AdminNotes, initiatedBy: request.CreatedBy);
-                }
-                else
-                {
-                    await _auditService.LogTransactionAsync(
-                        accountId: request.AccountId, transactionType: 3, amount: totalAmount,
-                        balanceAfter: balance.CurrentBalance,
-                        reason: $"Reserved for order {orderNumber} ({totalQty} vehicles)",
-                        referenceType: "PurchaseOrder", referenceId: orderId, initiatedBy: request.CreatedBy);
+                    var runningBalance = balance.CurrentBalance + totalAmount;
+                    foreach (var debit in autoApproveDebits)
+                    {
+                        runningBalance -= debit.Amount;
+                        models.TryGetValue(debit.ModelId, out var model);
+                        colors.TryGetValue(debit.ColorId, out var color);
+                        await _auditService.LogTransactionAsync(
+                            accountId: request.AccountId,
+                            transactionType: 1,
+                            amount: debit.Amount,
+                            balanceAfter: runningBalance,
+                            reason: OrderTransactionReasonHelper.Format(
+                                orderNumber,
+                                debit.Chassis,
+                                model?.ModelName ?? "Unknown",
+                                color?.ColorName ?? "Unknown"),
+                            referenceType: "Vehicle",
+                            referenceId: debit.VehicleId,
+                            remarks: request.AdminNotes,
+                            initiatedBy: request.CreatedBy);
+                    }
                 }
 
                 await _auditService.LogActionAsync(

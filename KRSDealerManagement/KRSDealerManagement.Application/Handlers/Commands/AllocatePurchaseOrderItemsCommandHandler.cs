@@ -1,5 +1,6 @@
 using MediatR;
 using KRSDealerManagement.Application.Commands;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Entities;
 using KRSDealerManagement.Domain.Repositories;
@@ -31,6 +32,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 var lineItems = (await _unitOfWork.PurchaseOrderItems.GetByOrderIdAsync(request.OrderId)).ToList();
                 var vehicles = await LoadVehiclesForLineItemsAsync(lineItems, _unitOfWork);
                 var models = (await _unitOfWork.VehicleModels.GetAllAsync()).ToDictionary(m => m.ModelId);
+                var colors = (await _unitOfWork.VehicleColors.GetAllAsync()).ToDictionary(c => c.ColorId);
                 var balance = await _unitOfWork.AccountBalances.GetByIdAsync(order.AccountId)
                     ?? throw new InvalidOperationException("Account balance not found.");
 
@@ -40,7 +42,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 int approvedCount = 0;
                 decimal rejectedAmount = 0;
                 int rejectedCount = 0;
-                var approvedDebits = new List<(Vehicle Vehicle, PurchaseOrderItem Item, string ModelName)>();
+                var approvedDebits = new List<(Vehicle Vehicle, PurchaseOrderItem Item, string ModelName, string ColorName)>();
 
                 foreach (var alloc in request.Items)
                 {
@@ -78,7 +80,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                         approvedAmount += item.UnitPrice;
                         approvedCount++;
                         models.TryGetValue(vehicle.ModelId, out var model);
-                        approvedDebits.Add((vehicle, item, model?.ModelName ?? "Unknown"));
+                        colors.TryGetValue(vehicle.ColorId, out var color);
+                        approvedDebits.Add((vehicle, item, model?.ModelName ?? "Unknown", color?.ColorName ?? "Unknown"));
                     }
                     else
                     {
@@ -132,7 +135,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 {
                     // CurrentBalance already reduced by approvedAmount; start from pre-debit balance for running ledger.
                     var runningBalance = balance.CurrentBalance + approvedAmount;
-                    foreach (var (vehicle, item, modelName) in approvedDebits)
+                    foreach (var (vehicle, item, modelName, colorName) in approvedDebits)
                     {
                         runningBalance -= item.UnitPrice;
                         var chassis = vehicle.ChassisNumber ?? item.ChassisNumber ?? "";
@@ -141,7 +144,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                             transactionType: 1,
                             amount: item.UnitPrice,
                             balanceAfter: runningBalance,
-                            reason: $"Order {order.OrderNumber}: {modelName} — {chassis}",
+                            reason: OrderTransactionReasonHelper.Format(
+                                order.OrderNumber, chassis, modelName, colorName),
                             referenceType: "Vehicle",
                             referenceId: vehicle.VehicleId,
                             remarks: request.Remarks,

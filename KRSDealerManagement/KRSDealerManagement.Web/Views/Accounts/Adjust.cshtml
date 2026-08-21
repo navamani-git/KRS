@@ -1,0 +1,109 @@
+@using KRSDealerManagement.Application.DTOs
+@using KRSDealerManagement.Web.Helpers
+@{
+    ViewData["Title"] = "Credit / Debit Adjustment";
+    var subdealers = ViewBag.Subdealers as IEnumerable<UserDto>;
+    var selectedId = ViewBag.SelectedSubdealerId as int?;
+    var account = ViewBag.Account as SubdealerAccountDto;
+    var isAdmin = SessionHelper.IsSystemAdmin(Context.Session);
+}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h1 class="m-0"><i class="bi bi-sliders"></i> Credit / Debit Adjustment</h1>
+        <p class="text-muted">Manually credit or debit a subdealer account balance</p>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="@Url.Action("Index")" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Balances</a>
+    </div>
+</div>
+
+@if (!isAdmin)
+{
+    <div class="alert alert-warning">Only system administrators can post manual adjustments.</div>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-3">
+                <div class="card-header"><h3 class="card-title mb-0">Select Subdealer</h3></div>
+                <div class="card-body">
+                    <form method="get">
+                        <select name="subdealerId" class="form-select mb-2" onchange="this.form.submit()">
+                            <option value="">-- Select --</option>
+                            @if (subdealers != null)
+                            {
+                                @foreach (var s in subdealers)
+                                {
+                                    <option value="@s.UserId" selected="@(selectedId == s.UserId)">@s.GetFullName()</option>
+                                }
+                            }
+                        </select>
+                    </form>
+                    @if (account != null)
+                    {
+                        <div class="alert alert-info mb-0 p-2">
+                            <small>Current Balance</small>
+                            <div class="fs-5 fw-bold">₹@account.CurrentBalance.ToString("N2")</div>
+                            <small class="text-muted">Available: ₹@account.AvailableBalance.ToString("N2")</small>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header"><h3 class="card-title mb-0">Post Adjustment</h3></div>
+                @if (selectedId.HasValue && account != null)
+                {
+                    <form method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="subdealerId" value="@selectedId" />
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="fw-bold">Type <span class="text-danger">*</span></label>
+                                    <select name="adjustmentType" class="form-select" required>
+                                        <option value="">-- Select --</option>
+                                        <option value="Credit">Credit (add to balance)</option>
+                                        <option value="Debit">Debit (reduce balance)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="fw-bold">Amount (₹) <span class="text-danger">*</span></label>
+                                    <input type="number" name="amount" class="form-control" min="0.01" step="0.01" required />
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="fw-bold">Description <span class="text-danger">*</span></label>
+                                    <input type="text" name="description" class="form-control" maxlength="500" required
+                                           placeholder="Shown on account statement" />
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="fw-bold">Remarks</label>
+                                    <textarea name="remarks" class="form-control" rows="2" maxlength="1000"
+                                              placeholder="Optional internal note"></textarea>
+                                </div>
+                            </div>
+                            <div class="alert alert-warning mt-3 mb-0">
+                                <i class="bi bi-info-circle"></i> Debits are allowed even if balance goes negative.
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary"
+                                    onclick="return confirm('Apply this adjustment to the subdealer account?');">
+                                <i class="bi bi-check-circle"></i> Submit Adjustment
+                            </button>
+                        </div>
+                    </form>
+                }
+                else
+                {
+                    <div class="card-body">
+                        <div class="alert alert-info mb-0">Select a subdealer to post a credit or debit.</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}

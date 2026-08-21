@@ -171,5 +171,61 @@ namespace KRSDealerManagement.Web.Controllers
             });
             return detail != null;
         }
+
+        [AuthorizeRole(1)]
+        [AuthorizeMenu(StaffMenuAccess.AccountAdjustments)]
+        public async Task<IActionResult> Adjust(int? subdealerId)
+        {
+            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
+            var subdealers = await _mediator.Send(new GetSubdealersQuery { IsActive = true, DealershipId = scope });
+            ViewBag.Subdealers = subdealers;
+            ViewBag.SelectedSubdealerId = subdealerId;
+
+            if (subdealerId.HasValue)
+            {
+                var accounts = await _mediator.Send(new GetSubdealerAccountsQuery { SubdealerId = subdealerId.Value });
+                ViewBag.Account = accounts.FirstOrDefault();
+            }
+
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AuthorizeRole(1)]
+        [AuthorizeMenu(StaffMenuAccess.AccountAdjustments)]
+        public async Task<IActionResult> Adjust(
+            int subdealerId, string adjustmentType, decimal amount, string description, string? remarks)
+        {
+            var adminId = SessionHelper.GetUserId(HttpContext.Session);
+            if (!adminId.HasValue) return RedirectToAction("Login", "Account");
+
+            if (!await IsSubdealerInScopeAsync(subdealerId))
+            {
+                TempData["Error"] = "Subdealer is outside your dealership scope.";
+                return RedirectToAction(nameof(Adjust));
+            }
+
+            try
+            {
+                await _mediator.Send(new AdjustSubdealerAccountCommand
+                {
+                    SubdealerId = subdealerId,
+                    AdjustmentType = adjustmentType,
+                    Amount = amount,
+                    Description = description.Trim(),
+                    Remarks = remarks?.Trim(),
+                    AdjustedBy = adminId.Value
+                });
+
+                TempData["Success"] = $"{adjustmentType} of ₹{amount:N2} applied successfully.";
+                return RedirectToAction(nameof(Adjust), new { subdealerId });
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction(nameof(Adjust), new { subdealerId });
+            }
+        }
     }
 }

@@ -197,6 +197,10 @@
                                                     data-bs-toggle="collapse" data-bs-target="#pwd-@login.UserId">
                                                 <i class="bi bi-key"></i> Password
                                             </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                    data-bs-toggle="collapse" data-bs-target="#user-@login.UserId">
+                                                <i class="bi bi-person"></i> Username
+                                            </button>
                                         </td>
                                     </tr>
                                     <tr class="collapse" id="perm-@login.PermissionAccountId">
@@ -223,6 +227,21 @@
                                                 {
                                                     <small class="text-muted d-block mt-1">Current: <code>@login.PasswordHash</code></small>
                                                 }
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    <tr class="collapse" id="user-@login.UserId">
+                                        <td colspan="5" class="bg-light">
+                                            <form method="post" asp-action="SetUsername" class="p-2">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@Model.SubDealerId" />
+                                                <input type="hidden" name="loginUserId" value="@login.UserId" />
+                                                <div class="input-group input-group-sm" style="max-width: 400px;">
+                                                    <input type="text" name="username" class="form-control" value="@login.Username"
+                                                           required minlength="3" pattern="[a-z0-9_\.]+" title="Lowercase letters, numbers, underscore, dot" />
+                                                    <button type="submit" class="btn btn-secondary">Update</button>
+                                                </div>
+                                                <small class="text-muted d-block mt-1">Must be unique. User will sign in with the new username.</small>
                                             </form>
                                         </td>
                                     </tr>

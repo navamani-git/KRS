@@ -288,6 +288,38 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SetUsername(int id, int loginUserId, string username)
+        {
+            var adminId = SessionHelper.GetUserId(HttpContext.Session);
+            if (!adminId.HasValue) return RedirectToAction("Login", "Account");
+
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                TempData["Error"] = "Username is required.";
+                return this.RedirectEncrypted(nameof(Details), new { id });
+            }
+
+            try
+            {
+                await _mediator.Send(new UpdateSubdealerLoginUsernameCommand
+                {
+                    SubDealerId = id,
+                    LoginUserId = loginUserId,
+                    Username = username.Trim().ToLowerInvariant(),
+                    UpdatedBy = adminId.Value
+                });
+                TempData["Success"] = "Username updated.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+
+            return this.RedirectEncrypted(nameof(Details), new { id });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> ConfigurePermissions(int id, int accountId, string[]? accessibleMenus)
         {
             var adminId = SessionHelper.GetUserId(HttpContext.Session);

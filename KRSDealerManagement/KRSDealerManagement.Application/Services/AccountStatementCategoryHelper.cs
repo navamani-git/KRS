@@ -38,6 +38,12 @@ namespace KRSDealerManagement.Application.Services
                 && AccountTransactionTypeHelper.IsCredit(transactionType))
                 return "Return Credited";
 
+            if (string.Equals(referenceType, "ManualAdjustment", StringComparison.OrdinalIgnoreCase))
+            {
+                if (AccountTransactionTypeHelper.IsCredit(transactionType)) return "Manual Credit";
+                if (AccountTransactionTypeHelper.IsDebit(transactionType)) return "Manual Debit";
+            }
+
             if (string.Equals(referenceType, "PurchaseOrder", StringComparison.OrdinalIgnoreCase)
                 && AccountTransactionTypeHelper.IsDebit(transactionType))
                 return "Order Debit";

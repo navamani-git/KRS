@@ -1,8 +1,10 @@
 @model IEnumerable<KRSDealerManagement.Application.DTOs.SubdealerAccountDto>
 @using KRSDealerManagement.Application.DTOs
+@using KRSDealerManagement.Web.Helpers
 @{
     ViewData["Title"] = "Balances";
     var subdealers = ViewBag.Subdealers as IEnumerable<UserDto>;
+    var isAdmin = SessionHelper.IsSystemAdmin(Context.Session);
 }
 
 <div class="row mb-3">
@@ -11,6 +13,12 @@
         <p class="text-muted">View subdealer balances and statements</p>
     </div>
     <div class="col-md-6 text-end">
+        @if (isAdmin)
+        {
+            <a href="@Url.Action("Adjust")" class="btn btn-outline-primary">
+                <i class="bi bi-sliders"></i> Credit / Debit
+            </a>
+        }
         <partial name="_ExportExcel" />
     </div>
 </div>

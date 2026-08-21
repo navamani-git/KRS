@@ -15,6 +15,7 @@ namespace KRSDealerManagement.Shared.Constants
         public const string Dealers = "admin_dealerships";
         public const string Subdealers = "admin_subdealers";
         public const string Balances = "admin_balances";
+        public const string AccountAdjustments = "admin_account_adjustments";
         public const string CommissionRates = "admin_commission_rates";
         public const string CommissionApprovals = "admin_commission_approvals";
         public const string Orders = "admin_orders";
@@ -43,6 +44,7 @@ namespace KRSDealerManagement.Shared.Constants
             (StatusLookups, "Status Master"),
             (Subdealers, "Subdealers"),
             (Balances, "Balances"),
+            (AccountAdjustments, "Credit / Debit"),
             (CommissionRates, "Commission Rates"),
             (CommissionApprovals, "Commission Approvals"),
             (Orders, "Manage Orders"),
@@ -175,6 +177,11 @@ namespace KRSDealerManagement.Shared.Constants
                             Key = Balances, Name = "Balances",
                             Controller = "Accounts", Action = "Index", Icon = "bi-person-badge",
                             Actions = new[] { "Index", "Statement" }
+                        },
+                        new MenuItemDefinition
+                        {
+                            Key = AccountAdjustments, Name = "Credit / Debit",
+                            Controller = "Accounts", Action = "Adjust", Icon = "bi-sliders"
                         },
                         new MenuItemDefinition
                         {
