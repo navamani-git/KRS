@@ -198,6 +198,19 @@ body {
     font-weight: 600;
 }
 
+.card-header .card-title {
+    color: #fff;
+    font-weight: 700;
+}
+
+.card-header .card-header-hint,
+.card-header .text-muted {
+    color: rgba(255, 255, 255, 0.92) !important;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    opacity: 1;
+}
+
 .card-title {
     margin: 0;
 }
@@ -440,17 +453,35 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    padding: 0.4rem 0.85rem;
+    padding: 0.55rem 0.95rem;
     font-size: 0.8125rem;
-    color: #6c757d;
-    background: #f8f9fa;
-    border-bottom: 1px solid #e9ecef;
+    color: #343a40;
+    background: linear-gradient(90deg, #eef2ff 0%, #f8f9fa 100%);
+    border-bottom: 1px solid #c7d2fe;
+    border-left: 4px solid #667eea;
+}
+
+.grid-scroll-hint .grid-scroll-hint-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    line-height: 1.45;
+}
+
+.grid-scroll-hint .grid-scroll-hint-text strong {
+    color: #4338ca;
+    font-weight: 700;
 }
 
 .grid-scroll-hint .scroll-arrow {
-    color: #667eea;
-    font-weight: 600;
+    color: #4338ca;
+    font-weight: 700;
     white-space: nowrap;
+    background: #fff;
+    border: 1px solid #c7d2fe;
+    border-radius: 999px;
+    padding: 0.15rem 0.65rem;
 }
 
 /* Excel-style grid: fixed column widths, scroll horizontally for more columns */
@@ -474,6 +505,31 @@ table.grid-excel-table td,
     box-sizing: border-box;
     line-height: 1.25;
     vertical-align: middle;
+}
+
+table.grid-excel-table .grid-col-rownum,
+.grid-scroll-panel table.grid-excel-table .grid-col-rownum,
+table.grid-excel-table th.grid-col-rownum,
+table.grid-excel-table td.grid-col-rownum {
+    width: 2.75rem !important;
+    max-width: 2.75rem !important;
+    min-width: 2.25rem !important;
+    text-align: center;
+    padding-left: 2px !important;
+    padding-right: 2px !important;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+table.grid-excel-table:has(thead th.grid-col-rownum:first-child) tbody td:first-child {
+    width: 2.75rem !important;
+    max-width: 2.75rem !important;
+    min-width: 2.25rem !important;
+    text-align: center;
+    padding-left: 2px !important;
+    padding-right: 2px !important;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 table.grid-excel-table .grid-col-narrow,
@@ -712,6 +768,68 @@ table.grid-excel-table td.grid-sticky-col-2 {
 
 .grid-column-toolbar {
     font-size: 0.875rem;
+    background: #f1f5f9 !important;
+    border-bottom: 1px solid #cbd5e1 !important;
+}
+
+.grid-toolbar-hint {
+    color: #334155 !important;
+    font-weight: 600;
+    font-size: 0.8125rem;
+}
+
+.page-heading-block .page-title {
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.page-stage-banner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    padding: 0.65rem 0.85rem;
+    background: linear-gradient(90deg, #eef2ff 0%, #f8fafc 100%);
+    border: 1px solid #c7d2fe;
+    border-left: 4px solid #667eea;
+    border-radius: 0.5rem;
+    max-width: 42rem;
+}
+
+.page-stage-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.page-stage-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #4338ca;
+    min-width: 6.5rem;
+}
+
+.page-stage-value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.grid-filter-card .grid-filter-heading {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #475569;
+}
+
+.grid-filter-card .form-label,
+.grid-filter-card .form-label-sm {
+    font-weight: 600;
+    color: #334155;
+    font-size: 0.8125rem;
 }
 
 .grid-column-menu {

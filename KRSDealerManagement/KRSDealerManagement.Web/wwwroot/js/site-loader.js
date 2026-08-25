@@ -2,7 +2,10 @@
     var loaderEl = null;
     var textEl = null;
     var asyncCount = 0;
-    var navActive = false;
+    var navCount = 0;
+    var navFallbackTimer = null;
+    var nativeAssign = window.location.assign.bind(window.location);
+    var nativeReplace = window.location.replace.bind(window.location);
 
     function getLoaderElements() {
         if (!loaderEl) {
@@ -20,6 +23,10 @@
         el.setAttribute('aria-busy', show ? 'true' : 'false');
     }
 
+    function syncVisible() {
+        setVisible(asyncCount > 0 || navCount > 0);
+    }
+
     function showLoader(message, mode) {
         var el = getLoaderElements();
         if (!el) return;
@@ -33,31 +40,84 @@
         if (mode === 'async') {
             asyncCount++;
         } else {
-            navActive = true;
+            navCount++;
         }
 
-        setVisible(true);
+        syncVisible();
     }
 
     function hideLoader(mode) {
         if (mode === 'async') {
             asyncCount = Math.max(0, asyncCount - 1);
-            if (asyncCount === 0 && !navActive) {
-                setVisible(false);
-            }
-            return;
+        } else {
+            navCount = Math.max(0, navCount - 1);
         }
 
-        navActive = false;
-        if (asyncCount === 0) {
-            setVisible(false);
-        }
+        syncVisible();
     }
 
     function resetLoader() {
         asyncCount = 0;
-        navActive = false;
-        setVisible(false);
+        navCount = 0;
+        clearNavFallback();
+        syncVisible();
+    }
+
+    function clearNavFallback() {
+        if (navFallbackTimer) {
+            window.clearTimeout(navFallbackTimer);
+            navFallbackTimer = null;
+        }
+    }
+
+    function isSameOriginNavigation(href) {
+        if (!href || href.charAt(0) === '#') return false;
+        if (/^(javascript:|mailto:|tel:)/i.test(href)) return false;
+
+        try {
+            var url = new URL(href, window.location.href);
+            return url.origin === window.location.origin;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function isFileDownloadUrl(href) {
+        if (!href) return false;
+
+        try {
+            var path = new URL(href, window.location.href).pathname.toLowerCase();
+            return /\/export[^/]*$/i.test(path)
+                || /\/downloadtemplate$/i.test(path)
+                || /\/download$/i.test(path)
+                || /\/viewfile$/i.test(path);
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function scheduleNavLoaderFallback() {
+        clearNavFallback();
+
+        var navigated = false;
+        function onPageHide() {
+            navigated = true;
+        }
+
+        window.addEventListener('pagehide', onPageHide, { once: true });
+        navFallbackTimer = window.setTimeout(function () {
+            navFallbackTimer = null;
+            window.removeEventListener('pagehide', onPageHide);
+            if (!navigated && navCount > 0) {
+                navCount = 0;
+                syncVisible();
+            }
+        }, 1200);
+    }
+
+    function beginNavLoader(message) {
+        showLoader(message || 'Loading...', 'nav');
+        scheduleNavLoaderFallback();
     }
 
     function shouldSkipFetchLoader(input, init) {
@@ -76,31 +136,20 @@
         return url.indexOf('/grids/distinctvalues') >= 0;
     }
 
-    function resolveFetchUrl(input) {
-        if (typeof input === 'string') return input;
-        if (input && typeof input.url === 'string') return input.url;
-        return '';
-    }
-
-    function isSameOriginNavigation(href) {
-        if (!href || href.charAt(0) === '#') return false;
-        if (/^(javascript:|mailto:|tel:)/i.test(href)) return false;
-
-        try {
-            var url = new URL(href, window.location.href);
-            return url.origin === window.location.origin;
-        } catch (e) {
-            return false;
-        }
-    }
-
     function shouldSkipLink(el) {
         if (!el || el.dataset.noLoader === 'true') return true;
         if (el.classList.contains('chassis-link')) return true;
         if (el.target === '_blank' || el.hasAttribute('download')) return true;
+        if (isFileDownloadUrl(el.href)) return true;
         if (el.getAttribute('data-bs-toggle') || el.getAttribute('data-toggle')) return true;
         if (el.getAttribute('role') === 'button' && (el.getAttribute('href') || '') === '#') return true;
         return !isSameOriginNavigation(el.href);
+    }
+
+    function shouldSkipForm(form) {
+        if (!form || form.tagName !== 'FORM') return true;
+        if (form.dataset.noLoader === 'true') return true;
+        return false;
     }
 
     window.krsShowLoader = function (message) {
@@ -111,21 +160,28 @@
         hideLoader('async');
     };
 
+    window.krsResetLoader = function () {
+        resetLoader();
+    };
+
     window.krsNavigate = function (url, message) {
         if (!url) return;
-        showLoader(message || 'Loading...', 'nav');
-        window.location.assign(url);
+        if (isFileDownloadUrl(url)) {
+            nativeAssign(url);
+            return;
+        }
+
+        beginNavLoader(message || 'Loading...');
+        nativeAssign(url);
     };
 
     document.addEventListener('submit', function (e) {
         var form = e.target;
-        if (!form || form.tagName !== 'FORM') return;
-        if (form.dataset.noLoader === 'true') return;
+        if (shouldSkipForm(form)) return;
         if (e.defaultPrevented) return;
 
-        var message = form.dataset.loaderMessage || 'Processing...';
-        showLoader(message, 'nav');
-    }, true);
+        beginNavLoader(form.dataset.loaderMessage || 'Processing...');
+    });
 
     document.addEventListener('click', function (e) {
         if (e.defaultPrevented) return;
@@ -137,8 +193,8 @@
         var href = link.getAttribute('href') || '';
         if (!href || href === '#') return;
 
-        showLoader(link.dataset.loaderMessage || 'Loading...', 'nav');
-    }, true);
+        beginNavLoader(link.dataset.loaderMessage || 'Loading...');
+    });
 
     if (window.fetch) {
         var nativeFetch = window.fetch.bind(window);
@@ -149,12 +205,6 @@
 
             showLoader('Loading...', 'async');
             return nativeFetch(input, init)
-                .then(function (response) {
-                    return response;
-                })
-                .catch(function (error) {
-                    throw error;
-                })
                 .finally(function () {
                     hideLoader('async');
                 });
@@ -191,15 +241,21 @@
         });
     }
 
-    var nativeAssign = window.location.assign.bind(window.location);
     window.location.assign = function (url) {
-        showLoader('Loading...', 'nav');
+        if (isFileDownloadUrl(url)) {
+            return nativeAssign(url);
+        }
+
+        beginNavLoader('Loading...');
         return nativeAssign(url);
     };
 
-    var nativeReplace = window.location.replace.bind(window.location);
     window.location.replace = function (url) {
-        showLoader('Loading...', 'nav');
+        if (isFileDownloadUrl(url)) {
+            return nativeReplace(url);
+        }
+
+        beginNavLoader('Loading...');
         return nativeReplace(url);
     };
 

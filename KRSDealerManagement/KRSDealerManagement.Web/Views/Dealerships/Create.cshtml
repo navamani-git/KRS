@@ -1,5 +1,7 @@
 @{
     ViewData["Title"] = "Add Dealership";
+    ViewData["ExcelImportKey"] = KRSDealerManagement.Web.Helpers.ExcelImport.ExcelImportKeys.Dealerships;
+    ViewData["ExcelImportReturnAction"] = "Create";
 }
 
 <div class="row mb-3">
@@ -10,6 +12,8 @@
         <a href="@Url.Action("Index")" class="btn btn-secondary">Back</a>
     </div>
 </div>
+
+<partial name="_ExcelImport" />
 
 <div class="card card-primary">
     <form method="post">

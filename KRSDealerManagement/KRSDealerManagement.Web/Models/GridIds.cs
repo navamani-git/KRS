@@ -3,6 +3,7 @@ namespace KRSDealerManagement.Web.Models
     public static class GridIds
     {
         public const string Accounts = KRSDealerManagement.Shared.Constants.GridScreenIds.Accounts;
+        public const string AccountStatement = KRSDealerManagement.Shared.Constants.GridScreenIds.AccountStatement;
         public const string CommissionApprovals = KRSDealerManagement.Shared.Constants.GridScreenIds.CommissionApprovals;
         public const string CommissionRates = KRSDealerManagement.Shared.Constants.GridScreenIds.CommissionRates;
         public const string Dealerships = KRSDealerManagement.Shared.Constants.GridScreenIds.Dealerships;

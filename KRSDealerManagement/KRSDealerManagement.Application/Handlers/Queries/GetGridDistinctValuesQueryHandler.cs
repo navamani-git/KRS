@@ -99,6 +99,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
                 GridScreenIds.Accounts => await DistinctAccounts(column, request),
 
+                GridScreenIds.AccountStatement => await DistinctAccountStatement(column, request),
+
                 GridScreenIds.VehicleBookings => await DistinctVehicleBookings(column, request),
 
                 GridScreenIds.DocumentTypes => DistinctSync((await _unitOfWork.DocumentTypes.GetAllAsync()).Cast<object>(), column, request, DocumentTypeProjections),
@@ -125,6 +127,21 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 accounts.AddRange(await _mediator.Send(new GetSubdealerAccountsQuery { SubdealerId = s.UserId }));
             }
             return DistinctSync(accounts.Cast<object>(), column, request, AccountProjections);
+        }
+
+        private async Task<IReadOnlyList<string>> DistinctAccountStatement(string column, GetGridDistinctValuesQuery request)
+        {
+            if (!request.AccountId.HasValue)
+                return Array.Empty<string>();
+
+            var rows = await _mediator.Send(new GetAccountTransactionsQuery
+            {
+                AccountId = request.AccountId.Value,
+                FromDate = request.FromDate,
+                ToDate = request.ToDate
+            });
+
+            return DistinctSync(rows.Cast<object>(), column, request, AccountStatementProjections);
         }
 
         private async Task<IReadOnlyList<string>> DistinctVehicleBookings(string column, GetGridDistinctValuesQuery request)
@@ -409,6 +426,22 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             ["reserved"] = a => a.ReservedAmount.ToString("N2"),
             ["available"] = a => a.AvailableBalance.ToString("N2"),
             ["status"] = a => a.IsActive ? "Active" : "Inactive"
+        };
+
+        private static readonly Dictionary<string, Func<AccountTransactionDto, string?>> AccountStatementProjections = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["type"] = t => t.CategoryLabel,
+            ["description"] = t => string.IsNullOrWhiteSpace(t.ChassisNumber) ? t.Reason : $"{t.Reason} {t.ChassisNumber}".Trim(),
+            ["customer"] = t => t.CustomerName,
+            ["payType"] = t => t.PaymentType,
+            ["finance"] = t => t.FinanceName,
+            ["vin"] = t => t.VinNumber ?? t.ChassisNumber,
+            ["requestedAmt"] = t => t.RequestedAmount?.ToString("N2"),
+            ["approvedAmt"] = t => t.ApprovedPaymentAmount?.ToString("N2"),
+            ["debit"] = t => t.IsDebit() ? t.Amount.ToString("N2") : null,
+            ["credit"] = t => t.IsCredit() ? t.Amount.ToString("N2") : null,
+            ["balance"] = t => t.BalanceAfterTransaction.ToString("N2"),
+            ["txnDate"] = t => t.CreatedDate.ToString("yyyy-MM-dd")
         };
 
         private static readonly Dictionary<string, Func<VehicleBookingGridRowDto, string?>> VehicleBookingProjections = new(StringComparer.OrdinalIgnoreCase)

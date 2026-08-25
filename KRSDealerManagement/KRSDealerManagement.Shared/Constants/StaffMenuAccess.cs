@@ -16,6 +16,7 @@ namespace KRSDealerManagement.Shared.Constants
         public const string Subdealers = "admin_subdealers";
         public const string Balances = "admin_balances";
         public const string AccountAdjustments = "admin_account_adjustments";
+        public const string AccountTransactions = "admin_account_transactions";
         public const string CommissionRates = "admin_commission_rates";
         public const string CommissionApprovals = "admin_commission_approvals";
         public const string Orders = "admin_orders";
@@ -47,6 +48,7 @@ namespace KRSDealerManagement.Shared.Constants
             (Subdealers, "Subdealers"),
             (Balances, "Balances"),
             (AccountAdjustments, "Credit / Debit"),
+            (AccountTransactions, "Transaction Corrections"),
             (CommissionRates, "Commission Rates"),
             (CommissionApprovals, "Commission Approvals"),
             (Orders, "Manage Orders"),
@@ -189,6 +191,12 @@ namespace KRSDealerManagement.Shared.Constants
                         },
                         new MenuItemDefinition
                         {
+                            Key = AccountTransactions, Name = "Transaction Corrections",
+                            Controller = "Accounts", Action = "Transactions", Icon = "bi-journal-text",
+                            Actions = new[] { "Transactions", "AdminEditTransaction", "AdminDeleteTransaction", "TransactionCorrections" }
+                        },
+                        new MenuItemDefinition
+                        {
                             Key = CommissionApprovals, Name = "Commission Approvals",
                             Controller = "Commissions", Action = "Approvals", Icon = "bi-check2-square"
                         },
@@ -202,7 +210,7 @@ namespace KRSDealerManagement.Shared.Constants
                         {
                             Key = Vehicles, Name = "Subdealer Vehicles",
                             Controller = "Vehicles", Action = "Index", Icon = "bi-ev-front",
-                            Actions = new[] { "Index", "AdminEdit" }
+                            Actions = new[] { "Index", "AdminEdit", "AdminDelete" }
                         },
                         new MenuItemDefinition
                         {

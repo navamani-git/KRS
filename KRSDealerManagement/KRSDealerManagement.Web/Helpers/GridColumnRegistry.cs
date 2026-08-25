@@ -15,6 +15,7 @@ namespace KRSDealerManagement.Web.Helpers
                 GridIds.Orders => Orders(),
                 GridIds.MyOrders => MyOrders(),
                 GridIds.Accounts => Accounts(),
+                GridIds.AccountStatement => AccountStatement(),
                 GridIds.Returns => Returns(),
                 GridIds.MyReturns => MyReturns(),
                 GridIds.CommissionApprovals => CommissionApprovals(),
@@ -59,9 +60,9 @@ namespace KRSDealerManagement.Web.Helpers
                 GridFilterColumn.DateCol("orderDate", "Order Date"),
                 GridFilterColumn.Combo("orderNumber", "Order #"),
                 GridFilterColumn.DateCol("allocated", "Allocated"),
-                GridFilterColumn.Combo("chassis", "Chassis"),
                 GridFilterColumn.Combo("model", "Model"),
-                GridFilterColumn.Combo("color", "Color")
+                GridFilterColumn.Combo("color", "Color"),
+                GridFilterColumn.Combo("chassis", "Chassis")
             });
             if (isSubdealer) cols.Add(GridFilterColumn.Select("source", "Dealer", "Subdealer"));
             cols.AddRange(new[]
@@ -150,6 +151,24 @@ namespace KRSDealerManagement.Web.Helpers
             GridFilterColumn.Combo("reserved", "Reserved"),
             GridFilterColumn.Combo("available", "Available"),
             GridFilterColumn.Select("status", "Active", "Inactive"),
+            GridFilterColumn.Actions()
+        };
+
+        private static List<GridFilterColumn> AccountStatement() => new()
+        {
+            GridFilterColumn.Skip(),
+            GridFilterColumn.DateCol("txnDate", "Txn Date"),
+            GridFilterColumn.Combo("type", "Type"),
+            GridFilterColumn.Combo("description", "Description"),
+            GridFilterColumn.Combo("customer", "Customer"),
+            GridFilterColumn.Combo("payType", "Pay Type"),
+            GridFilterColumn.Combo("finance", "Finance"),
+            GridFilterColumn.Combo("vin", "VIN"),
+            GridFilterColumn.Combo("requestedAmt", "Requested"),
+            GridFilterColumn.Combo("approvedAmt", "Approved"),
+            GridFilterColumn.Combo("debit", "Debit"),
+            GridFilterColumn.Combo("credit", "Credit"),
+            GridFilterColumn.Combo("balance", "Balance"),
             GridFilterColumn.Actions()
         };
 

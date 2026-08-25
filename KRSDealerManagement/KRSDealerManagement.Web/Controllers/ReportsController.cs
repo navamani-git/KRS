@@ -34,7 +34,7 @@ namespace KRSDealerManagement.Web.Controllers
         // GET: Reports/AccountStatement  (Subdealer's own statement)
         [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.AccountStatements)]
-        public async Task<IActionResult> AccountStatement(DateTime? fromDate, DateTime? toDate)
+        public async Task<IActionResult> AccountStatement(DateTime? fromDate, DateTime? toDate, int? page, int? pageSize)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
@@ -45,15 +45,12 @@ namespace KRSDealerManagement.Web.Controllers
             var account = await AccountHelper.GetPrimaryAccountAsync(_mediator, userId.Value);
             if (account == null)
             {
+                ViewBag.AccountId = null;
                 return View(Enumerable.Empty<KRSDealerManagement.Application.DTOs.AccountTransactionDto>());
             }
 
-            var transactions = await _mediator.Send(new GetAccountTransactionsQuery
-            {
-                AccountId = account.AccountId,
-                FromDate = fromDate,
-                ToDate = toDate
-            });
+            var pageItems = await AccountStatementGridHelper.LoadPageAsync(
+                _mediator, this, account.AccountId, fromDate, toDate, page, pageSize);
 
             var balance = await _mediator.Send(new GetAccountBalanceQuery
             {
@@ -61,8 +58,9 @@ namespace KRSDealerManagement.Web.Controllers
             });
 
             ViewBag.Balance = balance;
+            ViewBag.AccountId = account.AccountId;
 
-            return View(transactions);
+            return View(pageItems);
         }
     }
 }

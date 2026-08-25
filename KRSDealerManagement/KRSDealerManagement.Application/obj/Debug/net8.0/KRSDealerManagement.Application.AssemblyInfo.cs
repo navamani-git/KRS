@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("KRSDealerManagement.Application")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8a70ff436ffd6a5adb8a7881af6a87dbda01e5a3")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+70967ac2905fb2149ad50453751aa8815941ccdf")]
 [assembly: System.Reflection.AssemblyProductAttribute("KRSDealerManagement.Application")]
 [assembly: System.Reflection.AssemblyTitleAttribute("KRSDealerManagement.Application")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

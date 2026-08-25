@@ -100,7 +100,7 @@ namespace KRSDealerManagement.Web.Controllers
         [HttpGet]
         [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.AccountStatements)]
-        public async Task<IActionResult> Statement(DateTime? fromDate, DateTime? toDate)
+        public async Task<IActionResult> Statement(DateTime? fromDate, DateTime? toDate, int? page, int? pageSize)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction(nameof(Login));
@@ -111,16 +111,14 @@ namespace KRSDealerManagement.Web.Controllers
             var account = await AccountHelper.GetPrimaryAccountAsync(_mediator, userId.Value);
             if (account == null)
             {
+                ViewBag.Balance = null;
+                ViewBag.AccountId = null;
                 return View("~/Views/Reports/AccountStatement.cshtml",
                     Enumerable.Empty<KRSDealerManagement.Application.DTOs.AccountTransactionDto>());
             }
 
-            var transactions = await _mediator.Send(new GetAccountTransactionsQuery
-            {
-                AccountId = account.AccountId,
-                FromDate = fromDate,
-                ToDate = toDate
-            });
+            var pageItems = await AccountStatementGridHelper.LoadPageAsync(
+                _mediator, this, account.AccountId, fromDate, toDate, page, pageSize);
 
             var balance = await _mediator.Send(new GetAccountBalanceQuery
             {
@@ -128,7 +126,8 @@ namespace KRSDealerManagement.Web.Controllers
             });
 
             ViewBag.Balance = balance;
-            return View("~/Views/Reports/AccountStatement.cshtml", transactions);
+            ViewBag.AccountId = account.AccountId;
+            return View("~/Views/Reports/AccountStatement.cshtml", pageItems);
         }
 
         [HttpGet]

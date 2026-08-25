@@ -36,6 +36,7 @@ namespace KRSDealerManagement.Application.DTOs
         public DateTime CreatedDate { get; set; }
         public int? ModifiedBy { get; set; }
         public DateTime ModifiedDate { get; set; }
+        public DateTime? DeliveryDate { get; set; }
 
         public int? VehicleBookingId { get; set; }
         public int? BookingStatus { get; set; }
@@ -53,7 +54,9 @@ namespace KRSDealerManagement.Application.DTOs
         public bool IsAwaitingDealerApproval => !HasBooking
             && Status == UnifiedVehicleStatus.Submitted;
         public bool CanSubmitSubsidyDocs { get; set; }
-        public bool CanMarkDelivered => HasBooking && Status == UnifiedVehicleStatus.SubsidyIdCreated;
+        public bool CanMarkDelivered => SubdealerId.HasValue
+            && Status != UnifiedVehicleStatus.Delivered;
+        public bool IsDelivered => Status == UnifiedVehicleStatus.Delivered;
         public bool CanRequestReturn { get; set; }
         public bool IsReturnPending => Status == UnifiedVehicleStatus.ReturnRequested;
 
@@ -62,22 +65,19 @@ namespace KRSDealerManagement.Application.DTOs
 
         public string GetDeliveryStatusDisplay()
         {
-            if (!IsInDeliveryPipeline)
-            {
-                if (Status == UnifiedVehicleStatus.ApprovedByDealer)
-                    return "Not booked";
-                return "—";
-            }
-
-            return StatusName ?? GetStatusDisplay();
+            if (IsDelivered)
+                return "Delivered";
+            return "—";
         }
+
+        public string? GetDeliveryDateTooltip()
+            => DeliveryDate?.ToString("yyyy-MM-dd");
 
         public string GetDeliveryBadgeClass()
         {
-            if (!IsInDeliveryPipeline)
-                return "bg-light text-dark border";
-
-            return BookingStatusBadge ?? StatusBadgeClass ?? "bg-primary";
+            if (IsDelivered)
+                return "bg-success";
+            return "bg-light text-dark border";
         }
 
         public string GetStatusDisplay()

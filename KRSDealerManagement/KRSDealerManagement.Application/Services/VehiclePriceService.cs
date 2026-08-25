@@ -1,3 +1,5 @@
+using KRSDealerManagement.Application.DTOs;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Domain.Entities;
 using KRSDealerManagement.Domain.Repositories;
 
@@ -18,12 +20,58 @@ namespace KRSDealerManagement.Application.Services
         {
             var asOf = asOfDate.Date;
             var prices = await _unitOfWork.VehiclePriceHistories.GetAllAsync();
-            var match = prices
-                .Where(p => p.ModelId == modelId && p.ColorId == colorId && p.EffectiveFrom <= asOf)
-                .OrderByDescending(p => p.EffectiveFrom)
-                .ThenByDescending(p => p.PriceHistoryId)
-                .FirstOrDefault();
+            var match = VehiclePriceCoverageHelper.FindActivePrice(prices, modelId, colorId, asOf);
             return match?.Price;
+        }
+
+        public async Task<string?> ValidatePriceForVehicleCreateAsync(int modelId, int colorId, DateTime asOfDate)
+        {
+            var prices = await _unitOfWork.VehiclePriceHistories.GetAllAsync();
+            var model = (await _unitOfWork.VehicleModels.GetAllAsync()).FirstOrDefault(m => m.ModelId == modelId);
+            var color = (await _unitOfWork.VehicleColors.GetAllAsync()).FirstOrDefault(c => c.ColorId == colorId);
+
+            return VehiclePriceCoverageHelper.ValidateForDate(
+                prices,
+                modelId,
+                colorId,
+                asOfDate,
+                model?.ModelName,
+                color?.ColorName);
+        }
+
+        public async Task<InvoicePriceChangePreviewDto> GetInvoicePriceChangePreviewAsync(int vehicleId, DateTime invoiceDate)
+        {
+            var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(vehicleId);
+            if (vehicle == null)
+            {
+                return new InvoicePriceChangePreviewDto
+                {
+                    ErrorMessage = "Vehicle not found."
+                };
+            }
+
+            var invoice = invoiceDate.Date;
+            var catalogPrice = await GetPriceAsOfAsync(vehicle.ModelId, vehicle.ColorId, invoice);
+            if (!catalogPrice.HasValue)
+            {
+                var validation = await ValidatePriceForVehicleCreateAsync(vehicle.ModelId, vehicle.ColorId, invoice);
+                return new InvoicePriceChangePreviewDto
+                {
+                    CurrentVehiclePrice = vehicle.CurrentPrice,
+                    HasCatalogPrice = false,
+                    ErrorMessage = validation ?? $"No catalogue price found effective on {invoice:yyyy-MM-dd}."
+                };
+            }
+
+            var delta = catalogPrice.Value - vehicle.CurrentPrice;
+            return new InvoicePriceChangePreviewDto
+            {
+                CurrentVehiclePrice = vehicle.CurrentPrice,
+                CatalogPrice = catalogPrice.Value,
+                Delta = delta,
+                WouldChange = delta != 0,
+                HasCatalogPrice = true
+            };
         }
 
         public async Task<bool> ApplyPriceOnInvoiceAsync(int vehicleId, DateTime invoiceDate, int changedBy)

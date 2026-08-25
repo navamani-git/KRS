@@ -23,16 +23,28 @@ namespace KRSDealerManagement.Web.Controllers
 
         public async Task<IActionResult> Index(int? modelId, int? colorId, int? month, int? year, int? page, int? pageSize)
         {
-            // Load prices with filters
+            if (!Request.Query.ContainsKey("month") && !Request.Query.ContainsKey("year"))
+            {
+                return RedirectToAction(nameof(Index), new
+                {
+                    modelId,
+                    colorId,
+                    month = DateTime.Now.Month,
+                    year = DateTime.Now.Year,
+                    page,
+                    pageSize
+                });
+            }
+
+            var filterYear = year ?? DateTime.Now.Year;
             var prices = await _mediator.Send(new GetVehiclePricesQuery
             {
                 ModelId = modelId,
                 ColorId = colorId,
                 Month = month,
-                Year = year ?? DateTime.Now.Year
+                Year = filterYear
             });
 
-            // Load models and colors for filter dropdowns
             var models = await _mediator.Send(new GetVehicleModelsQuery { IsActive = true });
             var colors = await _mediator.Send(new GetVehicleColorsQuery { IsActive = true });
 
@@ -47,7 +59,7 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.SelectedModelId = modelId;
             ViewBag.SelectedColorId = colorId;
             ViewBag.SelectedMonth = month;
-            ViewBag.SelectedYear = year ?? DateTime.Now.Year;
+            ViewBag.SelectedYear = filterYear;
 
             return View(pageItems);
         }
@@ -67,7 +79,16 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(int modelId, int colorId, int month, int year, decimal price, string notes, DateTime effectiveFrom)
+        public async Task<IActionResult> Create(
+            int modelId,
+            int colorId,
+            bool applyForAllColors,
+            int month,
+            int year,
+            decimal price,
+            string? notes,
+            DateTime effectiveFrom,
+            DateTime effectiveTo)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
@@ -78,21 +99,31 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction(nameof(Create));
             }
 
+            if (!applyForAllColors && colorId <= 0)
+            {
+                TempData["Error"] = "Select a color or check apply for all colors.";
+                return RedirectToAction(nameof(Create));
+            }
+
             try
             {
                 await _mediator.Send(new CreateVehiclePriceCommand
                 {
                     ModelId = modelId,
                     ColorId = colorId,
+                    ApplyForAllColors = applyForAllColors,
                     Month = month,
                     Year = year,
                     EffectiveFrom = effectiveFrom,
+                    EffectiveTo = effectiveTo,
                     Price = price,
                     Notes = notes?.Trim(),
                     CreatedBy = userId.Value
                 });
 
-                TempData["Success"] = $"Price ₹{price:N2} effective {effectiveFrom:yyyy-MM-dd} saved successfully!";
+                TempData["Success"] = applyForAllColors
+                    ? $"Price ₹{price:N2} saved for all mapped colors ({effectiveFrom:yyyy-MM-dd} to {(effectiveTo == default ? "month end" : effectiveTo.ToString("yyyy-MM-dd"))})."
+                    : $"Price ₹{price:N2} effective {effectiveFrom:yyyy-MM-dd} to {(effectiveTo == default ? "month end" : effectiveTo.ToString("yyyy-MM-dd"))} saved successfully!";
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
@@ -111,10 +142,12 @@ namespace KRSDealerManagement.Web.Controllers
                 Month = month,
                 Year = year ?? DateTime.Now.Year
             });
-            var headers = new[] { "Model", "Color", "Month", "Year", "Effective From", "Price", "Notes" };
+            var headers = new[] { "Model", "Color", "Month", "Year", "Effective From", "Effective To", "Price", "Notes" };
             var rows = prices.Select(p => (IReadOnlyList<object?>)new List<object?>
             {
-                p.ModelName, p.ColorName, p.Month, p.Year, p.EffectiveFrom.ToString("yyyy-MM-dd"), p.Price, p.Notes ?? ""
+                p.ModelName, p.ColorName, p.Month, p.Year,
+                p.EffectiveFrom.ToString("yyyy-MM-dd"), p.EffectiveTo.ToString("yyyy-MM-dd"),
+                p.Price, p.Notes ?? ""
             });
             return ExcelExportHelper.ToFileResult(this, $"prices_{DateTime.Now:yyyyMMdd}.xlsx", headers, rows, "Prices");
         }
@@ -137,17 +170,16 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, decimal price, string? notes)
+        public async Task<IActionResult> Edit(
+            int id,
+            decimal price,
+            string? notes,
+            DateTime effectiveFrom,
+            DateTime effectiveTo,
+            string? remarks)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
-
-            var row = await _unitOfWork.VehiclePriceHistories.GetByIdAsync(id);
-            if (row == null)
-            {
-                TempData["Error"] = "Price record not found.";
-                return RedirectToAction(nameof(Index));
-            }
 
             if (price <= 0)
             {
@@ -155,13 +187,27 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction(nameof(Edit), new { id });
             }
 
-            row.Price = price;
-            row.Notes = notes?.Trim();
-            row.ModifiedBy = userId.Value;
-            row.ModifiedDate = DateTime.UtcNow;
-            await _unitOfWork.VehiclePriceHistories.UpdateAsync(row);
-            TempData["Success"] = "Price updated.";
-            return RedirectToAction(nameof(Index));
+            try
+            {
+                var ok = await _mediator.Send(new UpdateVehiclePriceCommand
+                {
+                    PriceHistoryId = id,
+                    EffectiveFrom = effectiveFrom,
+                    EffectiveTo = effectiveTo,
+                    Price = price,
+                    Notes = notes?.Trim(),
+                    ModifiedBy = userId.Value,
+                    Remarks = remarks?.Trim()
+                });
+
+                TempData[ok ? "Success" : "Error"] = ok ? "Price updated." : "Price record not found.";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction(nameof(Edit), new { id });
+            }
         }
 
         [HttpPost]

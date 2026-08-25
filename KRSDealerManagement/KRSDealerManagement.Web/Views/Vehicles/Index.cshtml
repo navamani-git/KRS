@@ -35,6 +35,18 @@
             </div>
             @if (!isSubdealer)
             {
+                var locations = ViewBag.DealershipLocations as IEnumerable<string> ?? Enumerable.Empty<string>();
+                var selectedLocation = ViewBag.SelectedDealershipLocation as string;
+                <div class="col-md-2">
+                    <label class="form-label form-label-sm mb-0">Dealer location</label>
+                    <select name="dealershipLocation" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="">All locations</option>
+                        @foreach (var loc in locations)
+                        {
+                            <option value="@loc" selected="@(string.Equals(selectedLocation, loc, StringComparison.OrdinalIgnoreCase))">@loc</option>
+                        }
+                    </select>
+                </div>
                 <div class="col-md-3">
                     <label class="form-label form-label-sm mb-0">Subdealer</label>
                     <select name="subdealerId" class="form-select form-select-sm">
@@ -76,7 +88,7 @@
                 <table class="table table-sm table-hover table-striped mb-0 grid-excel-table grid-data-table" data-grid-id="@GridIds.Vehicles">
                     <thead class="table-dark">
                         <tr>
-                            <th>#</th>
+                            <th class="grid-col-rownum">#</th>
                             @if (!isSubdealer)
                             {
                                 <th>Subdealer</th>
@@ -84,9 +96,9 @@
                             <th>Order Date</th>
                             <th>Order #</th>
                             <th>Allocated</th>
-                            <th>Chassis</th>
                             <th>Model</th>
                             <th>Color</th>
+                            <th>Chassis</th>
                             @if (isSubdealer)
                             {
                                 <th>Source</th>
@@ -140,12 +152,12 @@
                                         <span class="text-muted">—</span>
                                     }
                                 </td>
+                                <td>@v.ModelName</td>
+                                <td>@v.ColorName</td>
                                 <td>
                                     <partial name="_ChassisLink" view-data='new ViewDataDictionary(ViewData) {
                                         { "VehicleId", v.VehicleId }, { "Chassis", v.ChassisNumber } }' />
                                 </td>
-                                <td>@v.ModelName</td>
-                                <td>@v.ColorName</td>
                                 @if (isSubdealer)
                                 {
                                     <td>
@@ -161,13 +173,14 @@
                                 }
                                 <td class="text-end fw-bold">₹@v.CurrentPrice.ToString("N2")</td>
                                 <td>
-                                    @if (v.IsInDeliveryPipeline)
+                                    @if (v.IsDelivered)
                                     {
-                                        <span class="badge @v.GetDeliveryBadgeClass()">@v.GetDeliveryStatusDisplay()</span>
+                                        <span class="badge @v.GetDeliveryBadgeClass()"
+                                              title="@v.GetDeliveryDateTooltip()">@v.GetDeliveryStatusDisplay()</span>
                                     }
                                     else
                                     {
-                                        <small class="text-muted">@v.GetDeliveryStatusDisplay()</small>
+                                        <span class="text-muted">@v.GetDeliveryStatusDisplay()</span>
                                     }
                                 </td>
                                 <td><span class="badge @v.GetBadgeClass()">@v.GetStatusDisplay()</span></td>
@@ -199,10 +212,12 @@
                                     }
                                     @if (isSubdealer && v.CanMarkDelivered)
                                     {
-                                        <form method="post" action="@Url.EAction(QueryCrypto, "MarkDelivered", new { id = v.VehicleBookingId }, "VehicleBookings")" class="d-inline" onsubmit="return confirm('Mark this vehicle as delivered?');">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-sm btn-success">Mark Delivered</button>
-                                        </form>
+                                        <button type="button" class="btn btn-sm btn-success deliver-btn"
+                                                data-vehicle-id="@v.VehicleId"
+                                                data-order-date="@(v.OrderDate?.ToString("yyyy-MM-dd") ?? v.CreatedDate.ToString("yyyy-MM-dd"))"
+                                                data-chassis="@v.ChassisNumber">
+                                            <i class="bi bi-check-circle"></i> Deliver
+                                        </button>
                                     }
                                     @if (isSubdealer && v.CanEditBooking)
                                     {
@@ -262,6 +277,39 @@
 
 @if (isSubdealer)
 {
+    <div class="modal fade" id="deliverModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" asp-action="MarkDelivered">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="vehicleId" id="deliverVehicleId" />
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-check-circle"></i> Mark Delivered</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted mb-3">Record the date the vehicle was delivered to the customer.</p>
+                        <div class="mb-2">
+                            <label class="form-label fw-bold">Chassis</label>
+                            <input type="text" class="form-control" id="deliverChassis" readonly />
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label fw-bold">Delivery date <span class="text-danger">*</span></label>
+                            <input type="date" name="deliveryDate" id="deliverDate" class="form-control" required />
+                            <small class="text-muted">Cannot be in the future or before the order date.</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> Mark Delivered
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="returnRequestModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -306,6 +354,18 @@
 
 @section Scripts {
 <script>
+const todayIso = new Date().toISOString().slice(0, 10);
+document.querySelectorAll('.deliver-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.getElementById('deliverVehicleId').value = btn.dataset.vehicleId;
+        document.getElementById('deliverChassis').value = btn.dataset.chassis;
+        const dateInput = document.getElementById('deliverDate');
+        dateInput.min = btn.dataset.orderDate;
+        dateInput.max = todayIso;
+        dateInput.value = todayIso;
+        new bootstrap.Modal(document.getElementById('deliverModal')).show();
+    });
+});
 document.querySelectorAll('.return-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.getElementById('returnVehicleId').value = btn.dataset.id;

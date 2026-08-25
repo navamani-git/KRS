@@ -27,19 +27,15 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             if (effectiveTo < effectiveFrom)
                 throw new InvalidOperationException("Effective to must be on or after effective from.");
 
-            var existing = (await _unitOfWork.CommissionRates.GetAllAsync())
-                .Where(r => r.ModelId == request.ModelId)
-                .ToList();
+            var existing = (await _unitOfWork.CommissionRates.GetAllAsync()).ToList();
 
-            foreach (var other in existing)
+            if (CommissionRateOverlapHelper.TryFindOverlap(
+                    existing, request.ModelId, effectiveFrom, effectiveTo, excludeRateId: null, out var conflict)
+                && conflict != null)
             {
-                if (CommissionRateOverlapHelper.RangesOverlap(
-                        effectiveFrom, effectiveTo, other.EffectiveFrom, other.EffectiveTo))
-                {
-                    throw new InvalidOperationException(
-                        CommissionRateOverlapHelper.OverlapMessage(
-                            effectiveFrom, effectiveTo, other.EffectiveFrom, other.EffectiveTo));
-                }
+                var (otherFrom, otherTo) = CommissionRateOverlapHelper.NormalizeRange(conflict);
+                throw new InvalidOperationException(
+                    CommissionRateOverlapHelper.OverlapMessage(effectiveFrom, effectiveTo, otherFrom, otherTo));
             }
 
             var rate = new CommissionRate

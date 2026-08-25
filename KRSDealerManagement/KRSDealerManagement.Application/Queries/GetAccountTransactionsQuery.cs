@@ -15,5 +15,7 @@ namespace KRSDealerManagement.Application.Queries
         public DateTime? ToDate { get; set; }
         /// <summary>When true, reserved/released hold rows are omitted from the statement.</summary>
         public bool ExcludeBalanceHolds { get; set; } = true;
+        /// <summary>When true, includes admin soft-deleted rows (admin screens only).</summary>
+        public bool IncludeDeleted { get; set; }
     }
 }

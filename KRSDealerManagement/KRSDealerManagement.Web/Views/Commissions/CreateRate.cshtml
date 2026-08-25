@@ -4,6 +4,8 @@
     var models = ViewBag.Models as IEnumerable<VehicleModelDto>;
     var effectiveFrom = ViewBag.EffectiveFrom as string ?? DateTime.Now.ToString("yyyy-MM-dd");
     var effectiveTo = ViewBag.EffectiveTo as string ?? DateTime.Now.ToString("yyyy-MM-dd");
+    ViewData["ExcelImportKey"] = KRSDealerManagement.Web.Helpers.ExcelImport.ExcelImportKeys.CommissionRates;
+    ViewData["ExcelImportReturnAction"] = "CreateRate";
 }
 
 <div class="row mb-3">
@@ -17,6 +19,8 @@
         </a>
     </div>
 </div>
+
+<partial name="_ExcelImport" />
 
 <div class="row">
     <div class="col-md-7">

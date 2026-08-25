@@ -4,6 +4,8 @@
     var categories = ViewBag.Categories as IReadOnlyList<(string Code, string Name)> ?? StatusCategories.All;
     var badgeOptions = ViewBag.BadgeOptions as IReadOnlyList<(string Value, string Label)>;
     var selectedCategory = ViewBag.SelectedCategory as string;
+    ViewData["ExcelImportKey"] = KRSDealerManagement.Web.Helpers.ExcelImport.ExcelImportKeys.StatusLookups;
+    ViewData["ExcelImportReturnAction"] = "Create";
 }
 
 <div class="row mb-3">
@@ -12,6 +14,8 @@
         <a href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "Index", new { category = selectedCategory })" class="btn btn-secondary">Back</a>
     </div>
 </div>
+
+<partial name="_ExcelImport" />
 
 <div class="card card-primary" style="max-width:640px">
     <form method="post">

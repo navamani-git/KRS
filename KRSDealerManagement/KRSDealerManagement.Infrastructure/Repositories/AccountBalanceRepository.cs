@@ -46,7 +46,7 @@ SELECT
     CurrentBalance, ReservedAmount, AvailableBalance, InitialBalance,
     LastTransactionDate, CreatedDate, ModifiedDate
 FROM AccountBalance
-WHERE AccountId = @Id OR BalanceId = @Id";
+WHERE AccountId = @Id";
 
                 return await connection.QueryFirstOrDefaultAsync<AccountBalance>(sql, new { Id = id }, transaction);
             });
@@ -102,7 +102,7 @@ SET SubdealerId = @SubdealerId,
     InitialBalance = @InitialBalance,
     LastTransactionDate = @LastTransactionDate,
     ModifiedDate = @ModifiedDate
-WHERE AccountId = @BalanceId OR BalanceId = @BalanceId";
+WHERE AccountId = @BalanceId";
 
                 var rows = await connection.ExecuteAsync(sql, entity, transaction);
                 return rows > 0;

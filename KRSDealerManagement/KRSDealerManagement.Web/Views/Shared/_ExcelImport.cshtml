@@ -1,0 +1,56 @@
+@if (TempData["ImportErrors"] is string errText && !string.IsNullOrWhiteSpace(errText))
+{
+    var lines = errText.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+    <div class="alert alert-danger">
+        <h6 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Import validation failed</h6>
+        <p class="mb-2 small">No records were inserted. Fix the errors below and upload again.</p>
+        @if (TempData["ImportSavedPath"] is string savedPath)
+        {
+            <p class="small mb-2">Uploaded file saved to: <code>@savedPath</code></p>
+        }
+        <ul class="mb-0 small">
+            @foreach (var line in lines.Take(50))
+            {
+                <li>@line</li>
+            }
+            @if (lines.Length > 50)
+            {
+                <li><em>… and @(lines.Length - 50) more</em></li>
+            }
+        </ul>
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(ViewData["ExcelImportKey"] as string))
+{
+    var importKey = ViewData["ExcelImportKey"] as string;
+    var returnController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var returnAction = ViewData["ExcelImportReturnAction"] as string ?? "Create";
+
+    <div class="card mb-3 border-success">
+        <div class="card-header bg-success bg-opacity-10">
+            <h6 class="mb-0"><i class="bi bi-file-earmark-arrow-up"></i> Excel Import</h6>
+        </div>
+        <div class="card-body py-3">
+            <p class="small text-muted mb-2">
+                Download the sample template (example rows + Lookups sheet), fill your data, then upload.
+                All rows are validated before anything is inserted.
+            </p>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <a href="@Url.Action("DownloadTemplate", "ExcelImport", new { key = importKey })" class="btn btn-sm btn-outline-success" data-no-loader="true">
+                    <i class="bi bi-download"></i> Download Sample Template
+                </a>
+                <form method="post" asp-controller="ExcelImport" asp-action="Import" enctype="multipart/form-data" class="d-flex flex-wrap gap-2 align-items-center">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="key" value="@importKey" />
+                    <input type="hidden" name="returnController" value="@returnController" />
+                    <input type="hidden" name="returnAction" value="@returnAction" />
+                    <input type="file" name="file" class="form-control form-control-sm" accept=".xlsx,.xls" required style="max-width:280px;" />
+                    <button type="submit" class="btn btn-sm btn-success">
+                        <i class="bi bi-upload"></i> Upload &amp; Import
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+}

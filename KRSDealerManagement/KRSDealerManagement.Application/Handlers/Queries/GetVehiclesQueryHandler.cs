@@ -36,6 +36,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 .Where(r => r.Status == 0)
                 .Select(r => r.VehicleId)
                 .ToHashSet();
+            var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToList();
+            var userOrgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync()).ToList();
 
             // Vehicles assigned to subdealers, plus dealer-showroom stock (no subdealer after return)
             var result = vehicles
@@ -86,6 +88,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         CreatedDate = v.CreatedDate,
                         ModifiedBy = v.ModifiedBy,
                         ModifiedDate = v.ModifiedDate,
+                        DeliveryDate = v.DeliveryDate,
                         VehicleBookingId = booking?.VehicleBookingId,
                         BookingInvoiceDate = booking?.InvoiceDate,
                         BookingInsuranceDate = booking?.InsuranceDate,
@@ -109,7 +112,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
             if (request.DealershipId.HasValue)
             {
-                var scopedUserIds = (await _unitOfWork.UserOrgRoles.GetAllAsync())
+                var scopedUserIds = userOrgRoles
                     .Where(a => a.IsActive && a.DealershipId == request.DealershipId.Value)
                     .Select(a => a.UserId)
                     .ToHashSet();
@@ -119,6 +122,21 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         && v.PurchaseOrderId.HasValue
                         && orders.TryGetValue(v.PurchaseOrderId.Value, out var po)
                         && scopedUserIds.Contains(po.SubdealerId)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.DealershipLocation))
+            {
+                var location = request.DealershipLocation.Trim();
+                var dealershipIds = dealerships
+                    .Where(d => d.IsActive
+                        && string.Equals(d.Location?.Trim(), location, StringComparison.OrdinalIgnoreCase))
+                    .Select(d => d.DealershipId)
+                    .ToHashSet();
+                var locationUserIds = userOrgRoles
+                    .Where(a => a.IsActive && a.DealershipId.HasValue && dealershipIds.Contains(a.DealershipId.Value))
+                    .Select(a => a.UserId)
+                    .ToHashSet();
+                result = result.Where(v => v.SubdealerId.HasValue && locationUserIds.Contains(v.SubdealerId.Value));
             }
 
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
@@ -156,6 +174,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     && GridFilterHelper.MatchesContains(v.MotorNo, GridFilterHelper.GetFilter(cf, "motor"))
                     && GridFilterHelper.MatchesContains(v.BatteryNo, GridFilterHelper.GetFilter(cf, "battery"))
                     && GridFilterHelper.MatchesContains(v.GetStatusDisplay(), GridFilterHelper.GetFilter(cf, "status"))
+                    && GridFilterHelper.MatchesContains(v.GetDeliveryStatusDisplay(), GridFilterHelper.GetFilter(cf, "delivery"))
                     && GridFilterHelper.MatchesContains(v.CurrentPrice.ToString("N2"), GridFilterHelper.GetFilter(cf, "price")));
             }
 

@@ -17,11 +17,16 @@ namespace KRSDealerManagement.Application.Handlers.Commands
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IAuditService _auditService;
+        private readonly IVehiclePriceService _priceService;
 
-        public CreatePurchaseOrderCommandHandler(IUnitOfWork unitOfWork, IAuditService auditService)
+        public CreatePurchaseOrderCommandHandler(
+            IUnitOfWork unitOfWork,
+            IAuditService auditService,
+            IVehiclePriceService priceService)
         {
             _unitOfWork = unitOfWork;
             _auditService = auditService;
+            _priceService = priceService;
         }
 
         public async Task<int> Handle(CreatePurchaseOrderCommand request, CancellationToken cancellationToken)
@@ -43,6 +48,15 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
                 foreach (var item in request.Items)
                     await ModelColorValidation.EnsureMappedAsync(_unitOfWork, item.ModelId, item.ColorId);
+
+                var createDate = DateTime.Today;
+                foreach (var item in request.Items)
+                {
+                    var priceError = await _priceService.ValidatePriceForVehicleCreateAsync(
+                        item.ModelId, item.ColorId, createDate);
+                    if (priceError != null)
+                        throw new InvalidOperationException(priceError);
+                }
 
                 var allOrders = await _unitOfWork.PurchaseOrders.GetAllAsync();
                 string orderNumber = $"ORD-{DateTime.UtcNow.Year}-{(allOrders.Count() + 1):D5}";

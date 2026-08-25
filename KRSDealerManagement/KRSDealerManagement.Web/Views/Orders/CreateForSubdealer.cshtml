@@ -5,6 +5,8 @@
     var models = ViewBag.Models as IEnumerable<VehicleModelDto>;
     var modelColorMapJson = ViewBag.ModelColorMapJson as string ?? "{}";
     var canViewBalances = ViewBag.CanViewBalances as bool? ?? false;
+    ViewData["ExcelImportKey"] = KRSDealerManagement.Web.Helpers.ExcelImport.ExcelImportKeys.OrdersForSubdealer;
+    ViewData["ExcelImportReturnAction"] = "CreateForSubdealer";
 }
 
 <div class="row mb-3">
@@ -18,6 +20,8 @@
         </a>
     </div>
 </div>
+
+<partial name="_ExcelImport" />
 
 <form method="post" id="orderForm">
     @Html.AntiForgeryToken()

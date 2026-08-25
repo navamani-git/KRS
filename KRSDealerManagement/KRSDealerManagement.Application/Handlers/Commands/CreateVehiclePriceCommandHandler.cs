@@ -9,8 +9,8 @@ using System.Text.Json;
 namespace KRSDealerManagement.Application.Handlers.Commands
 {
     /// <summary>
-    /// Creates catalogue price for Model + Color with effective-from date.
-    /// Multiple entries per month are allowed; revises allocated/invoiced vehicles on/after effective date.
+    /// Creates catalogue price for Model + Color with effective date range.
+    /// Supports apply-for-all-colors and overlap validation.
     /// </summary>
     public class CreateVehiclePriceCommandHandler : IRequestHandler<CreateVehiclePriceCommand, int>
     {
@@ -38,60 +38,107 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 if (model == null)
                     throw new InvalidOperationException($"Vehicle model #{request.ModelId} not found.");
 
-                var color = await _unitOfWork.VehicleColors.GetByIdAsync(request.ColorId);
-                if (color == null)
-                    throw new InvalidOperationException($"Vehicle color #{request.ColorId} not found.");
-
-                await ModelColorValidation.EnsureMappedAsync(_unitOfWork, request.ModelId, request.ColorId);
+                var colorIds = await ResolveColorIdsAsync(request);
+                if (colorIds.Count == 0)
+                    throw new InvalidOperationException("No colors selected for this model.");
 
                 var effectiveFrom = request.EffectiveFrom == default
                     ? new DateTime(request.Year, request.Month, 1)
                     : request.EffectiveFrom.Date;
 
-                var priceHistory = new VehiclePriceHistory
-                {
-                    ModelId = request.ModelId,
-                    ColorId = request.ColorId,
-                    VehicleId = null,
-                    Month = effectiveFrom.Month,
-                    Year = effectiveFrom.Year,
-                    EffectiveFrom = effectiveFrom,
-                    Price = request.Price,
-                    Notes = request.Notes,
-                    CreatedBy = request.CreatedBy,
-                    CreatedDate = DateTime.UtcNow,
-                    ModifiedDate = DateTime.UtcNow
-                };
+                var effectiveTo = request.EffectiveTo == default
+                    ? new DateTime(request.Year, request.Month, DateTime.DaysInMonth(request.Year, request.Month))
+                    : request.EffectiveTo.Date;
 
-                var priceId = await _unitOfWork.VehiclePriceHistories.AddAsync(priceHistory);
+                if (effectiveTo < effectiveFrom)
+                    throw new InvalidOperationException("Effective to must be on or after effective from.");
+
+                var existing = (await _unitOfWork.VehiclePriceHistories.GetAllAsync()).ToList();
+                var firstPriceId = 0;
+
+                foreach (var colorId in colorIds)
+                {
+                    var color = await _unitOfWork.VehicleColors.GetByIdAsync(colorId);
+                    if (color == null)
+                        throw new InvalidOperationException($"Vehicle color #{colorId} not found.");
+
+                    await ModelColorValidation.EnsureMappedAsync(_unitOfWork, request.ModelId, colorId);
+
+                    if (VehiclePriceOverlapHelper.TryFindOverlap(
+                            existing, request.ModelId, colorId, effectiveFrom, effectiveTo, excludePriceHistoryId: null, out var conflict)
+                        && conflict != null)
+                    {
+                        var (otherFrom, otherTo) = VehiclePriceOverlapHelper.NormalizeRange(conflict);
+                        throw new InvalidOperationException(
+                            VehiclePriceOverlapHelper.OverlapMessage(effectiveFrom, effectiveTo, otherFrom, otherTo));
+                    }
+
+                    var priceHistory = new VehiclePriceHistory
+                    {
+                        ModelId = request.ModelId,
+                        ColorId = colorId,
+                        VehicleId = null,
+                        Month = effectiveFrom.Month,
+                        Year = effectiveFrom.Year,
+                        EffectiveFrom = effectiveFrom,
+                        EffectiveTo = effectiveTo,
+                        Price = request.Price,
+                        Notes = request.Notes,
+                        CreatedBy = request.CreatedBy,
+                        CreatedDate = DateTime.UtcNow,
+                        ModifiedDate = DateTime.UtcNow
+                    };
+
+                    var priceId = await _unitOfWork.VehiclePriceHistories.AddAsync(priceHistory);
+                    if (firstPriceId == 0)
+                        firstPriceId = priceId;
+
+                    priceHistory.PriceHistoryId = priceId;
+                    existing.Add(priceHistory);
+
+                    await _priceService.ApplyCatalogPriceRevisionAsync(
+                        request.ModelId, colorId, request.Price, effectiveFrom, request.CreatedBy);
+                }
 
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
-                await _priceService.ApplyCatalogPriceRevisionAsync(
-                    request.ModelId, request.ColorId, request.Price, effectiveFrom, request.CreatedBy);
-
                 await _auditService.LogActionAsync(
                     entityType: "VehiclePrice",
-                    entityId: priceId,
+                    entityId: firstPriceId,
                     action: "Create",
                     userId: request.CreatedBy,
                     userRole: "Admin",
                     newValue: JsonSerializer.Serialize(new
                     {
                         request.ModelId,
-                        request.ColorId,
+                        ColorCount = colorIds.Count,
+                        request.ApplyForAllColors,
                         effectiveFrom,
+                        effectiveTo,
                         request.Price
                     }));
 
-                return priceId;
+                return firstPriceId;
             }
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 throw new ApplicationException($"Error creating vehicle price: {ex.Message}", ex);
             }
+        }
+
+        private async Task<List<int>> ResolveColorIdsAsync(CreateVehiclePriceCommand request)
+        {
+            if (request.ApplyForAllColors)
+            {
+                return (await _unitOfWork.VehicleModelColors.GetColorIdsByModelIdAsync(request.ModelId)).ToList();
+            }
+
+            if (request.ColorId <= 0)
+                throw new InvalidOperationException("Select a color or choose apply for all colors.");
+
+            return new List<int> { request.ColorId };
         }
     }
 }

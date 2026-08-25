@@ -13,7 +13,7 @@
 <div class="row mb-3">
     <div class="col-md-8">
         <h1 class="m-0"><i class="bi bi-journal-text"></i> Booking #@Model.VehicleBookingId</h1>
-        <p class="text-muted">@ViewBag.Chassis · @ViewBag.ModelName · @ViewBag.ColorName · @ViewBag.PaymentModeLabel</p>
+        <p class="text-muted">@ViewBag.ModelName · @ViewBag.ColorName · @ViewBag.Chassis · @ViewBag.PaymentModeLabel</p>
     </div>
     <div class="col-md-4 text-end">
         <a href="@Url.Action("Index", "Vehicles")" class="btn btn-secondary">Vehicles</a>
@@ -109,20 +109,28 @@
             <div class="card mb-3 border-success">
                 <div class="card-header bg-success text-white"><h3 class="card-title mb-0">Confirm Delivery</h3></div>
                 <div class="card-body">
-                    <p class="mb-3">Subsidy has been applied. Mark this vehicle as <strong>Delivered</strong> once handed over to the customer.</p>
-                    <form method="post" asp-action="MarkDelivered">
+                    <p class="mb-3">Mark this vehicle as <strong>Delivered</strong> and record the delivery date.</p>
+                    <form method="post" asp-action="MarkDelivered" class="row g-2 align-items-end">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="id" value="@Model.VehicleBookingId" />
-                        <button type="submit" class="btn btn-success" onclick="return confirm('Mark this vehicle as delivered to customer?');">
-                            <i class="bi bi-check-circle"></i> Mark as Delivered
-                        </button>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Delivery date</label>
+                            <input type="date" name="deliveryDate" class="form-control" required
+                                   min="@ViewBag.MinDeliveryDate" max="@ViewBag.MaxDeliveryDate"
+                                   value="@ViewBag.MaxDeliveryDate" />
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-success" onclick="return confirm('Mark this vehicle as delivered?');">
+                                <i class="bi bi-check-circle"></i> Mark as Delivered
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
         }
         @if (!isStaff && vehicleStatus == UnifiedVehicleStatus.Delivered)
         {
-            <div class="alert alert-success"><i class="bi bi-check-circle"></i> This vehicle has been marked as <strong>Delivered</strong>.</div>
+            <div class="alert alert-success"><i class="bi bi-check-circle"></i> Delivered@(ViewBag.DeliveryDate != null ? $" on {ViewBag.DeliveryDate}" : "").</div>
         }
     </div>
 
@@ -131,8 +139,9 @@
         <div class="col-md-5">
             <div class="card card-primary"><div class="card-header"><h3 class="card-title">Staff Processing</h3></div>
             <div class="card-body">
-                <form method="post" enctype="multipart/form-data">@Html.AntiForgeryToken()
+                <form method="post" enctype="multipart/form-data" id="staffBookingForm">@Html.AntiForgeryToken()
                     <input type="hidden" name="id" value="@Model.VehicleBookingId" />
+                    <input type="hidden" name="confirmPriceAdjustment" id="confirmPriceAdjustment" value="false" />
                     <div class="mb-2"><label class="fw-bold">Status</label>
                         @if (vehicleStatus == UnifiedVehicleStatus.Delivered)
                         {
@@ -289,13 +298,44 @@
         }
     });
 
-    staffForm.addEventListener('submit', function (e) {
+    staffForm.addEventListener('submit', async function (e) {
         const m = getMilestoneInputs();
         const selected = parseInt(statusSelect.value, 10);
         if (!isStatusSelectable(selected, m)) {
             e.preventDefault();
             applyStatusConstraints();
             alert('Status cannot be earlier than the latest milestone date entered. Clear later dates or pick a matching status.');
+            return;
+        }
+
+        if (staffForm.dataset.priceConfirmed === 'true') return;
+
+        const invoiceInput = document.getElementById('invoiceDate');
+        const invoiceDate = invoiceInput?.value || '';
+        const previousInvoice = '@(Model.InvoiceDate?.ToString("yyyy-MM-dd") ?? "")';
+        if (!invoiceDate || invoiceDate === previousInvoice) return;
+
+        e.preventDefault();
+        try {
+            const previewUrl = '@Url.Action("InvoicePricePreview", new { id = Model.VehicleBookingId })'
+                + '&invoiceDate=' + encodeURIComponent(invoiceDate);
+            const res = await fetch(previewUrl);
+            const data = await res.json();
+            if (!data.success) {
+                alert(data.message || 'Could not verify catalogue price for the invoice date.');
+                return;
+            }
+            if (data.wouldChange) {
+                const current = Number(data.currentPrice).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const next = Number(data.catalogPrice).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const ok = confirm('Earlier price is ₹' + current + ' and now it changed to ₹' + next + '.\n\nApply this adjustment to the dealer account?');
+                if (!ok) return;
+                document.getElementById('confirmPriceAdjustment').value = 'true';
+            }
+            staffForm.dataset.priceConfirmed = 'true';
+            staffForm.submit();
+        } catch (err) {
+            alert('Could not verify invoice price. Please try again.');
         }
     });
 

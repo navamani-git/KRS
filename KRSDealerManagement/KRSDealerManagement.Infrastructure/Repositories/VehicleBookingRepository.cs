@@ -11,21 +11,23 @@ namespace KRSDealerManagement.Infrastructure.Repositories
 
         public async Task UpdateStatusAsync(int bookingId, int bookingStatus, int? modifiedBy)
         {
-            using var connection = _context.GetConnection();
-            connection.Open();
-            await connection.ExecuteAsync(@"
+            await WithConnectionAsync(async (connection, transaction) =>
+            {
+                await connection.ExecuteAsync(@"
 UPDATE VehicleBookings SET
     BookingStatus = @BookingStatus,
     ModifiedBy = @ModifiedBy,
     ModifiedDate = @ModifiedDate
 WHERE VehicleBookingId = @VehicleBookingId",
-                new
-                {
-                    VehicleBookingId = bookingId,
-                    BookingStatus = bookingStatus,
-                    ModifiedBy = modifiedBy,
-                    ModifiedDate = DateTime.UtcNow
-                });
+                    new
+                    {
+                        VehicleBookingId = bookingId,
+                        BookingStatus = bookingStatus,
+                        ModifiedBy = modifiedBy,
+                        ModifiedDate = DateTime.UtcNow
+                    }, transaction);
+                return true;
+            });
         }
 
         public async Task<VehicleBooking?> GetByStoredFilePathAsync(string path)

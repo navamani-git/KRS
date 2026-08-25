@@ -495,7 +495,7 @@ namespace KRSDealerManagement.Web.Controllers
         public async Task<IActionResult> Manage(int id, int bookingStatus, string? subsidyId,
             DateTime? paperReceivedDate, DateTime? invoiceDate, DateTime? insuranceDate, DateTime? agentDate,
             DateTime? registrationDate, string? rtoNumber, DateTime? numberPlateReceivedDate,
-            IFormFile? invoiceFile, IFormFile? insuranceFile)
+            IFormFile? invoiceFile, IFormFile? insuranceFile, bool confirmPriceAdjustment = false)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             var booking = await _unitOfWork.VehicleBookings.GetByIdAsync(id);
@@ -581,12 +581,26 @@ namespace KRSDealerManagement.Web.Controllers
 
             if (invoiceDateChanged && newInvoiceDate.HasValue)
             {
+                var preview = await _priceService.GetInvoicePriceChangePreviewAsync(booking.VehicleId, newInvoiceDate.Value);
+                if (!preview.HasCatalogPrice)
+                {
+                    TempData["Error"] = preview.ErrorMessage ?? "No catalogue price for the invoice date.";
+                    return this.RedirectEncrypted(nameof(Manage), new { id });
+                }
+
+                if (preview.WouldChange && !confirmPriceAdjustment)
+                {
+                    TempData["Error"] = $"Catalogue price differs (current ₹{preview.CurrentVehiclePrice:N2}, invoice date price ₹{preview.CatalogPrice:N2}). Confirm the price adjustment and save again.";
+                    return this.RedirectEncrypted(nameof(Manage), new { id });
+                }
+
                 try
                 {
-                    var priceAdjusted = await _priceService.ApplyPriceOnInvoiceAsync(
-                        booking.VehicleId, newInvoiceDate.Value, userId ?? 0);
+                    var priceAdjusted = preview.WouldChange && confirmPriceAdjustment
+                        ? await _priceService.ApplyPriceOnInvoiceAsync(booking.VehicleId, newInvoiceDate.Value, userId ?? 0)
+                        : false;
                     TempData["Success"] = priceAdjusted
-                        ? "Booking updated. Catalogue price for the invoice date was applied and the dealer account was adjusted."
+                        ? $"Booking updated. Price changed from ₹{preview.CurrentVehiclePrice:N2} to ₹{preview.CatalogPrice:N2}; dealer account adjusted."
                         : "Booking updated.";
                 }
                 catch (Exception ex)
@@ -604,11 +618,33 @@ namespace KRSDealerManagement.Web.Controllers
             return this.RedirectEncrypted(nameof(Manage), new { id });
         }
 
+        [HttpGet]
+        [AuthorizeRole(1, 4)]
+        public async Task<IActionResult> InvoicePricePreview(int id, DateTime invoiceDate)
+        {
+            var booking = await _unitOfWork.VehicleBookings.GetByIdAsync(id);
+            if (booking == null)
+                return Json(new { success = false, message = "Booking not found." });
+
+            var preview = await _priceService.GetInvoicePriceChangePreviewAsync(booking.VehicleId, invoiceDate);
+            if (!preview.HasCatalogPrice)
+                return Json(new { success = false, message = preview.ErrorMessage ?? "No catalogue price for this invoice date." });
+
+            return Json(new
+            {
+                success = true,
+                wouldChange = preview.WouldChange,
+                currentPrice = preview.CurrentVehiclePrice,
+                catalogPrice = preview.CatalogPrice,
+                delta = preview.Delta
+            });
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.VehiclesView)]
-        public async Task<IActionResult> MarkDelivered(int id)
+        public async Task<IActionResult> MarkDelivered(int id, DateTime deliveryDate)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
@@ -620,28 +656,23 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction("Index", "Vehicles");
             }
 
-            var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(booking.VehicleId);
-            if (vehicle != null && vehicle.Status == UnifiedVehicleStatus.Delivered)
+            try
             {
-                TempData["Info"] = "Vehicle is already marked as delivered.";
-                return this.RedirectEncrypted(nameof(Manage), new { id });
+                await _mediator.Send(new MarkVehicleDeliveredCommand
+                {
+                    VehicleId = booking.VehicleId,
+                    VehicleBookingId = booking.VehicleBookingId,
+                    DeliveryDate = deliveryDate,
+                    MarkedBy = userId.Value
+                });
+                TempData["Success"] = "Vehicle marked as delivered.";
             }
-            if (vehicle == null || vehicle.Status != UnifiedVehicleStatus.SubsidyIdCreated)
+            catch (Exception ex)
             {
-                TempData["Error"] = "Vehicle can be marked delivered only after subsidy ID is created.";
+                TempData["Error"] = ex.Message;
                 return this.RedirectEncrypted(nameof(Manage), new { id });
             }
 
-            booking.BookingStatus = UnifiedVehicleStatus.Delivered;
-            vehicle.Status = UnifiedVehicleStatus.Delivered;
-            booking.ModifiedBy = userId;
-            booking.ModifiedDate = DateTime.UtcNow;
-            vehicle.ModifiedBy = userId;
-            vehicle.ModifiedDate = DateTime.UtcNow;
-            await _unitOfWork.VehicleBookings.UpdateAsync(booking);
-            await _unitOfWork.Vehicles.UpdateAsync(vehicle);
-
-            TempData["Success"] = "Vehicle marked as delivered.";
             return this.RedirectEncrypted(nameof(Manage), new { id });
         }
 
@@ -770,7 +801,13 @@ namespace KRSDealerManagement.Web.Controllers
                 && !string.IsNullOrWhiteSpace(booking.SubsidyId)
                 && !booking.SubsidyDocsSubmittedDate.HasValue;
             ViewBag.CanMarkDelivered = SessionHelper.IsSubdealer(HttpContext.Session)
-                && vehicle?.Status == UnifiedVehicleStatus.SubsidyIdCreated;
+                && vehicle != null
+                && vehicle.Status != UnifiedVehicleStatus.Delivered;
+            ViewBag.MinDeliveryDate = vehicle?.PurchaseOrderId is int poId
+                ? (await _unitOfWork.PurchaseOrders.GetByIdAsync(poId))?.CreatedDate.ToString("yyyy-MM-dd")
+                : vehicle?.CreatedDate.ToString("yyyy-MM-dd");
+            ViewBag.MaxDeliveryDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            ViewBag.DeliveryDate = vehicle?.DeliveryDate?.ToString("yyyy-MM-dd");
             ViewBag.CanEditBooking = SessionHelper.IsSubdealer(HttpContext.Session)
                 && !booking.InvoiceDate.HasValue;
             ViewBag.VehicleStatus = vehicle == null

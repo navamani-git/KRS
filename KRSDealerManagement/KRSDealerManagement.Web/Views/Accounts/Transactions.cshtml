@@ -1,0 +1,148 @@
+@model IEnumerable<KRSDealerManagement.Application.DTOs.AccountTransactionDto>
+@using KRSDealerManagement.Application.DTOs
+@using KRSDealerManagement.Web.Helpers
+@using KRSDealerManagement.Web.Services
+@inject IQueryStringCrypto QueryCrypto
+@{
+    ViewData["Title"] = "Transaction Corrections";
+    var balance = ViewBag.Balance as AccountBalanceDto;
+    var accountId = ViewBag.SelectedAccountId as int?;
+    var accountOptions = ViewBag.AccountOptions as IEnumerable<SubdealerAccountDto> ?? Enumerable.Empty<SubdealerAccountDto>();
+}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1 class="m-0"><i class="bi bi-journal-text"></i> Transaction Corrections</h1>
+        <p class="text-muted mb-0">Admin-only: edit or delete ledger rows. Subdealer sees adjusted balances only — no correction history.</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="@Url.Action("TransactionCorrections", new { accountId })" class="btn btn-outline-secondary">
+            <i class="bi bi-clock-history"></i> Correction History
+        </a>
+        <a href="@Url.Action("Index")" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Balances</a>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Account</label>
+                <select name="accountId" class="form-select" onchange="this.form.submit()">
+                    <option value="">— Select account —</option>
+                    @foreach (var a in accountOptions)
+                    {
+                        <option value="@a.AccountId" selected="@(accountId == a.AccountId)">@a.SubdealerName — @a.AccountName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">From</label>
+                <input type="date" name="fromDate" class="form-control" value="@ViewBag.FromDate" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">To</label>
+                <input type="date" name="toDate" class="form-control" value="@ViewBag.ToDate" />
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i> Load</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (balance != null)
+{
+    <div class="alert alert-light border mb-3">
+        <strong>@balance.SubdealerName</strong> — Current balance: <strong>₹@balance.CurrentBalance.ToString("N2")</strong>
+        <span class="text-muted ms-2">| Available: ₹@balance.AvailableBalance.ToString("N2")</span>
+    </div>
+}
+
+@if (!accountId.HasValue)
+{
+    <div class="alert alert-info"><i class="bi bi-info-circle"></i> Select an account to manage transactions.</div>
+}
+else if (!Model.Any())
+{
+    <div class="alert alert-warning"><i class="bi bi-exclamation-circle"></i> No transactions found for the selected filters.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm table-hover table-striped grid-excel-table">
+            <thead class="table-dark">
+                <tr>
+                    <th class="grid-col-rownum">#</th>
+                    <th>Txn Date</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th class="text-end">Amount (₹)</th>
+                    <th class="text-end">Balance (₹)</th>
+                    <th>Ref</th>
+                    <th class="grid-col-actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ var sr = 1; }
+                @foreach (var t in Model)
+                {
+                    <tr>
+                        <td class="grid-col-rownum">@(sr++)</td>
+                        <td><small>@t.CreatedDate.ToString("yyyy-MM-dd HH:mm")</small></td>
+                        <td><span class="badge bg-secondary">@t.CategoryLabel</span></td>
+                        <td><small>@t.Reason</small></td>
+                        <td class="text-end fw-bold">₹@t.Amount.ToString("N2")</td>
+                        <td class="text-end">₹@t.BalanceAfterTransaction.ToString("N2")</td>
+                        <td><small class="text-muted">@(t.ReferenceType) @(t.ReferenceId.HasValue ? $"#{t.ReferenceId}" : "")</small></td>
+                        <td class="grid-col-actions">
+                            <a href="@Url.EAction(QueryCrypto, "AdminEditTransaction", new { id = t.TransactionId })"
+                               class="btn btn-sm btn-outline-warning" title="Edit transaction">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    data-bs-toggle="modal" data-bs-target="#deleteTxnModal"
+                                    data-txn-id="@t.TransactionId"
+                                    data-txn-label="@t.CreatedDate.ToString("yyyy-MM-dd") · @t.CategoryLabel · ₹@t.Amount.ToString("N2")"
+                                    title="Delete transaction">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="modal fade" id="deleteTxnModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" asp-action="AdminDeleteTransaction">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="transactionId" id="deleteTxnId" />
+                    <div class="modal-header">
+                        <h5 class="modal-title">Delete Transaction</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted small" id="deleteTxnLabel"></p>
+                        <p>This removes the row from the subdealer statement and recalculates balances. The delete is recorded in admin correction history only.</p>
+                        <label class="form-label fw-bold">Reason <span class="text-danger">*</span></label>
+                        <textarea name="deleteReason" class="form-control" rows="3" required minlength="5" placeholder="Min 5 characters"></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('deleteTxnModal')?.addEventListener('show.bs.modal', function (e) {
+            var btn = e.relatedTarget;
+            document.getElementById('deleteTxnId').value = btn.dataset.txnId;
+            document.getElementById('deleteTxnLabel').textContent = btn.dataset.txnLabel || '';
+        });
+    </script>
+}

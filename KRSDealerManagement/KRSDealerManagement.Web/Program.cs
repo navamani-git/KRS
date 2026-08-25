@@ -2,6 +2,7 @@ using KRSDealerManagement.Application;
 using KRSDealerManagement.Infrastructure;
 using KRSDealerManagement.Web.Middleware;
 using KRSDealerManagement.Web.Services;
+using KRSDealerManagement.Web.Services.ExcelImport;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +22,8 @@ builder.Services.AddApplicationServices();
 
 // Register Infrastructure layer services (UnitOfWork, Repositories, DbContext)
 builder.Services.AddInfrastructureServices(connectionString);
+
+builder.Services.AddExcelImport();
 
 // Add session support for authentication
 builder.Services.AddSession(options =>

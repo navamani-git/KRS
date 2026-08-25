@@ -7,8 +7,9 @@ namespace KRSDealerManagement.Web.Models
         public bool IsDate { get; init; }
         public GridFilterInputType InputType { get; init; } = GridFilterInputType.ComboBox;
         public IReadOnlyList<string>? FixedOptions { get; init; }
+        public string? CssClass { get; init; }
 
-        public static GridFilterColumn Skip() => new() { Key = "_", InputType = GridFilterInputType.Text };
+        public static GridFilterColumn Skip() => new() { Key = "_", InputType = GridFilterInputType.Text, CssClass = "grid-col-rownum" };
         public static GridFilterColumn Actions() => new() { Key = "_actions", InputType = GridFilterInputType.Text };
 
         public static GridFilterColumn Combo(string key, string? placeholder = null) => new()

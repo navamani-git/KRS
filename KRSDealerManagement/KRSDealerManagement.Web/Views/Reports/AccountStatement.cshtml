@@ -1,8 +1,11 @@
 @model IEnumerable<KRSDealerManagement.Application.DTOs.AccountTransactionDto>
 @using KRSDealerManagement.Application.DTOs
+@using KRSDealerManagement.Web.Models
 @{
     ViewData["Title"] = "Account Statement";
     var balance = ViewBag.Balance as AccountBalanceDto;
+    var accountId = ViewBag.AccountId as int?;
+    var totalItems = (int)(ViewBag.TotalItems ?? Model.Count());
 }
 
 <div class="row mb-3">
@@ -21,22 +24,24 @@
 
 <!-- Date Filter -->
 <div class="card mb-3">
-    <div class="card-body">
-        <form method="get">
-            <div class="row g-2">
-                <div class="col-md-4">
-                    <label class="form-label fw-bold">From Date</label>
-                    <input type="date" name="fromDate" class="form-control" value="@ViewBag.FromDate" />
+    <div class="card-body py-2">
+        <form method="get" id="gridFilterForm">
+            @if (accountId.HasValue)
+            {
+                <input type="hidden" name="accountId" value="@accountId" />
+            }
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label form-label-sm mb-0">From Date</label>
+                    <input type="date" name="fromDate" class="form-control form-control-sm" value="@ViewBag.FromDate" />
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label fw-bold">To Date</label>
-                    <input type="date" name="toDate" class="form-control" value="@ViewBag.ToDate" />
+                <div class="col-md-3">
+                    <label class="form-label form-label-sm mb-0">To Date</label>
+                    <input type="date" name="toDate" class="form-control form-control-sm" value="@ViewBag.ToDate" />
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label">&nbsp;</label>
-                    <button type="submit" class="btn btn-primary d-block w-100">
-                        <i class="bi bi-search"></i> Filter
-                    </button>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search"></i> Filter</button>
+                    <a href="@Url.Action("Statement", "Account")" class="btn btn-sm btn-secondary" title="Reset filters"><i class="bi bi-arrow-clockwise"></i></a>
                 </div>
             </div>
         </form>
@@ -90,18 +95,9 @@
 <!-- Statement Table (Excel-style ledger) -->
 <div class="card">
     <div class="card-header d-flex justify-content-between">
-        <h3 class="card-title">Transactions (@Model.Count())</h3>
+        <h3 class="card-title mb-0"><i class="bi bi-table"></i> Transactions (@totalItems)</h3>
     </div>
-    <div class="card-body">
-        @if (Model.Any())
-        {
-            <partial name="_AccountStatementLedger" model="Model" />
-        }
-        else
-        {
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle"></i> No transactions found for the selected period.
-            </div>
-        }
+    <div class="card-body p-0">
+        <partial name="_AccountStatementLedger" model="Model" />
     </div>
 </div>

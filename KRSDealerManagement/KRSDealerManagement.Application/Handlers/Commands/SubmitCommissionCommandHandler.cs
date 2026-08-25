@@ -111,14 +111,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 .FirstOrDefault(b => b.VehicleId == vehicle.VehicleId);
 
             if (booking == null || !booking.InvoiceDate.HasValue)
-
                 throw new InvalidOperationException("Commission can only be submitted after the vehicle is invoiced by the dealer.");
-
-            if (!booking.RegistrationDate.HasValue)
-
-                throw new InvalidOperationException("Commission can only be submitted after RTO registration date is recorded by the dealer.");
-
-
 
             var invoiceDate = booking.InvoiceDate.Value.Date;
 
@@ -181,10 +174,16 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             var rate = await _commissionRates.GetRateAsOfAsync(vehicle.ModelId, invoiceDate);
 
             if (rate == null)
-
+            {
+                var allRates = (await _unitOfWork.CommissionRates.GetAllAsync()).ToList();
+                var models = (await _unitOfWork.VehicleModels.GetAllAsync()).ToList();
+                var modelName = models.FirstOrDefault(m => m.ModelId == vehicle.ModelId)?.ModelName;
+                var message = CommissionRateCoverageHelper.ValidateForDate(allRates, vehicle.ModelId, invoiceDate, modelName);
                 throw new InvalidOperationException(
-
-                    $"No commission rate configured for this model effective on {invoiceDate:yyyy-MM-dd}.");
+                    string.IsNullOrWhiteSpace(message)
+                        ? $"No commission rate configured for this model effective on {invoiceDate:yyyy-MM-dd}."
+                        : message);
+            }
 
 
 

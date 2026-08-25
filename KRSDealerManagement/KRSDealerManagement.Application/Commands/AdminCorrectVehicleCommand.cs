@@ -16,6 +16,8 @@ namespace KRSDealerManagement.Application.Commands
         public string? ControllerNo { get; set; }
         public string? ConverterNo { get; set; }
         public int? BookingStatus { get; set; }
+        public int? SubdealerId { get; set; }
+        public DateTime? DeliveryDate { get; set; }
         public required string CorrectionReason { get; set; }
         public int CorrectedBy { get; set; }
         public required string CorrectedByName { get; set; }

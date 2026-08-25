@@ -236,6 +236,23 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     primaryOrderNumber);
             }
 
+            foreach (var log in auditLogs.Where(a =>
+                         a.Action.Equals("AdminCorrection", StringComparison.OrdinalIgnoreCase)))
+            {
+                var description = !string.IsNullOrWhiteSpace(log.Remarks)
+                    ? log.Remarks
+                    : "Admin vehicle correction.";
+                Add(
+                    log.CreatedDate,
+                    vehicle.Status,
+                    description,
+                    log.UserId > 0 && users.TryGetValue(log.UserId, out var admin)
+                        ? admin.GetFullName()
+                        : "Admin",
+                    ResolveSubdealerName(vehicle.SubdealerId),
+                    primaryOrderNumber);
+            }
+
             var booking = (await _unitOfWork.VehicleBookings.GetAllAsync())
                 .FirstOrDefault(b => b.VehicleId == vehicle.VehicleId);
 
@@ -287,19 +304,39 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
                 if (vehicle.Status >= UnifiedVehicleStatus.Delivered)
                 {
-                    var deliveredAt = LatestDate(
-                        booking.NumberPlateReceivedDate,
-                        latestMilestoneDate,
-                        booking.ModifiedDate) ?? booking.ModifiedDate;
+                    var deliveredAt = vehicle.DeliveryDate.HasValue
+                        ? DateTime.SpecifyKind(vehicle.DeliveryDate.Value, DateTimeKind.Utc)
+                        : LatestDate(
+                            booking.NumberPlateReceivedDate,
+                            latestMilestoneDate,
+                            booking.ModifiedDate) ?? booking.ModifiedDate;
 
                     Add(
                         deliveredAt,
                         UnifiedVehicleStatus.Delivered,
-                        $"Delivered to {customer}.",
+                        vehicle.DeliveryDate.HasValue
+                            ? $"Delivered to {customer} on {vehicle.DeliveryDate:yyyy-MM-dd}."
+                            : $"Delivered to {customer}.",
                         bookingSubdealer,
                         ResolveDealershipName(booking.SubdealerId),
                         primaryOrderNumber);
                 }
+            }
+
+            if (vehicle.Status >= UnifiedVehicleStatus.Delivered && booking == null)
+            {
+                var deliveredAt = vehicle.DeliveryDate.HasValue
+                    ? DateTime.SpecifyKind(vehicle.DeliveryDate.Value, DateTimeKind.Utc)
+                    : vehicle.ModifiedDate;
+                Add(
+                    deliveredAt,
+                    UnifiedVehicleStatus.Delivered,
+                    vehicle.DeliveryDate.HasValue
+                        ? $"Delivered on {vehicle.DeliveryDate:yyyy-MM-dd}."
+                        : "Vehicle delivered.",
+                    ResolveSubdealerName(vehicle.SubdealerId),
+                    ResolveDealershipName(vehicle.SubdealerId),
+                    primaryOrderNumber);
             }
 
             static DateTime? LatestDate(params DateTime?[] dates)

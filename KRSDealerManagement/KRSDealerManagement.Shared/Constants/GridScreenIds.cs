@@ -4,6 +4,7 @@ namespace KRSDealerManagement.Shared.Constants
     public static class GridScreenIds
     {
         public const string Accounts = "accounts";
+        public const string AccountStatement = "account_statement";
         public const string CommissionApprovals = "commission_approvals";
         public const string CommissionRates = "commission_rates";
         public const string Dealerships = "dealerships";

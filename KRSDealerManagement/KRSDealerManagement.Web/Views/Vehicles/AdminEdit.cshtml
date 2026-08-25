@@ -7,6 +7,7 @@
     var models = ViewBag.Models as IEnumerable<VehicleModelDto> ?? Enumerable.Empty<VehicleModelDto>();
     var vehicleStatuses = ViewBag.VehicleStatuses as IEnumerable<StatusLookup> ?? Enumerable.Empty<StatusLookup>();
     var bookingStatuses = ViewBag.BookingStatuses as IEnumerable<StatusLookup> ?? Enumerable.Empty<StatusLookup>();
+    var subdealers = ViewBag.Subdealers as IEnumerable<UserDto> ?? Enumerable.Empty<UserDto>();
     var booking = ViewBag.Booking as VehicleBooking;
     var modelColorMapJson = ViewBag.ModelColorMapJson as string ?? "{}";
 }
@@ -62,6 +63,24 @@
                                     <option value="@s.StatusValue" selected="@(s.StatusValue == Model.Status)">@s.StatusName</option>
                                 }
                             </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Subdealer</label>
+                            <select name="subdealerId" class="form-select">
+                                <option value="">— Dealer showroom —</option>
+                                @foreach (var s in subdealers.OrderBy(x => x.GetFullName()))
+                                {
+                                    <option value="@s.UserId" selected="@(Model.SubdealerId == s.UserId)">@s.GetFullName()</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Delivery date</label>
+                            <input type="date" name="deliveryDate" class="form-control"
+                                   value="@Model.DeliveryDate?.ToString("yyyy-MM-dd")" />
                         </div>
                     </div>
 
@@ -148,6 +167,24 @@
                     <tr><td><strong>Subdealer ID</strong></td><td>@(Model.SubdealerId?.ToString() ?? "-")</td></tr>
                     <tr><td><strong>Last Modified</strong></td><td>@Model.ModifiedDate.ToString("yyyy-MM-dd HH:mm")</td></tr>
                 </table>
+            </div>
+        </div>
+        <div class="card card-danger mt-3">
+            <div class="card-header bg-danger text-white">
+                <h3 class="card-title mb-0"><i class="bi bi-trash"></i> Delete Vehicle</h3>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted">Permanent removal. Blocked when the vehicle has a customer booking, commission, or return history. If allocated and paid for, the subdealer wallet is credited before delete.</p>
+                <form method="post" asp-action="AdminDelete" onsubmit="return confirm('Permanently delete this vehicle? This cannot be undone.');">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="vehicleId" value="@Model.VehicleId" />
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Delete Reason <span class="text-danger">*</span></label>
+                        <textarea name="deleteReason" class="form-control" rows="2" required minlength="5"
+                                  placeholder="Why is this vehicle being removed?"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-danger w-100"><i class="bi bi-trash"></i> Delete Vehicle</button>
+                </form>
             </div>
         </div>
     </div>

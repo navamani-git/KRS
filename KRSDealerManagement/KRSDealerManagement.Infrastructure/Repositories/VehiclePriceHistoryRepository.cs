@@ -22,7 +22,7 @@ namespace KRSDealerManagement.Infrastructure.Repositories
 INSERT INTO VehiclePriceHistory (
     ModelId, ColorId, VehicleId,
     Price, PriceMonth, PriceYear,
-    EffectiveFrom,
+    EffectiveFrom, EffectiveTo,
     Notes, ChangeReason,
     ChangedBy, ChangedDate,
     ModifiedBy, ModifiedDate
@@ -30,7 +30,7 @@ INSERT INTO VehiclePriceHistory (
 VALUES (
     @ModelId, @ColorId, @VehicleId,
     @Price, @Month, @Year,
-    @EffectiveFrom,
+    @EffectiveFrom, @EffectiveTo,
     @Notes, @Notes,
     @CreatedBy, @CreatedDate,
     @ModifiedBy, @ModifiedDate
@@ -48,6 +48,10 @@ SELECT CAST(SCOPE_IDENTITY() AS int);";
             const string sql = @"
 UPDATE VehiclePriceHistory
 SET Price = @Price,
+    PriceMonth = @Month,
+    PriceYear = @Year,
+    EffectiveFrom = @EffectiveFrom,
+    EffectiveTo = @EffectiveTo,
     Notes = @Notes,
     ChangeReason = @Notes,
     ModifiedBy = @ModifiedBy,
@@ -75,6 +79,7 @@ SELECT
     PriceMonth AS Month,
     PriceYear AS Year,
     ISNULL(EffectiveFrom, DATEFROMPARTS(PriceYear, PriceMonth, 1)) AS EffectiveFrom,
+    ISNULL(EffectiveTo, EOMONTH(ISNULL(EffectiveFrom, DATEFROMPARTS(PriceYear, PriceMonth, 1)))) AS EffectiveTo,
     Notes,
     ChangedBy AS CreatedBy,
     CreatedDate,
@@ -100,6 +105,7 @@ SELECT
     PriceMonth AS Month,
     PriceYear AS Year,
     ISNULL(EffectiveFrom, DATEFROMPARTS(PriceYear, PriceMonth, 1)) AS EffectiveFrom,
+    ISNULL(EffectiveTo, EOMONTH(ISNULL(EffectiveFrom, DATEFROMPARTS(PriceYear, PriceMonth, 1)))) AS EffectiveTo,
     Notes,
     ChangedBy AS CreatedBy,
     CreatedDate,

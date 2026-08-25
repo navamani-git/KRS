@@ -26,18 +26,15 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             var effectiveFrom = request.EffectiveFrom.Date;
             var effectiveTo = request.EffectiveTo.Date;
 
-            var others = (await _unitOfWork.CommissionRates.GetAllAsync())
-                .Where(r => r.ModelId == row.ModelId && r.CommissionRateId != row.CommissionRateId);
+            var existing = (await _unitOfWork.CommissionRates.GetAllAsync()).ToList();
 
-            foreach (var other in others)
+            if (CommissionRateOverlapHelper.TryFindOverlap(
+                    existing, row.ModelId, effectiveFrom, effectiveTo, row.CommissionRateId, out var conflict)
+                && conflict != null)
             {
-                if (CommissionRateOverlapHelper.RangesOverlap(
-                        effectiveFrom, effectiveTo, other.EffectiveFrom, other.EffectiveTo))
-                {
-                    throw new InvalidOperationException(
-                        CommissionRateOverlapHelper.OverlapMessage(
-                            effectiveFrom, effectiveTo, other.EffectiveFrom, other.EffectiveTo));
-                }
+                var (otherFrom, otherTo) = CommissionRateOverlapHelper.NormalizeRange(conflict);
+                throw new InvalidOperationException(
+                    CommissionRateOverlapHelper.OverlapMessage(effectiveFrom, effectiveTo, otherFrom, otherTo));
             }
 
             row.CommissionAmount = request.CommissionAmount;

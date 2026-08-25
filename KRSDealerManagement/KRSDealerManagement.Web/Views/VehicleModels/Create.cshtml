@@ -2,6 +2,8 @@
     ViewData["Title"] = "Add Vehicle Model";
     var allColors = ViewBag.AllColors as IEnumerable<KRSDealerManagement.Application.DTOs.VehicleColorDto>
         ?? Enumerable.Empty<KRSDealerManagement.Application.DTOs.VehicleColorDto>();
+    ViewData["ExcelImportKey"] = KRSDealerManagement.Web.Helpers.ExcelImport.ExcelImportKeys.VehicleModels;
+    ViewData["ExcelImportReturnAction"] = "Create";
 }
 
 <!-- Page Header -->
@@ -16,6 +18,8 @@
         </a>
     </div>
 </div>
+
+<partial name="_ExcelImport" />
 
 <div class="row">
     <div class="col-md-6">

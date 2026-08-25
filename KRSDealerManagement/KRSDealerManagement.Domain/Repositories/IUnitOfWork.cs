@@ -89,6 +89,11 @@ namespace KRSDealerManagement.Domain.Repositories
         IRepository<AccountTransaction> AccountTransactions { get; }
 
         /// <summary>
+        /// Admin-only correction audit for account transactions
+        /// </summary>
+        IRepository<AccountTransactionCorrection> AccountTransactionCorrections { get; }
+
+        /// <summary>
         /// Repository for AuditLog entities
         /// </summary>
         IRepository<AuditLog> AuditLogs { get; }

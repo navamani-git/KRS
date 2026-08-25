@@ -35,6 +35,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                              Month = p.Month,
                              Year = p.Year,
                              EffectiveFrom = p.EffectiveFrom,
+                             EffectiveTo = p.EffectiveTo,
                              Price = p.Price,
                              Notes = p.Notes,
                              CreatedBy = p.CreatedBy,

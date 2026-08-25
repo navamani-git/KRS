@@ -31,6 +31,7 @@ namespace KRSDealerManagement.Infrastructure.Repositories
         private IRepository<ReturnRequest> _returnRequests;
         private IRepository<Payment> _payments;
         private IRepository<AccountTransaction> _accountTransactions;
+        private IRepository<AccountTransactionCorrection> _accountTransactionCorrections;
         private IRepository<AuditLog> _auditLogs;
         private IRepository<Role> _roles;
         private IRepository<Dealership> _dealerships;
@@ -66,6 +67,7 @@ namespace KRSDealerManagement.Infrastructure.Repositories
         public IRepository<ReturnRequest> ReturnRequests => _returnRequests ??= new ReturnRequestRepository(_context);
         public IRepository<Payment> Payments => _payments ??= new PaymentRepository(_context);
         public IRepository<AccountTransaction> AccountTransactions => _accountTransactions ??= new AccountTransactionRepository(_context);
+        public IRepository<AccountTransactionCorrection> AccountTransactionCorrections => _accountTransactionCorrections ??= new AccountTransactionCorrectionRepository(_context);
         public IRepository<AuditLog> AuditLogs => _auditLogs ??= new AuditLogRepository(_context);
         public IRepository<Role> Roles => _roles ??= new Repository<Role>(_context, "Roles", "RoleId");
         public IRepository<Dealership> Dealerships => _dealerships ??= new Repository<Dealership>(_context, "Dealerships", "DealershipId");

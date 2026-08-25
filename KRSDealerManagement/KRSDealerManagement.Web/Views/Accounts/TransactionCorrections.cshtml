@@ -1,0 +1,149 @@
+@model IEnumerable<KRSDealerManagement.Application.DTOs.AccountTransactionCorrectionDto>
+@using KRSDealerManagement.Application.DTOs
+@using KRSDealerManagement.Web.Helpers
+@{
+    ViewData["Title"] = "Transaction Correction History";
+    var accountId = ViewBag.SelectedAccountId as int?;
+}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1 class="m-0"><i class="bi bi-clock-history"></i> Transaction Correction History</h1>
+        <p class="text-muted mb-0">Admin-only audit of transaction edits and deletes. Subdealers never see this screen.</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="@Url.Action("Transactions", new { accountId })" class="btn btn-outline-primary">
+            <i class="bi bi-journal-text"></i> Manage Transactions
+        </a>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Account ID</label>
+                <input type="number" name="accountId" class="form-control" value="@accountId" placeholder="Optional filter" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">From</label>
+                <input type="date" name="fromDate" class="form-control" value="@ViewBag.FromDate" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">To</label>
+                <input type="date" name="toDate" class="form-control" value="@ViewBag.ToDate" />
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i> Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info"><i class="bi bi-info-circle"></i> No corrections recorded yet.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm table-hover table-striped grid-excel-table">
+            <thead class="table-dark">
+                <tr>
+                    <th class="grid-col-rownum">#</th>
+                    <th>When</th>
+                    <th>Action</th>
+                    <th>Txn #</th>
+                    <th>Account</th>
+                    <th>What changed</th>
+                    <th>Admin</th>
+                    <th>Reason</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ var sr = 1; }
+                @foreach (var c in Model)
+                {
+                    var summary = AccountTransactionCorrectionDisplayHelper.Summarize(c.OldSnapshot);
+                    <tr>
+                        <td class="grid-col-rownum">@(sr++)</td>
+                        <td><small>@c.CreatedDate.ToString("yyyy-MM-dd HH:mm")</small></td>
+                        <td>
+                            @if (c.Action == "Delete")
+                            {
+                                <span class="badge bg-danger">Delete</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">Edit</span>
+                            }
+                        </td>
+                        <td>@c.TransactionId</td>
+                        <td><small>@c.SubdealerName<br /><span class="text-muted">#@c.AccountId</span></small></td>
+                        <td><small>@summary</small></td>
+                        <td><small>@c.CorrectedByName</small></td>
+                        <td><small>@c.CorrectionReason</small></td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-outline-info correction-detail-btn"
+                                    data-bs-toggle="modal" data-bs-target="#snapshotModal"
+                                    data-correction-id="@c.CorrectionId"
+                                    data-title="Txn #@c.TransactionId — @c.Action">
+                                <i class="bi bi-eye"></i> View
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @foreach (var c in Model)
+    {
+        <div id="corr-before-@c.CorrectionId" class="d-none">
+            <partial name="_CorrectionSnapshotTable" model="c.OldSnapshot" />
+        </div>
+        <div id="corr-after-@c.CorrectionId" class="d-none">
+            @if (string.IsNullOrWhiteSpace(c.NewSnapshot))
+            {
+                <p class="text-muted mb-0"><em>Transaction removed from subdealer ledger.</em></p>
+            }
+            else
+            {
+                <partial name="_CorrectionSnapshotTable" model="c.NewSnapshot" />
+            }
+        </div>
+    }
+
+    <div class="modal fade" id="snapshotModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="snapshotModalTitle">Correction details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <h6 class="text-muted">Before</h6>
+                    <div id="snapshotOld"></div>
+                    <h6 class="text-muted mt-4">After</h6>
+                    <div id="snapshotNew"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('snapshotModal')?.addEventListener('show.bs.modal', function (e) {
+            var btn = e.relatedTarget;
+            if (!btn) return;
+            document.getElementById('snapshotModalTitle').textContent = btn.dataset.title || 'Correction details';
+            var id = btn.dataset.correctionId;
+            var before = document.getElementById('corr-before-' + id);
+            var after = document.getElementById('corr-after-' + id);
+            document.getElementById('snapshotOld').innerHTML = before ? before.innerHTML : '<p class="text-muted">No data</p>';
+            document.getElementById('snapshotNew').innerHTML = after ? after.innerHTML : '<p class="text-muted">No data</p>';
+        });
+    </script>
+}

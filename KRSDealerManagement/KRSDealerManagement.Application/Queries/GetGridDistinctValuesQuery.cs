@@ -10,6 +10,7 @@ namespace KRSDealerManagement.Application.Queries
         public int? DealershipId { get; set; }
         public int? SubdealerId { get; set; }
         public int? UserId { get; set; }
+        public int? AccountId { get; set; }
         public int? Status { get; set; }
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }

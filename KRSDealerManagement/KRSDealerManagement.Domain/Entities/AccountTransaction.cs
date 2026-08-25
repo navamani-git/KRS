@@ -68,6 +68,11 @@ namespace KRSDealerManagement.Domain.Entities
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
         /// <summary>
+        /// Soft-deleted by admin; hidden from subdealer statement, kept for admin audit.
+        /// </summary>
+        public bool IsDeleted { get; set; }
+
+        /// <summary>
         /// Get transaction type as display text
         /// </summary>
         public string GetTransactionTypeDisplay()

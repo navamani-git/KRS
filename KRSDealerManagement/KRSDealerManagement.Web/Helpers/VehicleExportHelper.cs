@@ -19,9 +19,9 @@ namespace KRSDealerManagement.Web.Helpers
             var headers = new List<string>
             {
                 "Vehicle ID",
-                "Chassis",
                 "Model",
                 "Color",
+                "Chassis",
                 "Vehicle Status",
             };
 
@@ -41,7 +41,8 @@ namespace KRSDealerManagement.Web.Helpers
                 "Charger",
                 "Controller",
                 "Converter",
-                "Delivery Status",
+                "Delivery",
+                "Delivery Date",
                 "Change History",
                 "Vehicle Created",
                 "Vehicle Modified",
@@ -94,9 +95,9 @@ namespace KRSDealerManagement.Web.Helpers
                 var row = new List<object?>
                 {
                     v.VehicleId,
-                    v.ChassisNumber,
                     v.ModelName,
                     v.ColorName,
+                    v.ChassisNumber,
                     v.GetStatusDisplay(),
                 };
 
@@ -117,6 +118,7 @@ namespace KRSDealerManagement.Web.Helpers
                     v.ControllerNo ?? "-",
                     v.ConverterNo ?? "-",
                     v.GetDeliveryStatusDisplay(),
+                    v.DeliveryDate?.ToString("yyyy-MM-dd") ?? "-",
                     v.Notes ?? "-",
                     v.CreatedDate,
                     v.ModifiedDate,

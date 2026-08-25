@@ -85,6 +85,11 @@ namespace KRSDealerManagement.Domain.Entities
         public DateTime ModifiedDate { get; set; } = DateTime.UtcNow;
 
         /// <summary>
+        /// Date vehicle was delivered to customer (local date, set by subdealer).
+        /// </summary>
+        public DateTime? DeliveryDate { get; set; }
+
+        /// <summary>
         /// Check if vehicle is available for purchase
         /// </summary>
         public bool IsAvailableForPurchase()

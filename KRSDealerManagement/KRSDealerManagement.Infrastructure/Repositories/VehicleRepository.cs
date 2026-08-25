@@ -81,6 +81,7 @@ SELECT
     CurrentPrice, OriginalPrice,
     MotorNo, BatteryNo, ChargerNo, ControllerNo, ConverterNo,
     ISNULL(Notes, '') AS Notes,
+    DeliveryDate,
     CreatedDate, ModifiedDate
 FROM Vehicles";
 
@@ -104,6 +105,7 @@ UPDATE Vehicles SET
     ControllerNo = @ControllerNo,
     ConverterNo = @ConverterNo,
     Notes = @Notes,
+    DeliveryDate = @DeliveryDate,
     ModifiedDate = @ModifiedDate
 WHERE VehicleId = @VehicleId";
 
@@ -124,6 +126,7 @@ WHERE VehicleId = @VehicleId";
                     entity.ControllerNo,
                     entity.ConverterNo,
                     Notes = entity.Notes ?? "",
+                    entity.DeliveryDate,
                     ModifiedDate = entity.ModifiedDate == default ? DateTime.UtcNow : entity.ModifiedDate
                 }, transaction);
                 return rows > 0;

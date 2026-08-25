@@ -10,9 +10,11 @@ namespace KRSDealerManagement.Application.Commands
     {
         public int ModelId { get; set; }
         public int ColorId { get; set; }
+        public bool ApplyForAllColors { get; set; }
         public int Month { get; set; } // 1-12
         public int Year { get; set; }
         public DateTime EffectiveFrom { get; set; }
+        public DateTime EffectiveTo { get; set; }
         public decimal Price { get; set; }
         public string? Notes { get; set; }
         public int CreatedBy { get; set; }

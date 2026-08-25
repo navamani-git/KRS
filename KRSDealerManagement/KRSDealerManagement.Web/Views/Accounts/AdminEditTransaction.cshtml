@@ -1,0 +1,150 @@
+@model KRSDealerManagement.Application.DTOs.AccountTransactionDto
+@using KRSDealerManagement.Application.DTOs
+@using KRSDealerManagement.Domain.Entities
+@using KRSDealerManagement.Web.Helpers
+@{
+    ViewData["Title"] = "Edit Transaction";
+    var balance = ViewBag.Balance as AccountBalanceDto;
+    var transactionTypes = ViewBag.TransactionTypes as IEnumerable<(int Value, string Label)> ?? Enumerable.Empty<(int, string)>();
+    var paymentTypes = ViewBag.PaymentTypes as IEnumerable<PaymentType> ?? Enumerable.Empty<PaymentType>();
+    var financeNames = ViewBag.FinanceNames as IEnumerable<FinanceNameMaster> ?? Enumerable.Empty<FinanceNameMaster>();
+    var isPayment = string.Equals(Model.ReferenceType, "Payment", StringComparison.OrdinalIgnoreCase)
+        || Model.IsPaymentTransaction();
+    var isCommission = string.Equals(Model.ReferenceType, "Commission", StringComparison.OrdinalIgnoreCase);
+}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1 class="m-0"><i class="bi bi-pencil-square"></i> Edit Transaction #@Model.TransactionId</h1>
+        @if (balance != null)
+        {
+            <p class="text-muted mb-0">@balance.SubdealerName — admin correction (not visible to subdealer)</p>
+        }
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="@Url.Action("Transactions", new { accountId = Model.AccountId })" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-9">
+        <div class="card card-warning">
+            <div class="card-header"><h3 class="card-title mb-0">Ledger fields</h3></div>
+            <form method="post" asp-action="AdminEditTransaction">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="transactionId" value="@Model.TransactionId" />
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Txn type</label>
+                            <select name="transactionType" class="form-select" required>
+                                @foreach (var opt in transactionTypes)
+                                {
+                                    <option value="@opt.Value" selected="@(Model.TransactionType == opt.Value)">@opt.Label</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Amount (₹)</label>
+                            <input type="number" name="amount" class="form-control" step="0.01" min="0.01" value="@Model.Amount" required />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Txn date</label>
+                            <input type="datetime-local" name="transactionDate" class="form-control"
+                                   value="@Model.CreatedDate.ToString("yyyy-MM-ddTHH:mm")" required />
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Description</label>
+                            <input type="text" name="reason" class="form-control" maxlength="500" value="@Model.Reason" required />
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Remarks</label>
+                            <textarea name="remarks" class="form-control" rows="2">@Model.Remarks</textarea>
+                        </div>
+                    </div>
+
+                    @if (isPayment)
+                    {
+                        <hr />
+                        <h5 class="text-success">Payment details (cascade)</h5>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Requested amount (₹)</label>
+                                <input type="number" name="requestedAmount" class="form-control" step="0.01"
+                                       value="@(Model.RequestedAmount ?? Model.Amount)" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Approved / received amount (₹)</label>
+                                <input type="number" name="approvedPaymentAmount" class="form-control" step="0.01"
+                                       value="@(Model.ApprovedPaymentAmount ?? Model.Amount)" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Customer</label>
+                                <input type="text" name="customerName" class="form-control" value="@Model.CustomerName" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Submitted date</label>
+                                <input type="datetime-local" name="paymentSubmittedDate" class="form-control"
+                                       value="@(Model.PaymentSubmittedDate?.ToString("yyyy-MM-ddTHH:mm") ?? Model.CreatedDate.ToString("yyyy-MM-ddTHH:mm"))" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Approved date</label>
+                                <input type="datetime-local" name="paymentApprovedDate" class="form-control"
+                                       value="@Model.PaymentApprovedDate?.ToString("yyyy-MM-ddTHH:mm")" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Received date</label>
+                                <input type="date" name="paymentReceivedDate" class="form-control"
+                                       value="@Model.PaymentReceivedDate?.ToString("yyyy-MM-dd")" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Pay type</label>
+                                <select name="paymentTypeId" class="form-select">
+                                    <option value="">—</option>
+                                    @foreach (var pt in paymentTypes)
+                                    {
+                                        <option value="@pt.PaymentTypeId">@pt.TypeName</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Finance</label>
+                                <select name="financeNameId" class="form-select">
+                                    <option value="">—</option>
+                                    @foreach (var fn in financeNames)
+                                    {
+                                        <option value="@fn.FinanceNameId">@fn.FinanceName</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">VIN</label>
+                                <input type="text" name="vinNumber" class="form-control" value="@Model.VinNumber" />
+                            </div>
+                        </div>
+                    }
+
+                    @if (isCommission)
+                    {
+                        <hr />
+                        <h5 class="text-primary">Commission (cascade)</h5>
+                        <div class="col-md-4">
+                            <label class="form-label">Commission amount (₹)</label>
+                            <input type="number" name="commissionAmount" class="form-control" step="0.01" value="@Model.Amount" />
+                        </div>
+                    }
+
+                    <hr />
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-danger">Correction reason <span class="text-danger">*</span></label>
+                        <textarea name="correctionReason" class="form-control" rows="3" required minlength="5"
+                                  placeholder="Admin-only audit note (min 5 characters)"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-warning"><i class="bi bi-check-lg"></i> Save correction</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -77,8 +77,9 @@
         return ''
             + '<h6 class="border-bottom pb-1">Vehicle</h6>'
             + '<table class="table table-sm">'
-            + '<tr><td width="35%"><strong>Chassis</strong></td><td><code>' + data.chassisNumber + '</code></td></tr>'
-            + '<tr><td><strong>Model / Color</strong></td><td>' + data.modelName + ' · ' + data.colorName + '</td></tr>'
+            + '<tr><td width="35%"><strong>Model</strong></td><td>' + fmt(data.modelName) + '</td></tr>'
+            + '<tr><td><strong>Color</strong></td><td>' + fmt(data.colorName) + '</td></tr>'
+            + '<tr><td><strong>Chassis</strong></td><td><code>' + fmt(data.chassisNumber) + '</code></td></tr>'
             + '<tr><td><strong>Status</strong></td><td><span class="badge bg-primary">' + fmt(data.statusName) + '</span></td></tr>'
             + '<tr><td><strong>Motor</strong></td><td>' + fmt(data.motorNo) + '</td></tr>'
             + '<tr><td><strong>Battery</strong></td><td>' + fmt(data.batteryNo) + '</td></tr>'
@@ -91,7 +92,8 @@
             + '<tr><td><strong>Subdealer</strong></td><td>' + fmt(data.subdealerName) + '</td></tr>'
             + '<tr><td><strong>Current Price</strong></td><td>₹' + Number(data.currentPrice).toLocaleString('en-IN', { minimumFractionDigits: 2 }) + '</td></tr>'
             + '<tr><td><strong>Original Price</strong></td><td>' + (data.originalPrice != null ? '₹' + Number(data.originalPrice).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '-') + '</td></tr>'
-            + '<tr><td><strong>Delivery Status</strong></td><td><span class="badge bg-primary">' + data.deliveryStatus + '</span></td></tr>'
+            + '<tr><td><strong>Delivery</strong></td><td>' + fmt(data.deliveryStatus)
+            + (data.deliveryDate ? ' <small class="text-muted">(' + data.deliveryDate + ')</small>' : '') + '</td></tr>'
             + '<tr><td><strong>Change History</strong></td><td><small style="white-space:pre-wrap">' + fmt(data.notes || data.correctionHistory) + '</small></td></tr>'
             + '</table>'
             + renderBookingSection(data.booking);

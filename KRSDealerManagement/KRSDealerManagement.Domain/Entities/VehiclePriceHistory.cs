@@ -47,6 +47,11 @@ namespace KRSDealerManagement.Domain.Entities
         public DateTime EffectiveFrom { get; set; }
 
         /// <summary>
+        /// Date through which this catalogue price is effective (inclusive)
+        /// </summary>
+        public DateTime EffectiveTo { get; set; }
+
+        /// <summary>
         /// Optional notes about price change
         /// </summary>
         public string Notes { get; set; }

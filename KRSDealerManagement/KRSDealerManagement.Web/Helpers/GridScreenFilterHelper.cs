@@ -19,6 +19,36 @@ namespace KRSDealerManagement.Web.Helpers
                 ["status"] = a => a.IsActive ? "Active" : "Inactive"
             });
 
+        public static IEnumerable<AccountTransactionDto> ApplyAccountStatement(
+            IEnumerable<AccountTransactionDto> rows,
+            IReadOnlyDictionary<string, string>? filters)
+            => GridRowFilterApplier.Apply(GridScreenIds.AccountStatement, rows, filters,
+                new Dictionary<string, Func<AccountTransactionDto, string?>>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["type"] = t => t.CategoryLabel,
+                    ["description"] = t => FormatDescription(t),
+                    ["customer"] = t => t.CustomerName,
+                    ["payType"] = t => t.PaymentType,
+                    ["finance"] = t => t.FinanceName,
+                    ["vin"] = t => t.VinNumber ?? t.ChassisNumber,
+                    ["requestedAmt"] = t => t.RequestedAmount?.ToString("N2"),
+                    ["approvedAmt"] = t => t.ApprovedPaymentAmount?.ToString("N2"),
+                    ["debit"] = t => t.IsDebit() ? t.Amount.ToString("N2") : null,
+                    ["credit"] = t => t.IsCredit() ? t.Amount.ToString("N2") : null,
+                    ["balance"] = t => t.BalanceAfterTransaction.ToString("N2")
+                },
+                new Dictionary<string, Func<AccountTransactionDto, DateTime?>>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["txnDate"] = t => t.CreatedDate
+                });
+
+        private static string? FormatDescription(AccountTransactionDto t)
+        {
+            if (!string.IsNullOrWhiteSpace(t.ChassisNumber))
+                return $"{t.Reason} {t.ChassisNumber}".Trim();
+            return t.Reason;
+        }
+
         public static IEnumerable<ReturnRequestDto> ApplyReturns(IEnumerable<ReturnRequestDto> rows, IReadOnlyDictionary<string, string>? filters, bool myReturns = false)
         {
             if (myReturns)

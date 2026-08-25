@@ -1,0 +1,24 @@
+@model string?
+@using KRSDealerManagement.Web.Helpers
+@{
+    var fields = AccountTransactionCorrectionDisplayHelper.ParseSnapshot(Model);
+}
+
+@if (fields.Count == 0)
+{
+    <p class="text-muted mb-0">No details saved.</p>
+}
+else
+{
+    <table class="table table-sm table-bordered mb-0">
+        <tbody>
+            @foreach (var (label, value) in fields)
+            {
+                <tr>
+                    <td class="text-muted bg-light" style="width: 38%">@label</td>
+                    <td class="text-break">@value</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

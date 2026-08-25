@@ -486,6 +486,13 @@ namespace KRSDealerManagement.Web.Controllers
                 return this.RedirectEncrypted(nameof(AdminEdit), new { id = paymentId });
             }
 
+            var payment = await _unitOfWork.Payments.GetByIdAsync(paymentId);
+            if (payment == null)
+            {
+                TempData["Error"] = "Payment not found.";
+                return RedirectToAction(nameof(Index));
+            }
+
             try
             {
                 await _mediator.Send(new AdminCorrectPaymentCommand

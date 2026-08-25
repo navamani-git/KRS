@@ -14,6 +14,7 @@ namespace KRSDealerManagement.Application.DTOs
         public int Month { get; set; }
         public int Year { get; set; }
         public DateTime EffectiveFrom { get; set; }
+        public DateTime EffectiveTo { get; set; }
         public decimal Price { get; set; }
         public string? Notes { get; set; }
         public int CreatedBy { get; set; }

@@ -70,7 +70,7 @@
                 </div>
                 <div class="col-md-2">
                     <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Filter</button>
-                    <a href="@Url.Action("Index")" class="btn btn-secondary"><i class="bi bi-arrow-clockwise"></i></a>
+                    <a href="@Url.Action("Index", new { month = DateTime.Now.Month, year = DateTime.Now.Year })" class="btn btn-secondary" title="Reset to current month"><i class="bi bi-arrow-clockwise"></i></a>
                 </div>
             </div>
         </form>
@@ -94,6 +94,7 @@
                             <th>Color</th>
                             <th>Month / Year</th>
                             <th>Effective From</th>
+                            <th>Effective To</th>
                             <th class="text-end">Price (₹)</th>
                             <th>Notes</th>
                             <th>Last Updated</th>
@@ -113,6 +114,7 @@
                                     </span>
                                 </td>
                                 <td>@price.EffectiveFrom.ToString("yyyy-MM-dd")</td>
+                                <td>@price.EffectiveTo.ToString("yyyy-MM-dd")</td>
                                 <td class="text-end"><strong>₹@price.Price.ToString("N2")</strong></td>
                                 <td>
                                     <small class="text-muted">@(price.Notes ?? "-")</small>

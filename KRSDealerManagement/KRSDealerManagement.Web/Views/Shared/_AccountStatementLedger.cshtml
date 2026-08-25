@@ -1,13 +1,24 @@
 @model IEnumerable<KRSDealerManagement.Application.DTOs.AccountTransactionDto>
 @using KRSDealerManagement.Application.DTOs
+@using KRSDealerManagement.Web.Helpers
+@using KRSDealerManagement.Web.Models
+
+@{
+    var totals = ViewBag.StatementTotals as AccountStatementTotalsViewModel;
+    var gridId = ViewBag.GridId as string ?? GridIds.AccountStatement;
+    var currentPage = (int)(ViewBag.Page ?? 1);
+    var pageSize = (int)(ViewBag.PageSize ?? ListPagingHelper.DefaultPageSize);
+    var rowOffset = (currentPage - 1) * pageSize;
+}
 
 @if (Model.Any())
 {
+    <partial name="_GridScrollHint" />
     <div class="table-responsive">
-        <table class="table table-bordered table-hover table-sm">
+        <table class="table table-sm table-hover table-striped mb-0 grid-excel-table grid-data-table" data-grid-id="@gridId">
             <thead class="table-dark">
                 <tr>
-                    <th>#</th>
+                    <th class="grid-col-rownum">#</th>
                     <th>Txn Date</th>
                     <th>Type</th>
                     <th>Description</th>
@@ -20,19 +31,17 @@
                     <th class="text-end text-danger">Debit (₹)</th>
                     <th class="text-end text-success">Credit (₹)</th>
                     <th class="text-end">Balance (₹)</th>
-                    <th>Submitted Date</th>
-                    <th>Approved Date</th>
-                    <th>Received Date</th>
-                    <th>Remarks</th>
+                    <th>Details</th>
                 </tr>
+                <partial name="_PaginatedGridFilters" />
             </thead>
             <tbody>
-                @{ int sr = 1; }
+                @{ var sr = rowOffset + 1; }
                 @foreach (var t in Model)
                 {
                     var rowClass = t.IsDebit() ? "table-danger" : "table-success";
                     <tr class="@rowClass bg-opacity-25">
-                        <td>@(sr++)</td>
+                        <td class="grid-col-rownum">@(sr++)</td>
                         <td>
                             <small>@t.CreatedDate.ToString("yyyy-MM-dd")</small><br />
                             <small class="text-muted">@t.CreatedDate.ToString("HH:mm")</small>
@@ -59,7 +68,7 @@
                         <td><small>@(t.CustomerName ?? "-")</small></td>
                         <td><small>@(t.PaymentType ?? "-")</small></td>
                         <td><small>@(t.FinanceName ?? "-")</small></td>
-                        <td><small><code>@(t.VinNumber ?? "-")</code></small></td>
+                        <td><small><code>@(t.VinNumber ?? t.ChassisNumber ?? "-")</code></small></td>
                         <td class="text-end">
                             @(t.RequestedAmount.HasValue ? $"₹{t.RequestedAmount.Value:N2}" : "-")
                         </td>
@@ -73,31 +82,75 @@
                             @(t.IsCredit() ? $"₹{t.Amount:N2}" : "-")
                         </td>
                         <td class="text-end fw-bold">₹@t.BalanceAfterTransaction.ToString("N2")</td>
-                        <td><small>@(t.PaymentSubmittedDate?.ToString("yyyy-MM-dd HH:mm") ?? "-")</small></td>
-                        <td><small>@(t.PaymentApprovedDate?.ToString("yyyy-MM-dd HH:mm") ?? "-")</small></td>
-                        <td><small>@(t.PaymentReceivedDate?.ToString("yyyy-MM-dd") ?? "-")</small></td>
-                        <td><small class="text-muted">@t.Remarks</small></td>
+                        <td>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-info statement-detail-btn"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#statementDetailModal"
+                                    data-txn-label="@t.CreatedDate.ToString("yyyy-MM-dd HH:mm") · @t.CategoryLabel"
+                                    data-submitted="@(t.PaymentSubmittedDate?.ToString("yyyy-MM-dd HH:mm") ?? "-")"
+                                    data-approved="@(t.PaymentApprovedDate?.ToString("yyyy-MM-dd HH:mm") ?? "-")"
+                                    data-received="@(t.PaymentReceivedDate?.ToString("yyyy-MM-dd") ?? "-")"
+                                    data-remarks="@(t.Remarks ?? "-")"
+                                    title="View full transaction details">
+                                <i class="bi bi-eye"></i> View
+                            </button>
+                        </td>
                     </tr>
                 }
             </tbody>
-            <tfoot class="table-light fw-bold">
-                <tr>
-                    <td colspan="8">Total</td>
-                    <td></td>
-                    <td class="text-end text-success">
-                        ₹@Model.Where(t => t.ApprovedPaymentAmount.HasValue).Sum(t => t.ApprovedPaymentAmount!.Value).ToString("N2")
-                    </td>
-                    <td class="text-end text-danger">
-                        ₹@Model.Where(t => t.IsDebit()).Sum(t => t.Amount).ToString("N2")
-                    </td>
-                    <td class="text-end text-success">
-                        ₹@Model.Where(t => t.IsCredit()).Sum(t => t.Amount).ToString("N2")
-                    </td>
-                    <td colspan="4"></td>
-                </tr>
-            </tfoot>
+            @if (totals != null)
+            {
+                <tfoot class="table-light fw-bold">
+                    <tr>
+                        <td colspan="8">Total (@totals.TransactionCount filtered)</td>
+                        <td></td>
+                        <td class="text-end text-success">₹@totals.TotalApproved.ToString("N2")</td>
+                        <td class="text-end text-danger">₹@totals.TotalDebit.ToString("N2")</td>
+                        <td class="text-end text-success">₹@totals.TotalCredit.ToString("N2")</td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+            }
         </table>
     </div>
+    <div class="px-3 pb-3">
+        <partial name="_Pagination" />
+    </div>
+
+    <div class="modal fade" id="statementDetailModal" tabindex="-1" aria-labelledby="statementDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="statementDetailModalLabel">Transaction Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3" id="statementDetailSubtitle"></p>
+                    <table class="table table-sm table-borderless mb-0">
+                        <tr><td class="text-muted" width="40%">Submitted Date</td><td id="statementDetailSubmitted">-</td></tr>
+                        <tr><td class="text-muted">Approved Date</td><td id="statementDetailApproved">-</td></tr>
+                        <tr><td class="text-muted">Received Date</td><td id="statementDetailReceived">-</td></tr>
+                        <tr><td class="text-muted align-top">Remarks</td><td id="statementDetailRemarks" class="text-break">-</td></tr>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.querySelectorAll('.statement-detail-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                document.getElementById('statementDetailSubtitle').textContent = btn.dataset.txnLabel || '';
+                document.getElementById('statementDetailSubmitted').textContent = btn.dataset.submitted || '-';
+                document.getElementById('statementDetailApproved').textContent = btn.dataset.approved || '-';
+                document.getElementById('statementDetailReceived').textContent = btn.dataset.received || '-';
+                document.getElementById('statementDetailRemarks').textContent = btn.dataset.remarks || '-';
+            });
+        });
+    </script>
 }
 else
 {

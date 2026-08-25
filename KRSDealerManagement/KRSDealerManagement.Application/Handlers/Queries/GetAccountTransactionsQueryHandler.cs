@@ -42,6 +42,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             if (request.ExcludeBalanceHolds)
                 filtered = filtered.Where(t => !AccountTransactionTypeHelper.IsBalanceHold(t.TransactionType));
 
+            if (!request.IncludeDeleted)
+                filtered = filtered.Where(t => !t.IsDeleted);
+
             var commissions = (await _unitOfWork.Commissions.GetAllAsync()).ToDictionary(c => c.CommissionId);
             var returns = (await _unitOfWork.ReturnRequests.GetAllAsync()).ToDictionary(r => r.ReturnRequestId);
             var vehicles = (await _unitOfWork.Vehicles.GetAllAsync()).ToDictionary(v => v.VehicleId);

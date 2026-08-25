@@ -4,7 +4,7 @@ using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Repositories;
-using KRSDealerManagement.Shared.Enums;
+using KRSDealerManagement.Shared.Constants;
 using System.Text.Json;
 
 namespace KRSDealerManagement.Application.Handlers.Commands
@@ -31,6 +31,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
             var changes = new List<string>();
             var oldPrice = vehicle.CurrentPrice;
+            var oldSubdealerId = vehicle.SubdealerId;
+            var oldDeliveryDate = vehicle.DeliveryDate;
 
             if (vehicle.ModelId != request.ModelId)
                 changes.Add(CorrectionNoteHelper.DescribeChange("ModelId", vehicle.ModelId, request.ModelId));
@@ -42,6 +44,12 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 changes.Add(CorrectionNoteHelper.DescribeChange("Vehicle Status", vehicle.Status, request.Status));
             if (vehicle.CurrentPrice != request.CurrentPrice)
                 changes.Add(CorrectionNoteHelper.DescribeChange("Price", $"₹{vehicle.CurrentPrice:N2}", $"₹{request.CurrentPrice:N2}"));
+            if (vehicle.SubdealerId != request.SubdealerId)
+                changes.Add(CorrectionNoteHelper.DescribeChange("Subdealer", vehicle.SubdealerId, request.SubdealerId));
+            if (vehicle.DeliveryDate?.Date != request.DeliveryDate?.Date)
+                changes.Add(CorrectionNoteHelper.DescribeChange("Delivery Date",
+                    oldDeliveryDate?.ToString("yyyy-MM-dd"),
+                    request.DeliveryDate?.ToString("yyyy-MM-dd")));
             if (!string.Equals(vehicle.MotorNo, request.MotorNo, StringComparison.OrdinalIgnoreCase))
                 changes.Add(CorrectionNoteHelper.DescribeChange("Motor", vehicle.MotorNo, request.MotorNo));
             if (!string.Equals(vehicle.BatteryNo, request.BatteryNo, StringComparison.OrdinalIgnoreCase))
@@ -68,6 +76,10 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             vehicle.ChassisNumber = request.ChassisNumber.Trim().ToUpperInvariant();
             vehicle.Status = request.Status;
             vehicle.CurrentPrice = request.CurrentPrice;
+            vehicle.SubdealerId = request.SubdealerId;
+            vehicle.DeliveryDate = request.Status == UnifiedVehicleStatus.Delivered
+                ? (request.DeliveryDate?.Date ?? DateTime.UtcNow.Date)
+                : (request.DeliveryDate?.Date);
             vehicle.MotorNo = request.MotorNo?.Trim();
             vehicle.BatteryNo = request.BatteryNo?.Trim();
             vehicle.ChargerNo = request.ChargerNo?.Trim();
@@ -89,11 +101,35 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 }
             }
 
-            if (vehicle.CurrentPrice != oldPrice && vehicle.SubdealerId.HasValue)
+            if (oldSubdealerId != request.SubdealerId)
             {
-                var delta = vehicle.CurrentPrice - oldPrice;
+                if (oldSubdealerId.HasValue && oldPrice > 0)
+                {
+                    await AdjustSubdealerBalanceAsync(
+                        oldSubdealerId.Value,
+                        -oldPrice,
+                        vehicle.VehicleId,
+                        vehicle.ChassisNumber,
+                        request.CorrectedBy,
+                        $"Admin transfer out — {noteEntry}");
+                }
+
+                if (request.SubdealerId.HasValue && request.CurrentPrice > 0)
+                {
+                    await AdjustSubdealerBalanceAsync(
+                        request.SubdealerId.Value,
+                        request.CurrentPrice,
+                        vehicle.VehicleId,
+                        vehicle.ChassisNumber,
+                        request.CorrectedBy,
+                        $"Admin transfer in — {noteEntry}");
+                }
+            }
+            else if (request.CurrentPrice != oldPrice && request.SubdealerId.HasValue)
+            {
+                var delta = request.CurrentPrice - oldPrice;
                 await AdjustSubdealerBalanceAsync(
-                    vehicle.SubdealerId.Value,
+                    request.SubdealerId.Value,
                     delta,
                     vehicle.VehicleId,
                     vehicle.ChassisNumber,
@@ -113,7 +149,9 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 {
                     request.CorrectionReason,
                     changes,
-                    vehicle.ChassisNumber
+                    vehicle.ChassisNumber,
+                    request.SubdealerId,
+                    request.DeliveryDate
                 }),
                 remarks: noteEntry);
 
@@ -157,6 +195,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 referenceId: vehicleId,
                 remarks: note,
                 initiatedBy: correctedBy);
+
+            await AccountTransactionBalanceRecalcHelper.RecalculateAccountAsync(_unitOfWork, account.AccountId);
         }
     }
 }

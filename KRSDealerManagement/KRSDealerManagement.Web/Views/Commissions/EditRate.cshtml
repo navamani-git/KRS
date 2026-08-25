@@ -11,6 +11,14 @@
     <div class="col-md-4 text-end"><a href="@Url.Action("Index")" class="btn btn-secondary">Back</a></div>
 </div>
 
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle"></i> @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
 <div class="card">
     <form method="post">
         @Html.AntiForgeryToken()
@@ -43,7 +51,8 @@
 
             <div class="alert alert-info mb-0">
                 <i class="bi bi-info-circle"></i>
-                Overlapping date ranges for the same model are not allowed. Adjacent ranges (e.g. 01–15 then 15–30) are permitted.
+                Only one rate period can cover the same model on the same day. If a rate runs until 21-Aug, the next period must start on <strong>22-Aug</strong> or later.
+                Overlapping dates (e.g. 01–21 then 16–22) are not allowed — edit the existing row first.
             </div>
         </div>
         <div class="card-footer"><button type="submit" class="btn btn-primary">Save</button></div>

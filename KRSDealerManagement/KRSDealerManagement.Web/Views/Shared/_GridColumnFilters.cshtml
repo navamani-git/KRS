@@ -10,7 +10,8 @@
     @{ var colIndex = 0; }
     @foreach (var col in Model)
     {
-        <th data-grid-col-index="@colIndex" data-filter-key="@col.Key">
+        var thClass = string.IsNullOrEmpty(col.CssClass) ? "" : col.CssClass;
+        <th class="@thClass" data-grid-col-index="@colIndex" data-filter-key="@col.Key">
             @if (col.Key.StartsWith("_"))
             {
                 @if (col.Key == "_actions")

@@ -32,7 +32,12 @@ namespace KRSDealerManagement.Web.Controllers
             _queryCrypto = queryCrypto;
         }
 
-        private async Task<GetVehiclesQuery> BuildQueryAsync(int? subdealerId, string? searchTerm, DateTime? fromDate, DateTime? toDate)
+        private async Task<GetVehiclesQuery> BuildQueryAsync(
+            int? subdealerId,
+            string? searchTerm,
+            DateTime? fromDate,
+            DateTime? toDate,
+            string? dealershipLocation = null)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
@@ -40,7 +45,8 @@ namespace KRSDealerManagement.Web.Controllers
             {
                 FromDate = from,
                 ToDate = to,
-                SearchTerm = searchTerm
+                SearchTerm = searchTerm,
+                DealershipLocation = dealershipLocation
             };
 
             if (SessionHelper.IsSubdealer(HttpContext.Session))
@@ -57,6 +63,7 @@ namespace KRSDealerManagement.Web.Controllers
         public async Task<IActionResult> Index(
             int? subdealerId,
             string? searchTerm,
+            string? dealershipLocation,
             DateTime? fromDate,
             DateTime? toDate,
             int? page,
@@ -77,7 +84,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             var isSubdealer = SessionHelper.IsSubdealer(HttpContext.Session);
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Vehicles);
-            var query = await BuildQueryAsync(subdealerId, searchTerm, fromDate, toDate);
+            var query = await BuildQueryAsync(subdealerId, searchTerm, fromDate, toDate, dealershipLocation);
             query.ColumnFilters = columnFilters;
             // Subdealer My Vehicles: show all unless they explicitly filter by date
             if (isSubdealer && !fromDate.HasValue && !toDate.HasValue)
@@ -95,17 +102,47 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.ToDate = isSubdealer && !toDate.HasValue ? "" : to.ToString("yyyy-MM-dd");
             ViewBag.SearchTerm = searchTerm;
             ViewBag.SelectedSubdealerId = subdealerId;
+            ViewBag.SelectedDealershipLocation = dealershipLocation;
             ViewBag.IsSubdealer = isSubdealer;
             ViewBag.IsAdmin = SessionHelper.IsAdmin(HttpContext.Session);
 
             if (!ViewBag.IsSubdealer)
             {
                 var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
-                ViewBag.Subdealers = await _mediator.Send(new GetSubdealersQuery
+                var allSubdealers = (await _mediator.Send(new GetSubdealersQuery
                 {
                     IsActive = true,
                     DealershipId = scope
-                });
+                })).ToList();
+                var dealerships = (await _unitOfWork.Dealerships.GetAllAsync())
+                    .Where(d => d.IsActive && (!scope.HasValue || d.DealershipId == scope.Value))
+                    .OrderBy(d => d.Location ?? d.DealershipName)
+                    .ToList();
+                ViewBag.DealershipLocations = dealerships
+                    .Select(d => d.Location?.Trim())
+                    .Where(l => !string.IsNullOrWhiteSpace(l))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(l => l)
+                    .ToList();
+
+                if (!string.IsNullOrWhiteSpace(dealershipLocation))
+                {
+                    var locDealershipIds = dealerships
+                        .Where(d => string.Equals(d.Location?.Trim(), dealershipLocation.Trim(), StringComparison.OrdinalIgnoreCase))
+                        .Select(d => d.DealershipId)
+                        .ToHashSet();
+                    var orgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync())
+                        .Where(r => r.IsActive && r.DealershipId.HasValue && locDealershipIds.Contains(r.DealershipId.Value))
+                        .Select(r => r.UserId)
+                        .ToHashSet();
+                    ViewBag.Subdealers = allSubdealers.Where(s => orgRoles.Contains(s.UserId)).ToList();
+                    if (ViewBag.Subdealers is List<UserDto> filtered && filtered.Count == 1 && !subdealerId.HasValue)
+                        ViewBag.SelectedSubdealerId = filtered[0].UserId;
+                }
+                else
+                {
+                    ViewBag.Subdealers = allSubdealers;
+                }
             }
 
             return View(pageItems);
@@ -116,9 +153,10 @@ namespace KRSDealerManagement.Web.Controllers
             int? subdealerId,
             string? searchTerm,
             DateTime? fromDate,
-            DateTime? toDate)
+            DateTime? toDate,
+            string? dealershipLocation = null)
         {
-            var query = await BuildQueryAsync(subdealerId, searchTerm, fromDate, toDate);
+            var query = await BuildQueryAsync(subdealerId, searchTerm, fromDate, toDate, dealershipLocation);
             var vehicles = (await _mediator.Send(query)).ToList();
 
             var vehicleEntities = (await _unitOfWork.Vehicles.GetAllAsync())
@@ -226,9 +264,9 @@ namespace KRSDealerManagement.Web.Controllers
             {
                 success = true,
                 vehicle.VehicleId,
-                vehicle.ChassisNumber,
                 vehicle.ModelName,
                 vehicle.ColorName,
+                vehicle.ChassisNumber,
                 statusName = vehicle.StatusName ?? vehicle.GetStatusDisplay(),
                 vehicle.MotorNo,
                 vehicle.BatteryNo,
@@ -245,6 +283,7 @@ namespace KRSDealerManagement.Web.Controllers
                 notes = entity?.Notes,
                 correctionHistory = entity?.Notes,
                 deliveryStatus = vehicle.GetDeliveryStatusDisplay(),
+                deliveryDate = vehicle.DeliveryDate?.ToString("yyyy-MM-dd"),
                 vehicle.CreatedDate,
                 booking = bookingData
             });
@@ -309,6 +348,33 @@ namespace KRSDealerManagement.Web.Controllers
             }
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AuthorizeRole(2)]
+        [AuthorizeMenu(MenuKeys.VehiclesView)]
+        public async Task<IActionResult> MarkDelivered(int vehicleId, DateTime deliveryDate)
+        {
+            var userId = SessionHelper.GetUserId(HttpContext.Session);
+            if (!userId.HasValue) return RedirectToAction("Login", "Account");
+
+            try
+            {
+                await _mediator.Send(new MarkVehicleDeliveredCommand
+                {
+                    VehicleId = vehicleId,
+                    DeliveryDate = deliveryDate,
+                    MarkedBy = userId.Value
+                });
+                TempData["Success"] = "Vehicle marked as delivered.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
         [AuthorizeRole(1)]
         public async Task<IActionResult> AdminEdit(int id)
         {
@@ -323,6 +389,7 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.BookingStatuses = (await _statuses.GetActiveByCategoryAsync(StatusCategories.Vehicle))
                 .Where(s => s.StatusValue >= UnifiedVehicleStatus.BookedToCustomer);
             ViewBag.Booking = booking;
+            ViewBag.Subdealers = await _mediator.Send(new GetSubdealersQuery { IsActive = true });
             await ModelColorViewHelper.SetModelColorMapAsync(this, _mediator);
             return View(vehicle);
         }
@@ -332,7 +399,8 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeRole(1)]
         public async Task<IActionResult> AdminEdit(
             int vehicleId, int modelId, int colorId, string chassisNumber, int status,
-            decimal currentPrice, string? motorNo, string? batteryNo, string? chargerNo,
+            decimal currentPrice, int? subdealerId, DateTime? deliveryDate,
+            string? motorNo, string? batteryNo, string? chargerNo,
             string? controllerNo, string? converterNo, int? bookingStatus, string correctionReason)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
@@ -342,6 +410,13 @@ namespace KRSDealerManagement.Web.Controllers
             {
                 TempData["Error"] = "Correction reason is required (min 5 characters).";
                 return this.RedirectEncrypted(nameof(AdminEdit), new { id = vehicleId });
+            }
+
+            var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(vehicleId);
+            if (vehicle == null)
+            {
+                TempData["Error"] = "Vehicle not found.";
+                return RedirectToAction(nameof(Index));
             }
 
             try
@@ -354,6 +429,8 @@ namespace KRSDealerManagement.Web.Controllers
                     ChassisNumber = chassisNumber,
                     Status = status,
                     CurrentPrice = currentPrice,
+                    SubdealerId = subdealerId,
+                    DeliveryDate = deliveryDate,
                     MotorNo = motorNo,
                     BatteryNo = batteryNo,
                     ChargerNo = chargerNo,
@@ -366,6 +443,49 @@ namespace KRSDealerManagement.Web.Controllers
                 });
 
                 TempData["Success"] = "Vehicle corrected. Change history recorded for subdealer view.";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error: {ex.Message}";
+                return this.RedirectEncrypted(nameof(AdminEdit), new { id = vehicleId });
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AuthorizeRole(1)]
+        public async Task<IActionResult> AdminDelete(int vehicleId, string deleteReason)
+        {
+            var userId = SessionHelper.GetUserId(HttpContext.Session);
+            if (!userId.HasValue) return RedirectToAction("Login", "Account");
+
+            if (string.IsNullOrWhiteSpace(deleteReason) || deleteReason.Trim().Length < 5)
+            {
+                TempData["Error"] = "Delete reason is required (min 5 characters).";
+                return this.RedirectEncrypted(nameof(AdminEdit), new { id = vehicleId });
+            }
+
+            var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(vehicleId);
+            if (vehicle == null)
+            {
+                TempData["Error"] = "Vehicle not found.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            try
+            {
+                var ok = await _mediator.Send(new AdminDeleteVehicleCommand
+                {
+                    VehicleId = vehicleId,
+                    DeleteReason = deleteReason.Trim(),
+                    DeletedBy = userId.Value,
+                    DeletedByName = SessionHelper.GetFullName(HttpContext.Session) ?? SessionHelper.GetUsername(HttpContext.Session) ?? "Admin"
+                });
+
+                TempData[ok ? "Success" : "Error"] = ok
+                    ? "Vehicle deleted. Refund and audit entries were recorded where applicable."
+                    : "Vehicle not found.";
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)

@@ -17,17 +17,15 @@ namespace KRSDealerManagement.Infrastructure.Repositories
 
         public override async Task<int> AddAsync(AccountTransaction entity)
         {
-            using var connection = _context.GetConnection();
-            connection.Open();
+            return await WithConnectionAsync(async (connection, transaction) =>
+            {
+                var balanceBefore = AccountTransactionTypeHelper.EstimateBalanceBefore(
+                    entity.TransactionType, entity.Amount, entity.BalanceAfterTransaction);
+                var description = string.IsNullOrWhiteSpace(entity.Remarks)
+                    ? entity.Reason
+                    : $"{entity.Reason} | {entity.Remarks}";
 
-            // Resolve SubdealerId from account; compute BalanceBefore from after +/- amount
-            var balanceBefore = AccountTransactionTypeHelper.EstimateBalanceBefore(
-                entity.TransactionType, entity.Amount, entity.BalanceAfterTransaction);
-            var description = string.IsNullOrWhiteSpace(entity.Remarks)
-                ? entity.Reason
-                : $"{entity.Reason} | {entity.Remarks}";
-
-            const string sql = @"
+                const string sql = @"
 DECLARE @subdealerId INT =
     COALESCE(
         (SELECT TOP 1 SubdealerId FROM SubdealerAccounts WHERE AccountId = @AccountId),
@@ -61,43 +59,41 @@ VALUES (
 );
 SELECT CAST(SCOPE_IDENTITY() AS int);";
 
-            return await connection.ExecuteScalarAsync<int>(sql, new
-            {
-                entity.AccountId,
-                entity.TransactionType,
-                entity.Amount,
-                BalanceBefore = balanceBefore,
-                entity.BalanceAfterTransaction,
-                Description = description,
-                entity.Reason,
-                entity.ReferenceId,
-                entity.ReferenceType,
-                entity.InitiatedBy,
-                entity.CreatedDate
+                return await connection.ExecuteScalarAsync<int>(sql, new
+                {
+                    entity.AccountId,
+                    entity.TransactionType,
+                    entity.Amount,
+                    BalanceBefore = balanceBefore,
+                    entity.BalanceAfterTransaction,
+                    Description = description,
+                    entity.Reason,
+                    entity.ReferenceId,
+                    entity.ReferenceType,
+                    entity.InitiatedBy,
+                    entity.CreatedDate
+                }, transaction);
             });
         }
 
         public override async Task<AccountTransaction> GetByIdAsync(int id)
         {
-            using var connection = _context.GetConnection();
-            connection.Open();
-            return await connection.QueryFirstOrDefaultAsync<AccountTransaction>(
-                SelectSql + " WHERE TransactionId = @Id", new { Id = id });
+            return await WithConnectionAsync(async (connection, transaction) =>
+                await connection.QueryFirstOrDefaultAsync<AccountTransaction>(
+                    SelectSql + " WHERE TransactionId = @Id", new { Id = id }, transaction));
         }
 
         public override async Task<IEnumerable<AccountTransaction>> GetAllAsync()
         {
-            using var connection = _context.GetConnection();
-            connection.Open();
-            return await connection.QueryAsync<AccountTransaction>(SelectSql);
+            return await WithConnectionAsync(async (connection, transaction) =>
+                await connection.QueryAsync<AccountTransaction>(SelectSql, transaction: transaction));
         }
 
         public override async Task<bool> UpdateAsync(AccountTransaction entity)
         {
-            using var connection = _context.GetConnection();
-            connection.Open();
-
-            const string sql = @"
+            return await WithConnectionAsync(async (connection, transaction) =>
+            {
+                const string sql = @"
 UPDATE AccountTransactions
 SET AccountId = @AccountId,
     TransactionType = @TransactionType,
@@ -108,11 +104,14 @@ SET AccountId = @AccountId,
     ReferenceId = @ReferenceId,
     ReferenceType = @ReferenceType,
     InitiatedBy = @InitiatedBy,
-    CreatedBy = ISNULL(NULLIF(@InitiatedBy, 0), CreatedBy)
+    CreatedBy = ISNULL(NULLIF(@InitiatedBy, 0), CreatedBy),
+    CreatedDate = @CreatedDate,
+    IsDeleted = @IsDeleted
 WHERE TransactionId = @TransactionId";
 
-            var rows = await connection.ExecuteAsync(sql, entity);
-            return rows > 0;
+                var rows = await connection.ExecuteAsync(sql, entity, transaction);
+                return rows > 0;
+            });
         }
 
         private const string SelectSql = @"
@@ -127,7 +126,8 @@ SELECT
     ReferenceType,
     Remarks,
     ISNULL(InitiatedBy, CreatedBy) AS InitiatedBy,
-    CreatedDate
+    CreatedDate,
+    ISNULL(IsDeleted, 0) AS IsDeleted
 FROM AccountTransactions";
     }
 }

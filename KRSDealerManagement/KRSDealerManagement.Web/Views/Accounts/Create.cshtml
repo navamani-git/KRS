@@ -3,6 +3,8 @@
     ViewData["Title"] = "Create Subdealer Account";
     var subdealers = ViewBag.Subdealers as IEnumerable<UserDto>;
     var selectedSubdealerId = ViewBag.SelectedSubdealerId as int?;
+    ViewData["ExcelImportKey"] = KRSDealerManagement.Web.Helpers.ExcelImport.ExcelImportKeys.SubdealerAccounts;
+    ViewData["ExcelImportReturnAction"] = "Create";
 }
 
 <div class="row mb-3">
@@ -15,6 +17,8 @@
         </a>
     </div>
 </div>
+
+<partial name="_ExcelImport" />
 
 <div class="row">
     <div class="col-md-6">

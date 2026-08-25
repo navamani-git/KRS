@@ -220,10 +220,13 @@ namespace KRSDealerManagement.Web.Controllers
                 TempData[result ? "Success" : "Error"] = result
                     ? "Commission rate updated."
                     : "Commission rate not found.";
+                if (result)
+                    return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
                 TempData["Error"] = ex.Message;
+                return RedirectToAction(nameof(EditRate), new { id });
             }
 
             return RedirectToAction(nameof(Index));
@@ -241,14 +244,8 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            row.EffectiveTo = DateTime.UtcNow.Date;
-            if (row.EffectiveTo < row.EffectiveFrom.Date)
-                row.EffectiveTo = row.EffectiveFrom.Date;
-            row.ExpiryMonth = row.EffectiveTo.Month;
-            row.ExpiryYear = row.EffectiveTo.Year;
-            row.ModifiedDate = DateTime.UtcNow;
-            await _unitOfWork.CommissionRates.UpdateAsync(row);
-            TempData["Success"] = "Commission rate ended.";
+            await _unitOfWork.CommissionRates.DeleteAsync(id);
+            TempData["Success"] = "Commission rate deleted.";
             return RedirectToAction(nameof(Index));
         }
 

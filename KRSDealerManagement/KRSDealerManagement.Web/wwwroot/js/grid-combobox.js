@@ -7,6 +7,8 @@
         'bookingPhaseOnly',
         'fromDate',
         'toDate',
+        'accountId',
+        'id',
         'isActive'
     ];
     var activeInput = null;

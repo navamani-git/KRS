@@ -164,7 +164,7 @@
         toolbar.className = 'grid-column-toolbar d-flex justify-content-end align-items-center gap-2 px-3 py-2 border-bottom bg-light';
 
         var hint = document.createElement('small');
-        hint.className = 'text-muted me-auto d-none d-md-inline';
+        hint.className = 'grid-toolbar-hint me-auto d-none d-md-inline';
         hint.textContent = 'Column layout is remembered on this page; filtering will not reset it.';
 
         var dropdown = document.createElement('div');

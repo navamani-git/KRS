@@ -1,5 +1,7 @@
 @{
     ViewData["Title"] = "Add Finance Name";
+    ViewData["ExcelImportKey"] = KRSDealerManagement.Web.Helpers.ExcelImport.ExcelImportKeys.FinanceNames;
+    ViewData["ExcelImportReturnAction"] = "Create";
 }
 
 <div class="row mb-3">
@@ -8,6 +10,8 @@
         <a href="@Url.Action("Index")" class="btn btn-secondary">Back</a>
     </div>
 </div>
+
+<partial name="_ExcelImport" />
 
 <div class="card card-primary" style="max-width:520px">
     <form method="post">

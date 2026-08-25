@@ -2,6 +2,8 @@
     ViewData["Title"] = "Add Staff User";
     var dealerships = ViewBag.Dealerships as IEnumerable<KRSDealerManagement.Application.Queries.DealershipDto>
         ?? Enumerable.Empty<KRSDealerManagement.Application.Queries.DealershipDto>();
+    ViewData["ExcelImportKey"] = KRSDealerManagement.Web.Helpers.ExcelImport.ExcelImportKeys.StaffUsers;
+    ViewData["ExcelImportReturnAction"] = "Create";
 }
 
 <div class="row mb-3">
@@ -15,6 +17,8 @@
         </a>
     </div>
 </div>
+
+<partial name="_ExcelImport" />
 
 <div class="row">
     <div class="col-md-7">

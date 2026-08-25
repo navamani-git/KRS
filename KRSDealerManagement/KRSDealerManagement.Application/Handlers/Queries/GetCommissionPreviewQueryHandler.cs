@@ -30,7 +30,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 .Where(v => v.SubdealerId == request.SubdealerId)
                 .ToList();
             var bookings = (await _unitOfWork.VehicleBookings.GetAllAsync())
-                .Where(b => b.InvoiceDate.HasValue && b.RegistrationDate.HasValue)
+                .Where(b => b.InvoiceDate.HasValue)
                 .ToDictionary(b => b.VehicleId);
             var models = (await _unitOfWork.VehicleModels.GetAllAsync()).ToDictionary(m => m.ModelId);
             var colors = (await _unitOfWork.VehicleColors.GetAllAsync()).ToDictionary(c => c.ColorId);
@@ -47,12 +47,11 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             foreach (var vehicle in vehicles)
             {
                 if (!bookings.TryGetValue(vehicle.VehicleId, out var booking)
-                    || !booking.InvoiceDate.HasValue
-                    || !booking.RegistrationDate.HasValue)
+                    || !booking.InvoiceDate.HasValue)
                     continue;
 
                 var invoice = booking.InvoiceDate.Value.Date;
-                var registration = booking.RegistrationDate.Value.Date;
+                var registration = booking.RegistrationDate?.Date;
                 if (from.HasValue && invoice < from.Value)
                     continue;
                 if (toExclusive.HasValue && invoice >= toExclusive.Value)
