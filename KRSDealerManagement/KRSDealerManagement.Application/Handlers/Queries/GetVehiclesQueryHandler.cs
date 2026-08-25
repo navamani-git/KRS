@@ -2,6 +2,7 @@ using MediatR;
 using KRSDealerManagement.Application.DTOs;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Application.Services;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
 
@@ -86,6 +87,10 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         ModifiedBy = v.ModifiedBy,
                         ModifiedDate = v.ModifiedDate,
                         VehicleBookingId = booking?.VehicleBookingId,
+                        BookingInvoiceDate = booking?.InvoiceDate,
+                        BookingInsuranceDate = booking?.InsuranceDate,
+                        InvoicePath = booking?.InvoicePath,
+                        InsurancePath = booking?.InsurancePath,
                         BookingStatus = v.Status,
                         BookingStatusName = st?.StatusName,
                         BookingStatusBadge = st?.BadgeClass,
@@ -136,6 +141,22 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             {
                 var toExclusive = request.ToDate.Value.Date.AddDays(1);
                 result = result.Where(v => v.CreatedDate < toExclusive);
+            }
+
+            if (request.ColumnFilters is { Count: > 0 } cf)
+            {
+                result = result.Where(v =>
+                    GridFilterHelper.MatchesContains(v.SubdealerName, GridFilterHelper.GetFilter(cf, "subdealer"))
+                    && GridFilterHelper.MatchesDate(v.OrderDate, GridFilterHelper.GetDateFilter(cf, "orderDate"), GridFilterHelper.GetDateFilter(cf, "orderDate"))
+                    && GridFilterHelper.MatchesContains(v.OrderNumber, GridFilterHelper.GetFilter(cf, "orderNumber"))
+                    && GridFilterHelper.MatchesDate(v.AllocatedDate, GridFilterHelper.GetDateFilter(cf, "allocated"), GridFilterHelper.GetDateFilter(cf, "allocated"))
+                    && GridFilterHelper.MatchesContains(v.ChassisNumber, GridFilterHelper.GetFilter(cf, "chassis"))
+                    && GridFilterHelper.MatchesContains(v.ModelName, GridFilterHelper.GetFilter(cf, "model"))
+                    && GridFilterHelper.MatchesContains(v.ColorName, GridFilterHelper.GetFilter(cf, "color"))
+                    && GridFilterHelper.MatchesContains(v.MotorNo, GridFilterHelper.GetFilter(cf, "motor"))
+                    && GridFilterHelper.MatchesContains(v.BatteryNo, GridFilterHelper.GetFilter(cf, "battery"))
+                    && GridFilterHelper.MatchesContains(v.GetStatusDisplay(), GridFilterHelper.GetFilter(cf, "status"))
+                    && GridFilterHelper.MatchesContains(v.CurrentPrice.ToString("N2"), GridFilterHelper.GetFilter(cf, "price")));
             }
 
             return result.OrderByDescending(v => v.CreatedDate).ToList();

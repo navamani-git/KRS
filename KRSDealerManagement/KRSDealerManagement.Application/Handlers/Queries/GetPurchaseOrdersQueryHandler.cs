@@ -2,6 +2,7 @@ using MediatR;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Application.DTOs;
 using KRSDealerManagement.Application.Services;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
 
@@ -92,6 +93,21 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             {
                 var toExclusive = request.ToDate.Value.Date.AddDays(1);
                 result = result.Where(o => o.CreatedDate < toExclusive);
+            }
+
+            if (request.ColumnFilters is { Count: > 0 } cf)
+            {
+                result = result.Where(o =>
+                    GridFilterHelper.MatchesContains(o.OrderNumber, GridFilterHelper.GetFilter(cf, "orderNumber"))
+                    && GridFilterHelper.MatchesContains(o.SubdealerName, GridFilterHelper.GetFilter(cf, "subdealer"))
+                    && GridFilterHelper.MatchesContains(o.GetStatusDisplay(), GridFilterHelper.GetFilter(cf, "status"))
+                    && GridFilterHelper.MatchesContains(o.TotalAmount.ToString("N2"), GridFilterHelper.GetFilter(cf, "amount"))
+                    && GridFilterHelper.MatchesContains(o.TotalQuantity.ToString(), GridFilterHelper.GetFilter(cf, "qty"))
+                    && GridFilterHelper.MatchesContains(o.PendingItemCount.ToString(), GridFilterHelper.GetFilter(cf, "pending"))
+                    && GridFilterHelper.MatchesContains(o.AdminNotes ?? o.SubdealerNotes, GridFilterHelper.GetFilter(cf, "notes"))
+                    && GridFilterHelper.MatchesDate(o.CreatedDate, GridFilterHelper.GetDateFilter(cf, "created"), GridFilterHelper.GetDateFilter(cf, "created"))
+                    && GridFilterHelper.MatchesDate(o.LastAllocatedDate, GridFilterHelper.GetDateFilter(cf, "allocated"), GridFilterHelper.GetDateFilter(cf, "allocated"))
+                    && GridFilterHelper.MatchesDate(o.ApprovedDate, GridFilterHelper.GetDateFilter(cf, "approved"), GridFilterHelper.GetDateFilter(cf, "approved")));
             }
 
             return result.OrderByDescending(o => o.CreatedDate).ToList();

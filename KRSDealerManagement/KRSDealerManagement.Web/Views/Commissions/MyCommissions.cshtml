@@ -47,7 +47,10 @@
                                         @System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(c.Month) @c.Year
                                     </span>
                                 </td>
-                                <td><code>@c.VehicleChassisNumber</code></td>
+                                <td>
+                                    <partial name="_ChassisLink" view-data='new ViewDataDictionary(ViewData) {
+                                        { "VehicleId", c.VehicleId }, { "Chassis", c.VehicleChassisNumber } }' />
+                                </td>
                                 <td class="text-end fw-bold">₹@c.CommissionAmount.ToString("N2")</td>
                                 <td>
                                     @{

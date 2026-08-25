@@ -21,6 +21,8 @@ namespace KRSDealerManagement.Application.DTOs
         public int? FinanceNameId { get; set; }
         public string? FinanceName { get; set; }
         public string? VinNumber { get; set; }
+        public string? CreditRequestModelName { get; set; }
+        public string? CreditRequestColorName { get; set; }
         public string? PaymentProofPath { get; set; }
         public string? PaymentProof2Path { get; set; }
         public DateTime PaymentDate { get; set; }

@@ -47,7 +47,9 @@ namespace KRSDealerManagement.Domain.Entities
         public DateTime SubmittedDate { get; set; } = DateTime.UtcNow;
         public DateTime? PaperReceivedDate { get; set; }
         public DateTime? InvoiceDate { get; set; }
+        public string? InvoicePath { get; set; }
         public DateTime? InsuranceDate { get; set; }
+        public string? InsurancePath { get; set; }
         public DateTime? AgentDate { get; set; }
         public DateTime? RegistrationDate { get; set; }
         public string? RtoNumber { get; set; }

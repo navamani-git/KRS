@@ -1,0 +1,97 @@
+@model KRSDealerManagement.Application.DTOs.ReturnRequestDto
+@using KRSDealerManagement.Application.DTOs
+@{
+    ViewData["Title"] = $"Allocate Vehicle — Return #{Model.ReturnRequestId}";
+    var subdealers = ViewBag.Subdealers as IEnumerable<UserDto> ?? Enumerable.Empty<UserDto>();
+    var canViewBalances = ViewBag.CanViewBalances as bool? ?? false;
+}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1 class="m-0"><i class="bi bi-box-seam text-primary"></i> Allocate to Subdealer</h1>
+        <p class="text-muted mb-0">Return #@Model.ReturnRequestId · @Model.VehicleChassisNumber · @Model.OrderNumber</p>
+        <p class="text-muted mb-0"><small>Vehicle is in dealer showroom after approved return (refund ₹@Model.RefundAmount.ToString("N2")).</small></p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="@Url.Action("Index")" class="btn btn-secondary">Back to list</a>
+    </div>
+</div>
+
+<div class="card">
+    <form method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.ReturnRequestId" />
+        <div class="card-body">
+            <p>Assign this showroom vehicle to a subdealer. The vehicle price will be <strong>debited</strong> from their wallet.</p>
+
+            <div class="mb-3">
+                <label class="fw-bold">Subdealer <span class="text-danger">*</span></label>
+                <select name="subdealerId" id="subdealerId" class="form-select" required style="max-width: 420px;">
+                    <option value="">— Select subdealer —</option>
+                    @foreach (var s in subdealers)
+                    {
+                        <option value="@s.UserId">@s.GetFullName()</option>
+                    }
+                </select>
+            </div>
+
+            @if (canViewBalances)
+            {
+                <div class="mb-3" id="balancePanel" style="display:none;">
+                    <label class="fw-bold">Wallet balance</label>
+                    <div class="alert alert-light border mb-0 py-2" style="max-width: 420px;">
+                        <div>Available: <strong id="availBal">—</strong></div>
+                        <div class="small text-muted">Vehicle price: ₹@Model.RefundAmount.ToString("N2")</div>
+                    </div>
+                </div>
+            }
+
+            <div class="mb-0">
+                <label class="fw-bold">Remarks <span class="text-danger">*</span></label>
+                <textarea name="remarks" class="form-control" rows="3" required
+                          placeholder="Reason for allocation, target showroom, etc."></textarea>
+            </div>
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-box-seam"></i> Allocate &amp; Debit Wallet
+            </button>
+            <a href="@Url.Action("Index")" class="btn btn-secondary ms-2">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@if (canViewBalances)
+{
+    @section Scripts {
+        <script>
+            (function () {
+                const sel = document.getElementById('subdealerId');
+                const panel = document.getElementById('balancePanel');
+                const avail = document.getElementById('availBal');
+                const vehiclePrice = @Model.RefundAmount.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+                async function loadBalance() {
+                    const id = sel.value;
+                    if (!id) { panel.style.display = 'none'; return; }
+                    try {
+                        const res = await fetch('@Url.Action("GetSubdealerAccount", "Orders")?subdealerId=' + encodeURIComponent(id));
+                        const data = await res.json();
+                        if (data.success) {
+                            avail.textContent = '₹' + Number(data.availableBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+                            panel.style.display = 'block';
+                            if (Number(data.availableBalance) < vehiclePrice) {
+                                avail.classList.add('text-danger');
+                            } else {
+                                avail.classList.remove('text-danger');
+                            }
+                        } else {
+                            panel.style.display = 'none';
+                        }
+                    } catch { panel.style.display = 'none'; }
+                }
+                sel.addEventListener('change', loadBalance);
+            })();
+        </script>
+    }
+}

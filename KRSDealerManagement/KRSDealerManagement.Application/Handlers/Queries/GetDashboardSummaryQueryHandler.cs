@@ -2,8 +2,10 @@ using MediatR;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Application.DTOs;
 using KRSDealerManagement.Application.Services;
+using KRSDealerManagement.Domain.Entities;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
+using KRSDealerManagement.Shared.Helpers;
 
 namespace KRSDealerManagement.Application.Handlers.Queries
 {
@@ -99,6 +101,43 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             {
                 summary.PendingPayments = 0;
             }
+
+            LoadBookingStatusCounts(summary, allVehicles, scopedIds, await _unitOfWork.VehicleBookings.GetAllAsync());
+        }
+
+        private static void LoadBookingStatusCounts(
+            DashboardSummary summary,
+            IEnumerable<Vehicle> vehicles,
+            HashSet<int>? scopedIds,
+            IEnumerable<VehicleBooking> bookings)
+        {
+            var vehicleById = vehicles.ToDictionary(v => v.VehicleId);
+
+            int Count(int stageStatus) => bookings.Count(b =>
+            {
+                if (!IsInScope(b.SubdealerId, scopedIds))
+                    return false;
+
+                if (!vehicleById.TryGetValue(b.VehicleId, out var vehicle))
+                    return false;
+
+                return BookingStageFilter.MatchesStage(
+                    vehicle.Status,
+                    stageStatus,
+                    b.PaperReceivedDate,
+                    b.InvoiceDate,
+                    b.InsuranceDate,
+                    b.AgentDate,
+                    b.RegistrationDate,
+                    b.SubsidyId);
+            });
+
+            summary.BookedToCustomerCount = Count(UnifiedVehicleStatus.BookedToCustomer);
+            summary.PaperReceivedCount = Count(UnifiedVehicleStatus.PaperReceived);
+            summary.InvoicedCount = Count(UnifiedVehicleStatus.Invoiced);
+            summary.InsuranceCreatedCount = Count(UnifiedVehicleStatus.InsuranceCreated);
+            summary.RtoRequestedCount = Count(UnifiedVehicleStatus.RtoRequested);
+            summary.RegisteredCount = Count(UnifiedVehicleStatus.Registered);
         }
 
         private async Task LoadSubdealerDashboard(DashboardSummary summary, int subdealerId)

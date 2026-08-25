@@ -1,6 +1,8 @@
 @model KRSDealerManagement.Domain.Entities.VehicleBooking
 @using KRSDealerManagement.Domain.Entities
 @using KRSDealerManagement.Shared.Constants
+@using KRSDealerManagement.Shared.Helpers
+@using KRSDealerManagement.Web.Helpers
 @{
     ViewData["Title"] = "Vehicle Booking";
     var isStaff = ViewBag.IsStaff ?? false;
@@ -15,7 +17,13 @@
     </div>
     <div class="col-md-4 text-end">
         <a href="@Url.Action("Index", "Vehicles")" class="btn btn-secondary">Vehicles</a>
-        @if (isStaff) { <a href="@Url.Action("Index")" class="btn btn-outline-primary">All Bookings</a> }
+        @if (isStaff) { <a href="@Url.Action("Index")" class="btn btn-outline-secondary">All Bookings</a> }
+        @if (ViewBag.CanEditBooking == true)
+        {
+            <a href="@Url.Action("Edit", new { id = Model.VehicleBookingId })" class="btn btn-primary">
+                <i class="bi bi-pencil"></i> Edit Booking
+            </a>
+        }
     </div>
 </div>
 
@@ -41,6 +49,43 @@
                 <partial name="_FileAttachmentLinks" view-data='new ViewDataDictionary(ViewData) { { "FilePath", Model.CustomerSignPath }, { "FileLabel", "Sign/Seal" } }' />
             </div>
         </div></div>
+
+        <div class="card mb-3">
+            <div class="card-header"><h3 class="card-title mb-0">Invoice &amp; Insurance</h3></div>
+            <div class="card-body">
+                <p class="text-muted small mb-2">Uploaded by dealer staff. Subdealer can view and download here.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    @if (isStaff)
+                    {
+                        @if (!string.IsNullOrEmpty(Model.InvoicePath))
+                        {
+                            <partial name="_FileAttachmentLinks" view-data='new ViewDataDictionary(ViewData) { { "FilePath", Model.InvoicePath }, { "FileLabel", "Invoice" } }' />
+                        }
+                        else
+                        {
+                            <span class="badge bg-light text-dark border">Invoice — not uploaded</span>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.InsurancePath))
+                        {
+                            <partial name="_FileAttachmentLinks" view-data='new ViewDataDictionary(ViewData) { { "FilePath", Model.InsurancePath }, { "FileLabel", "Insurance" } }' />
+                        }
+                        else
+                        {
+                            <span class="badge bg-light text-dark border">Insurance — not uploaded</span>
+                        }
+                    }
+                    else
+                    {
+                        <partial name="_InvoiceInsuranceLinks" view-data='new ViewDataDictionary(ViewData) {
+                            { "FilePath", Model.InvoicePath }, { "FileLabel", "Invoice" },
+                            { "MilestoneDate", Model.InvoiceDate }, { "FileAvailable", ViewBag.InvoiceFileAvailable } }' />
+                        <partial name="_InvoiceInsuranceLinks" view-data='new ViewDataDictionary(ViewData) {
+                            { "FilePath", Model.InsurancePath }, { "FileLabel", "Insurance" },
+                            { "MilestoneDate", Model.InsuranceDate }, { "FileAvailable", ViewBag.InsuranceFileAvailable } }' />
+                    }
+                </div>
+            </div>
+        </div>
 
         @if (ViewBag.CanSubmitSubsidyDocs == true)
         {
@@ -86,7 +131,7 @@
         <div class="col-md-5">
             <div class="card card-primary"><div class="card-header"><h3 class="card-title">Staff Processing</h3></div>
             <div class="card-body">
-                <form method="post">@Html.AntiForgeryToken()
+                <form method="post" enctype="multipart/form-data">@Html.AntiForgeryToken()
                     <input type="hidden" name="id" value="@Model.VehicleBookingId" />
                     <div class="mb-2"><label class="fw-bold">Status</label>
                         @if (vehicleStatus == UnifiedVehicleStatus.Delivered)
@@ -98,32 +143,163 @@
                         }
                         else
                         {
-                        <select name="bookingStatus" class="form-select">
+                        <select name="bookingStatus" id="bookingStatus" class="form-select">
                             @foreach (var s in statuses)
                             {
+                                var selectable = BookingStageFilter.IsStatusSelectable(
+                                    s.StatusValue,
+                                    Model.PaperReceivedDate,
+                                    Model.InvoiceDate,
+                                    Model.InsuranceDate,
+                                    Model.AgentDate,
+                                    Model.RegistrationDate,
+                                    Model.SubsidyId);
                                 if (vehicleStatus == s.StatusValue)
                                 {
-                                    <option value="@s.StatusValue" selected>@s.StatusName</option>
+                                    <option value="@s.StatusValue" selected disabled="@(!selectable)">@s.StatusName</option>
                                 }
                                 else
                                 {
-                                    <option value="@s.StatusValue">@s.StatusName</option>
+                                    <option value="@s.StatusValue" disabled="@(!selectable)">@s.StatusName</option>
                                 }
                             }
                         </select>
+                        <small class="text-muted">Status must match entered milestone dates — earlier statuses are disabled when later dates are set.</small>
                         }
                     </div>
-                    <div class="mb-2"><label>Paper Received Date</label><input type="date" name="paperReceivedDate" class="form-control" value="@Model.PaperReceivedDate?.ToString("yyyy-MM-dd")" /></div>
-                    <div class="mb-2"><label>Invoice Date</label><input type="date" name="invoiceDate" class="form-control" value="@Model.InvoiceDate?.ToString("yyyy-MM-dd")" /></div>
-                    <div class="mb-2"><label>Insurance Date</label><input type="date" name="insuranceDate" class="form-control" value="@Model.InsuranceDate?.ToString("yyyy-MM-dd")" /></div>
-                    <div class="mb-2"><label>Agent Date</label><input type="date" name="agentDate" class="form-control" value="@Model.AgentDate?.ToString("yyyy-MM-dd")" /></div>
-                    <div class="mb-2"><label>Registration Date</label><input type="date" name="registrationDate" class="form-control" value="@Model.RegistrationDate?.ToString("yyyy-MM-dd")" /></div>
+                    <div class="mb-2"><label>Paper Received Date</label><input type="date" name="paperReceivedDate" id="paperReceivedDate" class="form-control milestone-input" value="@Model.PaperReceivedDate?.ToString("yyyy-MM-dd")" /></div>
+                    <div class="mb-2"><label>Invoice Date</label><input type="date" name="invoiceDate" id="invoiceDate" class="form-control milestone-input" value="@Model.InvoiceDate?.ToString("yyyy-MM-dd")" /></div>
+                    <div class="mb-2">
+                        <label>Invoice Document</label>
+                        <input type="file" name="invoiceFile" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.webp" />
+                        @if (!string.IsNullOrEmpty(Model.InvoicePath))
+                        {
+                            <small class="text-muted">Current file uploaded — choose a new file to replace.</small>
+                        }
+                        else
+                        {
+                            <small class="text-muted">PDF or image, max 10 MB. Stored under @BookingFileHelper.StorageFolderPrefix</small>
+                        }
+                    </div>
+                    <div class="mb-2"><label>Insurance Date</label><input type="date" name="insuranceDate" id="insuranceDate" class="form-control milestone-input" value="@Model.InsuranceDate?.ToString("yyyy-MM-dd")" /></div>
+                    <div class="mb-2">
+                        <label>Insurance Document</label>
+                        <input type="file" name="insuranceFile" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.webp" />
+                        @if (!string.IsNullOrEmpty(Model.InsurancePath))
+                        {
+                            <small class="text-muted">Current file uploaded — choose a new file to replace.</small>
+                        }
+                        else
+                        {
+                            <small class="text-muted">PDF or image, max 10 MB. Stored under @BookingFileHelper.StorageFolderPrefix</small>
+                        }
+                    </div>
+                    <div class="mb-2"><label>Agent Date</label><input type="date" name="agentDate" id="agentDate" class="form-control milestone-input" value="@Model.AgentDate?.ToString("yyyy-MM-dd")" /></div>
+                    <div class="mb-2"><label>Registration Date</label><input type="date" name="registrationDate" id="registrationDate" class="form-control milestone-input" value="@Model.RegistrationDate?.ToString("yyyy-MM-dd")" /></div>
                     <div class="mb-2"><label>RTO Number</label><input name="rtoNumber" class="form-control" value="@Model.RtoNumber" /></div>
                     <div class="mb-2"><label>Number Plate Received</label><input type="date" name="numberPlateReceivedDate" class="form-control" value="@Model.NumberPlateReceivedDate?.ToString("yyyy-MM-dd")" /></div>
-                    <div class="mb-3"><label>Subsidy ID</label><input name="subsidyId" class="form-control" value="@Model.SubsidyId" placeholder="Enter after invoice & insurance" /></div>
+                    <div class="mb-3"><label>Subsidy ID</label><input name="subsidyId" id="subsidyId" class="form-control milestone-input" value="@Model.SubsidyId" placeholder="Enter after invoice & insurance" /></div>
                     <button type="submit" class="btn btn-primary w-100">Save</button>
                 </form>
             </div></div>
         </div>
     }
 </div>
+@if (isStaff && vehicleStatus != UnifiedVehicleStatus.Delivered)
+{
+<script>
+(function () {
+    const statusSelect = document.getElementById('bookingStatus');
+    const staffForm = statusSelect?.closest('form');
+    if (!statusSelect || !staffForm) return;
+
+    const Booked = @UnifiedVehicleStatus.BookedToCustomer;
+    const Paper = @UnifiedVehicleStatus.PaperReceived;
+    const Invoiced = @UnifiedVehicleStatus.Invoiced;
+    const Insurance = @UnifiedVehicleStatus.InsuranceCreated;
+    const Rto = @UnifiedVehicleStatus.RtoRequested;
+    const Registered = @UnifiedVehicleStatus.Registered;
+    const Subsidy = @UnifiedVehicleStatus.SubsidyIdCreated;
+
+    function getMilestoneInputs() {
+        return {
+            paper: document.getElementById('paperReceivedDate')?.value || '',
+            invoice: document.getElementById('invoiceDate')?.value || '',
+            insurance: document.getElementById('insuranceDate')?.value || '',
+            agent: document.getElementById('agentDate')?.value || '',
+            registration: document.getElementById('registrationDate')?.value || '',
+            subsidyId: document.getElementById('subsidyId')?.value?.trim() || ''
+        };
+    }
+
+    function resolveFromMilestones(m) {
+        if (m.subsidyId) return Subsidy;
+        if (m.registration) return Registered;
+        if (m.agent) return Rto;
+        if (m.insurance) return Insurance;
+        if (m.invoice) return Invoiced;
+        if (m.paper) return Paper;
+        return Booked;
+    }
+
+    function isStatusSelectable(statusValue, m) {
+        const minFromDates = resolveFromMilestones(m);
+        if (statusValue < minFromDates) return false;
+        if (statusValue >= Paper && !m.paper) return false;
+        if (statusValue >= Invoiced && !m.invoice) return false;
+        if (statusValue >= Insurance && !m.insurance) return false;
+        if (statusValue >= Rto && !m.agent) return false;
+        if (statusValue >= Registered && !m.registration) return false;
+        if (statusValue >= Subsidy && !m.subsidyId) return false;
+        return true;
+    }
+
+    function applyStatusConstraints() {
+        const m = getMilestoneInputs();
+        const minFromDates = resolveFromMilestones(m);
+        let firstSelectable = null;
+
+        Array.from(statusSelect.options).forEach(function (opt) {
+            const value = parseInt(opt.value, 10);
+            const allowed = isStatusSelectable(value, m);
+            opt.disabled = !allowed;
+            if (allowed && firstSelectable === null) firstSelectable = value;
+        });
+
+        const current = parseInt(statusSelect.value, 10) || Booked;
+        if (current < minFromDates && isStatusSelectable(minFromDates, m)) {
+            statusSelect.value = String(minFromDates);
+        } else if (!isStatusSelectable(current, m)) {
+            const fallback = isStatusSelectable(minFromDates, m) ? minFromDates : firstSelectable;
+            if (fallback !== null) statusSelect.value = String(fallback);
+        }
+    }
+
+    document.querySelectorAll('.milestone-input').forEach(function (el) {
+        el.addEventListener('change', applyStatusConstraints);
+        el.addEventListener('input', applyStatusConstraints);
+    });
+
+    statusSelect.addEventListener('change', function () {
+        const m = getMilestoneInputs();
+        const selected = parseInt(statusSelect.value, 10);
+        if (!isStatusSelectable(selected, m)) {
+            applyStatusConstraints();
+            alert('Selected status does not match the entered milestone dates. Choose a status at or after the latest date stage.');
+        }
+    });
+
+    staffForm.addEventListener('submit', function (e) {
+        const m = getMilestoneInputs();
+        const selected = parseInt(statusSelect.value, 10);
+        if (!isStatusSelectable(selected, m)) {
+            e.preventDefault();
+            applyStatusConstraints();
+            alert('Status cannot be earlier than the latest milestone date entered. Clear later dates or pick a matching status.');
+        }
+    });
+
+    applyStatusConstraints();
+})();
+</script>
+}

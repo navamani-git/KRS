@@ -1,0 +1,78 @@
+@model IEnumerable<KRSDealerManagement.Web.Models.GridFilterColumn>
+@using KRSDealerManagement.Web.Models
+@{
+    var filters = ViewBag.ColumnFilters as IReadOnlyDictionary<string, string>
+        ?? new Dictionary<string, string>();
+    var formId = ViewData["FilterFormId"] as string ?? "gridFilterForm";
+    var gridId = ViewBag.GridId as string ?? "";
+}
+<tr class="table-secondary grid-column-filters">
+    @{ var colIndex = 0; }
+    @foreach (var col in Model)
+    {
+        <th data-grid-col-index="@colIndex" data-filter-key="@col.Key">
+            @if (col.Key.StartsWith("_"))
+            {
+                @if (col.Key == "_actions")
+                {
+                    <div class="d-flex gap-1 grid-column-filter-actions">
+                        <button type="submit" form="@formId" class="btn btn-sm btn-outline-primary flex-fill" title="Apply column filters">
+                            <i class="bi bi-funnel"></i>
+                        </button>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary flex-fill grid-clear-column-filters"
+                                data-filter-form="@formId"
+                                title="Clear all column filters">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
+                    </div>
+                }
+            }
+            else if (col.IsDate || col.InputType == GridFilterInputType.Date)
+            {
+                <input type="date"
+                       name="@($"cf_{col.Key}")"
+                       form="@formId"
+                       class="form-control form-control-sm"
+                       value="@(filters.TryGetValue(col.Key, out var dv) ? dv : "")"
+                       placeholder="@col.Placeholder"
+                       title="@col.Placeholder" />
+            }
+            else if (col.InputType == GridFilterInputType.FixedSelect && col.FixedOptions is { Count: > 0 })
+            {
+                <select name="@($"cf_{col.Key}")"
+                        form="@formId"
+                        class="form-select form-select-sm grid-fixed-select"
+                        title="@col.Placeholder">
+                    <option value="">@(col.Placeholder ?? "All")</option>
+                    @foreach (var opt in col.FixedOptions)
+                    {
+                        if (filters.TryGetValue(col.Key, out var fv) && string.Equals(fv, opt, StringComparison.OrdinalIgnoreCase))
+                        {
+                            <option value="@opt" selected>@opt</option>
+                        }
+                        else
+                        {
+                            <option value="@opt">@opt</option>
+                        }
+                    }
+                </select>
+            }
+            else
+            {
+                var current = filters.TryGetValue(col.Key, out var tv) ? tv : "";
+                <input type="text"
+                       name="@($"cf_{col.Key}")"
+                       form="@formId"
+                       class="form-control form-control-sm grid-combobox"
+                       data-grid-id="@gridId"
+                       data-column="@col.Key"
+                       value="@current"
+                       placeholder="@(col.Placeholder ?? "Filter")"
+                       title="@col.Placeholder"
+                       autocomplete="off" />
+            }
+        </th>
+        colIndex++;
+    }
+</tr>

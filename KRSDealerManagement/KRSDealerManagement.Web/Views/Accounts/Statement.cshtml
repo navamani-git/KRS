@@ -5,6 +5,7 @@
     var balance = ViewBag.Balance as AccountBalanceDto;
     var backUrl = ViewBag.StatementBackUrl as string ?? Url.Action("Index");
     var isReadOnly = ViewBag.IsReadOnlyStatement as bool? ?? false;
+    var accountId = ViewBag.AccountId as int?;
 }
 
 <div class="row mb-3">
@@ -16,6 +17,10 @@
         }
     </div>
     <div class="col-md-6 text-end">
+        @if (accountId.HasValue)
+        {
+            <partial name="_ExportExcel" view-data='new ViewDataDictionary(ViewData) { { "ExportAction", "ExportStatement" } }' />
+        }
         <a href="@backUrl" class="btn btn-secondary">
             <i class="bi bi-arrow-left"></i> Back
         </a>
@@ -28,6 +33,31 @@
         <i class="bi bi-info-circle"></i> Read-only view for branch managers. Payment approvals are handled by finance.
     </div>
 }
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" id="gridFilterForm">
+            @if (accountId.HasValue)
+            {
+                <input type="hidden" name="id" value="@accountId" />
+            }
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label form-label-sm mb-0">From Date</label>
+                    <input type="date" name="fromDate" class="form-control form-control-sm" value="@ViewBag.FromDate" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label form-label-sm mb-0">To Date</label>
+                    <input type="date" name="toDate" class="form-control form-control-sm" value="@ViewBag.ToDate" />
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search"></i> Filter</button>
+                    <a href="@Url.Action("Statement", new { id = accountId })" class="btn btn-sm btn-secondary"><i class="bi bi-arrow-clockwise"></i></a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
 
 <!-- Balance Summary -->
 @if (balance != null)
@@ -79,15 +109,6 @@
         <h3 class="card-title"><i class="bi bi-table"></i> Transaction History (@Model.Count())</h3>
     </div>
     <div class="card-body">
-        @if (Model.Any())
-        {
-            <partial name="_AccountStatementLedger" model="Model" />
-        }
-        else
-        {
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle"></i> No transactions found for this account.
-            </div>
-        }
+        <partial name="_AccountStatementLedger" model="Model" />
     </div>
 </div>

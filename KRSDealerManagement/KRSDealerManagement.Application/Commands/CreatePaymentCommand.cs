@@ -15,9 +15,12 @@ namespace KRSDealerManagement.Application.Commands
         public string? CustomerName { get; set; }
         public int? FinanceNameId { get; set; }
         public string? VinNumber { get; set; }
+        public string? CreditRequestModelName { get; set; }
+        public string? CreditRequestColorName { get; set; }
         public string? PaymentProofPath { get; set; }
         public string? PaymentProof2Path { get; set; }
         public bool RequiresFinanceDetails { get; set; }
+        public bool IsCreditRequest { get; set; }
         public int CreatedBy { get; set; }
     }
 }

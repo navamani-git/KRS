@@ -19,7 +19,22 @@ namespace KRSDealerManagement.Application.Services
                 .ToList();
 
             if (!role.RoleCode.Equals(RoleCodes.Subdealer, StringComparison.OrdinalIgnoreCase))
-                return roleMenus;
+            {
+                var legacyRole = MapRoleCodeToLegacy(role.RoleCode);
+                var codeDefaults = StaffMenuAccess.GetMenusForRole(legacyRole).ToList();
+                if (roleMenus.Count == 0)
+                    return codeDefaults;
+
+                var sortIndex = roleMenus
+                    .Select((key, index) => (key, index))
+                    .ToDictionary(x => x.key, x => x.index, StringComparer.OrdinalIgnoreCase);
+
+                return codeDefaults
+                    .Union(roleMenus, StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(k => sortIndex.TryGetValue(k, out var i) ? i : 999)
+                    .ThenBy(k => k, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+            }
 
             var account = await SubdealerOrgService.GetPermissionAccountAsync(unitOfWork, userId);
             if (account == null)
@@ -46,6 +61,15 @@ namespace KRSDealerManagement.Application.Services
                 .OrderBy(k => sortOrder.TryGetValue(k, out var i) ? i : 999)
                 .ThenBy(k => k, StringComparer.OrdinalIgnoreCase)
                 .ToList();
+        }
+
+        private static int MapRoleCodeToLegacy(string roleCode)
+        {
+            if (roleCode.Equals(RoleCodes.SystemAdmin, StringComparison.OrdinalIgnoreCase)) return 1;
+            if (roleCode.Equals(RoleCodes.Subdealer, StringComparison.OrdinalIgnoreCase)) return 2;
+            if (roleCode.Equals(RoleCodes.FinanceAdmin, StringComparison.OrdinalIgnoreCase)) return 3;
+            if (roleCode.Equals(RoleCodes.BranchManager, StringComparison.OrdinalIgnoreCase)) return 4;
+            return 2;
         }
     }
 }

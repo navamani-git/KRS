@@ -50,7 +50,7 @@ namespace KRSDealerManagement.Web.Helpers
         /// <summary>
         /// Build encrypted query string from current request filters, optionally overriding page.
         /// </summary>
-        public static string BuildPagedQuery(HttpContext httpContext, IQueryStringCrypto crypto, int targetPage)
+        public static string BuildPagedQuery(HttpContext httpContext, IQueryStringCrypto crypto, int targetPage, int? pageSize = null)
         {
             var dict = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
@@ -58,10 +58,14 @@ namespace KRSDealerManagement.Web.Helpers
             {
                 if (string.Equals(kv.Key, "page", StringComparison.OrdinalIgnoreCase))
                     continue;
+                if (pageSize.HasValue && string.Equals(kv.Key, "pageSize", StringComparison.OrdinalIgnoreCase))
+                    continue;
                 dict[kv.Key] = kv.Value.ToString();
             }
 
             dict["page"] = targetPage.ToString();
+            if (pageSize.HasValue)
+                dict["pageSize"] = pageSize.Value.ToString();
             return crypto.BuildQueryString(dict);
         }
     }

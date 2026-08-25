@@ -28,6 +28,13 @@ namespace KRSDealerManagement.Application.Queries
         public int PendingReturnRequests { get; set; }
         public int PendingPayments { get; set; }
         public decimal TotalReservedAmount { get; set; }
+        public int BookedToCustomerCount { get; set; }
+        public int PaperReceivedCount { get; set; }
+        public int InvoicedCount { get; set; }
+        public int InsuranceCreatedCount { get; set; }
+        public int RtoRequestedCount { get; set; }
+        public int RegisteredCount { get; set; }
+        public int DeliveredCount { get; set; }
         public List<RecentActivityItem> RecentActivities { get; set; } = new();
     }
 

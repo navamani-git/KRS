@@ -1,4 +1,5 @@
 @model IEnumerable<KRSDealerManagement.Domain.Entities.FinanceNameMaster>
+@using KRSDealerManagement.Web.Models
 @{
     ViewData["Title"] = "Finance Names";
 }
@@ -16,7 +17,10 @@
 
 <div class="card">
     <div class="card-body p-0">
-        <table class="table table-striped mb-0">
+        <form method="get" id="gridFilterForm" class="d-none" aria-hidden="true"></form>
+        <partial name="_GridScrollHint" />
+        <div class="table-responsive">
+            <table class="table table-sm table-hover table-striped mb-0 grid-excel-table grid-data-table" data-grid-id="@GridIds.FinanceNames">
             <thead class="table-dark">
                 <tr>
                     <th>#</th>
@@ -25,6 +29,7 @@
                     <th>Created</th>
                     <th></th>
                 </tr>
+                <partial name="_PaginatedGridFilters" />
             </thead>
             <tbody>
                 @{ int i = 1; }
@@ -46,6 +51,7 @@
                 }
             </tbody>
         </table>
+        </div>
         @if (!Model.Any())
         {
             <div class="p-3 text-muted">No finance names yet. <a href="@Url.Action("Create")">Add one</a>.</div>

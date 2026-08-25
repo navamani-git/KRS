@@ -4,6 +4,7 @@ using KRSDealerManagement.Application.Commands;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Web.Helpers;
 using KRSDealerManagement.Web.Filters;
+using KRSDealerManagement.Web.Models;
 
 namespace KRSDealerManagement.Web.Controllers
 {
@@ -18,7 +19,7 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         // GET: VehicleModels
-        public async Task<IActionResult> Index(string searchTerm, bool? isActive, int? page)
+        public async Task<IActionResult> Index(string searchTerm, bool? isActive, int? page, int? pageSize)
         {
             var query = new GetVehicleModelsQuery
             {
@@ -27,7 +28,9 @@ namespace KRSDealerManagement.Web.Controllers
             };
 
             var models = await _mediator.Send(query);
-            var (pageItems, pageInfo) = ListPagingHelper.Paginate(models, page);
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.VehicleModels);
+            models = GridScreenFilterHelper.ApplyVehicleModels(models, columnFilters);
+            var (pageItems, pageInfo) = ListPagingHelper.Paginate(models, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
 
             ViewBag.SearchTerm = searchTerm;

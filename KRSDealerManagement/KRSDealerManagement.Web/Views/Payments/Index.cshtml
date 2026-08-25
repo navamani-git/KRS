@@ -2,6 +2,7 @@
 @using KRSDealerManagement.Application.DTOs
 @using KRSDealerManagement.Domain.Entities
 @using KRSDealerManagement.Web.Helpers
+@using KRSDealerManagement.Web.Models
 @{
     ViewData["Title"] = "Payment Approvals";
     var subdealers = ViewBag.Subdealers as IEnumerable<UserDto>;
@@ -22,7 +23,7 @@
 <!-- Filters -->
 <div class="card mb-3">
     <div class="card-body py-2">
-        <form method="get" class="row g-2 align-items-end">
+        <form method="get" class="row g-2 align-items-end" id="gridFilterForm">
             <div class="col-md-2">
                 <label class="form-label form-label-sm mb-0">From</label>
                 <input type="date" name="fromDate" class="form-control form-control-sm" value="@ViewBag.FromDate" />
@@ -68,8 +69,9 @@
     <div class="card-body">
         @if (Model.Any())
         {
+            <partial name="_GridScrollHint" />
             <div class="table-responsive">
-                <table class="table table-sm table-hover">
+                <table class="table table-sm table-hover table-striped mb-0 grid-excel-table grid-data-table" data-grid-id="@GridIds.Payments">
                     <thead class="table-dark">
                         <tr>
                             <th>#</th>
@@ -88,6 +90,7 @@
                             <th class="text-end">Received Amt</th>
                             <th>Actions</th>
                         </tr>
+                        <partial name="_PaginatedGridFilters" />
                     </thead>
                     <tbody>
                         @foreach (var p in Model)

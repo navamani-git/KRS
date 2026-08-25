@@ -1,5 +1,6 @@
 @model IEnumerable<KRSDealerManagement.Application.DTOs.VehiclePriceHistoryDto>
 @using KRSDealerManagement.Application.DTOs
+@using KRSDealerManagement.Web.Models
 @{
     ViewData["Title"] = "Price Management";
     var models = ViewBag.Models as IEnumerable<VehicleModelDto>;
@@ -22,7 +23,7 @@
 <!-- Filters -->
 <div class="card mb-3">
     <div class="card-body">
-        <form method="get">
+        <form method="get" id="gridFilterForm">
             <div class="row g-2">
                 <div class="col-md-3">
                     <select name="modelId" class="form-select">
@@ -84,8 +85,9 @@
     <div class="card-body">
         @if (Model.Any())
         {
+            <partial name="_GridScrollHint" />
             <div class="table-responsive">
-                <table class="table table-striped table-hover table-sm">
+                <table class="table table-sm table-hover table-striped mb-0 grid-excel-table grid-data-table" data-grid-id="@GridIds.Prices">
                     <thead class="table-dark">
                         <tr>
                             <th>Model</th>
@@ -97,6 +99,7 @@
                             <th>Last Updated</th>
                             <th>Actions</th>
                         </tr>
+                        <partial name="_PaginatedGridFilters" />
                     </thead>
                     <tbody>
                         @foreach (var price in Model)

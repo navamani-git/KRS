@@ -48,6 +48,12 @@ namespace KRSDealerManagement.Domain.Entities
         /// <summary>Chassis / VIN number (required when Finance).</summary>
         public string? VinNumber { get; set; }
 
+        /// <summary>Credit request: vehicle model (optional).</summary>
+        public string? CreditRequestModelName { get; set; }
+
+        /// <summary>Credit request: vehicle color (optional).</summary>
+        public string? CreditRequestColorName { get; set; }
+
         /// <summary>Relative path under Files/Payment/...</summary>
         public string? PaymentProofPath { get; set; }
 

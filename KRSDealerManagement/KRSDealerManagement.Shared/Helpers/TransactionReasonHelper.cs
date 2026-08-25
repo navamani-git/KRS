@@ -11,6 +11,9 @@ namespace KRSDealerManagement.Shared.Helpers
         public static string Reassignment(string? chassisNumber)
             => $"Vehicle reassignment - {FormatChassis(chassisNumber)}";
 
+        public static string ShowroomAllocation(string? chassisNumber)
+            => $"Showroom allocation - {FormatChassis(chassisNumber)}";
+
         public static string FormatChassis(string? chassisNumber)
             => string.IsNullOrWhiteSpace(chassisNumber) ? "-" : chassisNumber.Trim().ToUpperInvariant();
     }

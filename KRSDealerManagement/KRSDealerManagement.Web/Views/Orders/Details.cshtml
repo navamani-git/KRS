@@ -80,7 +80,10 @@
                                                 <span class="text-muted">—</span>
                                             }
                                         </td>
-                                        <td><small>@(li.ChassisNumber ?? "-")</small></td>
+                                        <td>
+                                            <partial name="_ChassisLink" view-data='new ViewDataDictionary(ViewData) {
+                                                { "VehicleId", li.VehicleId ?? 0 }, { "Chassis", li.ChassisNumber ?? "-" }, { "ChassisCodeClass", "small" } }' />
+                                        </td>
                                         <td><small>@(li.MotorNo ?? "-")</small></td>
                                         <td><small>@(li.BatteryNo ?? "-")</small></td>
                                         <td><small>@(li.ChargerNo ?? "-")</small></td>

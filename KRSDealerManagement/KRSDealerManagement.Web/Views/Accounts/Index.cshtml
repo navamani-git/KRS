@@ -1,6 +1,7 @@
 @model IEnumerable<KRSDealerManagement.Application.DTOs.SubdealerAccountDto>
 @using KRSDealerManagement.Application.DTOs
 @using KRSDealerManagement.Web.Helpers
+@using KRSDealerManagement.Web.Models
 @{
     ViewData["Title"] = "Balances";
     var subdealers = ViewBag.Subdealers as IEnumerable<UserDto>;
@@ -26,7 +27,7 @@
 <!-- Filter by Subdealer -->
 <div class="card mb-3">
     <div class="card-body">
-        <form method="get">
+        <form method="get" id="gridFilterForm">
             <div class="row">
                 <div class="col-md-5">
                     <select name="subdealerId" class="form-select">
@@ -103,8 +104,9 @@
     <div class="card-body">
         @if (Model.Any())
         {
+            <partial name="_GridScrollHint" />
             <div class="table-responsive">
-                <table class="table table-striped table-hover table-sm">
+                <table class="table table-sm table-hover table-striped mb-0 grid-excel-table grid-data-table" data-grid-id="@GridIds.Accounts">
                     <thead class="table-dark">
                         <tr>
                             <th>Subdealer</th>
@@ -114,6 +116,7 @@
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
+                        <partial name="_PaginatedGridFilters" />
                     </thead>
                     <tbody>
                         @foreach (var acc in Model.OrderBy(a => a.SubdealerName))

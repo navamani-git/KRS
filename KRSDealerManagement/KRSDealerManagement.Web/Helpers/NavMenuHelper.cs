@@ -26,12 +26,84 @@ namespace KRSDealerManagement.Web.Helpers
             return "active";
         }
 
-        public static string ActiveClassForMenuItem(string? currentController, string? currentAction, KRSDealerManagement.Shared.Constants.MenuItemDefinition item)
+        public static string ActiveClassForMenuItem(
+            string? currentController,
+            string? currentAction,
+            KRSDealerManagement.Shared.Constants.MenuItemDefinition item,
+            Microsoft.AspNetCore.Http.HttpRequest? request = null)
         {
+            if (item.RouteValues is { Count: > 0 })
+            {
+                if (!string.Equals(currentController, item.Controller, StringComparison.OrdinalIgnoreCase))
+                    return "";
+
+                var actionMatch = item.Actions is { Count: > 0 }
+                    ? item.Actions.Any(a => string.Equals(currentAction, a, StringComparison.OrdinalIgnoreCase))
+                    : string.Equals(currentAction, item.Action, StringComparison.OrdinalIgnoreCase);
+
+                if (!actionMatch)
+                    return "";
+
+                if (request != null && !MenuItemRouteMatches(request, item))
+                    return "";
+
+                return "active";
+            }
+
+            // Pipeline list pages (Index + status) must not activate the full-process menu item
+            if (request != null
+                && !string.IsNullOrWhiteSpace(request.Query["status"])
+                && string.Equals(currentAction, "Index", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(item.Action, "Process", StringComparison.OrdinalIgnoreCase))
+            {
+                return "";
+            }
+
             if (item.Actions is { Count: > 0 })
                 return ActiveClassAnyAction(currentController, currentAction, item.Controller, item.Actions.ToArray());
 
             return ActiveClass(currentController, currentAction, item.Controller, item.Action);
+        }
+
+        public static bool IsMenuItemActive(
+            string? currentController,
+            string? currentAction,
+            KRSDealerManagement.Shared.Constants.MenuItemDefinition item,
+            Microsoft.AspNetCore.Http.HttpRequest? request = null)
+            => ActiveClassForMenuItem(currentController, currentAction, item, request) == "active";
+
+        /// <summary>
+        /// Whether a sidebar parent group should expand/highlight for the current page.
+        /// </summary>
+        public static bool IsMenuGroupOpen(
+            string parentKey,
+            string? currentController,
+            string? currentAction,
+            Microsoft.AspNetCore.Http.HttpRequest request,
+            IEnumerable<KRSDealerManagement.Shared.Constants.MenuItemDefinition> visibleItems)
+        {
+            if (visibleItems.Any(c => IsMenuItemActive(currentController, currentAction, c, request)))
+                return true;
+
+            return false;
+        }
+
+        public static bool MenuItemRouteMatches(
+            Microsoft.AspNetCore.Http.HttpRequest request,
+            KRSDealerManagement.Shared.Constants.MenuItemDefinition item)
+        {
+            if (item.RouteValues is not { Count: > 0 })
+                return true;
+
+            foreach (var kv in item.RouteValues)
+            {
+                var actual = request.Query[kv.Key].ToString();
+                var expected = kv.Value?.ToString() ?? "";
+                if (!string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase))
+                    return false;
+            }
+
+            return true;
         }
     }
 }

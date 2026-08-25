@@ -87,10 +87,18 @@ namespace KRSDealerManagement.Web.Helpers
         public static bool HasMenuAccess(ISession session, string menuKey)
         {
             if (IsSystemAdmin(session)) return true;
+
             var raw = session.GetString(SessionKeyMenus);
-            if (string.IsNullOrWhiteSpace(raw)) return false;
-            return raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Any(k => k.Equals(menuKey, StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrWhiteSpace(raw))
+            {
+                var hasInSession = raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Any(k => k.Equals(menuKey, StringComparison.OrdinalIgnoreCase));
+                if (hasInSession) return true;
+            }
+
+            // Role defaults from code (e.g. Balances for branch manager when DB RoleMenus lags behind)
+            var role = GetUserRole(session);
+            return role.HasValue && StaffMenuAccess.CanAccess(role.Value, menuKey);
         }
 
         public static void ClearSession(ISession session) => session.Clear();

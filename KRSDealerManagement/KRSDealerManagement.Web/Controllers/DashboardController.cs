@@ -30,6 +30,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             var isAdmin = SessionHelper.IsSystemAdmin(HttpContext.Session);
             var isSubdealer = SessionHelper.IsSubdealer(HttpContext.Session);
+            var isBranchManager = SessionHelper.IsBranchManager(HttpContext.Session);
             var canViewPayments = isSubdealer
                 || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Payments);
             var canViewOrders = isSubdealer
@@ -37,6 +38,8 @@ namespace KRSDealerManagement.Web.Controllers
             var canViewReturns = isSubdealer
                 || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Returns);
             var canViewCommissions = isSubdealer || isAdmin;
+            var canViewBookings = isAdmin || isBranchManager
+                || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.VehicleBookings);
 
             var query = new GetDashboardSummaryQuery
             {
@@ -59,10 +62,12 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.UserRole = userRole.Value;
             ViewBag.IsAdmin = isAdmin;
             ViewBag.IsSubdealer = isSubdealer;
+            ViewBag.IsBranchManager = isBranchManager;
             ViewBag.CanViewPendingPayments = canViewPayments;
             ViewBag.CanViewPendingOrders = canViewOrders;
             ViewBag.CanViewPendingReturns = canViewReturns;
             ViewBag.CanViewPendingCommissions = canViewCommissions;
+            ViewBag.CanViewBookings = canViewBookings;
             ViewBag.DealershipName = SessionHelper.GetDealershipName(HttpContext.Session);
 
             return View(summary);

@@ -1,22 +1,36 @@
 @inject KRSDealerManagement.Web.Services.IQueryStringCrypto QueryCrypto
+@using KRSDealerManagement.Web.Helpers
 @{
     var currentPage = (int)(ViewBag.Page ?? 1);
     var totalPages = (int)(ViewBag.TotalPages ?? 1);
     var totalItems = (int)(ViewBag.TotalItems ?? 0);
-    var pageSize = (int)(ViewBag.PageSize ?? 10);
+    var pageSize = (int)(ViewBag.PageSize ?? ListPagingHelper.DefaultPageSize);
+    var allowedSizes = ListPagingHelper.AllowedPageSizes;
 
-    string BuildUrl(int targetPage)
-        => KRSDealerManagement.Web.Helpers.QueryStringUrlHelper.BuildPagedQuery(
-            ViewContext.HttpContext, QueryCrypto, targetPage);
+    string BuildUrl(int targetPage, int? newPageSize = null)
+        => QueryStringUrlHelper.BuildPagedQuery(
+            ViewContext.HttpContext, QueryCrypto, targetPage, newPageSize);
 }
 
 @if (totalItems > 0)
 {
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
-        <small class="text-muted">
-            Showing @(((currentPage - 1) * pageSize) + 1)–@(Math.Min(currentPage * pageSize, totalItems)) of @totalItems
-            (page @currentPage / @totalPages, @pageSize per page)
-        </small>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <small class="text-muted">
+                Showing @(((currentPage - 1) * pageSize) + 1)–@(Math.Min(currentPage * pageSize, totalItems)) of @totalItems
+                (page @currentPage / @totalPages)
+            </small>
+            <label class="d-flex align-items-center gap-1 mb-0">
+                <small class="text-muted">Rows:</small>
+                <select class="form-select form-select-sm" style="width: auto;"
+                        onchange="var u=this.options[this.selectedIndex].getAttribute('data-url'); if(u) window.krsNavigate(u, 'Loading...');">
+                    @foreach (var size in allowedSizes)
+                    {
+                        <option value="@size" selected="@(size == pageSize)" data-url="@BuildUrl(1, size)">@size</option>
+                    }
+                </select>
+            </label>
+        </div>
         @if (totalPages > 1)
         {
             <nav aria-label="Pagination">

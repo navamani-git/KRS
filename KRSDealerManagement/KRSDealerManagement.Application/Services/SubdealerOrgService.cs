@@ -20,6 +20,23 @@ namespace KRSDealerManagement.Application.Services
         public static async Task<int?> GetOrgIdForUserAsync(IUnitOfWork unitOfWork, int userId)
             => (await GetAssignmentAsync(unitOfWork, userId))?.SubDealerId;
 
+        /// <summary>All login user IDs for the subdealer org of <paramref name="loginUserId"/> (includes the user).</summary>
+        public static async Task<HashSet<int>> GetOrgLoginUserIdsAsync(IUnitOfWork unitOfWork, int loginUserId)
+        {
+            var orgId = await GetOrgIdForUserAsync(unitOfWork, loginUserId);
+            if (!orgId.HasValue)
+                return new HashSet<int> { loginUserId };
+
+            var ids = (await GetLoginsForOrgAsync(unitOfWork, orgId.Value))
+                .Select(a => a.UserId)
+                .ToHashSet();
+
+            if (ids.Count == 0)
+                ids.Add(loginUserId);
+
+            return ids;
+        }
+
         public static async Task<int?> GetPrimaryUserIdForOrgAsync(IUnitOfWork unitOfWork, int subDealerId)
         {
             var roles = await unitOfWork.Roles.GetAllAsync();

@@ -1,4 +1,5 @@
 @model IEnumerable<KRSDealerManagement.Application.Queries.DealershipDto>
+@using KRSDealerManagement.Web.Models
 @{
     ViewData["Title"] = "Dealerships";
 }
@@ -16,7 +17,10 @@
 
 <div class="card">
     <div class="card-body p-0">
-        <table class="table table-striped mb-0">
+        <form method="get" id="gridFilterForm" class="d-none" aria-hidden="true"></form>
+        <partial name="_GridScrollHint" />
+        <div class="table-responsive">
+            <table class="table table-sm table-hover table-striped mb-0 grid-excel-table grid-data-table" data-grid-id="@GridIds.Dealerships">
             <thead class="table-dark">
                 <tr>
                     <th>Code</th>
@@ -27,6 +31,7 @@
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
+                <partial name="_PaginatedGridFilters" />
             </thead>
             <tbody>
             @foreach (var d in Model)
@@ -49,6 +54,7 @@
             }
             </tbody>
         </table>
+        </div>
         <div class="p-3">
             <partial name="_Pagination" />
         </div>

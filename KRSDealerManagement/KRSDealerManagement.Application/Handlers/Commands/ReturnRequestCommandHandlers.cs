@@ -185,6 +185,27 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
+                var destinationLabel = request.ReassignToSubdealerId.HasValue
+                    ? $"subdealer #{request.ReassignToSubdealerId.Value}"
+                    : "dealer showroom";
+
+                await _auditService.LogActionAsync(
+                    entityType: "Vehicle",
+                    entityId: vehicle.VehicleId,
+                    action: request.ReassignToSubdealerId.HasValue ? "AllocateToSubdealer" : "ReturnToShowroom",
+                    userId: request.ApprovedBy,
+                    userRole: "Admin",
+                    newValue: JsonSerializer.Serialize(new
+                    {
+                        ReturnRequestId = returnRequest.ReturnRequestId,
+                        ChassisNumber = TransactionReasonHelper.FormatChassis(vehicle.ChassisNumber),
+                        RefundAmount = returnRequest.RefundAmount,
+                        Destination = destinationLabel,
+                        SubdealerId = request.ReassignToSubdealerId,
+                        Remarks = request.Remarks
+                    }),
+                    remarks: request.Remarks);
+
                 if (!refundAlreadyCredited)
                 {
                     await _auditService.LogTransactionAsync(

@@ -1,38 +1,258 @@
 @using KRSDealerManagement.Domain.Entities
 @using KRSDealerManagement.Shared.Constants
-@model IEnumerable<dynamic>
+@using KRSDealerManagement.Shared.Helpers
+@using KRSDealerManagement.Application.DTOs
+@using KRSDealerManagement.Application.Queries
+@using KRSDealerManagement.Web.Models
+@model IEnumerable<VehicleBookingGridRowDto>
 @{
-    ViewData["Title"] = "Vehicle Bookings";
+    ViewData["Title"] = ViewBag.PageTitle as string ?? "Vehicle Booking Process";
+    var pageTitle = ViewData["Title"];
     var statuses = ViewBag.Statuses as IEnumerable<StatusLookup> ?? Enumerable.Empty<StatusLookup>();
-    var subdealers = ViewBag.Subdealers as IEnumerable<KRSDealerManagement.Application.DTOs.UserDto>;
+    var subdealers = ViewBag.Subdealers as IEnumerable<UserDto>;
+    var dealerships = ViewBag.Dealerships as IEnumerable<DealershipDto> ?? Enumerable.Empty<DealershipDto>();
+    var lockStatus = ViewBag.LockStatusFilter as bool? ?? false;
+    var showDealershipFilter = ViewBag.ShowDealershipFilter as bool? ?? false;
+    var showManage = ViewBag.ShowManage as bool? ?? true;
+    var selectedStatus = ViewBag.SelectedStatus as int?;
+    var bookingPhaseOnly = ViewBag.BookingPhaseOnly as bool? ?? false;
+    var bookedToCustomerView = ViewBag.BookedToCustomerView as bool? ?? false;
+    var stageShowing = ViewBag.GridStageShowing as string;
+    var stageRemovedWhen = ViewBag.GridStageRemovedWhen as string;
+    if (string.IsNullOrWhiteSpace(stageShowing) || string.IsNullOrWhiteSpace(stageRemovedWhen))
+    {
+        var stageInfo = BookingGridStageInfo.Describe(selectedStatus, bookingPhaseOnly, bookedToCustomerView);
+        stageShowing = stageInfo.Showing;
+        stageRemovedWhen = stageInfo.RemovedWhen;
+    }
+    var totalItems = (int)(ViewBag.TotalItems ?? Model.Count());
+
+    string FmtDate(DateTime? value) => value?.ToString("yyyy-MM-dd") ?? "—";
 }
 
-<div class="row mb-3">
-    <div class="col-md-6"><h1 class="m-0"><i class="bi bi-journal-check"></i> Vehicle Bookings</h1></div>
-    <div class="col-md-6 text-end"><partial name="_ExportExcel" /></div>
+<div class="page-heading-block mb-3">
+    <div class="row align-items-start">
+        <div class="col-lg-8">
+            <h1 class="m-0 page-title"><i class="bi bi-journal-check"></i> @pageTitle</h1>
+            <div class="page-stage-banner mt-2">
+                <div class="page-stage-row">
+                    <span class="page-stage-label">Showing</span>
+                    <span class="page-stage-value">@stageShowing</span>
+                </div>
+                <div class="page-stage-row">
+                    <span class="page-stage-label">Removed when</span>
+                    <span class="page-stage-value">@stageRemovedWhen</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 text-lg-end mt-2 mt-lg-0">
+            <partial name="_ExportExcel" />
+        </div>
+    </div>
 </div>
 
-<div class="card mb-3"><div class="card-body py-2">
-<form method="get" class="row g-2 align-items-end">
-<div class="col-md-2"><label class="form-label form-label-sm mb-0">Status</label>
-<select name="status" class="form-select form-select-sm"><option value="">All</option>
-@foreach(var s in statuses){<option value="@s.StatusValue" selected="@(ViewBag.SelectedStatus?.ToString()==s.StatusValue.ToString())">@s.StatusName</option>}</select></div>
-<div class="col-md-3"><label class="form-label form-label-sm mb-0">Subdealer</label>
-<select name="subdealerId" class="form-select form-select-sm"><option value="">All</option>
-@if(subdealers!=null){@foreach(var sd in subdealers){<option value="@sd.UserId" selected="@(ViewBag.SelectedSubdealerId?.ToString()==sd.UserId.ToString())">@sd.GetFullName()</option>}}</select></div>
-<div class="col-md-3"><label class="form-label form-label-sm mb-0">Search</label><input name="searchTerm" class="form-control form-control-sm" value="@ViewBag.SearchTerm" /></div>
-<div class="col-md-2"><button class="btn btn-sm btn-primary">Filter</button></div>
-</form></div></div>
+<div class="card mb-3 grid-filter-card">
+    <div class="card-body py-2">
+        <div class="grid-filter-heading mb-2"><i class="bi bi-funnel"></i> Search &amp; filters</div>
+        <form method="get" class="row g-2 align-items-end" id="gridFilterForm">
+            @if (bookingPhaseOnly)
+            {
+                <input type="hidden" name="bookingPhaseOnly" value="true" />
+            }
+            @if (showDealershipFilter)
+            {
+                <div class="col-md-2">
+                    <label class="form-label form-label-sm mb-0">Dealership</label>
+                    <select name="dealershipId" id="dealershipFilter" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        @foreach (var d in dealerships)
+                        {
+                            <option value="@d.DealershipId" selected="@(ViewBag.SelectedDealershipId?.ToString() == d.DealershipId.ToString())">@d.DealershipName</option>
+                        }
+                    </select>
+                </div>
+            }
+            @if (lockStatus && ViewBag.SelectedStatus != null)
+            {
+                <input type="hidden" name="status" value="@ViewBag.SelectedStatus" />
+            }
+            else
+            {
+                <div class="col-md-2">
+                    <label class="form-label form-label-sm mb-0">Status</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        @foreach (var s in statuses)
+                        {
+                            <option value="@s.StatusValue" selected="@(ViewBag.SelectedStatus?.ToString() == s.StatusValue.ToString())">@s.StatusName</option>
+                        }
+                    </select>
+                </div>
+            }
+            <div class="col-md-3">
+                <label class="form-label form-label-sm mb-0">Subdealer</label>
+                <select name="subdealerId" id="subdealerFilter" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    @if (subdealers != null)
+                    {
+                        @foreach (var sd in subdealers)
+                        {
+                            <option value="@sd.UserId" selected="@(ViewBag.SelectedSubdealerId?.ToString() == sd.UserId.ToString())">@sd.GetFullName()</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label form-label-sm mb-0">Search</label>
+                <input name="searchTerm" class="form-control form-control-sm" value="@ViewBag.SearchTerm" placeholder="Chassis, customer, subdealer..." />
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel"></i> Filter</button>
+                <a href="@Url.Action(ViewContext.RouteData.Values["action"]?.ToString() ?? "Index", ViewContext.RouteData.Values["controller"]?.ToString() ?? "VehicleBookings")" class="btn btn-sm btn-secondary" title="Reset filters"><i class="bi bi-arrow-clockwise"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
 
-<div class="card"><div class="card-body p-0">
-<table class="table table-sm table-hover mb-0"><thead class="table-dark"><tr>
-<th>ID</th><th>Chassis</th><th>Subdealer</th><th>Customer</th><th>Status</th><th>Submitted</th><th></th></tr></thead><tbody>
-@foreach(var row in Model){ var b = row.Booking as KRSDealerManagement.Domain.Entities.VehicleBooking;
-    var vehicleStatus = (int)row.VehicleStatus;
-    var statusLabel = statuses.FirstOrDefault(s => s.StatusValue == vehicleStatus)?.StatusName ?? vehicleStatus.ToString();
-<tr><td>@b.VehicleBookingId</td><td><code>@row.Chassis</code></td><td>@row.Subdealer</td><td>@b.CustomerName</td>
-<td><span class="badge bg-info">@statusLabel</span></td><td><small>@b.SubmittedDate.ToString("yyyy-MM-dd")</small></td>
-<td><a href="@Url.EAction(QueryCrypto, "Manage", new { id = b.VehicleBookingId }, "VehicleBookings")" class="btn btn-sm btn-info">Manage</a></td></tr>}
-</tbody></table>
-<div class="p-3"><partial name="_Pagination" /></div>
-</div></div>
+<div class="card">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <h3 class="card-title mb-0">Bookings (@totalItems)</h3>
+        <span class="card-header-hint">Drag column edge to resize · ↗ expand / ↙ shrink · scroll right for more columns</span>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Any())
+        {
+            <partial name="_GridScrollHint" />
+            <div class="table-responsive">
+                <table class="table table-sm table-hover table-striped mb-0 grid-excel-table"
+                       data-grid-id="@GridIds.VehicleBookings">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="grid-col-narrow">ID</th>
+                            <th>Chassis</th>
+                            <th class="grid-col-flex">Subdealer</th>
+                            <th class="grid-col-flex">Customer</th>
+                            <th class="grid-col-flex">Mobile</th>
+                            <th class="grid-col-flex">Status</th>
+                            <th class="grid-col-date">Submitted</th>
+                            <th class="grid-col-date">Paper Rcvd</th>
+                            <th class="grid-col-date">Invoice</th>
+                            <th class="grid-col-date">Insurance</th>
+                            <th>Inv Doc</th>
+                            <th>Ins Doc</th>
+                            <th class="grid-col-date">Registered</th>
+                            <th class="grid-col-actions">@(showManage ? "Manage" : "View")</th>
+                        </tr>
+                        <partial name="_PaginatedGridFilters" />
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model)
+                        {
+                            var b = row.Booking;
+                            <tr>
+                                <td>@b.VehicleBookingId</td>
+                                <td>
+                                    <partial name="_ChassisLink" view-data='new ViewDataDictionary(ViewData) {
+                                        { "VehicleId", row.VehicleId }, { "Chassis", row.Chassis } }' />
+                                </td>
+                                <td>@row.Subdealer</td>
+                                <td>@b.CustomerName</td>
+                                <td>@b.CustomerMobile</td>
+                                <td><span class="badge bg-info text-truncate d-inline-block" style="max-width:100%;font-size:0.75rem">@row.StatusName</span></td>
+                                <td><small>@b.SubmittedDate.ToString("yyyy-MM-dd")</small></td>
+                                <td><small>@FmtDate(b.PaperReceivedDate)</small></td>
+                                <td><small>@FmtDate(b.InvoiceDate)</small></td>
+                                <td><small>@FmtDate(b.InsuranceDate)</small></td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(b.InvoicePath))
+                                    {
+                                        <a href="@BookingFileUrls.View(Url, QueryCrypto, b.InvoicePath)" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-1" target="_blank" rel="noopener" title="View invoice"><i class="bi bi-eye"></i></a>
+                                        <a href="@BookingFileUrls.Download(Url, QueryCrypto, b.InvoicePath)" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-1" title="Download invoice"><i class="bi bi-download"></i></a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(b.InsurancePath))
+                                    {
+                                        <a href="@BookingFileUrls.View(Url, QueryCrypto, b.InsurancePath)" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-1" target="_blank" rel="noopener" title="View insurance"><i class="bi bi-eye"></i></a>
+                                        <a href="@BookingFileUrls.Download(Url, QueryCrypto, b.InsurancePath)" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-1" title="Download insurance"><i class="bi bi-download"></i></a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td><small>@FmtDate(b.RegistrationDate)</small></td>
+                                <td class="grid-col-actions">
+                                    <a href="@Url.EAction(QueryCrypto, "Manage", new { id = b.VehicleBookingId }, "VehicleBookings")"
+                                       class="btn btn-sm py-0 px-2 @(showManage ? "btn-info" : "btn-outline-secondary")">
+                                        @(showManage ? "Manage" : "View")
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-3 pb-3">
+                <partial name="_Pagination" />
+            </div>
+        }
+        else
+        {
+            <div class="p-4 text-center text-muted">
+                <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                No bookings match the current filters.
+            </div>
+        }
+    </div>
+</div>
+
+@if (showDealershipFilter)
+{
+    @section Scripts {
+        <script>
+            (function () {
+                const dealerSel = document.getElementById('dealershipFilter');
+                const subSel = document.getElementById('subdealerFilter');
+                if (!dealerSel || !subSel) return;
+
+                const initialSubdealer = '@(ViewBag.SelectedSubdealerId?.ToString() ?? "")';
+                const lookupUrl = '@Url.Action("SubdealersForFilter", "VehicleBookings")';
+
+                function setOptions(items, keepId) {
+                    subSel.innerHTML = '<option value="">All</option>';
+                    items.forEach(function (item) {
+                        const opt = document.createElement('option');
+                        opt.value = item.id;
+                        opt.textContent = item.name;
+                        subSel.appendChild(opt);
+                    });
+                    if (keepId && [...subSel.options].some(function (o) { return o.value === keepId; }))
+                        subSel.value = keepId;
+                    else
+                        subSel.value = '';
+                }
+
+                async function loadSubdealers(keepSelection) {
+                    const params = new URLSearchParams();
+                    if (dealerSel.value) params.set('dealershipId', dealerSel.value);
+                    const res = await fetch(lookupUrl + (params.toString() ? '?' + params.toString() : ''));
+                    if (!res.ok) return;
+                    const items = await res.json();
+                    setOptions(items, keepSelection ? subSel.value : '');
+                }
+
+                dealerSel.addEventListener('change', function () {
+                    loadSubdealers(false);
+                });
+
+                if (initialSubdealer && !subSel.value)
+                    subSel.value = initialSubdealer;
+            })();
+        </script>
+    }
+}

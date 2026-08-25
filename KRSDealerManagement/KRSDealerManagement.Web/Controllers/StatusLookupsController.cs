@@ -6,6 +6,7 @@ using KRSDealerManagement.Web.Filters;
 using KRSDealerManagement.Web.Helpers;
 using KRSDealerManagement.Web.Services;
 using KRSDealerManagement.Shared.Constants;
+using KRSDealerManagement.Web.Models;
 
 namespace KRSDealerManagement.Web.Controllers
 {
@@ -24,10 +25,13 @@ namespace KRSDealerManagement.Web.Controllers
             _queryCrypto = queryCrypto;
         }
 
-        public async Task<IActionResult> Index(string? category, int? page)
+        public async Task<IActionResult> Index(string? category, int? page, int? pageSize)
         {
-            var list = (await _statuses.GetAllByCategoryAsync(category)).ToList();
-            var (pageItems, pageInfo) = ListPagingHelper.Paginate(list, page);
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.StatusLookups);
+            var list = GridScreenFilterHelper.ApplyStatusLookups(
+                await _statuses.GetAllByCategoryAsync(category),
+                columnFilters).ToList();
+            var (pageItems, pageInfo) = ListPagingHelper.Paginate(list, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
             ViewBag.SelectedCategory = category;
             ViewBag.Categories = StatusCategories.All;

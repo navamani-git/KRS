@@ -1,0 +1,156 @@
+@model KRSDealerManagement.Domain.Entities.VehicleBooking
+@using KRSDealerManagement.Application.DTOs
+@using KRSDealerManagement.Shared.Constants
+@{
+    ViewData["Title"] = "Edit Booking";
+    var vehicle = ViewBag.Vehicle as VehicleDto;
+    var docTypes = ViewBag.DocumentTypes as IEnumerable<KRSDealerManagement.Domain.Entities.DocumentTypeMaster>;
+    var rtoLocs = ViewBag.RtoLocations as IEnumerable<KRSDealerManagement.Domain.Entities.RtoLocationMaster>;
+    var financeNames = ViewBag.FinanceNames as IEnumerable<KRSDealerManagement.Domain.Entities.FinanceNameMaster>;
+    var paymentModes = ViewBag.PaymentModes as IEnumerable<(string Value, string Label)>;
+}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1 class="m-0"><i class="bi bi-pencil-square"></i> Edit Booking</h1>
+        <p class="text-muted">Chassis: <strong>@vehicle?.ChassisNumber</strong> · @vehicle?.ModelName · @vehicle?.ColorName</p>
+        <p class="text-warning small mb-0"><i class="bi bi-info-circle"></i> You can edit customer and booking details until the vehicle is invoiced. Leave file fields empty to keep existing uploads.</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="@Url.Action("Manage", new { id = Model.VehicleBookingId })" class="btn btn-secondary">Back to Booking</a>
+    </div>
+</div>
+
+<form method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+
+    <div class="card mb-3">
+        <div class="card-header"><h3 class="card-title mb-0">Customer Details</h3></div>
+        <div class="card-body row g-3">
+            <div class="col-md-6">
+                <label class="fw-bold">Customer Name <span class="text-danger">*</span></label>
+                <input name="customerName" class="form-control" value="@Model.CustomerName" required />
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="isCompanyBooking" value="true" id="isCompany"
+                           @(Model.IsCompanyBooking ? "checked" : "") onchange="toggleGst()" />
+                    <label class="form-check-label" for="isCompany">Booking in company name</label>
+                </div>
+            </div>
+            <div class="col-md-4"><label class="fw-bold">Mobile (Aadhaar linked) *</label><input name="customerMobile" class="form-control" value="@Model.CustomerMobile" required maxlength="15" /></div>
+            <div class="col-md-4"><label class="fw-bold">Alternative Mobile *</label><input name="alternativeMobile" class="form-control" value="@Model.AlternativeMobile" required maxlength="15" /></div>
+            <div class="col-md-4"><label class="fw-bold">Email *</label><input name="customerEmail" type="email" class="form-control" value="@Model.CustomerEmail" required /></div>
+            <div class="col-md-4"><label class="fw-bold">E-Aadhaar (PDF)</label><input name="eAadhaarFile" type="file" accept=".pdf" class="form-control" /><small class="text-muted">Current file on record</small></div>
+            <div class="col-md-4"><label class="fw-bold">E-Aadhaar Password *</label><input name="eAadhaarPassword" class="form-control" value="@Model.EAadhaarPassword" required /></div>
+            <div class="col-md-4"><label class="fw-bold">Document Type *</label>
+                <select name="documentTypeId" class="form-select" required>
+                    @foreach (var d in docTypes ?? Enumerable.Empty<KRSDealerManagement.Domain.Entities.DocumentTypeMaster>())
+                    {
+                        if (d.DocumentTypeId == Model.DocumentTypeId)
+                        {
+                            <option value="@d.DocumentTypeId" selected>@d.TypeName</option>
+                        }
+                        else
+                        {
+                            <option value="@d.DocumentTypeId">@d.TypeName</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-6"><label class="fw-bold">ID Document (PDF)</label><input name="documentFile" type="file" accept=".pdf" class="form-control" /></div>
+            <div class="col-md-6" id="gstBlock" style="@(Model.IsCompanyBooking ? "" : "display:none")">
+                <label class="fw-bold">GST Certificate (PDF)</label>
+                <input name="gstCertificateFile" type="file" accept=".pdf" class="form-control" />
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header"><h3 class="card-title mb-0">Vehicle & Payment</h3></div>
+        <div class="card-body row g-3">
+            <div class="col-md-4"><label class="fw-bold">Customer Photo</label><input name="customerPhoto" type="file" accept="image/*" class="form-control" /></div>
+            <div class="col-md-4"><label class="fw-bold">Chassis Photo</label><input name="chassisPhoto" type="file" accept="image/*" class="form-control" /></div>
+            <div class="col-md-4"><label class="fw-bold">Customer Sign / Company Seal</label><input name="customerSign" type="file" accept="image/*" class="form-control" /></div>
+            <div class="col-md-4"><label class="fw-bold">RTO Location *</label>
+                <select name="rtoLocationId" class="form-select" required>
+                    @foreach (var r in rtoLocs ?? Enumerable.Empty<KRSDealerManagement.Domain.Entities.RtoLocationMaster>())
+                    {
+                        if (r.RtoLocationId == Model.RtoLocationId)
+                        {
+                            <option value="@r.RtoLocationId" selected>@r.LocationName</option>
+                        }
+                        else
+                        {
+                            <option value="@r.RtoLocationId">@r.LocationName</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-4"><label class="fw-bold">Fancy Number *</label>
+                <select name="fancyNumber" class="form-select" required>
+                    @if (!Model.FancyNumber) { <option value="false" selected>No</option><option value="true">Yes</option> }
+                    else { <option value="false">No</option><option value="true" selected>Yes</option> }
+                </select>
+            </div>
+            <div class="col-md-4"><label class="fw-bold">Payment Mode *</label>
+                <select name="paymentMode" class="form-select" required>
+                    @foreach (var p in paymentModes ?? VehiclePaymentModes.All)
+                    {
+                        if (string.Equals(p.Value, Model.PaymentMode, StringComparison.OrdinalIgnoreCase))
+                        {
+                            <option value="@p.Value" selected>@p.Label</option>
+                        }
+                        else
+                        {
+                            <option value="@p.Value">@p.Label</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-6"><label class="fw-bold">Financier Name *</label>
+                <select name="financeNameId" class="form-select" required>
+                    @foreach (var f in financeNames ?? Enumerable.Empty<KRSDealerManagement.Domain.Entities.FinanceNameMaster>())
+                    {
+                        if (f.FinanceNameId == Model.FinanceNameId)
+                        {
+                            <option value="@f.FinanceNameId" selected>@f.FinanceName</option>
+                        }
+                        else
+                        {
+                            <option value="@f.FinanceNameId">@f.FinanceName</option>
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header"><h3 class="card-title mb-0">Nominee</h3></div>
+        <div class="card-body row g-3">
+            <div class="col-md-4"><label class="fw-bold">Nominee Name *</label><input name="nomineeName" class="form-control" value="@Model.NomineeName" required /></div>
+            <div class="col-md-4"><label class="fw-bold">Nominee DOB *</label><input name="nomineeDob" type="date" class="form-control" value="@Model.NomineeDob.ToString("yyyy-MM-dd")" required /></div>
+            <div class="col-md-4"><label class="fw-bold">Relationship *</label><input name="nomineeRelationship" class="form-control" value="@Model.NomineeRelationship" required /></div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <label class="fw-bold">Reason for change (optional)</label>
+            <input name="editReason" class="form-control" placeholder="e.g. Customer mobile number corrected" maxlength="500" />
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-check-circle"></i> Save Changes</button>
+</form>
+
+@section Scripts {
+<script>
+function toggleGst() {
+    const show = document.getElementById('isCompany').checked;
+    const block = document.getElementById('gstBlock');
+    block.style.display = show ? 'block' : 'none';
+}
+</script>
+}

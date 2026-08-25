@@ -7,6 +7,7 @@ using KRSDealerManagement.Shared.Constants;
 using KRSDealerManagement.Shared.Enums;
 using KRSDealerManagement.Web.Filters;
 using KRSDealerManagement.Web.Helpers;
+using KRSDealerManagement.Web.Models;
 
 namespace KRSDealerManagement.Web.Controllers
 {
@@ -23,7 +24,7 @@ namespace KRSDealerManagement.Web.Controllers
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<IActionResult> Index(int? staffRole, int? dealershipId, bool? isActive, string? searchTerm, int? page)
+        public async Task<IActionResult> Index(int? staffRole, int? dealershipId, bool? isActive, string? searchTerm, int? page, int? pageSize)
         {
             var staff = await _mediator.Send(new GetStaffUsersQuery
             {
@@ -33,7 +34,10 @@ namespace KRSDealerManagement.Web.Controllers
                 SearchTerm = searchTerm
             });
 
-            var (pageItems, pageInfo) = ListPagingHelper.Paginate(staff, page);
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.StaffUsers);
+            staff = GridScreenFilterHelper.ApplyStaffUsers(staff, columnFilters);
+
+            var (pageItems, pageInfo) = ListPagingHelper.Paginate(staff, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
 
             ViewBag.StaffRole = staffRole;

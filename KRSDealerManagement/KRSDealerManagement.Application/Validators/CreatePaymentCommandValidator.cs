@@ -13,19 +13,23 @@ namespace KRSDealerManagement.Application.Validators
             RuleFor(x => x.PaymentTypeId).GreaterThan(0).WithMessage("Payment type is required");
             RuleFor(x => x.PaymentType).NotEmpty();
             RuleFor(x => x.PaymentDate).NotEmpty();
-            RuleFor(x => x.PaymentProofPath).NotEmpty().WithMessage("Payment proof is required");
+
+            RuleFor(x => x.PaymentProofPath)
+                .NotEmpty().When(x => !x.IsCreditRequest)
+                .WithMessage("Payment proof is required");
 
             RuleFor(x => x.CustomerName)
-                .NotEmpty().WithMessage("Customer name is required for all payment types")
-                .Matches("^[A-Z0-9 ]+$").When(x => !string.IsNullOrWhiteSpace(x.CustomerName))
+                .NotEmpty().When(x => !x.IsCreditRequest)
+                .WithMessage("Customer name is required for all payments")
+                .Matches("^[A-Z0-9 ]+$").When(x => !x.IsCreditRequest && !string.IsNullOrWhiteSpace(x.CustomerName))
                 .WithMessage("Customer name must be CAPS only");
 
             RuleFor(x => x.FinanceNameId)
-                .GreaterThan(0).When(x => x.RequiresFinanceDetails)
+                .GreaterThan(0).When(x => x.RequiresFinanceDetails && !x.IsCreditRequest)
                 .WithMessage("Finance name is required for Finance payments");
 
             RuleFor(x => x.VinNumber)
-                .NotEmpty().When(x => x.RequiresFinanceDetails)
+                .NotEmpty().When(x => x.RequiresFinanceDetails && !x.IsCreditRequest)
                 .WithMessage("VIN / Chassis number is required for Finance payments");
 
             RuleFor(x => x.CreatedBy).GreaterThan(0);

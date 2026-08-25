@@ -1,12 +1,54 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\",
-  "Documents": [],
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|d:\\krsgit\\krs\\krsdealermanagement\\krsdealermanagement.web\\controllers\\returnscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|solutionrelative:krsdealermanagement.web\\controllers\\returnscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|d:\\krsgit\\krs\\krsdealermanagement\\krsdealermanagement.web\\views\\shared\\_gridcolumnfilters.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|solutionrelative:krsdealermanagement.web\\views\\shared\\_gridcolumnfilters.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
       "VerticalTabListWidth": 256,
-      "DocumentGroups": []
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "_GridColumnFilters.cshtml",
+              "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Shared\\_GridColumnFilters.cshtml",
+              "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Views\\Shared\\_GridColumnFilters.cshtml",
+              "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Shared\\_GridColumnFilters.cshtml",
+              "RelativeToolTip": "KRSDealerManagement.Web\\Views\\Shared\\_GridColumnFilters.cshtml",
+              "ViewState": "AgIAAEEAAAAAAAAAAAAUwEsAAAAIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-08-22T04:35:02.709Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "ReturnsController.cs",
+              "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Controllers\\ReturnsController.cs",
+              "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Controllers\\ReturnsController.cs",
+              "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Controllers\\ReturnsController.cs",
+              "RelativeToolTip": "KRSDealerManagement.Web\\Controllers\\ReturnsController.cs",
+              "ViewState": "AgIAADoAAAAAAAAAAAAAAEYAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-22T03:31:20.87Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
     }
   ]
 }

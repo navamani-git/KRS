@@ -1,7 +1,0 @@
-SqlException: Invalid object name 'VehicleModelColors'.
-Microsoft.Data.SqlClient.SqlCommand+<>c.<ExecuteDbDataReaderAsync>b__195_0(Task<SqlDataReader> result)
-System.Threading.Tasks.ContinuationResultTaskFromResultTask<TAntecedentResult, TResult>.InnerInvoke()
-System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, object state)
-System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, object state)
-System.Threading.Tasks.Task.ExecuteWithThreadLocal(ref Task currentTaskSlot, Thread threadPoolThread)
-Dapper.SqlMapper.QueryAsync<T>(IDbConnection cnn, Type effectiveType, CommandDefinition command) in SqlMapper.Async.cs

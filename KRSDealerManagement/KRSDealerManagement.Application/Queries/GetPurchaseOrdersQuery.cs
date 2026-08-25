@@ -15,5 +15,6 @@ namespace KRSDealerManagement.Application.Queries
         public DateTime? FromDate { get; set; } // Date range
         public DateTime? ToDate { get; set; }
         public string SearchTerm { get; set; } // Search by order number
+        public Dictionary<string, string>? ColumnFilters { get; set; }
     }
 }

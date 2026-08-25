@@ -4,12 +4,15 @@
     ViewData["Title"] = "Dashboard";
     var isAdmin = ViewBag.IsAdmin ?? false;
     var isSubdealer = ViewBag.IsSubdealer ?? false;
+    var isBranchManager = ViewBag.IsBranchManager ?? false;
     var fullName = ViewBag.FullName ?? "User";
     var dealershipName = ViewBag.DealershipName as string;
     var canViewOrders = ViewBag.CanViewPendingOrders ?? isSubdealer;
     var canViewReturns = ViewBag.CanViewPendingReturns ?? isSubdealer;
     var canViewPayments = ViewBag.CanViewPendingPayments ?? isSubdealer;
     var canViewCommissions = ViewBag.CanViewPendingCommissions ?? isSubdealer;
+    var canViewBookings = ViewBag.CanViewBookings ?? false;
+    var showBookingCounts = canViewBookings && (isAdmin || isBranchManager);
 
     var pendingOrdersUrl = isSubdealer
         ? Url.Action("MyOrders", "Orders", new { status = UnifiedVehicleStatus.Submitted })
@@ -23,6 +26,9 @@
     var pendingCommissionsUrl = isSubdealer
         ? Url.Action("MyCommissions", "Commissions")
         : Url.Action("Approvals", "Commissions", new { status = 0 });
+
+    string BookingUrl(int status) => Url.Action("Index", "VehicleBookings", new { status })!;
+    var bookedToCustomerUrl = Url.Action("BookedToCustomer", "VehicleBookings")!;
 }
 
 <!-- Page Header -->
@@ -155,6 +161,83 @@
         </div>
     }
 </div>
+
+@if (showBookingCounts)
+{
+    <div class="row mb-2">
+        <div class="col-12">
+            <h5 class="text-muted mb-2"><i class="bi bi-truck-front"></i> Manage Vehicles</h5>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-3 col-6">
+            <a href="@bookedToCustomerUrl" class="text-decoration-none text-dark d-block dashboard-pending-link">
+                <div class="info-box mb-3">
+                    <span class="info-box-icon bg-primary"><i class="bi bi-person-check"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Booked to Customer</span>
+                        <span class="info-box-number">@Model.BookedToCustomerCount</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-6">
+            <a href="@BookingUrl(UnifiedVehicleStatus.PaperReceived)" class="text-decoration-none text-dark d-block dashboard-pending-link">
+                <div class="info-box mb-3">
+                    <span class="info-box-icon bg-secondary"><i class="bi bi-file-earmark-text"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Paper Received</span>
+                        <span class="info-box-number">@Model.PaperReceivedCount</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-6">
+            <a href="@BookingUrl(UnifiedVehicleStatus.Invoiced)" class="text-decoration-none text-dark d-block dashboard-pending-link">
+                <div class="info-box mb-3">
+                    <span class="info-box-icon bg-info"><i class="bi bi-receipt"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Invoiced</span>
+                        <span class="info-box-number">@Model.InvoicedCount</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-6">
+            <a href="@BookingUrl(UnifiedVehicleStatus.InsuranceCreated)" class="text-decoration-none text-dark d-block dashboard-pending-link">
+                <div class="info-box mb-3">
+                    <span class="info-box-icon bg-success"><i class="bi bi-shield-check"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Insurance Created</span>
+                        <span class="info-box-number">@Model.InsuranceCreatedCount</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-6">
+            <a href="@BookingUrl(UnifiedVehicleStatus.RtoRequested)" class="text-decoration-none text-dark d-block dashboard-pending-link">
+                <div class="info-box mb-3">
+                    <span class="info-box-icon bg-warning"><i class="bi bi-signpost"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">RTO Requested</span>
+                        <span class="info-box-number">@Model.RtoRequestedCount</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-6">
+            <a href="@BookingUrl(UnifiedVehicleStatus.Registered)" class="text-decoration-none text-dark d-block dashboard-pending-link">
+                <div class="info-box mb-3">
+                    <span class="info-box-icon bg-dark"><i class="bi bi-card-checklist"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Registered</span>
+                        <span class="info-box-number">@Model.RegisteredCount</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+}
 
 <!-- Pending Items Row -->
 <style>

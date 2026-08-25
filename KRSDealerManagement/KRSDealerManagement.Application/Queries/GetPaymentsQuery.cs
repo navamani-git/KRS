@@ -14,5 +14,6 @@ namespace KRSDealerManagement.Application.Queries
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }
         public bool? AppliedOnly { get; set; }
+        public Dictionary<string, string>? ColumnFilters { get; set; }
     }
 }

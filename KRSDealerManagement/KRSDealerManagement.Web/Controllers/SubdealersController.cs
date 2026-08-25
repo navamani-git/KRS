@@ -5,6 +5,7 @@ using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Web.Helpers;
 using KRSDealerManagement.Web.Filters;
 using KRSDealerManagement.Shared.Constants;
+using KRSDealerManagement.Web.Models;
 
 namespace KRSDealerManagement.Web.Controllers
 {
@@ -16,20 +17,24 @@ namespace KRSDealerManagement.Web.Controllers
 
         public SubdealersController(IMediator mediator) => _mediator = mediator;
 
-        public async Task<IActionResult> Index(string searchTerm, bool? isActive, int? page)
+        public async Task<IActionResult> Index(string searchTerm, bool? isActive, int? page, int? pageSize)
         {
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Subdealers);
             var subdealers = await _mediator.Send(new GetSubdealersQuery
             {
                 SearchTerm = searchTerm,
                 IsActive = isActive,
-                DealershipId = scope
+                DealershipId = scope,
+                ColumnFilters = columnFilters
             });
-            var (pageItems, pageInfo) = ListPagingHelper.Paginate(subdealers, page);
+            var (pageItems, pageInfo) = ListPagingHelper.Paginate(subdealers, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
             ViewBag.SearchTerm = searchTerm;
             ViewBag.IsActive = isActive;
             ViewBag.DealershipName = SessionHelper.GetDealershipName(HttpContext.Session);
+            ViewBag.IsBranchManager = SessionHelper.IsBranchManager(HttpContext.Session);
+            ViewBag.HideLogins = ViewBag.IsBranchManager;
             return View(pageItems);
         }
 
@@ -53,6 +58,9 @@ namespace KRSDealerManagement.Web.Controllers
 
         public async Task<IActionResult> Create()
         {
+            if (SessionHelper.IsBranchManager(HttpContext.Session))
+                return RedirectToAction(nameof(Index));
+
             ViewBag.CanViewBalances = SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Balances);
             await LoadDealershipOptionsAsync();
             return View();
@@ -68,6 +76,9 @@ namespace KRSDealerManagement.Web.Controllers
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
+
+            if (SessionHelper.IsBranchManager(HttpContext.Session))
+                return RedirectToAction(nameof(Index));
 
             ViewBag.CanViewBalances = SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Balances);
             await LoadDealershipOptionsAsync();
@@ -157,7 +168,8 @@ namespace KRSDealerManagement.Web.Controllers
                 permMaps[login.PermissionAccountId] = permissions.ToDictionary(p => p.MenuKey, p => p.IsAccessible, StringComparer.OrdinalIgnoreCase);
             }
             ViewBag.LoginPermMaps = permMaps;
-            ViewBag.CanViewBalances = SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Balances);
+            ViewBag.CanViewBalances = SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Balances)
+                || SessionHelper.IsBranchManager(HttpContext.Session);
             ViewBag.CanViewStatement = SessionHelper.IsSystemAdmin(HttpContext.Session)
                 || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Balances)
                 || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Subdealers);
@@ -367,6 +379,12 @@ namespace KRSDealerManagement.Web.Controllers
         {
             var adminId = SessionHelper.GetUserId(HttpContext.Session);
             if (!adminId.HasValue) return RedirectToAction("Login", "Account");
+
+            if (SessionHelper.IsBranchManager(HttpContext.Session))
+            {
+                TempData["Error"] = "Branch managers cannot deactivate subdealers.";
+                return RedirectToAction(nameof(Index));
+            }
 
             var detail = await _mediator.Send(new GetSubdealerDetailQuery { SubDealerId = id });
             if (detail == null)

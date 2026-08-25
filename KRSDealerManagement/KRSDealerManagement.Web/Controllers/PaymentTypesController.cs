@@ -4,6 +4,7 @@ using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Web.Filters;
 using KRSDealerManagement.Web.Helpers;
 using KRSDealerManagement.Shared.Constants;
+using KRSDealerManagement.Web.Models;
 
 namespace KRSDealerManagement.Web.Controllers
 {
@@ -15,14 +16,16 @@ namespace KRSDealerManagement.Web.Controllers
 
         public PaymentTypesController(IUnitOfWork unitOfWork) => _unitOfWork = unitOfWork;
 
-        public async Task<IActionResult> Index(int? page)
+        public async Task<IActionResult> Index(int? page, int? pageSize)
         {
-            var list = (await _unitOfWork.PaymentTypes.GetAllAsync())
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.PaymentTypes);
+            var list = GridScreenFilterHelper.ApplyPaymentTypes(
+                (await _unitOfWork.PaymentTypes.GetAllAsync())
                 .OrderByDescending(t => t.IsActive)
                 .ThenBy(t => t.SortOrder)
-                .ThenBy(t => t.TypeName)
-                .ToList();
-            var (pageItems, pageInfo) = ListPagingHelper.Paginate(list, page);
+                .ThenBy(t => t.TypeName),
+                columnFilters).ToList();
+            var (pageItems, pageInfo) = ListPagingHelper.Paginate(list, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
             return View(pageItems);
         }

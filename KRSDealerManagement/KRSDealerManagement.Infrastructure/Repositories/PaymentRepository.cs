@@ -39,6 +39,8 @@ UPDATE Payments SET
     CustomerName = @CustomerName,
     FinanceNameId = @FinanceNameId,
     VinNumber = @VinNumber,
+    CreditRequestModelName = @CreditRequestModelName,
+    CreditRequestColorName = @CreditRequestColorName,
     ProcessedBy = @ProcessedBy,
     ProcessedDate = @ProcessedDate,
     ActualReceivedAmount = @ActualReceivedAmount,
@@ -61,6 +63,8 @@ WHERE PaymentId = @PaymentId";
                 entity.CustomerName,
                 entity.FinanceNameId,
                 entity.VinNumber,
+                entity.CreditRequestModelName,
+                entity.CreditRequestColorName,
                 entity.ProcessedBy,
                 entity.ProcessedDate,
                 entity.ActualReceivedAmount,
@@ -81,6 +85,7 @@ SELECT
     ActualReceivedAmount, ActualReceivedDate,
     IsApplied, TransactionId,
     CustomerName, FinanceNameId, VinNumber,
+    CreditRequestModelName, CreditRequestColorName,
     PaymentProofPath, PaymentProof2Path,
     CreatedDate, ModifiedDate
 FROM Payments";

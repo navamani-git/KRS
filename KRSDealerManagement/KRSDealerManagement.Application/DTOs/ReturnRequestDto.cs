@@ -54,6 +54,9 @@ namespace KRSDealerManagement.Application.DTOs
 
         public bool CanBeRejected() => Status == UnifiedVehicleStatus.ReturnRequested;
 
+        /// <summary>Approved return; vehicle is in dealer showroom and can be allocated again.</summary>
+        public bool CanAllocateToSubdealer { get; set; }
+
         public string GetDisplayInfo()
         {
             return $"Return: ₹{RefundAmount:N2} | {GetStatusDisplay()}";

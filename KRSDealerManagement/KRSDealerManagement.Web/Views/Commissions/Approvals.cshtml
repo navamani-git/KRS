@@ -2,6 +2,7 @@
 @using KRSDealerManagement.Application.DTOs
 @using KRSDealerManagement.Domain.Entities
 @using KRSDealerManagement.Web.Helpers
+@using KRSDealerManagement.Web.Models
 @{
     ViewData["Title"] = "Commission Approvals";
     ViewData["ExportAction"] = "ExportApprovals";
@@ -24,7 +25,7 @@
 
 <div class="card mb-3">
     <div class="card-body py-2">
-        <form method="get" class="row g-2 align-items-end">
+        <form method="get" class="row g-2 align-items-end" id="gridFilterForm">
             <div class="col-md-2">
                 <label class="form-label form-label-sm mb-0">From</label>
                 <input type="date" name="fromDate" class="form-control form-control-sm" value="@ViewBag.FromDate" />
@@ -70,8 +71,9 @@
     <div class="card-body">
         @if (Model.Any())
         {
+            <partial name="_GridScrollHint" />
             <div class="table-responsive">
-                <table class="table table-sm table-hover">
+                <table class="table table-sm table-hover table-striped mb-0 grid-excel-table grid-data-table" data-grid-id="@GridIds.CommissionApprovals">
                     <thead class="table-dark">
                         <tr>
                             <th>#</th>
@@ -86,6 +88,7 @@
                             <th>Remarks</th>
                             <th>Actions</th>
                         </tr>
+                        <partial name="_PaginatedGridFilters" />
                     </thead>
                     <tbody>
                         @foreach (var c in Model)
@@ -93,7 +96,10 @@
                             <tr class="@(c.CanBeApproved() ? "table-warning bg-opacity-25" : "")">
                                 <td>@c.CommissionId</td>
                                 <td><strong>@c.SubdealerName</strong></td>
-                                <td><code class="small">@c.VehicleChassisNumber</code></td>
+                                <td>
+                                    <partial name="_ChassisLink" view-data='new ViewDataDictionary(ViewData) {
+                                        { "VehicleId", c.VehicleId }, { "Chassis", c.VehicleChassisNumber }, { "ChassisCodeClass", "small" } }' />
+                                </td>
                                 <td>
                                     <span class="badge bg-info">
                                         @System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(c.Month) @c.Year

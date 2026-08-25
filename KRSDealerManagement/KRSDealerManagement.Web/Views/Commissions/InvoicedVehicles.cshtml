@@ -45,7 +45,10 @@
                             <tr>
                                 <td><small>@row.ModelName</small></td>
                                 <td><small>@row.ColorName</small></td>
-                                <td><code class="small">@row.ChassisNumber</code></td>
+                                <td>
+                                    <partial name="_ChassisLink" view-data='new ViewDataDictionary(ViewData) {
+                                        { "VehicleId", row.VehicleId }, { "Chassis", row.ChassisNumber }, { "ChassisCodeClass", "small" } }' />
+                                </td>
                                         <td><small>@row.InvoiceDate.ToString("yyyy-MM-dd")</small></td>
                                         <td><small>@(row.RegistrationDate?.ToString("yyyy-MM-dd") ?? "—")</small></td>
                                 <td class="text-end fw-bold text-success">

@@ -1,0 +1,33 @@
+@using KRSDealerManagement.Web.Helpers
+@{
+    var path = ViewData["FilePath"] as string;
+    var label = ViewData["FileLabel"] as string ?? "File";
+    var milestoneDate = ViewData["MilestoneDate"] as DateTime?;
+    var fileAvailable = ViewData["FileAvailable"] as bool? ?? false;
+    var controller = ViewData["FileController"] as string ?? "VehicleBookings";
+    var compact = ViewData["FileCompact"] as bool? ?? false;
+    var btnClass = compact ? "btn btn-xs btn-outline-secondary btn-sm" : "btn btn-sm btn-outline-secondary";
+}
+
+@if (fileAvailable && !string.IsNullOrEmpty(path))
+{
+    <partial name="_FileAttachmentLinks" view-data="ViewData" />
+}
+else if (!string.IsNullOrEmpty(path))
+{
+    <span class="badge bg-warning text-dark" title="File path is recorded but the file is missing on the server. Contact dealer staff.">
+        @label — unavailable
+    </span>
+}
+else if (milestoneDate.HasValue)
+{
+    <span class="badge bg-light text-dark border" title="Dealer has recorded the date; document upload is pending.">
+        @label — pending upload
+    </span>
+}
+else
+{
+    <span class="badge bg-light text-dark border" title="Not uploaded yet. Download will appear here once dealer staff uploads the document.">
+        @label — not available
+    </span>
+}

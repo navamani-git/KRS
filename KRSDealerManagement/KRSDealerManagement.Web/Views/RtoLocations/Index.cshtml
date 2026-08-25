@@ -1,4 +1,5 @@
 @model IEnumerable<KRSDealerManagement.Domain.Entities.RtoLocationMaster>
+@using KRSDealerManagement.Web.Models
 @{ ViewData["Title"] = "RTO Locations"; }
 
 <div class="row mb-3">
@@ -11,9 +12,13 @@
 
 <div class="card">
     <div class="card-body p-0">
-        <table class="table table-striped mb-0">
+        <form method="get" id="gridFilterForm" class="d-none" aria-hidden="true"></form>
+        <partial name="_GridScrollHint" />
+        <div class="table-responsive">
+            <table class="table table-sm table-hover table-striped mb-0 grid-excel-table grid-data-table" data-grid-id="@GridIds.RtoLocations">
             <thead class="table-dark">
                 <tr><th>#</th><th>Location</th><th>Status</th><th>Actions</th></tr>
+                <partial name="_PaginatedGridFilters" />
             </thead>
             <tbody>
                 @{ int i = 1; }
@@ -31,6 +36,7 @@
                 }
             </tbody>
         </table>
+        </div>
         <div class="p-3"><partial name="_Pagination" /></div>
     </div>
 </div>

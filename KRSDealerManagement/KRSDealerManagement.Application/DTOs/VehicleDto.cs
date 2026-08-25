@@ -41,10 +41,15 @@ namespace KRSDealerManagement.Application.DTOs
         public int? BookingStatus { get; set; }
         public string? BookingStatusName { get; set; }
         public string? BookingStatusBadge { get; set; }
+        public DateTime? BookingInvoiceDate { get; set; }
+        public DateTime? BookingInsuranceDate { get; set; }
+        public string? InvoicePath { get; set; }
+        public string? InsurancePath { get; set; }
         public bool CreatedByDealer { get; set; }
         public bool HasBooking => VehicleBookingId.HasValue;
         public bool CanBook => !HasBooking && SubdealerId.HasValue
             && UnifiedVehicleStatus.CanStartBooking(Status);
+        public bool CanEditBooking => HasBooking && !BookingInvoiceDate.HasValue;
         public bool IsAwaitingDealerApproval => !HasBooking
             && Status == UnifiedVehicleStatus.Submitted;
         public bool CanSubmitSubsidyDocs { get; set; }

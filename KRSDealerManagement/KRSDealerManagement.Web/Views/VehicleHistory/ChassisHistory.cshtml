@@ -1,0 +1,131 @@
+@using KRSDealerManagement.Application.DTOs
+@{
+    ViewData["Title"] = "Chassis History";
+    var query = ViewBag.ChassisQuery as string ?? "";
+    var history = ViewBag.History as VehicleChassisHistoryDto;
+    var error = ViewBag.Error as string;
+}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1 class="m-0"><i class="bi bi-clock-history"></i> Chassis History</h1>
+        <p class="text-muted mb-0">Events ordered by date &amp; time. Same date/time steps are combined automatically.</p>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label fw-bold mb-1">Chassis number</label>
+                <input type="text" name="chassis" class="form-control text-uppercase" value="@query"
+                       placeholder="Enter full chassis number" required autofocus />
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search"></i> Search
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(error))
+{
+    <div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> @error</div>
+}
+
+@if (history != null)
+{
+    <div class="card mb-3">
+        <div class="card-header">
+            <h3 class="card-title mb-0">@history.ChassisNumber</h3>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-3"><strong>Model</strong><br />@history.ModelName</div>
+                <div class="col-md-3"><strong>Color</strong><br />@history.ColorName</div>
+                <div class="col-md-3"><strong>Current status</strong><br />@(history.CurrentStatusName ?? history.CurrentStatus.ToString())</div>
+                <div class="col-md-3"><strong>Current holder</strong><br />@history.CurrentHolder</div>
+            </div>
+
+            @if (history.Events.Any())
+            {
+                var dateGroups = history.Events.GroupBy(e => e.OccurredAtLocal.Date).OrderBy(g => g.Key);
+                <style>
+                    .chassis-history-table { table-layout: fixed; width: 100%; }
+                    .chassis-history-table th,
+                    .chassis-history-table td { vertical-align: top; word-wrap: break-word; overflow-wrap: anywhere; }
+                    .chassis-history-table .col-step { width: 2.5rem; }
+                    .chassis-history-table .col-time { width: 4.5rem; }
+                    .chassis-history-table .col-order { width: 7rem; }
+                    .chassis-history-table .col-status { width: 11rem; }
+                    .chassis-history-table .col-holder { width: 9rem; }
+                    .chassis-history-status .badge {
+                        white-space: normal;
+                        text-align: left;
+                        line-height: 1.35;
+                        font-weight: 500;
+                        display: inline-block;
+                        max-width: 100%;
+                    }
+                </style>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover chassis-history-table">
+                        <thead class="table-dark">
+                            <tr>
+                                <th class="col-step">#</th>
+                                <th class="col-time">Time</th>
+                                <th class="col-order">Order</th>
+                                <th class="col-status">Status</th>
+                                <th>Details</th>
+                                <th class="col-holder">Showroom / Holder</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var group in dateGroups)
+                            {
+                                <tr class="table-secondary">
+                                    <td colspan="6" class="fw-semibold py-2">
+                                        <i class="bi bi-calendar3"></i>
+                                        @group.Key.ToString("dddd, dd MMM yyyy")
+                                    </td>
+                                </tr>
+                                @foreach (var e in group.OrderBy(x => x.OccurredAtLocal))
+                                {
+                                    var statusParts = e.Title.Split(" / ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                                    <tr>
+                                        <td class="fw-bold text-muted">@e.Step</td>
+                                        <td><small>@e.OccurredAtLocal.ToString("HH:mm")</small></td>
+                                        <td><small>@(e.OrderNumber ?? "—")</small></td>
+                                        <td class="chassis-history-status">
+                                            <div class="d-flex flex-wrap gap-1">
+                                                @foreach (var part in statusParts)
+                                                {
+                                                    <span class="badge @(e.StatusBadgeClass ?? "bg-secondary")">@part</span>
+                                                }
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="small">@e.Description</div>
+                                            @if (!string.IsNullOrWhiteSpace(e.Actor)
+                                                 && !string.Equals(e.Actor, e.Location, StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                <small class="text-muted"><i class="bi bi-person"></i> @e.Actor</small>
+                                            }
+                                        </td>
+                                        <td><small>@(e.Location ?? "—")</small></td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info mb-0">No lifecycle events recorded yet for this chassis.</div>
+            }
+        </div>
+    </div>
+}

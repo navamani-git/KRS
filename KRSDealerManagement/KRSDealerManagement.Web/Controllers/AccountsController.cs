@@ -6,6 +6,7 @@ using KRSDealerManagement.Web.Helpers;
 using KRSDealerManagement.Web.Filters;
 using KRSDealerManagement.Web.Services;
 using KRSDealerManagement.Shared.Constants;
+using KRSDealerManagement.Web.Models;
 
 namespace KRSDealerManagement.Web.Controllers
 {
@@ -20,10 +21,10 @@ namespace KRSDealerManagement.Web.Controllers
             _queryCrypto = queryCrypto;
         }
 
-        // GET: Accounts — finance/admin balances list (not for branch managers)
-        [AuthorizeRole(1, 3)]
+        // GET: Accounts — finance/admin/branch manager balances (scoped by dealership)
+        [AuthorizeRole(1, 3, 4)]
         [AuthorizeMenu(StaffMenuAccess.Balances)]
-        public async Task<IActionResult> Index(int? subdealerId, int? page)
+        public async Task<IActionResult> Index(int? subdealerId, int? page, int? pageSize)
         {
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             var subdealers = await _mediator.Send(new GetSubdealersQuery { IsActive = true, DealershipId = scope });
@@ -57,12 +58,15 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.GrandReserved = accountList.Sum(a => a.ReservedAmount);
             ViewBag.GrandAvailable = accountList.Sum(a => a.AvailableBalance);
 
-            var (pageItems, pageInfo) = ListPagingHelper.Paginate(accountList, page);
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Accounts);
+            accountList = GridScreenFilterHelper.ApplyAccounts(accountList, columnFilters).ToList();
+
+            var (pageItems, pageInfo) = ListPagingHelper.Paginate(accountList, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
             return View(pageItems);
         }
 
-        [AuthorizeRole(1, 3)]
+        [AuthorizeRole(1, 3, 4)]
         [AuthorizeMenu(StaffMenuAccess.Balances)]
         public async Task<IActionResult> Export(int? subdealerId)
         {
@@ -120,7 +124,7 @@ namespace KRSDealerManagement.Web.Controllers
         /// Finance admin / system admin can open from Balances or subdealer details.
         /// </summary>
         [AuthorizeRole(1, 3, 4)]
-        public async Task<IActionResult> Statement(int id)
+        public async Task<IActionResult> Statement(int id, DateTime? fromDate, DateTime? toDate)
         {
             var balance = await _mediator.Send(new GetAccountBalanceQuery { SubdealerAccountId = id });
             if (balance == null)
@@ -154,11 +158,44 @@ namespace KRSDealerManagement.Web.Controllers
                 ViewBag.StatementBackUrl = Url.Action(nameof(Index));
             }
 
-            var transactions = await _mediator.Send(new GetAccountTransactionsQuery { AccountId = id });
+            var transactions = (await _mediator.Send(new GetAccountTransactionsQuery
+            {
+                AccountId = id,
+                FromDate = fromDate,
+                ToDate = toDate
+            })).ToList();
             ViewBag.Balance = balance;
             ViewBag.AccountId = id;
+            ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
+            ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
 
             return View(transactions);
+        }
+
+        [AuthorizeRole(1, 3, 4)]
+        public async Task<IActionResult> ExportStatement(int id, DateTime? fromDate, DateTime? toDate)
+        {
+            var balance = await _mediator.Send(new GetAccountBalanceQuery { SubdealerAccountId = id });
+            if (balance == null)
+                return RedirectToAction("AccessDenied", "Account");
+
+            if (!await IsSubdealerInScopeAsync(balance.SubdealerId))
+                return RedirectToAction("AccessDenied", "Account");
+
+            var isBranchManager = SessionHelper.IsBranchManager(HttpContext.Session);
+            var isFinanceOrAdmin = SessionHelper.IsSystemAdmin(HttpContext.Session)
+                || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Balances);
+            if (!isFinanceOrAdmin && !isBranchManager)
+                return RedirectToAction("AccessDenied", "Account");
+
+            var transactions = await _mediator.Send(new GetAccountTransactionsQuery
+            {
+                AccountId = id,
+                FromDate = fromDate,
+                ToDate = toDate
+            });
+
+            return AccountStatementExportHelper.ToFileResult(this, id, balance.SubdealerName, transactions);
         }
 
         private async Task<bool> IsSubdealerInScopeAsync(int subdealerUserId)

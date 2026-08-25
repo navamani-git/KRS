@@ -1,5 +1,6 @@
 using MediatR;
 using KRSDealerManagement.Application.Commands;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Domain.Entities;
@@ -36,6 +37,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 CustomerName = string.IsNullOrWhiteSpace(request.CustomerName) ? null : request.CustomerName.Trim().ToUpperInvariant(),
                 FinanceNameId = request.FinanceNameId,
                 VinNumber = string.IsNullOrWhiteSpace(request.VinNumber) ? null : request.VinNumber.Trim().ToUpperInvariant(),
+                CreditRequestModelName = string.IsNullOrWhiteSpace(request.CreditRequestModelName) ? null : request.CreditRequestModelName.Trim(),
+                CreditRequestColorName = string.IsNullOrWhiteSpace(request.CreditRequestColorName) ? null : request.CreditRequestColorName.Trim(),
                 PaymentProofPath = request.PaymentProofPath,
                 PaymentProof2Path = request.PaymentProof2Path,
                 CreatedDate = DateTime.UtcNow,
@@ -101,6 +104,22 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                     approvalNote += $" | Requested: ₹{payment.Amount:N2}, Received: ₹{creditAmount:N2}";
                 }
 
+                var paymentTypes = (await _unitOfWork.PaymentTypes.GetAllAsync()).ToDictionary(pt => pt.PaymentTypeId);
+                var paymentTypeCode = payment.PaymentTypeId.HasValue
+                    && paymentTypes.TryGetValue(payment.PaymentTypeId.Value, out var pt)
+                    ? pt.TypeCode
+                    : null;
+                var isCreditRequest = CreditRequestHelper.IsCreditRequestType(paymentTypeCode)
+                    || payment.PaymentType.Contains("Credit Request", StringComparison.OrdinalIgnoreCase);
+
+                var txnReason = isCreditRequest
+                    ? CreditRequestHelper.FormatStatementReason(
+                        payment.PaymentId,
+                        payment.VinNumber,
+                        payment.CreditRequestModelName,
+                        payment.CreditRequestColorName)
+                    : $"Payment #{payment.PaymentId} approved — customer {payment.CustomerName ?? "N/A"}";
+
                 // Always credit on approval (ApplyToBalance defaults true; keep as safety flag)
                 var shouldApply = request.ApplyToBalance;
                 if (shouldApply)
@@ -119,7 +138,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                         transactionType: 2, // Credit
                         amount: creditAmount,
                         balanceAfter: balance.CurrentBalance,
-                        reason: $"Payment #{payment.PaymentId} approved — customer {payment.CustomerName ?? "N/A"}",
+                        reason: txnReason,
                         referenceType: "Payment",
                         referenceId: payment.PaymentId,
                         remarks: approvalNote,

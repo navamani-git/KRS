@@ -5,6 +5,7 @@ using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Web.Helpers;
 using KRSDealerManagement.Web.Filters;
+using KRSDealerManagement.Web.Models;
 
 namespace KRSDealerManagement.Web.Controllers
 {
@@ -20,7 +21,7 @@ namespace KRSDealerManagement.Web.Controllers
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<IActionResult> Index(int? modelId, int? colorId, int? month, int? year, int? page)
+        public async Task<IActionResult> Index(int? modelId, int? colorId, int? month, int? year, int? page, int? pageSize)
         {
             // Load prices with filters
             var prices = await _mediator.Send(new GetVehiclePricesQuery
@@ -35,7 +36,10 @@ namespace KRSDealerManagement.Web.Controllers
             var models = await _mediator.Send(new GetVehicleModelsQuery { IsActive = true });
             var colors = await _mediator.Send(new GetVehicleColorsQuery { IsActive = true });
 
-            var (pageItems, pageInfo) = ListPagingHelper.Paginate(prices, page);
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Prices);
+            prices = GridScreenFilterHelper.ApplyPrices(prices, columnFilters);
+
+            var (pageItems, pageInfo) = ListPagingHelper.Paginate(prices, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
 
             ViewBag.Models = models;

@@ -1,7 +1,10 @@
 @model IEnumerable<KRSDealerManagement.Application.DTOs.UserDto>
+@using KRSDealerManagement.Web.Helpers
+@using KRSDealerManagement.Web.Models
 @{
     ViewData["Title"] = "Subdealers";
     var isActiveFilter = ViewBag.IsActive as bool?;
+    var isBranchManager = ViewBag.IsBranchManager as bool? ?? SessionHelper.IsBranchManager(Context.Session);
 }
 
 <div class="row mb-3">
@@ -11,15 +14,18 @@
     </div>
     <div class="col-md-6 text-end">
         <partial name="_ExportExcel" />
-        <a href="@Url.Action("Create")" class="btn btn-primary">
-            <i class="bi bi-person-plus"></i> Add New Subdealer
-        </a>
+        @if (!isBranchManager)
+        {
+            <a href="@Url.Action("Create")" class="btn btn-primary">
+                <i class="bi bi-person-plus"></i> Add New Subdealer
+            </a>
+        }
     </div>
 </div>
 
 <div class="card mb-3">
     <div class="card-body">
-        <form method="get">
+        <form method="get" id="gridFilterForm">
             <div class="row">
                 <div class="col-md-4">
                     <input type="text" name="searchTerm" class="form-control"
@@ -62,19 +68,27 @@
     <div class="card-body">
         @if (Model.Any())
         {
+            <partial name="_GridScrollHint" />
             <div class="table-responsive">
-                <table class="table table-striped table-hover">
+                <table class="table table-sm table-hover table-striped mb-0 grid-excel-table grid-data-table" data-grid-id="@GridIds.Subdealers">
                     <thead class="table-dark">
                         <tr>
-                            <th>#</th>
+                            <th class="grid-col-narrow">#</th>
                             <th>Subdealer Name</th>
                             <th>Location</th>
-                            <th>Logins</th>
+                            @if (!isBranchManager)
+                            {
+                                <th class="grid-col-narrow">Logins</th>
+                            }
                             <th>Phone</th>
-                            <th>Status</th>
-                            <th>Created</th>
-                            <th>Actions</th>
+                            <th class="grid-col-narrow">Status</th>
+                            <th class="grid-col-date">Created</th>
+                            @if (!isBranchManager)
+                            {
+                                <th class="grid-col-actions">Actions</th>
+                            }
                         </tr>
+                        <partial name="_PaginatedGridFilters" />
                     </thead>
                     <tbody>
                         @{int sr = 1;}
@@ -87,13 +101,16 @@
                                     <br /><small class="text-muted">@s.Email</small>
                                 </td>
                                 <td>@s.LastName</td>
-                                <td>
-                                    <span class="badge bg-info">@s.LoginCount</span>
-                                    @if (!string.IsNullOrEmpty(s.Username) && s.Username != "—")
-                                    {
-                                        <br /><small class="text-muted"><code>@s.Username</code></small>
-                                    }
-                                </td>
+                                @if (!isBranchManager)
+                                {
+                                    <td>
+                                        <span class="badge bg-info">@s.LoginCount</span>
+                                        @if (!string.IsNullOrEmpty(s.Username) && s.Username != "—")
+                                        {
+                                            <br /><small class="text-muted"><code>@s.Username</code></small>
+                                        }
+                                    </td>
+                                }
                                 <td>@s.PhoneNumber</td>
                                 <td>
                                     <span class="badge @(s.IsActive ? "bg-success" : "bg-danger")">
@@ -101,20 +118,23 @@
                                     </span>
                                 </td>
                                 <td><small>@s.CreatedDate.ToString("yyyy-MM-dd")</small></td>
-                                <td>
-                                    <a href="@Url.EAction(QueryCrypto, "Details", new { id = s.SubDealerId })"
-                                       class="btn btn-sm btn-info" title="Manage">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    <form method="post" asp-action="Delete" class="d-inline"
-                                          onsubmit="return confirm('Deactivate this subdealer and all its logins?');">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@s.SubDealerId" />
-                                        <button type="submit" class="btn btn-sm btn-danger" title="Deactivate">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
-                                </td>
+                                @if (!isBranchManager)
+                                {
+                                    <td>
+                                        <a href="@Url.EAction(QueryCrypto, "Details", new { id = s.SubDealerId })"
+                                           class="btn btn-sm btn-info" title="View">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <form method="post" asp-action="Delete" class="d-inline"
+                                              onsubmit="return confirm('Deactivate this subdealer and all its logins?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@s.SubDealerId" />
+                                            <button type="submit" class="btn btn-sm btn-danger" title="Deactivate">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                }
                             </tr>
                         }
                     </tbody>
@@ -125,7 +145,10 @@
         {
             <div class="alert alert-info">
                 <i class="bi bi-info-circle"></i> No subdealers found.
-                <a href="@Url.Action("Create")">Add the first subdealer.</a>
+                @if (!isBranchManager)
+                {
+                    <a href="@Url.Action("Create")">Add the first subdealer.</a>
+                }
             </div>
         }
         <partial name="_Pagination" />

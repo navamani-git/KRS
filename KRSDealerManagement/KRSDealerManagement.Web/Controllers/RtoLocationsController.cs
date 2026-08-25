@@ -4,6 +4,7 @@ using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Web.Filters;
 using KRSDealerManagement.Web.Helpers;
 using KRSDealerManagement.Shared.Constants;
+using KRSDealerManagement.Web.Models;
 
 namespace KRSDealerManagement.Web.Controllers
 {
@@ -14,10 +15,13 @@ namespace KRSDealerManagement.Web.Controllers
         private readonly IUnitOfWork _unitOfWork;
         public RtoLocationsController(IUnitOfWork unitOfWork) => _unitOfWork = unitOfWork;
 
-        public async Task<IActionResult> Index(int? page)
+        public async Task<IActionResult> Index(int? page, int? pageSize)
         {
-            var list = (await _unitOfWork.RtoLocations.GetAllAsync()).OrderByDescending(r => r.IsActive).ThenBy(r => r.LocationName).ToList();
-            var (pageItems, pageInfo) = ListPagingHelper.Paginate(list, page);
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.RtoLocations);
+            var list = GridScreenFilterHelper.ApplyRtoLocations(
+                (await _unitOfWork.RtoLocations.GetAllAsync()).OrderByDescending(r => r.IsActive).ThenBy(r => r.LocationName),
+                columnFilters).ToList();
+            var (pageItems, pageInfo) = ListPagingHelper.Paginate(list, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
             return View(pageItems);
         }

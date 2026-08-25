@@ -18,5 +18,7 @@ namespace KRSDealerManagement.Shared.Constants
         public string? Icon { get; init; }
         /// <summary>When set, any of these actions mark the menu item active.</summary>
         public IReadOnlyList<string>? Actions { get; init; }
+        /// <summary>Optional route values (e.g. status filter for booking lists).</summary>
+        public IReadOnlyDictionary<string, object>? RouteValues { get; init; }
     }
 }

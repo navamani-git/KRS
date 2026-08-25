@@ -27,5 +27,18 @@ WHERE VehicleBookingId = @VehicleBookingId",
                     ModifiedDate = DateTime.UtcNow
                 });
         }
+
+        public async Task<VehicleBooking?> GetByStoredFilePathAsync(string path)
+        {
+            using var connection = _context.GetConnection();
+            connection.Open();
+            return await connection.QueryFirstOrDefaultAsync<VehicleBooking>(@"
+SELECT TOP 1 * FROM VehicleBookings
+WHERE EAadhaarPath = @Path OR DocumentPath = @Path OR GstCertificatePath = @Path
+   OR CustomerPhotoPath = @Path OR ChassisPhotoPath = @Path OR CustomerSignPath = @Path
+   OR FaceVerificationPath = @Path OR RcImagePath = @Path OR BoothPhotoPath = @Path
+   OR SubsidyUndertakingPath = @Path OR InvoicePath = @Path OR InsurancePath = @Path",
+                new { Path = path });
+        }
     }
 }

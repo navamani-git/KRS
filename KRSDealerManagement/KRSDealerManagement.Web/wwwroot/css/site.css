@@ -98,8 +98,30 @@ body {
     font-weight: 600;
 }
 
-.nav-sidebar .nav-item .nav-link i {
+.nav-sidebar .nav-item .nav-link i.nav-icon {
     margin-right: 10px;
+}
+
+/* Treeview parent: keep chevron clear of label text */
+.nav-sidebar .has-treeview > .nav-link {
+    position: relative;
+}
+
+.nav-sidebar .has-treeview > .nav-link > p {
+    margin: 0;
+    padding-right: 1.75rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nav-sidebar .has-treeview > .nav-link p > .right {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0 !important;
+    float: none;
 }
 
 .nav-header {
@@ -174,6 +196,19 @@ body {
     border-radius: var(--border-radius) var(--border-radius) 0 0;
     padding: 15px 20px;
     font-weight: 600;
+}
+
+.card-header .card-title {
+    color: #fff;
+    font-weight: 700;
+}
+
+.card-header .card-header-hint,
+.card-header .text-muted {
+    color: rgba(255, 255, 255, 0.92) !important;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    opacity: 1;
 }
 
 .card-title {
@@ -319,6 +354,568 @@ body {
 .table-responsive {
     border-radius: var(--border-radius);
     border: 1px solid #e9ecef;
+}
+
+/* Paginated grids: scroll body inside viewport, keep header visible */
+.grid-scroll-panel {
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+}
+
+.card-body > .table-responsive,
+.card-body > .table-responsive.grid-scroll-panel {
+    width: 100%;
+}
+
+.grid-scroll-panel thead th {
+    position: sticky;
+    z-index: 2;
+}
+
+.grid-scroll-panel thead tr:first-child th {
+    top: 0;
+}
+
+.grid-scroll-panel thead tr.grid-column-filters th {
+    top: var(--grid-header-row-height, 48px);
+    z-index: 12;
+    background-color: #e2e3e5;
+    overflow: visible;
+}
+
+.grid-scroll-panel .table-dark thead tr:first-child th,
+.grid-scroll-panel thead.table-dark tr:first-child th {
+    background-color: #212529;
+}
+
+.grid-scroll-panel .table thead tr:first-child th {
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+}
+
+.grid-scroll-panel > table:not(.grid-excel-table),
+.grid-scroll-panel table.grid-data-table:not(.grid-excel-table) {
+    width: max-content;
+    min-width: 100%;
+    table-layout: auto;
+    font-size: 0.92rem;
+}
+
+.grid-scroll-panel th,
+.grid-scroll-panel td {
+    vertical-align: middle;
+    padding: 8px 10px;
+}
+
+.grid-scroll-panel tbody td {
+    white-space: normal;
+    word-break: break-word;
+    max-width: 11rem;
+    line-height: 1.35;
+}
+
+.grid-scroll-panel thead th {
+    white-space: nowrap;
+}
+
+.grid-scroll-panel .grid-col-narrow,
+.grid-scroll-panel th.grid-col-narrow,
+.grid-scroll-panel td.grid-col-narrow {
+    width: 1%;
+    max-width: 5.5rem;
+    white-space: nowrap;
+}
+
+.grid-scroll-panel .grid-col-date,
+.grid-scroll-panel th.grid-col-date,
+.grid-scroll-panel td.grid-col-date {
+    width: 1%;
+    max-width: 7rem;
+    white-space: nowrap;
+}
+
+.grid-scroll-panel .grid-col-actions,
+.grid-scroll-panel th.grid-col-actions,
+.grid-scroll-panel td.grid-col-actions {
+    width: 1%;
+    max-width: 8rem;
+    white-space: nowrap;
+}
+
+.grid-scroll-panel .btn-sm {
+    padding: 4px 8px;
+    white-space: nowrap;
+}
+
+/* Excel-style grid: fixed column widths, scroll horizontally for more columns */
+.grid-scroll-hint {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.55rem 0.95rem;
+    font-size: 0.8125rem;
+    color: #343a40;
+    background: linear-gradient(90deg, #eef2ff 0%, #f8f9fa 100%);
+    border-bottom: 1px solid #c7d2fe;
+    border-left: 4px solid #667eea;
+}
+
+.grid-scroll-hint .grid-scroll-hint-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    line-height: 1.45;
+}
+
+.grid-scroll-hint .grid-scroll-hint-text strong {
+    color: #4338ca;
+    font-weight: 700;
+}
+
+.grid-scroll-hint .scroll-arrow {
+    color: #4338ca;
+    font-weight: 700;
+    white-space: nowrap;
+    background: #fff;
+    border: 1px solid #c7d2fe;
+    border-radius: 999px;
+    padding: 0.15rem 0.65rem;
+}
+
+/* Excel-style grid: fixed column widths, scroll horizontally for more columns */
+table.grid-excel-table,
+.grid-scroll-panel table.grid-excel-table,
+.grid-scroll-panel table.grid-excel-table.grid-data-table {
+    table-layout: fixed !important;
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    min-width: 100% !important;
+    max-width: none;
+    font-size: 0.875rem;
+}
+
+table.grid-excel-table th,
+table.grid-excel-table td,
+.grid-scroll-panel table.grid-excel-table th,
+.grid-scroll-panel table.grid-excel-table td {
+    padding: 2px 5px !important;
+    box-sizing: border-box;
+    line-height: 1.25;
+    vertical-align: middle;
+}
+
+table.grid-excel-table .grid-col-narrow,
+table.grid-excel-table .grid-col-date,
+table.grid-excel-table .grid-col-actions,
+.grid-scroll-panel table.grid-excel-table .grid-col-narrow,
+.grid-scroll-panel table.grid-excel-table .grid-col-date,
+.grid-scroll-panel table.grid-excel-table .grid-col-actions {
+    width: auto;
+    max-width: none;
+}
+
+table.grid-excel-table thead tr:not(.grid-column-filters) th,
+.grid-scroll-panel table.grid-excel-table thead tr:not(.grid-column-filters) th {
+    overflow: hidden;
+    position: sticky;
+    top: 0;
+    z-index: 14;
+    white-space: nowrap;
+}
+
+table.grid-excel-table thead.table-dark tr:not(.grid-column-filters) th,
+.grid-scroll-panel table.grid-excel-table thead.table-dark tr:not(.grid-column-filters) th {
+    background-color: #212529;
+}
+
+table.grid-excel-table thead:not(.table-dark) tr:not(.grid-column-filters) th,
+.grid-scroll-panel table.grid-excel-table thead:not(.table-dark) tr:not(.grid-column-filters) th {
+    background-color: #f8f9fa;
+}
+
+table.grid-excel-table th.grid-th-resizable,
+.grid-scroll-panel table.grid-excel-table th.grid-th-resizable {
+    padding-right: 14px !important;
+}
+
+table.grid-excel-table tbody td,
+.grid-scroll-panel table.grid-excel-table tbody td {
+    max-width: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+table.grid-excel-table .grid-cell-wrap,
+.grid-scroll-panel table.grid-excel-table .grid-cell-wrap {
+    white-space: normal;
+    word-break: break-word;
+    overflow: visible;
+    text-overflow: clip;
+}
+
+table.grid-excel-table thead tr.grid-column-filters th,
+.grid-scroll-panel table.grid-excel-table thead tr.grid-column-filters th {
+    overflow: visible;
+    padding: 2px 5px !important;
+    position: sticky;
+    top: var(--grid-header-row-height, 32px);
+    z-index: 13;
+    background-color: #e9ecef;
+}
+
+table.grid-excel-table thead tr.grid-column-filters th.grid-filter-cell,
+.grid-scroll-panel table.grid-excel-table thead tr.grid-column-filters th.grid-filter-cell {
+    position: sticky;
+    overflow: visible !important;
+}
+
+table.grid-excel-table thead tr:not(.grid-column-filters) th .grid-col-header-text,
+.grid-scroll-panel table.grid-excel-table thead tr:not(.grid-column-filters) th .grid-col-header-text {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding-right: 18px;
+}
+
+table.grid-excel-table th[aria-hidden="true"],
+table.grid-excel-table td[aria-hidden="true"],
+.grid-scroll-panel table.grid-excel-table th[aria-hidden="true"],
+.grid-scroll-panel table.grid-excel-table td[aria-hidden="true"] {
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+}
+
+table.grid-excel-table .grid-column-filters .grid-combobox,
+.grid-scroll-panel table.grid-excel-table .grid-column-filters .grid-combobox,
+table.grid-excel-table .grid-column-filters select.grid-combobox,
+.grid-scroll-panel table.grid-excel-table .grid-column-filters select.grid-combobox,
+table.grid-excel-table .grid-column-filters .form-control-sm,
+.grid-scroll-panel table.grid-excel-table .grid-column-filters .form-control-sm,
+table.grid-excel-table .grid-column-filters .form-select-sm,
+.grid-scroll-panel table.grid-excel-table .grid-column-filters .form-select-sm {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 26px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1a1d20;
+    line-height: 1.35;
+    padding: 2px 6px;
+}
+
+table.grid-excel-table .grid-column-filters .grid-combobox::placeholder,
+.grid-scroll-panel table.grid-excel-table .grid-column-filters .grid-combobox::placeholder {
+    color: #5c636a;
+    opacity: 1;
+    font-weight: 400;
+}
+
+table.grid-excel-table td.grid-sticky-col-2 code,
+.grid-scroll-panel table.grid-excel-table td.grid-sticky-col-2 code {
+    display: inline;
+    padding: 0;
+    background: transparent;
+    white-space: nowrap;
+}
+
+a.chassis-link {
+    cursor: pointer;
+}
+
+a.chassis-link code {
+    cursor: pointer;
+    color: #0d6efd;
+}
+
+a.chassis-link:hover code {
+    text-decoration: underline;
+}
+
+.grid-col-expand-btn {
+    color: rgba(255, 255, 255, 0.75) !important;
+    font-size: 0.7rem;
+    line-height: 1;
+    vertical-align: middle;
+    opacity: 0.85;
+}
+
+.grid-col-expand-btn.is-expanded {
+    color: rgba(255, 255, 255, 0.95) !important;
+    opacity: 1;
+}
+
+.grid-col-expand-btn:hover,
+.grid-col-expand-btn:focus {
+    color: #fff !important;
+    opacity: 1;
+}
+
+.grid-col-resize-handle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+    user-select: none;
+    z-index: 6;
+    touch-action: none;
+    border-right: 2px solid rgba(255, 255, 255, 0.35);
+}
+
+.grid-col-resize-handle:hover,
+body.grid-col-resizing .grid-col-resize-handle {
+    background: rgba(102, 126, 234, 0.55);
+    border-right-color: rgba(102, 126, 234, 0.95);
+}
+
+body.grid-col-resizing {
+    cursor: col-resize !important;
+    user-select: none !important;
+}
+
+body.grid-col-resizing * {
+    cursor: col-resize !important;
+}
+
+.grid-scroll-panel table.grid-excel-table th.grid-sticky-col,
+.grid-scroll-panel table.grid-excel-table td.grid-sticky-col,
+table.grid-excel-table th.grid-sticky-col,
+table.grid-excel-table td.grid-sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 4;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.06);
+}
+
+.grid-scroll-panel table.grid-excel-table thead.table-dark th.grid-sticky-col {
+    background-color: #212529;
+}
+
+.grid-scroll-panel table.grid-excel-table tbody td.grid-sticky-col {
+    background-color: #fff;
+}
+
+.grid-scroll-panel table.grid-excel-table tbody tr:nth-of-type(odd) td.grid-sticky-col {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.grid-scroll-panel table.grid-excel-table tbody tr:hover td.grid-sticky-col {
+    background-color: #f8f9fa;
+}
+
+.grid-scroll-panel table.grid-excel-table th.grid-sticky-col-2,
+.grid-scroll-panel table.grid-excel-table td.grid-sticky-col-2,
+table.grid-excel-table th.grid-sticky-col-2,
+table.grid-excel-table td.grid-sticky-col-2 {
+    position: sticky;
+    left: var(--grid-sticky-col-1-width, 42px);
+    z-index: 3;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.04);
+}
+
+.grid-scroll-panel table.grid-excel-table thead.table-dark th.grid-sticky-col-2 {
+    background-color: #212529;
+}
+
+.grid-scroll-panel table.grid-excel-table tbody td.grid-sticky-col-2 {
+    background-color: #fff;
+}
+
+.grid-scroll-panel table.grid-excel-table tbody tr:nth-of-type(odd) td.grid-sticky-col-2 {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.grid-scroll-panel table.grid-excel-table tbody tr:hover td.grid-sticky-col-2 {
+    background-color: #f8f9fa;
+}
+
+.grid-column-toolbar {
+    font-size: 0.875rem;
+    background: #f1f5f9 !important;
+    border-bottom: 1px solid #cbd5e1 !important;
+}
+
+.grid-toolbar-hint {
+    color: #334155 !important;
+    font-weight: 600;
+    font-size: 0.8125rem;
+}
+
+.page-heading-block .page-title {
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.page-stage-banner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    padding: 0.65rem 0.85rem;
+    background: linear-gradient(90deg, #eef2ff 0%, #f8fafc 100%);
+    border: 1px solid #c7d2fe;
+    border-left: 4px solid #667eea;
+    border-radius: 0.5rem;
+    max-width: 42rem;
+}
+
+.page-stage-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.page-stage-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #4338ca;
+    min-width: 6.5rem;
+}
+
+.page-stage-value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.grid-filter-card .grid-filter-heading {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #475569;
+}
+
+.grid-filter-card .form-label,
+.grid-filter-card .form-label-sm {
+    font-weight: 600;
+    color: #334155;
+    font-size: 0.8125rem;
+}
+
+.grid-column-menu {
+    min-width: 14rem;
+    max-width: 20rem;
+    max-height: 20rem;
+    overflow-y: auto;
+}
+
+.grid-column-menu-item {
+    cursor: pointer;
+    user-select: none;
+}
+
+.grid-column-menu-item:hover {
+    background-color: #f8f9fa;
+}
+
+.grid-column-filters .grid-combobox {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1a1d20;
+}
+
+.grid-filter-input-wrap {
+    position: relative;
+    width: 100%;
+}
+
+.grid-filter-suggest {
+    z-index: 10050;
+    background-color: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 0.375rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.175);
+    margin: 0;
+    overflow: hidden;
+    pointer-events: auto;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+.grid-filter-suggest-scroll {
+    max-height: 220px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.25rem 0;
+}
+
+.grid-filter-suggest-scroll::-webkit-scrollbar {
+    width: 8px;
+}
+
+.grid-filter-suggest-scroll::-webkit-scrollbar-track {
+    background: #f1f3f5;
+    border-radius: 4px;
+}
+
+.grid-filter-suggest-scroll::-webkit-scrollbar-thumb {
+    background: #adb5bd;
+    border-radius: 4px;
+}
+
+.grid-filter-suggest-scroll::-webkit-scrollbar-thumb:hover {
+    background: #868e96;
+}
+
+.grid-filter-suggest-item {
+    display: block;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.35;
+    color: #1a1d20;
+}
+
+.grid-filter-suggest-item:hover,
+.grid-filter-suggest-item:focus {
+    background-color: #f1f3f5;
+    color: #000;
+    outline: none;
+}
+
+.grid-filter-suggest-create {
+    border-top: 1px solid #e9ecef;
+    color: #343a40;
+    font-weight: 500;
+}
+
+.grid-filter-suggest-empty {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.35;
+    color: #495057;
+}
+
+.grid-column-filter-actions .btn {
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
 }
 
 /* Pagination */
@@ -607,13 +1204,59 @@ body {
     }
 }
 
+/* Global page loader */
+.krs-page-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 20000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(244, 246, 249, 0.72);
+    backdrop-filter: blur(2px);
+    pointer-events: all;
+}
+
+.krs-page-loader[hidden] {
+    display: none !important;
+}
+
+.krs-page-loader-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.85rem;
+    min-width: 180px;
+    padding: 1.25rem 1.5rem;
+    border-radius: 0.75rem;
+    background: #fff;
+    border: 1px solid rgba(102, 126, 234, 0.25);
+    box-shadow: 0 0.75rem 2rem rgba(52, 58, 64, 0.18);
+}
+
+.krs-page-loader-spinner {
+    width: 2.5rem;
+    height: 2.5rem;
+    color: #667eea !important;
+    border-width: 0.2rem;
+}
+
+.krs-page-loader-text {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #343a40;
+    text-align: center;
+}
+
 /* Print Styles */
 @media print {
     .main-header,
     .sidebar,
     .main-footer,
     .btn,
-    .pagination {
+    .pagination,
+    .krs-page-loader {
         display: none !important;
     }
 

@@ -7,6 +7,7 @@ using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Web.Helpers;
 using KRSDealerManagement.Web.Filters;
 using KRSDealerManagement.Shared.Constants;
+using KRSDealerManagement.Web.Models;
 
 namespace KRSDealerManagement.Web.Controllers
 {
@@ -113,21 +114,23 @@ namespace KRSDealerManagement.Web.Controllers
         // GET: Orders/MyOrders  (Subdealer views own orders)
         [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.PurchaseOrderView)]
-        public async Task<IActionResult> MyOrders(int? status, DateTime? fromDate, DateTime? toDate, int? page)
+        public async Task<IActionResult> MyOrders(int? status, DateTime? fromDate, DateTime? toDate, int? page, int? pageSize)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
             var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.MyOrders);
             var orders = await _mediator.Send(new GetPurchaseOrdersQuery
             {
                 SubdealerId = userId.Value,
                 Status = status,
                 FromDate = from,
-                ToDate = to
+                ToDate = to,
+                ColumnFilters = columnFilters
             });
 
-            var (pageItems, pageInfo) = ListPagingHelper.Paginate(orders, page);
+            var (pageItems, pageInfo) = ListPagingHelper.Paginate(orders, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
 
             var itemsByOrder = new Dictionary<int, List<PurchaseOrderItemDto>>();
@@ -299,10 +302,11 @@ namespace KRSDealerManagement.Web.Controllers
 
         // GET: Orders/Index  (System admin / branch manager)
         [AuthorizeRole(1, 4)]
-        public async Task<IActionResult> Index(int? status, int? subdealerId, string searchTerm, DateTime? fromDate, DateTime? toDate, int? page)
+        public async Task<IActionResult> Index(int? status, int? subdealerId, string searchTerm, DateTime? fromDate, DateTime? toDate, int? page, int? pageSize)
         {
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Orders);
             var orders = await _mediator.Send(new GetPurchaseOrdersQuery
             {
                 Status = status,
@@ -310,10 +314,11 @@ namespace KRSDealerManagement.Web.Controllers
                 SearchTerm = searchTerm,
                 DealershipId = scope,
                 FromDate = from,
-                ToDate = to
+                ToDate = to,
+                ColumnFilters = columnFilters
             });
 
-            var (pageItems, pageInfo) = ListPagingHelper.Paginate(orders, page);
+            var (pageItems, pageInfo) = ListPagingHelper.Paginate(orders, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
 
             var subdealers = await _mediator.Send(new GetSubdealersQuery { IsActive = true, DealershipId = scope });

@@ -1,0 +1,21 @@
+@using KRSDealerManagement.Web.Helpers
+@using KRSDealerManagement.Web.Models
+@{
+    var gridId = ViewBag.GridId as string;
+    if (string.IsNullOrWhiteSpace(gridId))
+    {
+        return;
+    }
+
+    var columns = GridColumnRegistry.Get(
+        gridId,
+        hideLogins: ViewBag.HideLogins as bool? ?? false,
+        hideActions: ViewBag.IsBranchManager as bool? ?? SessionHelper.IsBranchManager(Context.Session),
+        isSubdealer: ViewBag.IsSubdealer as bool? ?? SessionHelper.IsSubdealer(Context.Session));
+
+    if (columns.Count == 0)
+    {
+        return;
+    }
+}
+<partial name="_GridColumnFilters" model="columns" view-data="ViewData" />

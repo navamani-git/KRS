@@ -4,6 +4,7 @@ using KRSDealerManagement.Application.Commands;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Web.Helpers;
 using KRSDealerManagement.Web.Filters;
+using KRSDealerManagement.Web.Models;
 
 namespace KRSDealerManagement.Web.Controllers
 {
@@ -17,14 +18,16 @@ namespace KRSDealerManagement.Web.Controllers
             _mediator = mediator;
         }
 
-        public async Task<IActionResult> Index(string searchTerm, bool? isActive, int? page)
+        public async Task<IActionResult> Index(string searchTerm, bool? isActive, int? page, int? pageSize)
         {
             var colors = await _mediator.Send(new GetVehicleColorsQuery
             {
                 SearchTerm = searchTerm,
                 IsActive = isActive
             });
-            var (pageItems, pageInfo) = ListPagingHelper.Paginate(colors, page);
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.VehicleColors);
+            colors = GridScreenFilterHelper.ApplyVehicleColors(colors, columnFilters);
+            var (pageItems, pageInfo) = ListPagingHelper.Paginate(colors, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
             ViewBag.SearchTerm = searchTerm;
             ViewBag.IsActive = isActive;

@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("KRSDealerManagement.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4cc3dc6e340d6b2b157ad83b998ff7ac6bf0416e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8a70ff436ffd6a5adb8a7881af6a87dbda01e5a3")]
 [assembly: System.Reflection.AssemblyProductAttribute("KRSDealerManagement.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("KRSDealerManagement.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

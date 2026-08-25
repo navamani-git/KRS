@@ -14,14 +14,23 @@ namespace KRSDealerManagement.Web.Helpers
 
     public static class ListPagingHelper
     {
-        public const int DefaultPageSize = 10;
+        public const int DefaultPageSize = 50;
+
+        public static readonly int[] AllowedPageSizes = { 10, 25, 50, 100, 250, 500, 1000 };
+
+        public static int ResolvePageSize(int? pageSize)
+        {
+            if (pageSize is > 0 && AllowedPageSizes.Contains(pageSize.Value))
+                return pageSize.Value;
+            return DefaultPageSize;
+        }
 
         public static (List<T> Items, ListPageInfo Info) Paginate<T>(
             IEnumerable<T> source,
             int? page,
             int? pageSize = null)
         {
-            var size = pageSize is > 0 ? pageSize.Value : DefaultPageSize;
+            var size = ResolvePageSize(pageSize);
             var list = source as IList<T> ?? source.ToList();
             var total = list.Count;
             var info = new ListPageInfo

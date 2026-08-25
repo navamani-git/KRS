@@ -7,6 +7,7 @@ using KRSDealerManagement.Application.DTOs;
 using KRSDealerManagement.Web.Helpers;
 using KRSDealerManagement.Web.Filters;
 using KRSDealerManagement.Shared.Constants;
+using KRSDealerManagement.Web.Models;
 
 namespace KRSDealerManagement.Web.Controllers
 {
@@ -22,10 +23,13 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         [AuthorizeRole(1, 4)]
-        public async Task<IActionResult> Index(int? status, int? page)
+        public async Task<IActionResult> Index(int? status, int? page, int? pageSize)
         {
-            var returns = await _mediator.Send(new GetReturnRequestsQuery { Status = status });
-            var (pageItems, pageInfo) = ListPagingHelper.Paginate(returns, page);
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Returns);
+            var returns = GridScreenFilterHelper.ApplyReturns(
+                await _mediator.Send(new GetReturnRequestsQuery { Status = status }),
+                columnFilters).ToList();
+            var (pageItems, pageInfo) = ListPagingHelper.Paginate(returns, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
             ViewBag.SelectedStatus = status;
             ViewBag.PendingCount = returns.Count(r => r.Status == UnifiedVehicleStatus.ReturnRequested);
@@ -51,25 +55,37 @@ namespace KRSDealerManagement.Web.Controllers
 
         [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.MyReturns)]
-        public async Task<IActionResult> MyReturns(int? status, DateTime? fromDate, DateTime? toDate, int? page)
+        public async Task<IActionResult> MyReturns(int? status, DateTime? fromDate, DateTime? toDate, int? page, int? pageSize)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
-            var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
-            var returns = await _mediator.Send(new GetReturnRequestsQuery
+            DateTime? from = null;
+            DateTime? to = null;
+            if (fromDate.HasValue || toDate.HasValue)
             {
-                SubdealerId = userId.Value,
-                Status = status,
-                FromDate = from,
-                ToDate = to
-            });
+                var resolved = ListPagingHelper.ResolveDateRange(fromDate, toDate);
+                from = resolved.FromDate;
+                to = resolved.ToDate;
+            }
 
-            var (pageItems, pageInfo) = ListPagingHelper.Paginate(returns, page);
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.MyReturns);
+            var returns = GridScreenFilterHelper.ApplyReturns(
+                await _mediator.Send(new GetReturnRequestsQuery
+                {
+                    SubdealerId = userId.Value,
+                    Status = status,
+                    FromDate = from,
+                    ToDate = to
+                }),
+                columnFilters,
+                myReturns: true).ToList();
+
+            var (pageItems, pageInfo) = ListPagingHelper.Paginate(returns, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
             ViewBag.SelectedStatus = status;
-            ViewBag.FromDate = from.ToString("yyyy-MM-dd");
-            ViewBag.ToDate = to.ToString("yyyy-MM-dd");
+            ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd") ?? "";
+            ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd") ?? "";
             ViewBag.PendingCount = returns.Count(r => r.Status == UnifiedVehicleStatus.ReturnRequested);
             ViewBag.Statuses = (await _statuses.GetActiveByCategoryAsync(StatusCategories.Vehicle))
                 .Where(s => UnifiedVehicleStatus.IsReturnPhase(s.StatusValue))
@@ -85,7 +101,15 @@ namespace KRSDealerManagement.Web.Controllers
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
-            var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
+            DateTime? from = null;
+            DateTime? to = null;
+            if (fromDate.HasValue || toDate.HasValue)
+            {
+                var resolved = ListPagingHelper.ResolveDateRange(fromDate, toDate);
+                from = resolved.FromDate;
+                to = resolved.ToDate;
+            }
+
             var returns = (await _mediator.Send(new GetReturnRequestsQuery
             {
                 SubdealerId = userId.Value,
@@ -204,6 +228,74 @@ namespace KRSDealerManagement.Web.Controllers
             catch (Exception ex)
             {
                 TempData["Error"] = $"Error: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpGet]
+        [AuthorizeRole(1, 4)]
+        public async Task<IActionResult> Allocate(int id)
+        {
+            var item = await LoadReturnRequestAsync(id);
+            if (item == null || !item.CanAllocateToSubdealer)
+            {
+                TempData["Error"] = "Return not found or vehicle is not available in dealer showroom for allocation.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
+            ViewBag.Subdealers = await _mediator.Send(new GetSubdealersQuery { IsActive = true, DealershipId = scope });
+            ViewBag.CanViewBalances = SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Balances);
+            return View(item);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AuthorizeRole(1, 4)]
+        public async Task<IActionResult> Allocate(int id, int subdealerId, string remarks)
+        {
+            var userId = SessionHelper.GetUserId(HttpContext.Session);
+            if (!userId.HasValue) return RedirectToAction("Login", "Account");
+
+            var item = await LoadReturnRequestAsync(id);
+            if (item == null || !item.CanAllocateToSubdealer)
+            {
+                TempData["Error"] = "Return not found or vehicle is not available for allocation.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (subdealerId <= 0)
+            {
+                TempData["Error"] = "Please select a subdealer.";
+                return this.RedirectEncrypted(nameof(Allocate), new { id });
+            }
+
+            if (string.IsNullOrWhiteSpace(remarks))
+            {
+                TempData["Error"] = "Remarks are required.";
+                return this.RedirectEncrypted(nameof(Allocate), new { id });
+            }
+
+            try
+            {
+                var ok = await _mediator.Send(new AllocateShowroomVehicleCommand
+                {
+                    VehicleId = item.VehicleId,
+                    SubdealerId = subdealerId,
+                    AllocatedBy = userId.Value,
+                    Remarks = remarks.Trim(),
+                    ReturnRequestId = id
+                });
+
+                TempData[ok ? "Success" : "Error"] = ok
+                    ? $"Vehicle {item.VehicleChassisNumber} allocated to subdealer. Amount debited from their wallet."
+                    : "Allocation failed.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error: {ex.Message}";
+                return this.RedirectEncrypted(nameof(Allocate), new { id });
             }
 
             return RedirectToAction(nameof(Index));

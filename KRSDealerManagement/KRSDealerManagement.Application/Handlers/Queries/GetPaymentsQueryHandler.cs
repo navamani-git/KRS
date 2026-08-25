@@ -2,6 +2,7 @@ using MediatR;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Application.DTOs;
 using KRSDealerManagement.Application.Services;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
 
@@ -50,6 +51,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                              FinanceName = p.FinanceNameId.HasValue && financeNames.TryGetValue(p.FinanceNameId.Value, out var fn)
                                  ? fn.FinanceName : null,
                              VinNumber = p.VinNumber,
+                             CreditRequestModelName = p.CreditRequestModelName,
+                             CreditRequestColorName = p.CreditRequestColorName,
                              PaymentProofPath = p.PaymentProofPath,
                              PaymentProof2Path = p.PaymentProof2Path,
                              PaymentDate = p.PaymentDate,
@@ -89,6 +92,25 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             {
                 var to = request.ToDate.Value.Date;
                 result = result.Where(p => p.PaymentDate.Date <= to);
+            }
+
+            if (request.ColumnFilters is { Count: > 0 } cf)
+            {
+                result = result.Where(p =>
+                    GridFilterHelper.MatchesContains(p.SubdealerName, GridFilterHelper.GetFilter(cf, "subdealer"))
+                    && GridFilterHelper.MatchesContains(p.GetPaymentTypeDisplay(), GridFilterHelper.GetFilter(cf, "type"))
+                    && GridFilterHelper.MatchesContains(p.Amount.ToString("N2"), GridFilterHelper.GetFilter(cf, "amount"))
+                    && GridFilterHelper.MatchesContains(p.CustomerName, GridFilterHelper.GetFilter(cf, "customer"))
+                    && GridFilterHelper.MatchesContains(p.FinanceName, GridFilterHelper.GetFilter(cf, "finance"))
+                    && GridFilterHelper.MatchesContains(p.VinNumber, GridFilterHelper.GetFilter(cf, "vin"))
+                    && GridFilterHelper.MatchesContains(p.GetStatusDisplay(), GridFilterHelper.GetFilter(cf, "status"))
+                    && GridFilterHelper.MatchesDate(p.PaymentDate, GridFilterHelper.GetDateFilter(cf, "paymentDate"), GridFilterHelper.GetDateFilter(cf, "paymentDate"))
+                    && GridFilterHelper.MatchesDate(p.CreatedDate, GridFilterHelper.GetDateFilter(cf, "submitted"), GridFilterHelper.GetDateFilter(cf, "submitted"))
+                    && GridFilterHelper.MatchesDate(p.ProcessedDate, GridFilterHelper.GetDateFilter(cf, "approved"), GridFilterHelper.GetDateFilter(cf, "approved"))
+                    && GridFilterHelper.MatchesDate(p.ActualReceivedDate, GridFilterHelper.GetDateFilter(cf, "received"), GridFilterHelper.GetDateFilter(cf, "received"))
+                    && GridFilterHelper.MatchesContains(p.ActualReceivedAmount?.ToString("N2"), GridFilterHelper.GetFilter(cf, "receivedAmt"))
+                    && GridFilterHelper.MatchesContains(p.SubdealerRemarks, GridFilterHelper.GetFilter(cf, "remarks"))
+                    && GridFilterHelper.MatchesContains(p.DealerRemarks, GridFilterHelper.GetFilter(cf, "corrections")));
             }
 
             return result.OrderByDescending(p => p.CreatedDate).ToList();

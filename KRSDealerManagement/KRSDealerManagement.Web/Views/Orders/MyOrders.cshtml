@@ -3,6 +3,7 @@
 @using KRSDealerManagement.Domain.Entities
 @using KRSDealerManagement.Shared.Constants
 @using KRSDealerManagement.Web.Helpers
+@using KRSDealerManagement.Web.Models
 @{
     ViewData["Title"] = "My Orders";
     var statuses = ViewBag.Statuses as IEnumerable<StatusLookup> ?? Enumerable.Empty<StatusLookup>();
@@ -26,7 +27,7 @@
 <!-- Filters -->
 <div class="card mb-3">
     <div class="card-body py-2">
-        <form method="get" class="row g-2 align-items-end">
+        <form method="get" class="row g-2 align-items-end" id="gridFilterForm">
             <div class="col-md-2">
                 <label class="form-label form-label-sm mb-0">From</label>
                 <input type="date" name="fromDate" class="form-control form-control-sm" value="@ViewBag.FromDate" />
@@ -55,8 +56,9 @@
     <div class="card-body">
         @if (Model.Any())
         {
+            <partial name="_GridScrollHint" />
             <div class="table-responsive">
-                <table class="table table-striped table-hover">
+                <table class="table table-sm table-hover table-striped mb-0 grid-excel-table grid-data-table" data-grid-id="@GridIds.MyOrders">
                     <thead class="table-dark">
                         <tr>
                             <th>Order No.</th>
@@ -69,6 +71,7 @@
                             <th>Admin Remarks</th>
                             <th>Actions</th>
                         </tr>
+                        <partial name="_PaginatedGridFilters" />
                     </thead>
                     <tbody>
                         @foreach (var order in Model)

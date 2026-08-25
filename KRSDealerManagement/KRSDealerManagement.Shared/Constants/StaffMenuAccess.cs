@@ -29,6 +29,8 @@ namespace KRSDealerManagement.Shared.Constants
         public const string DocumentTypes = "admin_document_types";
         public const string RtoLocations = "admin_rto_locations";
         public const string VehicleBookings = "admin_vehicle_bookings";
+        public const string BookedToCustomerView = "admin_booked_to_customer";
+        public const string ChassisHistory = "admin_chassis_history";
         public const string StatusLookups = "admin_status_lookups";
 
         public static IReadOnlyList<(string Key, string Name)> AllAdminMenus() => new List<(string, string)>
@@ -48,7 +50,9 @@ namespace KRSDealerManagement.Shared.Constants
             (CommissionRates, "Commission Rates"),
             (CommissionApprovals, "Commission Approvals"),
             (Orders, "Manage Orders"),
-            (VehicleBookings, "Vehicle Bookings"),
+            (VehicleBookings, "Vehicle Booking Process"),
+            (BookedToCustomerView, "Booked to Customer"),
+            (ChassisHistory, "Chassis History"),
             (Vehicles, "Subdealer Vehicles"),
             (Returns, "Return Requests"),
             (Payments, "Payment Approvals"),
@@ -70,7 +74,7 @@ namespace KRSDealerManagement.Shared.Constants
                 },
                 UserRoleEnum.DealerBranchManager => new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 {
-                    Subdealers, Orders, Vehicles, VehicleBookings, Returns
+                    Subdealers, Orders, Vehicles, VehicleBookings, BookedToCustomerView, Returns, Balances
                 },
                 _ => new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             };
@@ -202,9 +206,9 @@ namespace KRSDealerManagement.Shared.Constants
                         },
                         new MenuItemDefinition
                         {
-                            Key = VehicleBookings, Name = "Vehicle Bookings",
-                            Controller = "VehicleBookings", Action = "Index", Icon = "bi-journal-check",
-                            Actions = new[] { "Index", "Manage" }
+                            Key = VehicleBookings, Name = "Vehicle Booking Process",
+                            Controller = "VehicleBookings", Action = "Process", Icon = "bi-pencil-square",
+                            Actions = new[] { "Process", "Manage", "Export" }
                         },
                         new MenuItemDefinition
                         {
@@ -213,11 +217,23 @@ namespace KRSDealerManagement.Shared.Constants
                         },
                         new MenuItemDefinition
                         {
+                            Key = ChassisHistory, Name = "Chassis History",
+                            Controller = "VehicleHistory", Action = "ChassisHistory", Icon = "bi-clock-history"
+                        },
+                        new MenuItemDefinition
+                        {
                             Key = Payments, Name = "Payment Approvals",
                             Controller = "Payments", Action = "Index", Icon = "bi-credit-card",
                             Actions = new[] { "Index", "AdminEdit" }
                         }
                     }
+                },
+                new()
+                {
+                    ParentKey = "manage_vehicles",
+                    ParentName = "Manage Vehicles",
+                    Icon = "bi-journal-check",
+                    Children = GetManageVehiclesMenuItems()
                 },
                 new()
                 {
@@ -236,5 +252,34 @@ namespace KRSDealerManagement.Shared.Constants
                 }
             };
         }
+
+        private static IReadOnlyList<MenuItemDefinition> GetManageVehiclesMenuItems() => new[]
+        {
+            new MenuItemDefinition
+            {
+                Key = BookedToCustomerView,
+                Name = "Booked to Customer",
+                Controller = "VehicleBookings",
+                Action = "BookedToCustomer",
+                Icon = "bi-list-check",
+                Actions = new[] { "BookedToCustomer", "Export" }
+            },
+            BookingMenuItem("Paper Received", UnifiedVehicleStatus.PaperReceived, "bi-file-earmark-text"),
+            BookingMenuItem("Invoiced", UnifiedVehicleStatus.Invoiced, "bi-receipt"),
+            BookingMenuItem("Insurance Created", UnifiedVehicleStatus.InsuranceCreated, "bi-shield-check"),
+            BookingMenuItem("RTO Requested", UnifiedVehicleStatus.RtoRequested, "bi-signpost"),
+            BookingMenuItem("Registered", UnifiedVehicleStatus.Registered, "bi-card-checklist")
+        };
+
+        private static MenuItemDefinition BookingMenuItem(string name, int status, string icon) => new()
+        {
+            Key = VehicleBookings,
+            Name = name,
+            Controller = "VehicleBookings",
+            Action = "Index",
+            Icon = icon,
+            Actions = new[] { "Index", "Export" },
+            RouteValues = new Dictionary<string, object> { ["status"] = status }
+        };
     }
 }

@@ -1,4 +1,25 @@
-1) In all grid screens default pagination should be 50 and the user can select up to 1000  - We can allow them to choose pagination as a dropdown
-2) In Account statement need export to excel
-3) For sub dealer the can request for credit say for example they will have textbox to for model, color , chasis ,credit request amount, reason, then the submit then it goes to dealer payment approvals once they approved the amount should credited to respective sub dealer
-4) In all the grid screens need coloumn level filter , say like chasis,motor,battery,All dates they can enter enything it should get filtered 
+I dont know how the pricing and commission is working now
+
+It should work like
+(Pricing)
+1) Dealer Enter price for each vehicle model and color - In pricing add screen should have a chek box apply for all colors if checked the price should be added for all the colors for that model as a individual line item
+2) The edit and delete should be available for all pricing line item
+3) Say while adding/ creating vehicles if the price is not available for that model/colors then validation should happened and it wont allow to create vehicle
+4) Say for each moth the price should be create for all vehicles , If say today is 01-01-2026 and price is added untill 31-12-2025 , It show validation message and wont llow to create vehicle
+5) Say the price is added to vehicle from 01-01-2026 to 15-01-2026 and i am trying to create a vehicle in 16-01-2026 that time also wont alow and show validation message
+6) Initially the price is added for a vehicle from 01-01-2026 to 31-01-2026 and for the same model and color if i try to add a price from 15-01-2026 means it would say the price is already configured first edit that and add for new range
+7) During invoice we should check the price change is happening for that date if price chnage happens then show a mesage earlier price is 10000 and now it changed to 1.5 lakhs and if the user clicked ok then amount should be detected/added to accounts and history should be mintained
+
+(Commission)
+1) 1) Dealer Enter commission for each vehicle model  - Design with it not based on color , it should based on model only
+2) The edit and delete should be available for all commission line item
+3) while apply commission for vehicles if the commission is not available for that model then validation should happened and it wont allow to create commission
+4) Say for each moth the commission should be create for all vehicle models by admin , If say today is 01-01-2026 and commission is added untill 31-12-2025 , It show validation message and wont allow to create commission
+5) Say the commission is added to vehicle from 01-01-2026 to 15-01-2026 and i am trying to apply commission for a vehicle in 16-01-2026 that time also wont alow and show validation message
+6) Initially the commission is added for a vehicle from 01-01-2026 to 31-01-2026 and for the same model  if i try to add a commission from 15-01-2026 means it would say the commission is already configured first edit that and add for new range
+7) The commission should be allowed only for invoiced vehicles
+
+
+Common
+
+1) The admin can edit delete individual vehicle , say if price is edited if increased/decreased based on that amoun should be credited/debited for sub dealers and each should have tracked/logged for future purpose . admin can edit any details i the vehicle

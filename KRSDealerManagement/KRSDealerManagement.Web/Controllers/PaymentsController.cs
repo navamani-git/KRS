@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using KRSDealerManagement.Application.Commands;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Web.Helpers;
 using KRSDealerManagement.Web.Filters;
 using KRSDealerManagement.Shared.Constants;
+using KRSDealerManagement.Web.Models;
 using KRSDealerManagement.Domain.Repositories;
 
 namespace KRSDealerManagement.Web.Controllers
@@ -27,21 +29,23 @@ namespace KRSDealerManagement.Web.Controllers
 
         [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.MyPayments)]
-        public async Task<IActionResult> MyPayments(int? status, DateTime? fromDate, DateTime? toDate, int? page)
+        public async Task<IActionResult> MyPayments(int? status, DateTime? fromDate, DateTime? toDate, int? page, int? pageSize)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
             var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.MyPayments);
             var payments = await _mediator.Send(new GetPaymentsQuery
             {
                 SubdealerId = userId.Value,
                 Status = status,
                 FromDate = from,
-                ToDate = to
+                ToDate = to,
+                ColumnFilters = columnFilters
             });
 
-            var (pageItems, pageInfo) = ListPagingHelper.Paginate(payments, page);
+            var (pageItems, pageInfo) = ListPagingHelper.Paginate(payments, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
             ViewBag.SelectedStatus = status;
             ViewBag.FromDate = from.ToString("yyyy-MM-dd");
@@ -205,6 +209,77 @@ namespace KRSDealerManagement.Web.Controllers
             }
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AuthorizeRole(2)]
+        [AuthorizeMenu(MenuKeys.MyPayments)]
+        [RequestSizeLimit(20_000_000)]
+        public async Task<IActionResult> SubmitCreditRequest(
+            decimal? amount,
+            string? modelName,
+            string? colorName,
+            string? chassisNumber,
+            string? reason,
+            IFormFile? paymentProof)
+        {
+            var userId = SessionHelper.GetUserId(HttpContext.Session);
+            if (!userId.HasValue) return RedirectToAction("Login", "Account");
+
+            if (!amount.HasValue || amount.Value <= 0)
+            {
+                TempData["Error"] = "Credit request amount must be greater than zero.";
+                return RedirectToAction(nameof(MyPayments));
+            }
+
+            var creditType = (await _unitOfWork.PaymentTypes.GetAllAsync())
+                .FirstOrDefault(t => t.IsActive
+                    && t.TypeCode.Equals(CreditRequestHelper.TypeCode, StringComparison.OrdinalIgnoreCase));
+            if (creditType == null)
+            {
+                TempData["Error"] = "Credit Request payment type is not configured. Contact administrator.";
+                return RedirectToAction(nameof(MyPayments));
+            }
+
+            var account = await AccountHelper.GetPrimaryAccountAsync(_mediator, userId.Value);
+            if (account == null)
+            {
+                TempData["Error"] = "No account found for your profile. Please contact administrator.";
+                return RedirectToAction(nameof(MyPayments));
+            }
+
+            try
+            {
+                string? proofPath = null;
+                if (paymentProof != null && paymentProof.Length > 0)
+                    proofPath = await PaymentFileHelper.SaveAsync(paymentProof, _env.ContentRootPath);
+
+                var paymentId = await _mediator.Send(new CreatePaymentCommand
+                {
+                    AccountId = account.AccountId,
+                    SubdealerId = userId.Value,
+                    Amount = amount.Value,
+                    PaymentTypeId = creditType.PaymentTypeId,
+                    PaymentType = creditType.TypeName,
+                    PaymentDate = DateTime.Today,
+                    SubdealerRemarks = reason?.Trim(),
+                    VinNumber = chassisNumber,
+                    CreditRequestModelName = modelName,
+                    CreditRequestColorName = colorName,
+                    PaymentProofPath = proofPath,
+                    IsCreditRequest = true,
+                    CreatedBy = userId.Value
+                });
+
+                TempData["Success"] = $"Credit request of ₹{amount.Value:N2} submitted (#{paymentId}). Awaiting approval.";
+                return RedirectToAction(nameof(MyPayments));
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error: {ex.Message}";
+                return RedirectToAction(nameof(MyPayments));
+            }
+        }
+
         [AuthorizeRole(1, 2, 3, 4)]
         public IActionResult ViewProof(string path)
         {
@@ -235,16 +310,18 @@ namespace KRSDealerManagement.Web.Controllers
 
         [AuthorizeRole(1, 3)]
         [AuthorizeMenu(StaffMenuAccess.Payments)]
-        public async Task<IActionResult> Index(int? status, int? subdealerId, DateTime? fromDate, DateTime? toDate, int? page)
+        public async Task<IActionResult> Index(int? status, int? subdealerId, DateTime? fromDate, DateTime? toDate, int? page, int? pageSize)
         {
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Payments);
             var payments = await _mediator.Send(new GetPaymentsQuery
             {
                 Status = status,
                 SubdealerId = subdealerId,
                 FromDate = from,
-                ToDate = to
+                ToDate = to,
+                ColumnFilters = columnFilters
             });
 
             var subdealers = (await _mediator.Send(new GetSubdealersQuery { IsActive = true, DealershipId = scope })).ToList();
@@ -255,7 +332,7 @@ namespace KRSDealerManagement.Web.Controllers
             }
 
             var paymentList = payments.ToList();
-            var (pageItems, pageInfo) = ListPagingHelper.Paginate(paymentList, page);
+            var (pageItems, pageInfo) = ListPagingHelper.Paginate(paymentList, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
 
             ViewBag.Subdealers = subdealers;

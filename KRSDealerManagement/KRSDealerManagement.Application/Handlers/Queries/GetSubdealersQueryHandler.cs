@@ -2,6 +2,7 @@ using MediatR;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Application.DTOs;
 using KRSDealerManagement.Application.Services;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Domain.Entities;
 using KRSDealerManagement.Domain.Repositories;
 
@@ -61,6 +62,18 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     CreatedDate = org.CreatedDate,
                     ModifiedDate = org.ModifiedDate
                 });
+            }
+
+            if (request.ColumnFilters is { Count: > 0 } cf)
+            {
+                result = result.Where(s =>
+                    GridFilterHelper.MatchesContains(s.GetFullName(), GridFilterHelper.GetFilter(cf, "name"))
+                    && GridFilterHelper.MatchesContains(s.Email, GridFilterHelper.GetFilter(cf, "email"))
+                    && GridFilterHelper.MatchesContains(s.LastName, GridFilterHelper.GetFilter(cf, "location"))
+                    && GridFilterHelper.MatchesContains(s.PhoneNumber, GridFilterHelper.GetFilter(cf, "phone"))
+                    && GridFilterHelper.MatchesContains(s.IsActive ? "Active" : "Inactive", GridFilterHelper.GetFilter(cf, "status"))
+                    && GridFilterHelper.MatchesDate(s.CreatedDate, GridFilterHelper.GetDateFilter(cf, "created"), GridFilterHelper.GetDateFilter(cf, "created")))
+                    .ToList();
             }
 
             return result;

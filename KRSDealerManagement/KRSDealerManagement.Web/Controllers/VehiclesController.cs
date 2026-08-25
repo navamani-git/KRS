@@ -8,6 +8,8 @@ using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
 using KRSDealerManagement.Web.Helpers;
 using KRSDealerManagement.Web.Filters;
+using KRSDealerManagement.Web.Models;
+using KRSDealerManagement.Web.Services;
 
 namespace KRSDealerManagement.Web.Controllers
 {
@@ -16,12 +18,18 @@ namespace KRSDealerManagement.Web.Controllers
         private readonly IMediator _mediator;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IStatusLookupService _statuses;
+        private readonly IQueryStringCrypto _queryCrypto;
 
-        public VehiclesController(IMediator mediator, IUnitOfWork unitOfWork, IStatusLookupService statuses)
+        public VehiclesController(
+            IMediator mediator,
+            IUnitOfWork unitOfWork,
+            IStatusLookupService statuses,
+            IQueryStringCrypto queryCrypto)
         {
             _mediator = mediator;
             _unitOfWork = unitOfWork;
             _statuses = statuses;
+            _queryCrypto = queryCrypto;
         }
 
         private async Task<GetVehiclesQuery> BuildQueryAsync(int? subdealerId, string? searchTerm, DateTime? fromDate, DateTime? toDate)
@@ -51,7 +59,8 @@ namespace KRSDealerManagement.Web.Controllers
             string? searchTerm,
             DateTime? fromDate,
             DateTime? toDate,
-            int? page)
+            int? page,
+            int? pageSize)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
@@ -67,7 +76,9 @@ namespace KRSDealerManagement.Web.Controllers
             }
 
             var isSubdealer = SessionHelper.IsSubdealer(HttpContext.Session);
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Vehicles);
             var query = await BuildQueryAsync(subdealerId, searchTerm, fromDate, toDate);
+            query.ColumnFilters = columnFilters;
             // Subdealer My Vehicles: show all unless they explicitly filter by date
             if (isSubdealer && !fromDate.HasValue && !toDate.HasValue)
             {
@@ -77,7 +88,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
             var vehicles = await _mediator.Send(query);
-            var (pageItems, pageInfo) = ListPagingHelper.Paginate(vehicles, page);
+            var (pageItems, pageInfo) = ListPagingHelper.Paginate(vehicles, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
 
             ViewBag.FromDate = isSubdealer && !fromDate.HasValue ? "" : from.ToString("yyyy-MM-dd");
@@ -152,7 +163,8 @@ namespace KRSDealerManagement.Web.Controllers
                 query.DealershipId = SessionHelper.GetDealershipScope(HttpContext.Session);
 
             var vehicle = (await _mediator.Send(query)).FirstOrDefault(v => v.VehicleId == id);
-            if (vehicle == null) return NotFound();
+            if (vehicle == null)
+                return Json(new { success = false, message = "Vehicle not found or you do not have access." });
 
             var booking = (await _unitOfWork.VehicleBookings.GetAllAsync())
                 .FirstOrDefault(b => b.VehicleId == id);
@@ -198,7 +210,13 @@ namespace KRSDealerManagement.Web.Controllers
                     numberPlateReceivedDate = booking.NumberPlateReceivedDate?.ToString("yyyy-MM-dd"),
                     subsidyId = booking.SubsidyId,
                     subsidyDocsSubmittedDate = booking.SubsidyDocsSubmittedDate?.ToString("yyyy-MM-dd"),
-                    subsidyCustomerNameCaps = booking.SubsidyCustomerNameCaps
+                    subsidyCustomerNameCaps = booking.SubsidyCustomerNameCaps,
+                    hasInvoiceFile = !string.IsNullOrWhiteSpace(booking.InvoicePath),
+                    hasInsuranceFile = !string.IsNullOrWhiteSpace(booking.InsurancePath),
+                    invoiceViewUrl = BookingFileUrls.View(Url, _queryCrypto, booking.InvoicePath),
+                    invoiceDownloadUrl = BookingFileUrls.Download(Url, _queryCrypto, booking.InvoicePath),
+                    insuranceViewUrl = BookingFileUrls.View(Url, _queryCrypto, booking.InsurancePath),
+                    insuranceDownloadUrl = BookingFileUrls.Download(Url, _queryCrypto, booking.InsurancePath)
                 };
             }
 

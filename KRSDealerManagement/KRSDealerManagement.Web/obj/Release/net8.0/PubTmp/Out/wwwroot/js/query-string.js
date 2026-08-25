@@ -13,9 +13,9 @@ window.KrsQueryString = {
         return data.q;
     },
 
-    async fetchGet(baseUrl, values) {
+    async fetchGet(baseUrl, values, init) {
         const q = await this.pack(values);
         const separator = baseUrl.includes('?') ? '&' : '?';
-        return fetch(`${baseUrl}${separator}q=${encodeURIComponent(q)}`);
+        return fetch(`${baseUrl}${separator}q=${encodeURIComponent(q)}`, init);
     }
 };

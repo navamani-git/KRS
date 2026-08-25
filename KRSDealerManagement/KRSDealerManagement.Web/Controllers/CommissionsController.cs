@@ -7,6 +7,7 @@ using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Web.Helpers;
 using KRSDealerManagement.Web.Filters;
 using KRSDealerManagement.Shared.Constants;
+using KRSDealerManagement.Web.Models;
 
 namespace KRSDealerManagement.Web.Controllers
 {
@@ -31,7 +32,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         // GET: Commissions (Admin - Commission Rates)
         [AuthorizeRole(1)]
-        public async Task<IActionResult> Index(int? modelId, bool? activeOnly, DateTime? effectiveFrom, DateTime? effectiveTo, int? page)
+        public async Task<IActionResult> Index(int? modelId, bool? activeOnly, DateTime? effectiveFrom, DateTime? effectiveTo, int? page, int? pageSize)
         {
             var now = DateTime.Now;
             var filterFrom = effectiveFrom?.Date ?? new DateTime(now.Year, now.Month, 1);
@@ -45,8 +46,11 @@ namespace KRSDealerManagement.Web.Controllers
                 EffectiveTo = filterTo
             });
 
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.CommissionRates);
+            rates = GridScreenFilterHelper.ApplyCommissionRates(rates, columnFilters);
+
             var models = await _mediator.Send(new GetVehicleModelsQuery { IsActive = true });
-            var (pageItems, pageInfo) = ListPagingHelper.Paginate(rates, page);
+            var (pageItems, pageInfo) = ListPagingHelper.Paginate(rates, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
             ViewBag.Models = models;
             ViewBag.SelectedModelId = modelId;
@@ -471,7 +475,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         // GET: Commissions/Approvals (Admin — review submitted commissions)
         [AuthorizeRole(1)]
-        public async Task<IActionResult> Approvals(int? status, int? subdealerId, DateTime? fromDate, DateTime? toDate, int? page)
+        public async Task<IActionResult> Approvals(int? status, int? subdealerId, DateTime? fromDate, DateTime? toDate, int? page, int? pageSize)
         {
             if (!Request.Query.ContainsKey("status"))
                 status = 0;
@@ -485,8 +489,9 @@ namespace KRSDealerManagement.Web.Controllers
                 ToDate = to
             });
 
-            var commissionList = commissions.ToList();
-            var (pageItems, pageInfo) = ListPagingHelper.Paginate(commissionList, page);
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.CommissionApprovals);
+            var commissionList = GridScreenFilterHelper.ApplyCommissionApprovals(commissions, columnFilters).ToList();
+            var (pageItems, pageInfo) = ListPagingHelper.Paginate(commissionList, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
 
             var subdealers = (await _mediator.Send(new GetSubdealersQuery { IsActive = true })).ToList();

@@ -1,0 +1,20 @@
+@{
+    var vehicleId = ViewData["VehicleId"] as int? ?? 0;
+    var chassis = ViewData["Chassis"] as string ?? "-";
+    var codeClass = ViewData["ChassisCodeClass"] as string ?? "small";
+    var linkClass = ViewData["ChassisLinkClass"] as string ?? "";
+    var display = string.IsNullOrWhiteSpace(chassis) || chassis == "-" ? "View details" : chassis;
+}
+
+@if (vehicleId > 0)
+{
+    <a href="javascript:void(0)" class="text-decoration-none chassis-link @linkClass"
+       data-id="@vehicleId" data-no-loader="true"
+       title="View motor, battery &amp; booking details">
+        <code class="@codeClass">@display</code>
+    </a>
+}
+else
+{
+    <code class="@codeClass">@display</code>
+}

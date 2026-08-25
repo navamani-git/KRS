@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using KRSDealerManagement.Domain.Entities;
 
 namespace KRSDealerManagement.Web.Helpers
 {
@@ -7,15 +8,27 @@ namespace KRSDealerManagement.Web.Helpers
         private static readonly string[] PdfOnly = { ".pdf" };
         private static readonly string[] ImageOnly = { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
         private const long MaxBytes = 10 * 1024 * 1024;
-        private const string Folder = "vehicle_booking";
+        public const string StorageFolder = "vehicle_booking";
+        public const string InsuranceInvoiceFolder = "Insurance_Invoice";
+        private const string RelativeRoot = "Files/" + StorageFolder;
+        private const string InsuranceInvoiceRoot = "Files/" + InsuranceInvoiceFolder;
 
         public static async Task<string> SavePdfAsync(IFormFile file, string webRoot)
-            => await SaveAsync(file, webRoot, PdfOnly);
+            => await SaveAsync(file, webRoot, StorageFolder, PdfOnly);
 
         public static async Task<string> SaveImageAsync(IFormFile file, string webRoot)
-            => await SaveAsync(file, webRoot, ImageOnly);
+            => await SaveAsync(file, webRoot, StorageFolder, ImageOnly);
 
-        private static async Task<string> SaveAsync(IFormFile file, string webRoot, string[] allowed)
+        public static async Task<string> SaveDocumentAsync(IFormFile file, string webRoot)
+            => await SaveAsync(file, webRoot, StorageFolder, PdfOnly.Concat(ImageOnly).ToArray());
+
+        public static async Task<string> SaveInvoiceDocumentAsync(IFormFile file, string webRoot)
+            => await SaveAsync(file, webRoot, InsuranceInvoiceFolder, PdfOnly.Concat(ImageOnly).ToArray(), "Invoice");
+
+        public static async Task<string> SaveInsuranceDocumentAsync(IFormFile file, string webRoot)
+            => await SaveAsync(file, webRoot, InsuranceInvoiceFolder, PdfOnly.Concat(ImageOnly).ToArray(), "Insurance");
+
+        private static async Task<string> SaveAsync(IFormFile file, string webRoot, string folderName, string[] allowed, string? namePrefix = null)
         {
             if (file == null || file.Length == 0)
                 throw new InvalidOperationException("File is empty.");
@@ -27,11 +40,13 @@ namespace KRSDealerManagement.Web.Helpers
                 throw new InvalidOperationException($"Allowed file types: {string.Join(", ", allowed)}.");
 
             var dayFolder = DateTime.Now.ToString("yyyy_MM_dd");
-            var relativeDir = Path.Combine("Files", Folder, dayFolder);
+            var relativeDir = Path.Combine("Files", folderName, dayFolder);
             var absoluteDir = Path.Combine(webRoot, relativeDir);
             Directory.CreateDirectory(absoluteDir);
 
             var storedName = SanitizeFileName(file.FileName);
+            if (!string.IsNullOrEmpty(namePrefix))
+                storedName = $"{namePrefix}_{storedName}";
             var absolutePath = Path.Combine(absoluteDir, storedName);
             if (File.Exists(absolutePath))
             {
@@ -53,6 +68,29 @@ namespace KRSDealerManagement.Web.Helpers
             return safeName;
         }
 
+        public static bool IsStoredBookingFilePath(string? relativePath) =>
+            !string.IsNullOrWhiteSpace(relativePath)
+            && (relativePath.StartsWith(StorageFolderPrefix, StringComparison.OrdinalIgnoreCase)
+                || relativePath.StartsWith(InsuranceInvoiceFolderPrefix, StringComparison.OrdinalIgnoreCase));
+
+        public static bool BookingContainsFilePath(VehicleBooking booking, string path) =>
+            string.Equals(booking.EAadhaarPath, path, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(booking.DocumentPath, path, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(booking.GstCertificatePath, path, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(booking.CustomerPhotoPath, path, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(booking.ChassisPhotoPath, path, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(booking.CustomerSignPath, path, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(booking.FaceVerificationPath, path, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(booking.RcImagePath, path, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(booking.BoothPhotoPath, path, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(booking.SubsidyUndertakingPath, path, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(booking.InvoicePath, path, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(booking.InsurancePath, path, StringComparison.OrdinalIgnoreCase);
+
+        public static string StorageFolderPrefix => RelativeRoot + "/";
+
+        public static string InsuranceInvoiceFolderPrefix => InsuranceInvoiceRoot + "/";
+
         public static string ResolvePath(string webRoot, string? relativePath)
         {
             if (string.IsNullOrWhiteSpace(relativePath)) return "";
@@ -61,6 +99,9 @@ namespace KRSDealerManagement.Web.Helpers
             if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase)) return "";
             return File.Exists(full) ? full : "";
         }
+
+        public static bool IsFileAvailable(string webRoot, string? relativePath) =>
+            !string.IsNullOrEmpty(ResolvePath(webRoot, relativePath));
 
         public static string GetContentType(string absolutePath)
         {

@@ -130,5 +130,33 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.Balance = balance;
             return View("~/Views/Reports/AccountStatement.cshtml", transactions);
         }
+
+        [HttpGet]
+        [AuthorizeRole(2)]
+        [AuthorizeMenu(MenuKeys.AccountStatements)]
+        public async Task<IActionResult> ExportStatement(DateTime? fromDate, DateTime? toDate)
+        {
+            var userId = SessionHelper.GetUserId(HttpContext.Session);
+            if (!userId.HasValue) return RedirectToAction(nameof(Login));
+
+            var account = await AccountHelper.GetPrimaryAccountAsync(_mediator, userId.Value);
+            if (account == null)
+                return RedirectToAction(nameof(Statement));
+
+            var balance = await _mediator.Send(new GetAccountBalanceQuery
+            {
+                SubdealerAccountId = account.AccountId
+            });
+
+            var transactions = await _mediator.Send(new GetAccountTransactionsQuery
+            {
+                AccountId = account.AccountId,
+                FromDate = fromDate,
+                ToDate = toDate
+            });
+
+            return AccountStatementExportHelper.ToFileResult(
+                this, account.AccountId, balance?.SubdealerName ?? account.AccountName, transactions);
+        }
     }
 }
