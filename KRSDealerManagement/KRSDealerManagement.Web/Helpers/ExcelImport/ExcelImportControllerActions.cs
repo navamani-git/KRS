@@ -11,12 +11,38 @@ namespace KRSDealerManagement.Web.Helpers.ExcelImport
         {
             var processor = service.GetProcessor(key);
             if (processor == null)
-                return controller.NotFound();
+            {
+                return FileDownloadHelper.RedirectWithMessage(
+                    controller,
+                    "Import template is not available.",
+                    RouteKeyToController(key),
+                    "Create");
+            }
 
             var bytes = service.BuildTemplate(key, context);
             return controller.File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 processor.TemplateFileName);
         }
+
+        private static string RouteKeyToController(string key) => key switch
+        {
+            ExcelImportKeys.RtoLocations => "RtoLocations",
+            ExcelImportKeys.DocumentTypes => "DocumentTypes",
+            ExcelImportKeys.FinanceNames => "FinanceNames",
+            ExcelImportKeys.VehicleColors => "VehicleColors",
+            ExcelImportKeys.PaymentTypes => "PaymentTypes",
+            ExcelImportKeys.StatusLookups => "StatusLookups",
+            ExcelImportKeys.Dealerships => "Dealerships",
+            ExcelImportKeys.VehicleModels => "VehicleModels",
+            ExcelImportKeys.Prices => "Prices",
+            ExcelImportKeys.CommissionRates => "Commissions",
+            ExcelImportKeys.StaffUsers => "StaffUsers",
+            ExcelImportKeys.Subdealers => "Subdealers",
+            ExcelImportKeys.SubdealerAccounts => "Accounts",
+            ExcelImportKeys.OrdersSubdealer => "Orders",
+            ExcelImportKeys.OrdersForSubdealer => "Orders",
+            _ => "Dashboard"
+        };
 
         public static async Task<IActionResult> ImportAsync(
             Controller controller,

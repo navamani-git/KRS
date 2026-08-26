@@ -10,6 +10,8 @@ namespace KRSDealerManagement.Application.Commands
     {
         public int ModelId { get; set; }
         public int ColorId { get; set; }
+        /// <summary>Selected colors from the price entry form (one or many).</summary>
+        public List<int> ColorIds { get; set; } = new();
         public bool ApplyForAllColors { get; set; }
         public int Month { get; set; } // 1-12
         public int Year { get; set; }

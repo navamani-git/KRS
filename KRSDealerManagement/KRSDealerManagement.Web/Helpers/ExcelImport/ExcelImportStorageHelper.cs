@@ -2,9 +2,9 @@ namespace KRSDealerManagement.Web.Helpers.ExcelImport
 {
     public static class ExcelImportStorageHelper
     {
-        public const string RelativeRoot = "Files/Import";
+        public static string RelativeRoot => $"{AppFileStorageHelper.RootFolder}/{AppFileStorageHelper.Sections.Import}";
 
-        public static async Task<string> SaveUploadedFileAsync(IFormFile file, string webRootPath)
+        public static async Task<string> SaveUploadedFileAsync(IFormFile file, IWebHostEnvironment env)
         {
             if (file == null || file.Length == 0)
                 throw new InvalidOperationException("No file uploaded.");
@@ -15,8 +15,7 @@ namespace KRSDealerManagement.Web.Helpers.ExcelImport
                 throw new InvalidOperationException("Only Excel files (.xlsx) are supported.");
 
             var dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
-            var dir = Path.Combine(webRootPath, RelativeRoot, dateFolder);
-            Directory.CreateDirectory(dir);
+            var dir = AppFileStorageHelper.EnsureSectionDayFolder(env, AppFileStorageHelper.Sections.Import, dateFolder);
 
             var baseName = Path.GetFileNameWithoutExtension(file.FileName);
             foreach (var c in Path.GetInvalidFileNameChars())
@@ -28,10 +27,14 @@ namespace KRSDealerManagement.Web.Helpers.ExcelImport
             await using var stream = File.Create(fullPath);
             await file.CopyToAsync(stream);
 
-            return Path.Combine(RelativeRoot, dateFolder, fileName).Replace('\\', '/');
+            return AppFileStorageHelper.ToRelativePath(AppFileStorageHelper.Sections.Import, dateFolder, fileName);
         }
 
-        public static string ResolveFullPath(string webRootPath, string relativePath)
-            => Path.Combine(webRootPath, relativePath.Replace('/', Path.DirectorySeparatorChar));
+        public static string ResolveFullPath(IWebHostEnvironment env, string relativePath)
+        {
+            if (!AppFileStorageHelper.TryResolveAbsolute(env, relativePath, out var full))
+                throw new FileNotFoundException("Uploaded import file could not be found.", relativePath);
+            return full;
+        }
     }
 }

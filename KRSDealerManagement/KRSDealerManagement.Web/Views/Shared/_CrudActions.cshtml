@@ -1,3 +1,4 @@
+@using KRSDealerManagement.Shared.Constants
 @{
     var id = (int)ViewData["CrudId"]!;
     var controller = (string)ViewData["CrudController"]!;
@@ -5,8 +6,18 @@
     var deleteAction = ViewData["CrudDeleteAction"] as string ?? "Delete";
     var showDelete = ViewData["CrudShowDelete"] as bool? ?? true;
     var useEncrypted = ViewData["CrudEncrypted"] as bool? ?? false;
+    var menuKey = ViewData["CrudMenuKey"] as string;
+    if (string.IsNullOrWhiteSpace(menuKey))
+    {
+        var routeController = ViewContext.RouteData.Values["controller"]?.ToString() ?? controller;
+        var routeAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "Index";
+        StaffMenuAccess.TryResolveMenuKey(routeController, routeAction, out menuKey);
+    }
+    var canWrite = string.IsNullOrWhiteSpace(menuKey) || KRSDealerManagement.Web.Helpers.SessionHelper.CanWriteMenu(Context.Session, menuKey);
 }
 
+@if (canWrite)
+{
 <div class="btn-group btn-group-sm" role="group">
     @if (useEncrypted)
     {
@@ -32,3 +43,4 @@
         </form>
     }
 </div>
+}

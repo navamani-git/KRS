@@ -9,7 +9,7 @@ namespace KRSDealerManagement.Web.Helpers
     {
         private static readonly string[] AllowedExtensions = { ".pdf", ".jpg", ".jpeg", ".png", ".webp", ".gif" };
 
-        public static async Task<string> SaveAsync(IFormFile file, string webRootOrContentRoot)
+        public static async Task<string> SaveAsync(IFormFile file, IWebHostEnvironment env)
         {
             if (file == null || file.Length == 0)
                 throw new InvalidOperationException("File is empty.");
@@ -19,12 +19,9 @@ namespace KRSDealerManagement.Web.Helpers
                 throw new InvalidOperationException("Allowed file types: PDF, JPG, PNG, WEBP, GIF.");
 
             var dayFolder = DateTime.Now.ToString("yyyy_MM_dd");
-            var relativeDir = Path.Combine("Files", "Payment", dayFolder);
-            var absoluteDir = Path.Combine(webRootOrContentRoot, relativeDir);
-            Directory.CreateDirectory(absoluteDir);
+            var absoluteDir = AppFileStorageHelper.EnsureSectionDayFolder(env, AppFileStorageHelper.Sections.Payment, dayFolder);
 
-            var safeName = Path.GetFileName(file.FileName)
-                .Replace(" ", "_");
+            var safeName = Path.GetFileName(file.FileName).Replace(" ", "_");
             foreach (var c in Path.GetInvalidFileNameChars())
                 safeName = safeName.Replace(c, '_');
 
@@ -34,8 +31,7 @@ namespace KRSDealerManagement.Web.Helpers
             await using var stream = new FileStream(absolutePath, FileMode.Create);
             await file.CopyToAsync(stream);
 
-            // Store relative path with forward slashes for web/download
-            return Path.Combine(relativeDir, storedName).Replace('\\', '/');
+            return AppFileStorageHelper.ToRelativePath(AppFileStorageHelper.Sections.Payment, dayFolder, storedName);
         }
 
         public static string GetContentType(string absolutePath)

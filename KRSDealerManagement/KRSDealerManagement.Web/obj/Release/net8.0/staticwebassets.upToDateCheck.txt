@@ -52,6 +52,8 @@ wwwroot\js\grid-combobox.js
 wwwroot\js\grid-resize.js
 wwwroot\js\grid-scroll.js
 wwwroot\js\model-color-filter.js
+wwwroot\js\price-color-picker.js
 wwwroot\js\query-string.js
 wwwroot\js\site-loader.js
+wwwroot\js\staff-role-menu.js
 wwwroot\js\vehicle-chassis-modal.js

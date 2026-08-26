@@ -1138,15 +1138,6 @@ table.grid-excel-table td.grid-sticky-col-2 {
 
 /* Responsive Design */
 @media (max-width: 768px) {
-    .sidebar {
-        margin-left: -250px;
-        transition: margin-left 0.3s;
-    }
-
-    .sidebar.show {
-        margin-left: 0;
-    }
-
     .content-header h1 {
         font-size: 24px;
     }
@@ -1274,7 +1265,69 @@ table.grid-excel-table td.grid-sticky-col-2 {
     text-align: center;
 }
 
-/* Print Styles */
+/* AdminLTE mobile sidebar: keep menu content visible when pushmenu opens */
+@media (max-width: 991.98px) {
+    .main-sidebar .sidebar {
+        margin-left: 0 !important;
+        overflow-y: auto;
+        max-height: calc(100vh - 3.5rem);
+    }
+
+    body.sidebar-open .main-sidebar {
+        z-index: 1040;
+    }
+
+    /* sidebar-mini hides labels until hover — on mobile show full menu when open */
+    body.sidebar-open.sidebar-mini .main-sidebar .nav-sidebar .nav-link p,
+    body.sidebar-open.sidebar-mini .main-sidebar .brand-text,
+    body.sidebar-open.sidebar-mini .main-sidebar .user-panel .info {
+        display: inline-block !important;
+        width: auto !important;
+        margin-left: 0 !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+
+    body.sidebar-open.sidebar-mini .main-sidebar .nav-sidebar .nav-link {
+        width: auto !important;
+    }
+
+    .nav-sidebar .nav-link,
+    .nav-sidebar .nav-link p,
+    .nav-sidebar .nav-link .nav-icon {
+        color: rgba(255, 255, 255, 0.85) !important;
+    }
+}
+
+/* Staff role menu permission matrix */
+.role-menu-accordion .accordion-button {
+    font-size: 0.9375rem;
+    padding-top: 0.65rem;
+    padding-bottom: 0.65rem;
+}
+
+.role-menu-accordion .accordion-button:not(.collapsed) {
+    background-color: #f8f9fa;
+    color: #343a40;
+    box-shadow: none;
+}
+
+.role-menu-row:last-child {
+    border-bottom: none !important;
+}
+
+.role-menu-row-label {
+    font-size: 0.9rem;
+    color: #343a40;
+}
+
+@media (max-width: 576px) {
+    .role-menu-row-access {
+        width: 100%;
+        max-width: none !important;
+    }
+}
+
 @media print {
     .main-header,
     .sidebar,

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using KRSDealerManagement.Shared.Constants;
+using KRSDealerManagement.Shared.Enums;
 
 namespace KRSDealerManagement.Web.Helpers
 {
@@ -15,6 +16,7 @@ namespace KRSDealerManagement.Web.Helpers
         private const string SessionKeyDealershipName = "DealershipName";
         private const string SessionKeySubDealerId = "SubDealerId";
         private const string SessionKeyMenus = "AccessibleMenus";
+        private const string SessionKeyMenuAccess = "MenuAccessLevels";
 
         public static void SetUserSession(
             ISession session,
@@ -27,7 +29,8 @@ namespace KRSDealerManagement.Web.Helpers
             int? dealershipId = null,
             string? dealershipName = null,
             int? subDealerId = null,
-            IEnumerable<string>? menuKeys = null)
+            IEnumerable<string>? menuKeys = null,
+            IDictionary<string, MenuAccessLevel>? menuAccess = null)
         {
             session.SetInt32(SessionKeyUserId, userId);
             session.SetString(SessionKeyUsername, username);
@@ -42,6 +45,7 @@ namespace KRSDealerManagement.Web.Helpers
             if (subDealerId.HasValue) session.SetInt32(SessionKeySubDealerId, subDealerId.Value);
             else session.Remove(SessionKeySubDealerId);
             session.SetString(SessionKeyMenus, string.Join(",", menuKeys ?? Array.Empty<string>()));
+            session.SetString(SessionKeyMenuAccess, SerializeMenuAccess(menuAccess));
         }
 
         public static int? GetUserId(ISession session) => session.GetInt32(SessionKeyUserId);
@@ -60,7 +64,7 @@ namespace KRSDealerManagement.Web.Helpers
             string.Equals(GetRoleCode(session), RoleCodes.SystemAdmin, StringComparison.OrdinalIgnoreCase)
             || GetUserRole(session) == 1;
 
-        public static bool IsAdmin(ISession session) => IsSystemAdmin(session); // legacy name
+        public static bool IsAdmin(ISession session) => IsSystemAdmin(session);
 
         public static bool IsBranchManager(ISession session) =>
             string.Equals(GetRoleCode(session), RoleCodes.BranchManager, StringComparison.OrdinalIgnoreCase)
@@ -75,32 +79,91 @@ namespace KRSDealerManagement.Web.Helpers
             || GetUserRole(session) == 2;
 
         public static bool IsStaff(ISession session) =>
-            IsSystemAdmin(session) || IsBranchManager(session) || IsFinanceAdmin(session);
+            IsSystemAdmin(session) || (!IsSubdealer(session) && GetMenuAccessLevel(session, StaffMenuAccess.Balances) != MenuAccessLevel.None)
+            || IsBranchManager(session) || IsFinanceAdmin(session)
+            || HasAnyConfiguredStaffMenu(session);
 
-        /// <summary>Null = all dealerships (system admin). Otherwise scoped.</summary>
         public static int? GetDealershipScope(ISession session)
         {
             if (IsSystemAdmin(session)) return null;
             return GetDealershipId(session);
         }
 
-        public static bool HasMenuAccess(ISession session, string menuKey)
+        public static MenuAccessLevel GetMenuAccessLevel(ISession session, string menuKey)
         {
-            if (IsSystemAdmin(session)) return true;
+            if (IsSystemAdmin(session)) return MenuAccessLevel.Full;
 
-            var raw = session.GetString(SessionKeyMenus);
-            if (!string.IsNullOrWhiteSpace(raw))
+            var map = GetMenuAccessMap(session);
+            return map.TryGetValue(menuKey, out var level) ? level : MenuAccessLevel.None;
+        }
+
+        public static bool HasMenuAccess(ISession session, string menuKey)
+            => GetMenuAccessLevel(session, menuKey) != MenuAccessLevel.None;
+
+        public static bool IsMenuReadOnly(ISession session, string menuKey)
+            => GetMenuAccessLevel(session, menuKey) == MenuAccessLevel.ReadOnly;
+
+        public static bool CanWriteMenu(ISession session, string menuKey)
+            => GetMenuAccessLevel(session, menuKey) == MenuAccessLevel.Full;
+
+        public static bool CanExportMenu(ISession session, string menuKey)
+        {
+            var level = GetMenuAccessLevel(session, menuKey);
+            return level is MenuAccessLevel.ReadOnly or MenuAccessLevel.Full;
+        }
+
+        public static Dictionary<string, MenuAccessLevel> GetMenuAccessMap(ISession session)
+        {
+            var raw = session.GetString(SessionKeyMenuAccess);
+            if (string.IsNullOrWhiteSpace(raw))
+                return BuildLegacyMenuAccessMap(session);
+
+            var map = new Dictionary<string, MenuAccessLevel>(StringComparer.OrdinalIgnoreCase);
+            foreach (var part in raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             {
-                var hasInSession = raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    .Any(k => k.Equals(menuKey, StringComparison.OrdinalIgnoreCase));
-                if (hasInSession) return true;
+                var bits = part.Split(':', 2);
+                if (bits.Length != 2) continue;
+                if (Enum.TryParse<MenuAccessLevel>(bits[1], out var level) && level != MenuAccessLevel.None)
+                    map[bits[0]] = level;
             }
 
-            // Role defaults from code (e.g. Balances for branch manager when DB RoleMenus lags behind)
-            var role = GetUserRole(session);
-            return role.HasValue && StaffMenuAccess.CanAccess(role.Value, menuKey);
+            return map;
         }
 
         public static void ClearSession(ISession session) => session.Clear();
+
+        private static bool HasAnyConfiguredStaffMenu(ISession session)
+        {
+            var raw = session.GetString(SessionKeyMenus);
+            return !string.IsNullOrWhiteSpace(raw) && !IsSubdealer(session);
+        }
+
+        private static Dictionary<string, MenuAccessLevel> BuildLegacyMenuAccessMap(ISession session)
+        {
+            var map = new Dictionary<string, MenuAccessLevel>(StringComparer.OrdinalIgnoreCase);
+            var raw = session.GetString(SessionKeyMenus);
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                var role = GetUserRole(session);
+                if (role.HasValue)
+                {
+                    foreach (var key in StaffMenuAccess.GetMenusForRole(role.Value))
+                        map[key] = MenuAccessLevel.Full;
+                }
+                return map;
+            }
+
+            foreach (var key in raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                map[key] = MenuAccessLevel.Full;
+            return map;
+        }
+
+        private static string SerializeMenuAccess(IDictionary<string, MenuAccessLevel>? menuAccess)
+        {
+            if (menuAccess == null || menuAccess.Count == 0) return string.Empty;
+            return string.Join(",", menuAccess
+                .Where(kv => kv.Value != MenuAccessLevel.None)
+                .Select(kv => $"{kv.Key}:{(int)kv.Value}"));
+        }
     }
 }

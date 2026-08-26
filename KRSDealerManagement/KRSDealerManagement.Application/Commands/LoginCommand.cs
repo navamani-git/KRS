@@ -1,4 +1,5 @@
 using MediatR;
+using KRSDealerManagement.Shared.Enums;
 using KRSDealerManagement.Shared.Results;
 
 namespace KRSDealerManagement.Application.Commands
@@ -28,6 +29,7 @@ namespace KRSDealerManagement.Application.Commands
         public string? DealershipName { get; set; }
         public int? SubDealerId { get; set; }
         public List<string> AccessibleMenuKeys { get; set; } = new();
+        public Dictionary<string, MenuAccessLevel> MenuAccess { get; set; } = new();
         public bool IsActive { get; set; }
     }
 }

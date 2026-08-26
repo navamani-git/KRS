@@ -3,7 +3,6 @@ using KRSDealerManagement.Application.DTOs;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
-using KRSDealerManagement.Shared.Enums;
 
 namespace KRSDealerManagement.Application.Handlers.Queries
 {
@@ -11,19 +10,18 @@ namespace KRSDealerManagement.Application.Handlers.Queries
     {
         private readonly IUnitOfWork _unitOfWork;
 
-        public GetStaffUsersQueryHandler(IUnitOfWork unitOfWork)
-        {
-            _unitOfWork = unitOfWork;
-        }
+        public GetStaffUsersQueryHandler(IUnitOfWork unitOfWork) => _unitOfWork = unitOfWork;
 
         public async Task<IEnumerable<StaffUserDto>> Handle(GetStaffUsersQuery request, CancellationToken cancellationToken)
         {
             var roles = (await _unitOfWork.Roles.GetAllAsync()).ToList();
-            var financeRole = roles.FirstOrDefault(r => r.RoleCode.Equals(RoleCodes.FinanceAdmin, StringComparison.OrdinalIgnoreCase));
-            var branchRole = roles.FirstOrDefault(r => r.RoleCode.Equals(RoleCodes.BranchManager, StringComparison.OrdinalIgnoreCase));
-            var staffRoleIds = new HashSet<int>();
-            if (financeRole != null) staffRoleIds.Add(financeRole.RoleId);
-            if (branchRole != null) staffRoleIds.Add(branchRole.RoleId);
+            var staffRoleIds = roles
+                .Where(r => r.IsActive
+                    && !r.IsSystemRole
+                    && !r.RoleCode.Equals(RoleCodes.SystemAdmin, StringComparison.OrdinalIgnoreCase)
+                    && !r.RoleCode.Equals(RoleCodes.Subdealer, StringComparison.OrdinalIgnoreCase))
+                .Select(r => r.RoleId)
+                .ToHashSet();
 
             var assignments = (await _unitOfWork.UserOrgRoles.GetAllAsync())
                 .Where(a => a.IsActive && staffRoleIds.Contains(a.RoleId))
@@ -32,17 +30,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             if (request.DealershipId.HasValue)
                 assignments = assignments.Where(a => a.DealershipId == request.DealershipId.Value).ToList();
 
-            if (request.StaffRole.HasValue)
-            {
-                var roleId = request.StaffRole.Value switch
-                {
-                    (int)UserRoleEnum.FinanceAdmin => financeRole?.RoleId,
-                    (int)UserRoleEnum.DealerBranchManager => branchRole?.RoleId,
-                    _ => null
-                };
-                if (roleId.HasValue)
-                    assignments = assignments.Where(a => a.RoleId == roleId.Value).ToList();
-            }
+            if (request.RoleId.HasValue)
+                assignments = assignments.Where(a => a.RoleId == request.RoleId.Value).ToList();
 
             var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
             var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToDictionary(d => d.DealershipId);
@@ -62,12 +51,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         Email = user.Email,
                         PhoneNumber = user.PhoneNumber,
                         UserRole = user.UserRole,
-                        RoleName = role?.RoleName ?? user.UserRole switch
-                        {
-                            3 => "Finance Admin",
-                            4 => "Branch Manager",
-                            _ => "Staff"
-                        },
+                        RoleId = role?.RoleId,
+                        RoleName = role?.RoleName ?? "Staff",
                         DealershipId = a.DealershipId,
                         DealershipName = dealership?.DealershipName,
                         IsActive = user.IsActive,
@@ -86,7 +71,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     u.FullName.Contains(term, StringComparison.OrdinalIgnoreCase)
                     || u.Username.Contains(term, StringComparison.OrdinalIgnoreCase)
                     || (u.Email?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
-                    || (u.DealershipName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false));
+                    || (u.DealershipName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || (u.RoleName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false));
             }
 
             return result.OrderBy(u => u.RoleName).ThenBy(u => u.FullName).ToList();

@@ -70,9 +70,11 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 }
 
                 var menus = await MenuAccessResolver.ResolveAsync(_unitOfWork, user.UserId, role);
+                var menuAccess = await MenuAccessResolver.ResolveMapAsync(_unitOfWork, user.UserId, role);
 
-                // Sync legacy UserRole int for older filters
-                int legacyRole = MapRoleCodeToLegacy(role.RoleCode);
+                int legacyRole = RoleTemplateDefaults.MapTemplateToLegacyUserRole(role.RoleTemplateCode ?? role.RoleCode);
+                if (role.RoleCode.Equals(RoleCodes.SystemAdmin, StringComparison.OrdinalIgnoreCase)) legacyRole = 1;
+                else if (role.RoleCode.Equals(RoleCodes.Subdealer, StringComparison.OrdinalIgnoreCase)) legacyRole = 2;
                 if (user.UserRole != legacyRole)
                 {
                     user.UserRole = legacyRole;
@@ -92,6 +94,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                     DealershipName = dealershipName,
                     SubDealerId = assignment?.SubDealerId,
                     AccessibleMenuKeys = menus,
+                    MenuAccess = menuAccess,
                     IsActive = user.IsActive
                 };
 

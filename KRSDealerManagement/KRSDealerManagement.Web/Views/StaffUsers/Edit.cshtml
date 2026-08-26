@@ -1,9 +1,10 @@
 @model KRSDealerManagement.Application.DTOs.StaffUserDto
-@using KRSDealerManagement.Shared.Enums
 @{
     ViewData["Title"] = "Edit Staff User";
     var dealerships = ViewBag.Dealerships as IEnumerable<KRSDealerManagement.Application.Queries.DealershipDto>
         ?? Enumerable.Empty<KRSDealerManagement.Application.Queries.DealershipDto>();
+    var roles = ViewBag.Roles as IEnumerable<KRSDealerManagement.Application.DTOs.StaffRoleDto>
+        ?? Enumerable.Empty<KRSDealerManagement.Application.DTOs.StaffRoleDto>();
 }
 
 <div class="row mb-3">
@@ -25,15 +26,20 @@
                 <input class="form-control" value="@Model.Username" readonly />
             </div>
             <div class="mb-3">
-                <label class="fw-bold">Role</label>
-                <input class="form-control" value="@Model.RoleName" readonly />
-            </div>
-            <div class="mb-3">
                 <label class="fw-bold">Dealership</label>
-                <select name="dealershipId" class="form-select" required>
+                <select name="dealershipId" id="dealershipId" class="form-select" required>
                     @foreach (var d in dealerships)
                     {
                         <option value="@d.DealershipId" selected="@(Model.DealershipId == d.DealershipId)">@d.DealershipName</option>
+                    }
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="fw-bold">Role</label>
+                <select name="roleId" id="roleId" class="form-select" required>
+                    @foreach (var r in roles)
+                    {
+                        <option value="@r.RoleId" data-dealership="@r.DealershipId" selected="@(Model.RoleId == r.RoleId)">@r.RoleName</option>
                     }
                 </select>
             </div>
@@ -57,3 +63,20 @@
         <div class="card-footer"><button type="submit" class="btn btn-primary">Save</button></div>
     </form>
 </div>
+
+@section Scripts {
+<script>
+    const dealershipSelect = document.getElementById('dealershipId');
+    const roleSelect = document.getElementById('roleId');
+    function filterRoles() {
+        const dealerId = dealershipSelect.value;
+        [...roleSelect.options].forEach(opt => {
+            if (!opt.value) return;
+            opt.hidden = dealerId && opt.dataset.dealership !== dealerId;
+        });
+        if (roleSelect.selectedOptions[0]?.hidden) roleSelect.value = '';
+    }
+    dealershipSelect.addEventListener('change', filterRoles);
+    filterRoles();
+</script>
+}

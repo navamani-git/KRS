@@ -24,11 +24,11 @@ namespace KRSDealerManagement.Web.Controllers
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<IActionResult> Index(int? staffRole, int? dealershipId, bool? isActive, string? searchTerm, int? page, int? pageSize)
+        public async Task<IActionResult> Index(int? roleId, int? dealershipId, bool? isActive, string? searchTerm, int? page, int? pageSize)
         {
             var staff = await _mediator.Send(new GetStaffUsersQuery
             {
-                StaffRole = staffRole,
+                RoleId = roleId,
                 DealershipId = dealershipId,
                 IsActive = isActive,
                 SearchTerm = searchTerm
@@ -40,18 +40,19 @@ namespace KRSDealerManagement.Web.Controllers
             var (pageItems, pageInfo) = ListPagingHelper.Paginate(staff, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
 
-            ViewBag.StaffRole = staffRole;
+            ViewBag.RoleId = roleId;
             ViewBag.DealershipId = dealershipId;
             ViewBag.IsActive = isActive;
             ViewBag.SearchTerm = searchTerm;
-            ViewBag.Dealerships = await _mediator.Send(new GetDealershipsQuery());
+            ViewBag.Dealerships = await _mediator.Send(new GetDealershipsQuery { IsActive = true });
+            ViewBag.Roles = await _mediator.Send(new GetStaffRolesQuery { AssignableOnly = true, IsActive = true });
 
             return View(pageItems);
         }
 
         public async Task<IActionResult> Create()
         {
-            ViewBag.Dealerships = await _mediator.Send(new GetDealershipsQuery());
+            await LoadFormViewBags();
             return View();
         }
 
@@ -59,26 +60,20 @@ namespace KRSDealerManagement.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
             string fullName, string username, string password,
-            int staffRole, int dealershipId,
+            int roleId, int dealershipId,
             string? email, string? phoneNumber)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
-            if (staffRole is not ((int)UserRoleEnum.FinanceAdmin) and not ((int)UserRoleEnum.DealerBranchManager))
-            {
-                TempData["Error"] = "Please select Finance Admin or Branch Manager.";
-                return RedirectToAction(nameof(Create));
-            }
-
             try
             {
-                var id = await _mediator.Send(new CreateStaffUserCommand
+                await _mediator.Send(new CreateStaffUserCommand
                 {
                     FullName = fullName,
                     Username = username,
                     Password = password,
-                    StaffRole = staffRole,
+                    RoleId = roleId,
                     DealershipId = dealershipId,
                     Email = email,
                     PhoneNumber = phoneNumber,
@@ -91,7 +86,7 @@ namespace KRSDealerManagement.Web.Controllers
             catch (Exception ex)
             {
                 TempData["Error"] = ex.Message;
-                ViewBag.Dealerships = await _mediator.Send(new GetDealershipsQuery());
+                await LoadFormViewBags(dealershipId);
                 return View();
             }
         }
@@ -105,16 +100,21 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            ViewBag.Dealerships = await _mediator.Send(new GetDealershipsQuery());
+            await LoadFormViewBags(staff.DealershipId);
             return View(staff);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, string fullName, string? email, string? phoneNumber, int dealershipId, bool isActive, string? password)
+        public async Task<IActionResult> Edit(int id, string fullName, string? email, string? phoneNumber, int dealershipId, int roleId, bool isActive, string? password)
         {
             var user = await _unitOfWork.Users.GetByIdAsync(id);
-            if (user == null || user.UserRole is not ((int)UserRoleEnum.FinanceAdmin) and not ((int)UserRoleEnum.DealerBranchManager))
+            var assignment = (await _unitOfWork.UserOrgRoles.GetAllAsync()).FirstOrDefault(a => a.UserId == id && a.IsActive);
+            var role = assignment != null ? await _unitOfWork.Roles.GetByIdAsync(assignment.RoleId) : null;
+
+            if (user == null || role == null || role.IsSystemRole
+                || role.RoleCode.Equals(RoleCodes.SystemAdmin, StringComparison.OrdinalIgnoreCase)
+                || role.RoleCode.Equals(RoleCodes.Subdealer, StringComparison.OrdinalIgnoreCase))
             {
                 TempData["Error"] = "Staff user not found.";
                 return RedirectToAction(nameof(Index));
@@ -126,26 +126,36 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction(nameof(Edit), new { id });
             }
 
+            var selectedRole = await _unitOfWork.Roles.GetByIdAsync(roleId);
+            if (selectedRole == null || !selectedRole.IsActive || selectedRole.IsSystemRole
+                || !selectedRole.DealershipId.HasValue || selectedRole.DealershipId.Value != dealershipId)
+            {
+                TempData["Error"] = "Selected role does not match the dealership.";
+                return RedirectToAction(nameof(Edit), new { id });
+            }
+
             var nameParts = fullName.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
             user.FirstName = nameParts[0];
             user.LastName = nameParts.Length > 1 ? nameParts[1] : user.LastName;
             user.Email = string.IsNullOrWhiteSpace(email) ? user.Email : email.Trim();
             user.PhoneNumber = phoneNumber?.Trim() ?? "";
             user.IsActive = isActive;
+            user.UserRole = Application.Services.RoleTemplateDefaults.MapTemplateToLegacyUserRole(selectedRole.RoleTemplateCode);
             if (!string.IsNullOrWhiteSpace(password))
                 user.PasswordHash = password.Trim();
             user.ModifiedDate = DateTime.UtcNow;
             await _unitOfWork.Users.UpdateAsync(user);
 
-            var assignments = (await _unitOfWork.UserOrgRoles.GetAllAsync()).Where(a => a.UserId == id).ToList();
-            foreach (var a in assignments)
+            foreach (var a in (await _unitOfWork.UserOrgRoles.GetAllAsync()).Where(x => x.UserId == id))
             {
+                a.RoleId = roleId;
                 a.DealershipId = dealershipId;
                 a.IsActive = isActive;
                 a.ModifiedDate = DateTime.UtcNow;
                 await _unitOfWork.UserOrgRoles.UpdateAsync(a);
             }
 
+            await _unitOfWork.SaveChangesAsync();
             TempData["Success"] = "Staff user updated.";
             return RedirectToAction(nameof(Index));
         }
@@ -174,6 +184,13 @@ namespace KRSDealerManagement.Web.Controllers
 
             TempData["Success"] = $"Staff user '{user.Username}' deactivated.";
             return RedirectToAction(nameof(Index));
+        }
+
+        private async Task LoadFormViewBags(int? dealershipId = null)
+        {
+            ViewBag.Dealerships = await _mediator.Send(new GetDealershipsQuery { IsActive = true });
+            ViewBag.Roles = await _mediator.Send(new GetStaffRolesQuery { AssignableOnly = true, IsActive = true, DealershipId = dealershipId });
+            ViewBag.SelectedDealershipId = dealershipId;
         }
     }
 }

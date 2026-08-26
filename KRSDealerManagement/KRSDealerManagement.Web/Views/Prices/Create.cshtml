@@ -4,7 +4,6 @@
     var models = ViewBag.Models as IEnumerable<VehicleModelDto>;
     var currentMonth = (int)(ViewBag.CurrentMonth ?? DateTime.Now.Month);
     var currentYear = (int)(ViewBag.CurrentYear ?? DateTime.Now.Year);
-    var modelColorMapJson = ViewBag.ModelColorMapJson as string ?? "{}";
     ViewData["ExcelImportKey"] = KRSDealerManagement.Web.Helpers.ExcelImport.ExcelImportKeys.Prices;
     ViewData["ExcelImportReturnAction"] = "Create";
 }
@@ -12,7 +11,7 @@
 <div class="row mb-3">
     <div class="col-md-6">
         <h1 class="m-0"><i class="bi bi-currency-rupee"></i> Add / Update Price</h1>
-        <p class="text-muted">Set price for a model + color — multiple prices per month allowed with effective date</p>
+        <p class="text-muted">Set price for a model and one or more colors for the selected period</p>
     </div>
     <div class="col-md-6 text-end">
         <a href="@Url.Action("Index")" class="btn btn-secondary">
@@ -27,10 +26,9 @@
     <div class="col-md-6">
         <div class="card card-primary">
             <div class="card-header"><h3 class="card-title">Price Entry</h3></div>
-            <form method="post">
+            <form method="post" id="priceForm">
                 @Html.AntiForgeryToken()
                 <div class="card-body">
-                    <!-- Model -->
                     <div class="form-group mb-3">
                         <label class="form-label fw-bold">Vehicle Model <span class="text-danger">*</span></label>
                         <select name="modelId" id="modelId" class="form-select" required>
@@ -47,20 +45,11 @@
                         </select>
                     </div>
 
-                    <!-- Color -->
-                    <div class="form-group mb-3">
-                        <label class="form-label fw-bold">Color <span class="text-danger">*</span></label>
-                        <select name="colorId" id="colorId" class="form-select" required>
-                            <option value="">-- Select Model First --</option>
-                        </select>
-                    </div>
-
-                    <!-- Month and Year -->
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group mb-3">
                                 <label class="form-label fw-bold">Month <span class="text-danger">*</span></label>
-                                <select name="month" class="form-select" required>
+                                <select name="month" id="month" class="form-select" required>
                                     @for (int m = 1; m <= 12; m++)
                                     {
                                         <option value="@m" selected="@(m == currentMonth)">
@@ -73,7 +62,7 @@
                         <div class="col-md-6">
                             <div class="form-group mb-3">
                                 <label class="form-label fw-bold">Year <span class="text-danger">*</span></label>
-                                <select name="year" class="form-select" required>
+                                <select name="year" id="year" class="form-select" required>
                                     @for (int y = currentYear - 1; y <= currentYear + 2; y++)
                                     {
                                         <option value="@y" selected="@(y == currentYear)">@y</option>
@@ -83,13 +72,40 @@
                         </div>
                     </div>
 
-                    <div class="form-group mb-3">
-                        <label class="form-label fw-bold">Effective From <span class="text-danger">*</span></label>
-                        <input type="date" name="effectiveFrom" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
-                        <small class="text-muted">Vehicles invoiced on or after this date will use this price. Earlier invoices keep prior price.</small>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label class="form-label fw-bold">Effective From <span class="text-danger">*</span></label>
+                                <input type="date" name="effectiveFrom" id="effectiveFrom" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label class="form-label fw-bold">Effective To</label>
+                                <input type="date" name="effectiveTo" id="effectiveTo" class="form-control" />
+                                <small class="text-muted">Leave blank for end of selected month</small>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Price -->
+                    <div class="form-group mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label fw-bold mb-0">Colors <span class="text-danger">*</span></label>
+                            <span class="small">
+                                <a href="#" id="colorSelectAll">Select all</a>
+                                <span class="text-muted mx-1">|</span>
+                                <a href="#" id="colorClearAll">Clear</a>
+                            </span>
+                        </div>
+                        <small class="d-block text-muted mb-2">
+                            Only colors without an overlapping price for this period are shown. Check one or more to apply the same price.
+                        </small>
+                        <div id="colorCheckboxList" class="border rounded p-3" style="max-height: 280px; overflow-y: auto;">
+                            <div class="text-muted small">Select a model to see available colors.</div>
+                        </div>
+                        <div id="colorEmptyMessage" class="alert alert-warning mt-2 mb-0 d-none"></div>
+                    </div>
+
                     <div class="form-group mb-3">
                         <label class="form-label fw-bold">Price (₹) <span class="text-danger">*</span></label>
                         <div class="input-group">
@@ -97,20 +113,17 @@
                             <input type="number" name="price" class="form-control"
                                    placeholder="e.g., 1250000" min="1" step="0.01" required />
                         </div>
-                        <small class="text-muted">Enter price in Indian Rupees (₹)</small>
                     </div>
 
-                    <!-- Notes -->
                     <div class="form-group mb-3">
                         <label class="form-label fw-bold">Notes</label>
                         <input type="text" name="notes" class="form-control"
                                placeholder="Optional: reason for this price (e.g., Price revision for Q3)" />
                     </div>
 
-                    <div class="alert alert-info">
+                    <div class="alert alert-info mb-0">
                         <i class="bi bi-info-circle"></i>
-                        <strong>Note:</strong> If a price already exists for the same Model + Color + Month + Year,
-                        it will be updated automatically.
+                        The same price will be saved for every checked color. Colors that already have a price in the selected date range are hidden.
                     </div>
                 </div>
                 <div class="card-footer">
@@ -121,23 +134,15 @@
         </div>
     </div>
 
-    <!-- Help -->
     <div class="col-md-6">
         <div class="card card-info">
             <div class="card-header"><h3 class="card-title"><i class="bi bi-info-circle"></i> Instructions</h3></div>
             <div class="card-body">
                 <ul>
-                    <li>Each Model + Color combination can have <strong>different prices per month</strong></li>
-                    <li>If you add the same combination for the same month/year, it <strong>updates the existing price</strong></li>
-                    <li>Prices are used when subdealers create purchase orders</li>
-                    <li>The system picks the price for the <strong>current month</strong> when an order is placed</li>
-                </ul>
-                <hr />
-                <p><strong>Example:</strong></p>
-                <ul>
-                    <li>Ampere Nexus EX + Pearl White → August 2026 → ₹1,15,000</li>
-                    <li>Ampere Nexus ST + Jet Black → August 2026 → ₹1,20,000</li>
-                    <li>Ampere Magnus Pro + Ocean Blue → August 2026 → ₹1,05,000</li>
+                    <li>Select the model and period first — the color list updates automatically</li>
+                    <li>Check <strong>one or more colors</strong> to apply the same price</li>
+                    <li>Colors that already have a price for the overlapping period are <strong>not shown</strong></li>
+                    <li>Use <strong>Select all</strong> when the same price applies to every remaining color</li>
                 </ul>
             </div>
         </div>
@@ -145,11 +150,15 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/model-color-filter.js"></script>
+    <script src="~/js/price-color-picker.js"></script>
     <script>
-        KrsModelColors.init(@Html.Raw(modelColorMapJson));
-        const modelSelect = document.getElementById('modelId');
-        const colorSelect = document.getElementById('colorId');
-        KrsModelColors.bind(modelSelect, colorSelect);
+        KrsPriceColors.init({ availableUrl: '@Url.Action("AvailableColors")' });
+
+        document.getElementById('priceForm').addEventListener('submit', function (e) {
+            if (!KrsPriceColors.validateSelection()) {
+                e.preventDefault();
+                alert('Select at least one color.');
+            }
+        });
     </script>
 }

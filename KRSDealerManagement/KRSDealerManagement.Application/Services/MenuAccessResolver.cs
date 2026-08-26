@@ -1,75 +1,103 @@
 using KRSDealerManagement.Domain.Entities;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
+using KRSDealerManagement.Shared.Enums;
 
 namespace KRSDealerManagement.Application.Services
 {
     /// <summary>
-    /// Resolves effective menu keys for a user (RoleMenus + subdealer AccountPermissions).
+    /// Resolves effective menu access for a user (RoleMenus + subdealer AccountPermissions).
     /// </summary>
     public static class MenuAccessResolver
     {
-        public static async Task<List<string>> ResolveAsync(IUnitOfWork unitOfWork, int userId, Role role)
+        public static async Task<List<MenuAccessEntry>> ResolveEntriesAsync(IUnitOfWork unitOfWork, int userId, Role role)
         {
+            if (role.RoleCode.Equals(RoleCodes.SystemAdmin, StringComparison.OrdinalIgnoreCase))
+            {
+                return StaffMenuAccess.AllAdminMenus()
+                    .Select((m, i) => new MenuAccessEntry { MenuKey = m.Key, Level = MenuAccessLevel.Full })
+                    .ToList();
+            }
+
             var roleMenus = (await unitOfWork.RoleMenus.GetAllAsync())
                 .Where(m => m.RoleId == role.RoleId && m.IsAccessible)
                 .OrderBy(m => m.SortOrder)
-                .Select(m => m.MenuKey)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
             if (!role.RoleCode.Equals(RoleCodes.Subdealer, StringComparison.OrdinalIgnoreCase))
             {
-                var legacyRole = MapRoleCodeToLegacy(role.RoleCode);
-                var codeDefaults = StaffMenuAccess.GetMenusForRole(legacyRole).ToList();
                 if (roleMenus.Count == 0)
-                    return codeDefaults;
+                {
+                    var legacyRole = RoleTemplateDefaults.MapTemplateToLegacyUserRole(role.RoleTemplateCode);
+                    return StaffMenuAccess.GetMenusForRole(legacyRole)
+                        .Select(k => new MenuAccessEntry { MenuKey = k, Level = MenuAccessLevel.Full })
+                        .ToList();
+                }
 
-                var sortIndex = roleMenus
-                    .Select((key, index) => (key, index))
-                    .ToDictionary(x => x.key, x => x.index, StringComparer.OrdinalIgnoreCase);
-
-                return codeDefaults
-                    .Union(roleMenus, StringComparer.OrdinalIgnoreCase)
-                    .OrderBy(k => sortIndex.TryGetValue(k, out var i) ? i : 999)
-                    .ThenBy(k => k, StringComparer.OrdinalIgnoreCase)
+                return roleMenus
+                    .GroupBy(m => m.MenuKey, StringComparer.OrdinalIgnoreCase)
+                    .Select(g =>
+                    {
+                        var row = g.First();
+                        return new MenuAccessEntry
+                        {
+                            MenuKey = row.MenuKey,
+                            Level = row.IsReadOnly ? MenuAccessLevel.ReadOnly : MenuAccessLevel.Full
+                        };
+                    })
                     .ToList();
             }
 
+            var entries = roleMenus
+                .GroupBy(m => m.MenuKey, StringComparer.OrdinalIgnoreCase)
+                .Select(g =>
+                {
+                    var row = g.First();
+                    return new MenuAccessEntry
+                    {
+                        MenuKey = row.MenuKey,
+                        Level = row.IsReadOnly ? MenuAccessLevel.ReadOnly : MenuAccessLevel.Full
+                    };
+                })
+                .ToList();
+
             var account = await SubdealerOrgService.GetPermissionAccountAsync(unitOfWork, userId);
             if (account == null)
-                return roleMenus;
+                return entries;
 
             var perms = (await unitOfWork.AccountPermissions.GetAllAsync())
                 .Where(p => p.AccountId == account.AccountId)
                 .ToList();
 
             if (!perms.Any())
-                return roleMenus;
+                return entries;
 
-            var allowed = perms
+            return perms
                 .Where(p => p.IsAccessible)
-                .Select(p => p.MenuKey)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            var sortOrder = MenuKeys.GetSubdealerConfigurableMenus()
-                .Select((m, i) => (m.Key, i))
-                .ToDictionary(x => x.Key, x => x.i, StringComparer.OrdinalIgnoreCase);
-
-            return allowed
-                .OrderBy(k => sortOrder.TryGetValue(k, out var i) ? i : 999)
-                .ThenBy(k => k, StringComparer.OrdinalIgnoreCase)
+                .Select(p => new MenuAccessEntry { MenuKey = p.MenuKey, Level = MenuAccessLevel.Full })
+                .GroupBy(e => e.MenuKey, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.First())
+                .OrderBy(e => e.MenuKey, StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }
 
-        private static int MapRoleCodeToLegacy(string roleCode)
+        public static async Task<List<string>> ResolveAsync(IUnitOfWork unitOfWork, int userId, Role role)
         {
-            if (roleCode.Equals(RoleCodes.SystemAdmin, StringComparison.OrdinalIgnoreCase)) return 1;
-            if (roleCode.Equals(RoleCodes.Subdealer, StringComparison.OrdinalIgnoreCase)) return 2;
-            if (roleCode.Equals(RoleCodes.FinanceAdmin, StringComparison.OrdinalIgnoreCase)) return 3;
-            if (roleCode.Equals(RoleCodes.BranchManager, StringComparison.OrdinalIgnoreCase)) return 4;
-            return 2;
+            var entries = await ResolveEntriesAsync(unitOfWork, userId, role);
+            return entries
+                .Where(e => e.Level != MenuAccessLevel.None)
+                .Select(e => e.MenuKey)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        public static async Task<Dictionary<string, MenuAccessLevel>> ResolveMapAsync(IUnitOfWork unitOfWork, int userId, Role role)
+        {
+            var entries = await ResolveEntriesAsync(unitOfWork, userId, role);
+            return entries
+                .Where(e => e.Level != MenuAccessLevel.None)
+                .GroupBy(e => e.MenuKey, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First().Level, StringComparer.OrdinalIgnoreCase);
         }
     }
 }

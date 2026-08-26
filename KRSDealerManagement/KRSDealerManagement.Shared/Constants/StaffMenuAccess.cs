@@ -25,6 +25,7 @@ namespace KRSDealerManagement.Shared.Constants
         public const string Payments = "admin_payments";
         public const string Reports = "admin_reports";
         public const string StaffUsers = "admin_staff_users";
+        public const string StaffRoles = "admin_staff_roles";
         public const string FinanceNames = "admin_finance_names";
         public const string PaymentTypes = "admin_payment_types";
         public const string DocumentTypes = "admin_document_types";
@@ -59,7 +60,8 @@ namespace KRSDealerManagement.Shared.Constants
             (Returns, "Return Requests"),
             (Payments, "Payment Approvals"),
             (Reports, "Reports"),
-            (StaffUsers, "Staff Users")
+            (StaffUsers, "Staff Users"),
+            (StaffRoles, "Staff Roles")
         };
 
         public static bool CanAccess(int userRole, string menuKey)
@@ -111,6 +113,12 @@ namespace KRSDealerManagement.Shared.Constants
                             Key = StaffUsers, Name = "Staff Users",
                             Controller = "StaffUsers", Action = "Index", Icon = "bi-person-badge",
                             Actions = new[] { "Index", "Create" }
+                        },
+                        new MenuItemDefinition
+                        {
+                            Key = StaffRoles, Name = "Staff Roles",
+                            Controller = "StaffRoles", Action = "Index", Icon = "bi-shield-lock",
+                            Actions = new[] { "Index", "Create", "Edit" }
                         },
                         new MenuItemDefinition
                         {
@@ -289,5 +297,60 @@ namespace KRSDealerManagement.Shared.Constants
             Actions = new[] { "Index", "Export" },
             RouteValues = new Dictionary<string, object> { ["status"] = status }
         };
+
+        public static bool TryResolveMenuKey(string controller, string action, out string menuKey)
+        {
+            menuKey = "";
+            if (string.IsNullOrWhiteSpace(controller) || string.IsNullOrWhiteSpace(action))
+                return false;
+
+            if (action.StartsWith("Export", StringComparison.OrdinalIgnoreCase))
+                return TryResolveMenuKeyForExport(controller, out menuKey);
+
+            foreach (var group in GetStaffMenuGroups())
+            {
+                foreach (var item in group.Children)
+                {
+                    if (!string.Equals(item.Controller, controller, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    if (item.Actions is { Count: > 0 })
+                    {
+                        if (item.Actions.Any(a => string.Equals(a, action, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            menuKey = item.Key;
+                            return true;
+                        }
+                    }
+                    else if (string.Equals(item.Action, action, StringComparison.OrdinalIgnoreCase))
+                    {
+                        menuKey = item.Key;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryResolveMenuKeyForExport(string controller, out string menuKey)
+        {
+            menuKey = "";
+            foreach (var group in GetStaffMenuGroups())
+            {
+                foreach (var item in group.Children)
+                {
+                    if (!string.Equals(item.Controller, controller, StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    if (item.Actions?.Any(a => a.StartsWith("Export", StringComparison.OrdinalIgnoreCase)) == true
+                        || string.Equals(item.Action, "Index", StringComparison.OrdinalIgnoreCase))
+                    {
+                        menuKey = item.Key;
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
     }
 }

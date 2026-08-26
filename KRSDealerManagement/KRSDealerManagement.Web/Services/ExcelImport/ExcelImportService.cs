@@ -40,7 +40,7 @@ namespace KRSDealerManagement.Web.Services.ExcelImport
             var result = new ExcelImportResult();
             try
             {
-                var webRoot = _env.WebRootPath ?? _env.ContentRootPath;
+                var webRoot = _env;
                 result.SavedRelativePath = await ExcelImportStorageHelper.SaveUploadedFileAsync(file, webRoot);
 
                 var fullPath = ExcelImportStorageHelper.ResolveFullPath(webRoot, result.SavedRelativePath);

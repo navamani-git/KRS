@@ -10,9 +10,9 @@ namespace KRSDealerManagement.Application.Validators
             RuleFor(x => x.ModelId)
                 .GreaterThan(0).WithMessage("Valid model ID is required");
 
-            RuleFor(x => x.ColorId)
-                .GreaterThan(0).WithMessage("Valid color ID is required")
-                .When(x => !x.ApplyForAllColors);
+            RuleFor(x => x)
+                .Must(x => x.ApplyForAllColors || x.ColorIds.Count > 0 || x.ColorId > 0)
+                .WithMessage("Select at least one color.");
 
             RuleFor(x => x.Month)
                 .InclusiveBetween(1, 12).WithMessage("Month must be between 1 and 12");

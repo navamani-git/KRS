@@ -4,7 +4,6 @@ using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Entities;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
-using KRSDealerManagement.Shared.Enums;
 using System.Text.Json;
 
 namespace KRSDealerManagement.Application.Handlers.Commands
@@ -22,20 +21,20 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
         public async Task<int> Handle(CreateStaffUserCommand request, CancellationToken cancellationToken)
         {
-            if (request.StaffRole is not ((int)UserRoleEnum.FinanceAdmin) and not ((int)UserRoleEnum.DealerBranchManager))
-                throw new InvalidOperationException("Only Finance Admin or Branch Manager can be created here.");
+            var role = await _unitOfWork.Roles.GetByIdAsync(request.RoleId)
+                ?? throw new InvalidOperationException("Role not found.");
+
+            if (!role.IsActive || role.IsSystemRole
+                || role.RoleCode.Equals(RoleCodes.SystemAdmin, StringComparison.OrdinalIgnoreCase)
+                || role.RoleCode.Equals(RoleCodes.Subdealer, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Select a valid staff role.");
+
+            if (!role.DealershipId.HasValue || role.DealershipId.Value != request.DealershipId)
+                throw new InvalidOperationException("Selected role does not belong to the chosen dealership.");
 
             var dealership = await _unitOfWork.Dealerships.GetByIdAsync(request.DealershipId);
             if (dealership == null || !dealership.IsActive)
                 throw new InvalidOperationException("Dealership not found or inactive.");
-
-            var roleCode = request.StaffRole == (int)UserRoleEnum.FinanceAdmin
-                ? RoleCodes.FinanceAdmin
-                : RoleCodes.BranchManager;
-
-            var role = (await _unitOfWork.Roles.GetAllAsync())
-                .FirstOrDefault(r => r.RoleCode.Equals(roleCode, StringComparison.OrdinalIgnoreCase))
-                ?? throw new InvalidOperationException($"Role {roleCode} not found in Roles table.");
 
             var username = request.Username.Trim().ToLowerInvariant();
             var existing = (await _unitOfWork.Users.GetAllAsync())
@@ -43,6 +42,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             if (existing)
                 throw new InvalidOperationException($"Username '{username}' is already taken.");
 
+            var legacyRole = RoleTemplateDefaults.MapTemplateToLegacyUserRole(role.RoleTemplateCode);
             var nameParts = request.FullName.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
             var firstName = nameParts[0];
             var lastName = nameParts.Length > 1 ? nameParts[1] : role.RoleName;
@@ -54,7 +54,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 PasswordHash = request.Password.Trim(),
                 FirstName = firstName,
                 LastName = lastName,
-                UserRole = request.StaffRole,
+                UserRole = legacyRole,
                 PhoneNumber = request.PhoneNumber?.Trim() ?? "",
                 IsActive = true,
                 CreatedDate = DateTime.UtcNow,
@@ -85,8 +85,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 {
                     userId,
                     username,
-                    request.StaffRole,
-                    RoleCode = roleCode,
+                    role.RoleId,
+                    role.RoleCode,
                     request.DealershipId,
                     Dealership = dealership.DealershipCode,
                     request.FullName

@@ -31,7 +31,8 @@ namespace KRSDealerManagement.Web.Helpers
                 ctx.DealershipId,
                 ctx.DealershipName,
                 ctx.SubDealerId,
-                ctx.AccessibleMenuKeys);
+                ctx.AccessibleMenuKeys,
+                ctx.MenuAccess);
         }
     }
 }

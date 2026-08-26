@@ -7,7 +7,10 @@ using KRSDealerManagement.Web.Services.ExcelImport;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add<KRSDealerManagement.Web.Filters.ReadOnlyMenuGuardFilter>();
+});
 
 // Query string encryption (single service used across the app)
 builder.Services.AddDataProtection();

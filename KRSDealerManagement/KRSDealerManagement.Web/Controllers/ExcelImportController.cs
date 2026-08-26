@@ -49,7 +49,10 @@ namespace KRSDealerManagement.Web.Controllers
                 return redirect!;
 
             if (!ImportAuth.TryGetValue(key, out var meta))
-                return NotFound();
+            {
+                TempData["Error"] = "Import type is not available.";
+                return RedirectToAction("Index", "Dashboard");
+            }
 
             var rc = string.IsNullOrWhiteSpace(returnController) ? RouteKeyToController(key) : returnController;
             var ra = string.IsNullOrWhiteSpace(returnAction) ? meta.RedirectAction : returnAction;
@@ -62,13 +65,21 @@ namespace KRSDealerManagement.Web.Controllers
             redirect = null;
             if (_excelImport.GetProcessor(key) == null)
             {
-                redirect = NotFound();
+                redirect = FileDownloadHelper.RedirectWithMessage(
+                    this,
+                    "Import template is not available.",
+                    RouteKeyToController(key),
+                    "Create");
                 return false;
             }
 
             if (!ImportAuth.TryGetValue(key, out var meta))
             {
-                redirect = NotFound();
+                redirect = FileDownloadHelper.RedirectWithMessage(
+                    this,
+                    "Import type is not available.",
+                    RouteKeyToController(key),
+                    "Create");
                 return false;
             }
 

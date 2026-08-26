@@ -7,6 +7,8 @@ namespace KRSDealerManagement.Domain.Entities
         public string RoleCode { get; set; } = "";
         public string RoleName { get; set; } = "";
         public string? Description { get; set; }
+        public string? RoleTemplateCode { get; set; }
+        public int? DealershipId { get; set; }
         public bool IsSystemRole { get; set; } = true;
         public bool IsActive { get; set; } = true;
         public int SortOrder { get; set; }
@@ -54,6 +56,7 @@ namespace KRSDealerManagement.Domain.Entities
         public string MenuKey { get; set; } = "";
         public string MenuName { get; set; } = "";
         public bool IsAccessible { get; set; } = true;
+        public bool IsReadOnly { get; set; }
         public int SortOrder { get; set; }
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
     }

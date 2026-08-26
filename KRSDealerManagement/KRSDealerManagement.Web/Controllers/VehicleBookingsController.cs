@@ -311,7 +311,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             try
             {
-                var root = _env.WebRootPath ?? _env.ContentRootPath;
+                var root = _env;
                 var booking = new VehicleBooking
                 {
                     VehicleId = vehicleId,
@@ -426,7 +426,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             try
             {
-                var root = _env.WebRootPath ?? _env.ContentRootPath;
+                var root = _env;
                 var cmd = new UpdateSubdealerBookingCommand
                 {
                     VehicleBookingId = id,
@@ -517,7 +517,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             try
             {
-                var root = _env.WebRootPath ?? _env.ContentRootPath;
+                var root = _env;
                 if (invoiceFile != null && invoiceFile.Length > 0)
                     booking.InvoicePath = await BookingFileHelper.SaveInvoiceDocumentAsync(invoiceFile, root);
                 if (insuranceFile != null && insuranceFile.Length > 0)
@@ -706,7 +706,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             try
             {
-                var root = _env.WebRootPath ?? _env.ContentRootPath;
+                var root = _env;
                 booking.SubsidyCustomerNameCaps = booking.CustomerName.Trim().ToUpperInvariant();
                 booking.FaceVerificationPath = await BookingFileHelper.SaveImageAsync(faceVerification, root);
                 booking.RcImagePath = await BookingFileHelper.SaveImageAsync(rcImage, root);
@@ -729,9 +729,13 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeRole(1, 2, 4)]
         public async Task<IActionResult> Download(string path)
         {
-            if (!await CanAccessBookingFileAsync(path)) return Forbid();
-            var full = BookingFileHelper.ResolvePath(_env.WebRootPath ?? _env.ContentRootPath, path);
-            if (string.IsNullOrEmpty(full)) return NotFound();
+            if (!await CanAccessBookingFileAsync(path))
+                return FileDownloadHelper.RedirectWithMessage(this, FileDownloadHelper.AccessDeniedMessage, "VehicleBookings");
+
+            var full = BookingFileHelper.ResolvePath(_env, path);
+            if (string.IsNullOrEmpty(full))
+                return FileDownloadHelper.RedirectMissingFile(this, "VehicleBookings");
+
             var contentType = BookingFileHelper.GetContentType(full);
             return PhysicalFile(full, contentType, Path.GetFileName(full));
         }
@@ -739,9 +743,13 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeRole(1, 2, 4)]
         public async Task<IActionResult> ViewFile(string path)
         {
-            if (!await CanAccessBookingFileAsync(path)) return Forbid();
-            var full = BookingFileHelper.ResolvePath(_env.WebRootPath ?? _env.ContentRootPath, path);
-            if (string.IsNullOrEmpty(full)) return NotFound();
+            if (!await CanAccessBookingFileAsync(path))
+                return FileDownloadHelper.RedirectWithMessage(this, FileDownloadHelper.AccessDeniedMessage, "VehicleBookings");
+
+            var full = BookingFileHelper.ResolvePath(_env, path);
+            if (string.IsNullOrEmpty(full))
+                return FileDownloadHelper.RedirectMissingFile(this, "VehicleBookings");
+
             var contentType = BookingFileHelper.GetContentType(full);
             return PhysicalFile(full, contentType);
         }
@@ -821,7 +829,7 @@ namespace KRSDealerManagement.Web.Controllers
                     booking.RegistrationDate,
                     booking.SubsidyId);
 
-            var fileRoot = _env.WebRootPath ?? _env.ContentRootPath;
+            var fileRoot = _env;
             ViewBag.InvoiceFileAvailable = BookingFileHelper.IsFileAvailable(fileRoot, booking.InvoicePath);
             ViewBag.InsuranceFileAvailable = BookingFileHelper.IsFileAvailable(fileRoot, booking.InsurancePath);
         }

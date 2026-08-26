@@ -2,6 +2,8 @@
     ViewData["Title"] = "Add Staff User";
     var dealerships = ViewBag.Dealerships as IEnumerable<KRSDealerManagement.Application.Queries.DealershipDto>
         ?? Enumerable.Empty<KRSDealerManagement.Application.Queries.DealershipDto>();
+    var roles = ViewBag.Roles as IEnumerable<KRSDealerManagement.Application.DTOs.StaffRoleDto>
+        ?? Enumerable.Empty<KRSDealerManagement.Application.DTOs.StaffRoleDto>();
     ViewData["ExcelImportKey"] = KRSDealerManagement.Web.Helpers.ExcelImport.ExcelImportKeys.StaffUsers;
     ViewData["ExcelImportReturnAction"] = "Create";
 }
@@ -9,7 +11,7 @@
 <div class="row mb-3">
     <div class="col-md-6">
         <h1 class="m-0"><i class="bi bi-person-plus"></i> Add Staff User</h1>
-        <p class="text-muted">Create Finance Admin or Branch Manager login</p>
+        <p class="text-muted">Assign staff logins to a regional role</p>
     </div>
     <div class="col-md-6 text-end">
         <a href="@Url.Action("Index")" class="btn btn-secondary">
@@ -34,20 +36,22 @@
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Role <span class="text-danger">*</span></label>
-                            <select name="staffRole" class="form-select" required>
-                                <option value="">-- Select role --</option>
-                                <option value="4">Branch Manager</option>
-                                <option value="3">Finance Admin</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Dealership <span class="text-danger">*</span></label>
-                            <select name="dealershipId" class="form-select" required>
+                            <select name="dealershipId" id="dealershipId" class="form-select" required>
                                 <option value="">-- Select location --</option>
                                 @foreach (var d in dealerships)
                                 {
                                     <option value="@d.DealershipId">@d.DealershipName (@d.DealershipCode)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Role <span class="text-danger">*</span></label>
+                            <select name="roleId" id="roleId" class="form-select" required>
+                                <option value="">-- Select role --</option>
+                                @foreach (var r in roles)
+                                {
+                                    <option value="@r.RoleId" data-dealership="@r.DealershipId">@r.RoleName (@r.DealershipName)</option>
                                 }
                             </select>
                         </div>
@@ -92,15 +96,11 @@
         <div class="card card-info">
             <div class="card-header"><h3 class="card-title"><i class="bi bi-info-circle"></i> Role Access</h3></div>
             <div class="card-body">
-                <p class="fw-bold mb-1">Branch Manager</p>
-                <ul class="small">
-                    <li>Subdealers, Orders, Vehicles, Bookings, Returns</li>
-                    <li>Scoped to selected dealership only</li>
-                </ul>
-                <p class="fw-bold mb-1 mt-3">Finance Admin</p>
+                <p class="fw-bold mb-1">How it works</p>
                 <ul class="small mb-0">
-                    <li>Balances, Payment Approvals, Reports</li>
-                    <li>Scoped to selected dealership</li>
+                    <li>Create roles under <strong>Staff Roles</strong> first (template + menus).</li>
+                    <li>Pick the dealership, then choose a role for that region.</li>
+                    <li>Multiple users can share the same role.</li>
                 </ul>
             </div>
         </div>
@@ -116,5 +116,17 @@
         input.type = show ? 'text' : 'password';
         icon.className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
     });
+    const dealershipSelect = document.getElementById('dealershipId');
+    const roleSelect = document.getElementById('roleId');
+    function filterRoles() {
+        const dealerId = dealershipSelect.value;
+        [...roleSelect.options].forEach(opt => {
+            if (!opt.value) return;
+            opt.hidden = dealerId && opt.dataset.dealership !== dealerId;
+        });
+        if (roleSelect.selectedOptions[0]?.hidden) roleSelect.value = '';
+    }
+    dealershipSelect.addEventListener('change', filterRoles);
+    filterRoles();
 </script>
 }

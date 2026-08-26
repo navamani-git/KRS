@@ -1,0 +1,115 @@
+@using KRSDealerManagement.Shared.Constants
+@using KRSDealerManagement.Shared.Enums
+@{
+    var form = ViewData["RoleForm"] as KRSDealerManagement.Web.Controllers.StaffRoleFormModel;
+    var levels = form?.MenuAccessLevels ?? new List<int>();
+    var keys = form?.MenuKeys ?? new List<string>();
+    var levelMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+    for (var i = 0; i < keys.Count && i < levels.Count; i++)
+        levelMap[keys[i]] = levels[i];
+    var defaults = ViewBag.DefaultMenus as Dictionary<string, int> ?? new Dictionary<string, int>();
+    var menuNames = StaffMenuAccess.AllAdminMenus()
+        .ToDictionary(m => m.Key, m => m.Name, StringComparer.OrdinalIgnoreCase);
+    var groups = StaffMenuAccess.GetStaffMenuGroups();
+
+    int SelectedLevel(string menuKey)
+    {
+        if (levelMap.TryGetValue(menuKey, out var lv)) return lv;
+        return defaults.TryGetValue(menuKey, out var dv) ? dv : 0;
+    }
+
+    int CountEnabled(IEnumerable<string> menuKeys)
+        => menuKeys.Count(k => SelectedLevel(k) > 0);
+
+    var sectionIndex = 0;
+}
+
+<div class="card card-secondary mb-0">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2 py-2">
+        <h3 class="card-title mb-0"><i class="bi bi-list-check"></i> Menu Access</h3>
+        <div class="d-flex flex-wrap gap-1">
+            @if (defaults.Count > 0)
+            {
+                <button type="button" class="btn btn-sm btn-outline-light" id="applyTemplateDefaults">
+                    <i class="bi bi-magic"></i> Apply template
+                </button>
+            }
+            <a href="#" class="btn btn-sm btn-outline-light" id="roleMenuExpandAll">Expand all</a>
+            <a href="#" class="btn btn-sm btn-outline-light" id="roleMenuCollapseAll">Collapse all</a>
+        </div>
+    </div>
+    <div class="card-body p-2">
+        <p class="small text-muted mb-2 px-1">
+            Menus are grouped like the sidebar. Expand a section to set access.
+            <strong>Read-only</strong> = view + export only.
+        </p>
+
+        @if (defaults.Count > 0)
+        {
+            <script type="application/json" id="roleMenuDefaults">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(defaults))</script>
+        }
+
+        <div class="accordion role-menu-accordion" id="roleMenuAccordion">
+            @foreach (var group in groups)
+            {
+                var sectionKeys = group.Children
+                    .Select(c => c.Key)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Where(menuNames.ContainsKey)
+                    .ToList();
+                if (sectionKeys.Count == 0) { continue; }
+
+                var collapseId = $"roleMenuSection_{group.ParentKey}";
+                var headingId = $"roleMenuHeading_{group.ParentKey}";
+                var isFirst = sectionIndex == 0;
+                sectionIndex++;
+                var enabledCount = CountEnabled(sectionKeys);
+
+                <div class="accordion-item" data-role-menu-section>
+                    <h2 class="accordion-header" id="@headingId">
+                        <button class="accordion-button @(isFirst ? "" : "collapsed") py-2"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#@collapseId"
+                                aria-expanded="@(isFirst ? "true" : "false")"
+                                aria-controls="@collapseId">
+                            <i class="bi @(group.Icon ?? "bi-folder") me-2"></i>
+                            <span class="fw-semibold">@group.ParentName</span>
+                            <span class="badge bg-secondary ms-2" data-section-badge>@enabledCount / @sectionKeys.Count enabled</span>
+                        </button>
+                    </h2>
+                    <div id="@collapseId"
+                         class="accordion-collapse collapse @(isFirst ? "show" : "")"
+                         aria-labelledby="@headingId">
+                        <div class="accordion-body p-0">
+                            @foreach (var menuKey in sectionKeys)
+                            {
+                                var selected = SelectedLevel(menuKey);
+                                var menuName = menuNames[menuKey];
+                                <div class="role-menu-row d-flex flex-column flex-sm-row align-items-sm-center gap-2 px-3 py-2 border-bottom">
+                                    <div class="role-menu-row-label flex-grow-1">
+                                        @menuName
+                                        <input type="hidden" name="MenuKeys" value="@menuKey" />
+                                    </div>
+                                    <div class="role-menu-row-access" style="min-width: 11rem; max-width: 14rem;">
+                                        <select name="MenuAccessLevels"
+                                                class="form-select form-select-sm menu-access-select"
+                                                data-menu-key="@menuKey"
+                                                aria-label="Access for @menuName">
+                                            <option value="0" selected="@(selected == 0)">No access</option>
+                                            <option value="1" selected="@(selected == 1)">Read-only</option>
+                                            <option value="2" selected="@(selected == 2)">Full access</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script src="~/js/staff-role-menu.js" asp-append-version="true"></script>
+<script>KrsStaffRoleMenu.bind();</script>

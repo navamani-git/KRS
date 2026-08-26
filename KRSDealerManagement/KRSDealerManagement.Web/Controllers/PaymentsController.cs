@@ -157,14 +157,10 @@ namespace KRSDealerManagement.Web.Controllers
 
             try
             {
-                // Prefer content root Files/… (as requested); fall back to web root
-                var filesRoot = Path.Combine(_env.ContentRootPath, "Files");
-                Directory.CreateDirectory(filesRoot);
-
-                var proof1 = await PaymentFileHelper.SaveAsync(paymentProof, _env.ContentRootPath);
+                var proof1 = await PaymentFileHelper.SaveAsync(paymentProof, _env);
                 string? proof2 = null;
                 if (paymentProof2 != null && paymentProof2.Length > 0)
-                    proof2 = await PaymentFileHelper.SaveAsync(paymentProof2, _env.ContentRootPath);
+                    proof2 = await PaymentFileHelper.SaveAsync(paymentProof2, _env);
 
                 var typeLabel = type.TypeName;
                 if (type.TypeCode.Equals("OTHERS", StringComparison.OrdinalIgnoreCase)
@@ -251,7 +247,7 @@ namespace KRSDealerManagement.Web.Controllers
             {
                 string? proofPath = null;
                 if (paymentProof != null && paymentProof.Length > 0)
-                    proofPath = await PaymentFileHelper.SaveAsync(paymentProof, _env.ContentRootPath);
+                    proofPath = await PaymentFileHelper.SaveAsync(paymentProof, _env);
 
                 var paymentId = await _mediator.Send(new CreatePaymentCommand
                 {
@@ -283,12 +279,14 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeRole(1, 2, 3, 4)]
         public IActionResult ViewProof(string path)
         {
-            if (string.IsNullOrWhiteSpace(path) || path.Contains(".."))
-                return BadRequest();
-
-            var absolute = Path.Combine(_env.ContentRootPath, path.Replace('/', Path.DirectorySeparatorChar));
-            if (!System.IO.File.Exists(absolute))
-                return NotFound();
+            if (!FileDownloadHelper.TryResolveStoredFile(_env, path, out var absolute))
+            {
+                var fallbackAction = SessionHelper.IsSubdealer(HttpContext.Session) ? "MyPayments" : "Index";
+                var message = string.IsNullOrWhiteSpace(path) || path.Contains("..")
+                    ? FileDownloadHelper.InvalidFileMessage
+                    : null;
+                return FileDownloadHelper.RedirectMissingFile(this, "Payments", fallbackAction, message);
+            }
 
             var contentType = PaymentFileHelper.GetContentType(absolute);
             return PhysicalFile(absolute, contentType);
@@ -297,12 +295,14 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeRole(1, 2, 3, 4)]
         public IActionResult DownloadProof(string path)
         {
-            if (string.IsNullOrWhiteSpace(path) || path.Contains(".."))
-                return BadRequest();
-
-            var absolute = Path.Combine(_env.ContentRootPath, path.Replace('/', Path.DirectorySeparatorChar));
-            if (!System.IO.File.Exists(absolute))
-                return NotFound();
+            if (!FileDownloadHelper.TryResolveStoredFile(_env, path, out var absolute))
+            {
+                var fallbackAction = SessionHelper.IsSubdealer(HttpContext.Session) ? "MyPayments" : "Index";
+                var message = string.IsNullOrWhiteSpace(path) || path.Contains("..")
+                    ? FileDownloadHelper.InvalidFileMessage
+                    : null;
+                return FileDownloadHelper.RedirectMissingFile(this, "Payments", fallbackAction, message);
+            }
 
             var contentType = PaymentFileHelper.GetContentType(absolute);
             return PhysicalFile(absolute, contentType, Path.GetFileName(absolute));

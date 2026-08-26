@@ -130,13 +130,14 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
         private async Task<List<int>> ResolveColorIdsAsync(CreateVehiclePriceCommand request)
         {
+            if (request.ColorIds is { Count: > 0 })
+                return request.ColorIds.Distinct().ToList();
+
             if (request.ApplyForAllColors)
-            {
                 return (await _unitOfWork.VehicleModelColors.GetColorIdsByModelIdAsync(request.ModelId)).ToList();
-            }
 
             if (request.ColorId <= 0)
-                throw new InvalidOperationException("Select a color or choose apply for all colors.");
+                throw new InvalidOperationException("Select at least one color.");
 
             return new List<int> { request.ColorId };
         }

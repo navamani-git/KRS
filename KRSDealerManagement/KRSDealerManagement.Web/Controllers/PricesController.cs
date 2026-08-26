@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using KRSDealerManagement.Application.Commands;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Web.Helpers;
@@ -72,16 +73,59 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.SelectedModelId = modelId;
             ViewBag.CurrentMonth = DateTime.Now.Month;
             ViewBag.CurrentYear = DateTime.Now.Year;
-            await ModelColorViewHelper.SetModelColorMapAsync(this, _mediator);
 
             return View();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> AvailableColors(
+            int modelId,
+            int month,
+            int year,
+            DateTime? effectiveFrom,
+            DateTime? effectiveTo)
+        {
+            if (modelId <= 0)
+                return Json(Array.Empty<object>());
+
+            var mappedColorIds = (await _unitOfWork.VehicleModelColors.GetColorIdsByModelIdAsync(modelId)).ToList();
+            if (mappedColorIds.Count == 0)
+                return Json(Array.Empty<object>());
+
+            var from = effectiveFrom?.Date ?? new DateTime(year, month, 1);
+            var to = effectiveTo?.Date ?? default;
+            if (to == default)
+                to = new DateTime(year, month, DateTime.DaysInMonth(year, month));
+
+            var existing = (await _unitOfWork.VehiclePriceHistories.GetAllAsync()).ToList();
+            var colors = (await _unitOfWork.VehicleColors.GetAllAsync())
+                .Where(c => c.IsActive && mappedColorIds.Contains(c.ColorId))
+                .OrderBy(c => c.ColorName)
+                .ToList();
+
+            var available = new List<object>();
+            foreach (var color in colors)
+            {
+                if (VehiclePriceOverlapHelper.TryFindOverlap(
+                        existing, modelId, color.ColorId, from, to, excludePriceHistoryId: null, out _))
+                    continue;
+
+                available.Add(new
+                {
+                    id = color.ColorId,
+                    name = color.ColorName,
+                    hex = color.HexCode
+                });
+            }
+
+            return Json(available);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
             int modelId,
-            int colorId,
+            int[]? colorIds,
             bool applyForAllColors,
             int month,
             int year,
@@ -99,9 +143,10 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction(nameof(Create));
             }
 
-            if (!applyForAllColors && colorId <= 0)
+            var selectedColorIds = colorIds?.Where(id => id > 0).Distinct().ToList() ?? new List<int>();
+            if (!applyForAllColors && selectedColorIds.Count == 0)
             {
-                TempData["Error"] = "Select a color or check apply for all colors.";
+                TempData["Error"] = "Select at least one color.";
                 return RedirectToAction(nameof(Create));
             }
 
@@ -110,7 +155,7 @@ namespace KRSDealerManagement.Web.Controllers
                 await _mediator.Send(new CreateVehiclePriceCommand
                 {
                     ModelId = modelId,
-                    ColorId = colorId,
+                    ColorIds = selectedColorIds,
                     ApplyForAllColors = applyForAllColors,
                     Month = month,
                     Year = year,
@@ -121,9 +166,12 @@ namespace KRSDealerManagement.Web.Controllers
                     CreatedBy = userId.Value
                 });
 
+                var toLabel = effectiveTo == default ? "month end" : effectiveTo.ToString("yyyy-MM-dd");
                 TempData["Success"] = applyForAllColors
-                    ? $"Price ₹{price:N2} saved for all mapped colors ({effectiveFrom:yyyy-MM-dd} to {(effectiveTo == default ? "month end" : effectiveTo.ToString("yyyy-MM-dd"))})."
-                    : $"Price ₹{price:N2} effective {effectiveFrom:yyyy-MM-dd} to {(effectiveTo == default ? "month end" : effectiveTo.ToString("yyyy-MM-dd"))} saved successfully!";
+                    ? $"Price ₹{price:N2} saved for all mapped colors ({effectiveFrom:yyyy-MM-dd} to {toLabel})."
+                    : selectedColorIds.Count == 1
+                        ? $"Price ₹{price:N2} saved for 1 color ({effectiveFrom:yyyy-MM-dd} to {toLabel})."
+                        : $"Price ₹{price:N2} saved for {selectedColorIds.Count} colors ({effectiveFrom:yyyy-MM-dd} to {toLabel}).";
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)

@@ -2,6 +2,7 @@ using MediatR;
 using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
+using KRSDealerManagement.Shared.Enums;
 
 namespace KRSDealerManagement.Application.Queries
 {
@@ -21,6 +22,7 @@ namespace KRSDealerManagement.Application.Queries
         public int? SubDealerId { get; set; }
         public string? SubDealerName { get; set; }
         public List<string> AccessibleMenuKeys { get; set; } = new();
+        public Dictionary<string, MenuAccessLevel> MenuAccess { get; set; } = new();
         public bool IsSystemAdmin => RoleCode.Equals(RoleCodes.SystemAdmin, StringComparison.OrdinalIgnoreCase);
         public bool IsBranchManager => RoleCode.Equals(RoleCodes.BranchManager, StringComparison.OrdinalIgnoreCase);
         public bool IsFinanceAdmin => RoleCode.Equals(RoleCodes.FinanceAdmin, StringComparison.OrdinalIgnoreCase);
@@ -65,6 +67,7 @@ namespace KRSDealerManagement.Application.Queries
             }
 
             var menus = await MenuAccessResolver.ResolveAsync(_unitOfWork, request.UserId, role);
+            var menuAccess = await MenuAccessResolver.ResolveMapAsync(_unitOfWork, request.UserId, role);
 
             return new UserAccessContext
             {
@@ -76,7 +79,8 @@ namespace KRSDealerManagement.Application.Queries
                 DealershipName = dealershipName,
                 SubDealerId = assignment.SubDealerId,
                 SubDealerName = subDealerName,
-                AccessibleMenuKeys = menus
+                AccessibleMenuKeys = menus,
+                MenuAccess = menuAccess
             };
         }
     }
