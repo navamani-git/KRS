@@ -39,7 +39,14 @@ namespace KRSDealerManagement.Web.Controllers
                 || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Returns);
             var canViewCommissions = isSubdealer || isAdmin;
             var canViewBookings = isAdmin || isBranchManager
-                || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.VehicleBookings);
+                || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.VehicleBookings)
+                || (isSubdealer && SessionHelper.HasMenuAccess(HttpContext.Session, MenuKeys.VehiclesBookingStages));
+            var canViewShowroomStock = (isAdmin || isBranchManager)
+                && SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.ShowroomStock);
+            var canViewDealerStock = (isAdmin || isBranchManager)
+                && SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.DealerStock);
+            var canViewRtoSubsidyProgress = isAdmin || isBranchManager
+                || (isSubdealer && SessionHelper.HasMenuAccess(HttpContext.Session, MenuKeys.VehiclesBookingStages));
 
             var query = new GetDashboardSummaryQuery
             {
@@ -68,6 +75,9 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.CanViewPendingReturns = canViewReturns;
             ViewBag.CanViewPendingCommissions = canViewCommissions;
             ViewBag.CanViewBookings = canViewBookings;
+            ViewBag.CanViewShowroomStock = canViewShowroomStock;
+            ViewBag.CanViewDealerStock = canViewDealerStock;
+            ViewBag.CanViewRtoSubsidyProgress = canViewRtoSubsidyProgress;
             ViewBag.DealershipName = SessionHelper.GetDealershipName(HttpContext.Session);
 
             return View(summary);

@@ -14,11 +14,16 @@ namespace KRSDealerManagement.Application.Handlers.Commands
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IAuditService _auditService;
+        private readonly IRoleTemplateService _roleTemplateService;
 
-        public CreateStaffRoleCommandHandler(IUnitOfWork unitOfWork, IAuditService auditService)
+        public CreateStaffRoleCommandHandler(
+            IUnitOfWork unitOfWork,
+            IAuditService auditService,
+            IRoleTemplateService roleTemplateService)
         {
             _unitOfWork = unitOfWork;
             _auditService = auditService;
+            _roleTemplateService = roleTemplateService;
         }
 
         public async Task<int> Handle(CreateStaffRoleCommand request, CancellationToken cancellationToken)
@@ -33,7 +38,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             if ((await _unitOfWork.Roles.GetAllAsync()).Any(r => r.RoleCode.Equals(roleCode, StringComparison.OrdinalIgnoreCase)))
                 throw new InvalidOperationException($"Role code '{roleCode}' already exists.");
 
-            var menus = ResolveMenus(request.RoleTemplateCode, request.Menus);
+            var menus = await ResolveMenusAsync(request.RoleTemplateCode, request.Menus);
             if (!menus.Any())
                 throw new InvalidOperationException("Select at least one menu for this role.");
 
@@ -67,6 +72,23 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 .ToArray());
             while (code.Contains("__")) code = code.Replace("__", "_");
             return code.Trim('_');
+        }
+
+        internal async Task<List<RoleMenuPermissionInput>> ResolveMenusAsync(string templateCode, List<RoleMenuPermissionInput> submitted)
+        {
+            if (submitted.Any(m => m.AccessLevel != MenuAccessLevel.None))
+            {
+                return submitted
+                    .Where(m => m.AccessLevel != MenuAccessLevel.None)
+                    .GroupBy(m => m.MenuKey, StringComparer.OrdinalIgnoreCase)
+                    .Select(g => g.First())
+                    .ToList();
+            }
+
+            var defaults = await _roleTemplateService.GetDefaultMenusAsync(templateCode);
+            return defaults
+                .Select(kv => new RoleMenuPermissionInput { MenuKey = kv.Key, AccessLevel = kv.Value })
+                .ToList();
         }
 
         internal static List<RoleMenuPermissionInput> ResolveMenus(string templateCode, List<RoleMenuPermissionInput> submitted)

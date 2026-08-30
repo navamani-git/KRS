@@ -5,6 +5,7 @@ using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
+using KRSDealerManagement.Shared.Helpers;
 
 namespace KRSDealerManagement.Application.Handlers.Queries
 {
@@ -98,8 +99,13 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         BookingStatusName = st?.StatusName,
                         BookingStatusBadge = st?.BadgeClass,
                         CanSubmitSubsidyDocs = booking != null
-                            && !string.IsNullOrWhiteSpace(booking.SubsidyId)
-                            && !booking.SubsidyDocsSubmittedDate.HasValue,
+                            && BookingStageFilter.IsSubsidyDocsPending(
+                                booking.SubsidyId,
+                                booking.FaceVerificationPath,
+                                booking.RcImagePath,
+                                booking.BoothPhotoPath,
+                                booking.SubsidyUndertakingPath,
+                                v.Status),
                         CanRequestReturn = booking == null
                             && !(order?.CreatedByDealer ?? false)
                             && UnifiedVehicleStatus.CanRequestReturn(v.Status)
@@ -161,6 +167,11 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 result = result.Where(v => v.CreatedDate < toExclusive);
             }
 
+            if (request.RejectedOnly)
+                result = result.Where(v => v.Status == UnifiedVehicleStatus.RejectedByDealer);
+            else if (request.ExcludeRejected)
+                result = result.Where(v => v.Status != UnifiedVehicleStatus.RejectedByDealer);
+
             if (request.ColumnFilters is { Count: > 0 } cf)
             {
                 result = result.Where(v =>
@@ -171,6 +182,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     && GridFilterHelper.MatchesContains(v.ChassisNumber, GridFilterHelper.GetFilter(cf, "chassis"))
                     && GridFilterHelper.MatchesContains(v.ModelName, GridFilterHelper.GetFilter(cf, "model"))
                     && GridFilterHelper.MatchesContains(v.ColorName, GridFilterHelper.GetFilter(cf, "color"))
+                    && GridFilterHelper.MatchesExact(v.GetSourceDisplay(), GridFilterHelper.GetFilter(cf, "source"))
                     && GridFilterHelper.MatchesContains(v.MotorNo, GridFilterHelper.GetFilter(cf, "motor"))
                     && GridFilterHelper.MatchesContains(v.BatteryNo, GridFilterHelper.GetFilter(cf, "battery"))
                     && GridFilterHelper.MatchesContains(v.GetStatusDisplay(), GridFilterHelper.GetFilter(cf, "status"))

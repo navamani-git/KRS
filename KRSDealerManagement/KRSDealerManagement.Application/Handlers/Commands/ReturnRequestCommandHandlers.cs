@@ -1,5 +1,6 @@
 using MediatR;
 using KRSDealerManagement.Application.Commands;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Domain.Entities;
@@ -57,6 +58,9 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             var returnId = await _unitOfWork.ReturnRequests.AddAsync(returnRequest);
             if (returnId <= 0)
                 throw new InvalidOperationException("Failed to create return request (invalid ID). Please try again or contact support.");
+
+            await VehicleHistoryHelper.LogSubdealerEventAsync(
+                _unitOfWork, vehicle.VehicleId, "ReturnRequested", request.CreatedBy, request.ReturnReason);
 
             await _unitOfWork.SaveChangesAsync();
 
@@ -132,11 +136,24 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 else
                 {
                     vehicle.SubdealerId = null;
+                    if (vehicle.VehicleMasterId > 0)
+                        await VehicleAllocationHelper.ReleaseMasterAsync(
+                            _unitOfWork, vehicle.VehicleMasterId, request.ApprovedBy, request.Remarks);
                 }
 
                 vehicle.Status = UnifiedVehicleStatus.ApprovedByDealer;
                 vehicle.ModifiedDate = DateTime.UtcNow;
                 await _unitOfWork.Vehicles.UpdateAsync(vehicle);
+
+                await VehicleAllocationHelper.LogSubdealerEventAsync(
+                    _unitOfWork, vehicle.VehicleId, "ReturnApproved", request.ApprovedBy, request.Remarks);
+
+                if (request.ReassignToSubdealerId.HasValue)
+                {
+                    await VehicleHistoryHelper.LogSubdealerEventAsync(
+                        _unitOfWork, vehicle.VehicleId, "Reassigned", request.ApprovedBy,
+                        $"Reassigned to subdealer #{request.ReassignToSubdealerId.Value}.");
+                }
 
                 await _unitOfWork.ReturnRequests.UpdateAsync(returnRequest);
 
@@ -263,6 +280,10 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
             returnRequest.Reject(request.RejectedBy, request.Remarks);
             await _unitOfWork.ReturnRequests.UpdateAsync(returnRequest);
+
+            await VehicleHistoryHelper.LogSubdealerEventAsync(
+                _unitOfWork, vehicle.VehicleId, "ReturnRejected", request.RejectedBy, request.Remarks);
+
             await _unitOfWork.SaveChangesAsync();
 
             await _auditService.LogActionAsync(

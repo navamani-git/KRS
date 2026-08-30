@@ -1,3 +1,4 @@
+using KRSDealerManagement.Shared.Constants;
 using Microsoft.AspNetCore.Http;
 using KRSDealerManagement.Domain.Entities;
 
@@ -7,39 +8,52 @@ namespace KRSDealerManagement.Web.Helpers
     {
         private static readonly string[] PdfOnly = { ".pdf" };
         private static readonly string[] ImageOnly = { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
-        private const long MaxBytes = 10 * 1024 * 1024;
+        private const long DefaultMaxBytes = BookingFormConstants.MaxEAadhaarPdfBytes;
+
+        public static Task<string> SavePdfAsync(IFormFile file, IWebHostEnvironment env, long? maxBytes = null)
+            => SaveAsync(file, env, StorageFolder, PdfOnly, maxBytes ?? DefaultMaxBytes);
+
+        public static Task<string> SaveEAadhaarPdfAsync(IFormFile file, IWebHostEnvironment env)
+            => SavePdfAsync(file, env, BookingFormConstants.MaxEAadhaarPdfBytes);
+
+        public static Task<string> SaveIdentityDocumentPdfAsync(IFormFile file, IWebHostEnvironment env)
+            => SavePdfAsync(file, env, BookingFormConstants.MaxDocumentPdfBytes);
+
+        public static Task<string> SaveGstCertificatePdfAsync(IFormFile file, IWebHostEnvironment env)
+            => SavePdfAsync(file, env, BookingFormConstants.MaxGstPdfBytes);
+
+        public static Task<string> SaveImageAsync(IFormFile file, IWebHostEnvironment env)
+            => SaveAsync(file, env, StorageFolder, ImageOnly, BookingFormConstants.MaxImageBytes);
 
         public static string StorageFolder => AppFileStorageHelper.Sections.VehicleBooking;
         public static string InsuranceInvoiceFolder => AppFileStorageHelper.Sections.InsuranceInvoice;
         public static string StorageFolderPrefix => $"{AppFileStorageHelper.RootFolder}/{StorageFolder}/";
         public static string InsuranceInvoiceFolderPrefix => $"{AppFileStorageHelper.RootFolder}/{InsuranceInvoiceFolder}/";
 
-        public static Task<string> SavePdfAsync(IFormFile file, IWebHostEnvironment env)
-            => SaveAsync(file, env, StorageFolder, PdfOnly);
-
-        public static Task<string> SaveImageAsync(IFormFile file, IWebHostEnvironment env)
-            => SaveAsync(file, env, StorageFolder, ImageOnly);
-
         public static Task<string> SaveDocumentAsync(IFormFile file, IWebHostEnvironment env)
-            => SaveAsync(file, env, StorageFolder, PdfOnly.Concat(ImageOnly).ToArray());
+            => SaveAsync(file, env, StorageFolder, PdfOnly.Concat(ImageOnly).ToArray(), DefaultMaxBytes);
 
         public static Task<string> SaveInvoiceDocumentAsync(IFormFile file, IWebHostEnvironment env)
-            => SaveAsync(file, env, InsuranceInvoiceFolder, PdfOnly.Concat(ImageOnly).ToArray(), "Invoice");
+            => SaveAsync(file, env, InsuranceInvoiceFolder, PdfOnly.Concat(ImageOnly).ToArray(), DefaultMaxBytes, "Invoice");
 
         public static Task<string> SaveInsuranceDocumentAsync(IFormFile file, IWebHostEnvironment env)
-            => SaveAsync(file, env, InsuranceInvoiceFolder, PdfOnly.Concat(ImageOnly).ToArray(), "Insurance");
+            => SaveAsync(file, env, InsuranceInvoiceFolder, PdfOnly.Concat(ImageOnly).ToArray(), DefaultMaxBytes, "Insurance");
 
         private static async Task<string> SaveAsync(
             IFormFile file,
             IWebHostEnvironment env,
             string section,
             string[] allowed,
+            long maxBytes,
             string? namePrefix = null)
         {
             if (file == null || file.Length == 0)
                 throw new InvalidOperationException("File is empty.");
-            if (file.Length > MaxBytes)
-                throw new InvalidOperationException("Maximum file size is 10 MB.");
+            if (file.Length > maxBytes)
+            {
+                var maxMb = maxBytes / (1024 * 1024);
+                throw new InvalidOperationException($"Maximum file size is {maxMb} MB.");
+            }
 
             var ext = Path.GetExtension(file.FileName)?.ToLowerInvariant() ?? "";
             if (!allowed.Contains(ext))

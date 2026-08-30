@@ -17,6 +17,8 @@ namespace KRSDealerManagement.Application.Services
                     [StaffMenuAccess.Subdealers] = MenuAccessLevel.Full,
                     [StaffMenuAccess.Orders] = MenuAccessLevel.Full,
                     [StaffMenuAccess.Vehicles] = MenuAccessLevel.Full,
+                    [StaffMenuAccess.DealerStock] = MenuAccessLevel.Full,
+                    [StaffMenuAccess.ShowroomStock] = MenuAccessLevel.Full,
                     [StaffMenuAccess.VehicleBookings] = MenuAccessLevel.Full,
                     [StaffMenuAccess.BookedToCustomerView] = MenuAccessLevel.Full,
                     [StaffMenuAccess.Returns] = MenuAccessLevel.Full,
@@ -35,6 +37,7 @@ namespace KRSDealerManagement.Application.Services
                 {
                     [StaffMenuAccess.VehicleBookings] = MenuAccessLevel.Full,
                     [StaffMenuAccess.BookedToCustomerView] = MenuAccessLevel.Full,
+                    [StaffMenuAccess.RtoDistricts] = MenuAccessLevel.ReadOnly,
                     [StaffMenuAccess.RtoLocations] = MenuAccessLevel.ReadOnly,
                     [StaffMenuAccess.ChassisHistory] = MenuAccessLevel.ReadOnly,
                     [StaffMenuAccess.Vehicles] = MenuAccessLevel.ReadOnly,

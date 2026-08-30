@@ -22,8 +22,9 @@
                 <input name="fullName" class="form-control" value="@Model.FullName" required />
             </div>
             <div class="mb-3">
-                <label class="fw-bold">Username</label>
-                <input class="form-control" value="@Model.Username" readonly />
+                <label class="fw-bold">Username <span class="text-danger">*</span></label>
+                <input name="username" class="form-control" value="@Model.Username" required autocomplete="off" />
+                <small class="text-muted">Lowercase, no spaces. Must be unique across all users.</small>
             </div>
             <div class="mb-3">
                 <label class="fw-bold">Dealership</label>

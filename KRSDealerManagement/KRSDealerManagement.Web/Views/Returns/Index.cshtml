@@ -111,13 +111,6 @@
                                             <i class="bi bi-x-circle"></i>
                                         </a>
                                     }
-                                    else if (r.CanAllocateToSubdealer)
-                                    {
-                                        <a href="@Url.EAction(QueryCrypto, "Allocate", new { id = r.ReturnRequestId }, "Returns")"
-                                           class="btn btn-sm btn-primary" title="Allocate to subdealer">
-                                            <i class="bi bi-box-seam"></i> Allocate
-                                        </a>
-                                    }
                                     else
                                     {
                                         <small class="text-muted">@r.AdminRemarks</small>

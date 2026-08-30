@@ -86,6 +86,8 @@ namespace KRSDealerManagement.Web.Controllers
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Vehicles);
             var query = await BuildQueryAsync(subdealerId, searchTerm, fromDate, toDate, dealershipLocation);
             query.ColumnFilters = columnFilters;
+            if (isSubdealer)
+                query.ExcludeRejected = true;
             // Subdealer My Vehicles: show all unless they explicitly filter by date
             if (isSubdealer && !fromDate.HasValue && !toDate.HasValue)
             {
@@ -146,6 +148,46 @@ namespace KRSDealerManagement.Web.Controllers
             }
 
             return View(pageItems);
+        }
+
+        [AuthorizeRole(2)]
+        [AuthorizeMenu(MenuKeys.VehiclesView)]
+        public async Task<IActionResult> Rejected(
+            string? searchTerm,
+            DateTime? fromDate,
+            DateTime? toDate,
+            int? page,
+            int? pageSize)
+        {
+            var userId = SessionHelper.GetUserId(HttpContext.Session);
+            if (!userId.HasValue) return RedirectToAction("Login", "Account");
+
+            if (!SessionHelper.HasMenuAccess(HttpContext.Session, MenuKeys.VehiclesView))
+                return RedirectToAction("AccessDenied", "Account");
+
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Vehicles);
+            var query = await BuildQueryAsync(null, searchTerm, fromDate, toDate);
+            query.ColumnFilters = columnFilters;
+            query.RejectedOnly = true;
+            if (!fromDate.HasValue && !toDate.HasValue)
+            {
+                query.FromDate = null;
+                query.ToDate = null;
+            }
+
+            var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
+            var vehicles = await _mediator.Send(query);
+            var (pageItems, pageInfo) = ListPagingHelper.Paginate(vehicles, page, pageSize);
+            ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
+
+            ViewBag.FromDate = !fromDate.HasValue ? "" : from.ToString("yyyy-MM-dd");
+            ViewBag.ToDate = !toDate.HasValue ? "" : to.ToString("yyyy-MM-dd");
+            ViewBag.SearchTerm = searchTerm;
+            ViewBag.IsSubdealer = true;
+            ViewBag.IsAdmin = false;
+            ViewBag.IsRejectedView = true;
+
+            return View("Index", pageItems);
         }
 
         [AuthorizeRole(1, 2, 4)]

@@ -113,6 +113,20 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
                 GridScreenIds.StatusLookups => await DistinctStatusLookups(column, request),
 
+                GridScreenIds.ShowroomStock => await DistinctFrom(await _mediator.Send(new GetShowroomStockQuery
+                {
+                    DealershipId = request.DealershipId,
+                    DealershipLocation = request.DealershipLocation,
+                    SubdealerId = request.SubdealerId,
+                    SearchTerm = request.SearchTerm
+                }), column, request, ShowroomStockProjections),
+
+                GridScreenIds.DealerStock => await DistinctFrom(await _mediator.Send(new GetVehicleMastersQuery
+                {
+                    DealershipId = request.DealershipId,
+                    SearchTerm = request.SearchTerm
+                }), column, request, DealerStockProjections),
+
                 _ => Array.Empty<string>()
             };
         }
@@ -278,7 +292,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             ["chassis"] = v => v.ChassisNumber,
             ["model"] = v => v.ModelName,
             ["color"] = v => v.ColorName,
-            ["source"] = v => v.CreatedByDealer ? "Dealer" : "Subdealer",
+            ["source"] = v => v.CreatedByDealer ? "Dealer" : "My order",
             ["price"] = v => v.CurrentPrice.ToString("N2"),
             ["delivery"] = v => v.GetDeliveryStatusDisplay(),
             ["status"] = v => v.GetStatusDisplay(),
@@ -350,6 +364,33 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             ["processed"] = r => r.ProcessedDate?.ToString("yyyy-MM-dd"),
             ["credited"] = r => r.RefundCreditedDate?.ToString("yyyy-MM-dd"),
             ["remarks"] = r => r.AdminRemarks
+        };
+
+        private static readonly Dictionary<string, Func<ShowroomStockRowDto, string?>> ShowroomStockProjections = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["location"] = r => r.DealershipLocation,
+            ["subdealer"] = r => r.SubdealerName,
+            ["chassis"] = r => r.ChassisNumber,
+            ["model"] = r => r.ModelName,
+            ["color"] = r => r.ColorName,
+            ["order"] = r => r.OrderNumber,
+            ["allocated"] = r => r.AllocatedDate?.ToString("yyyy-MM-dd"),
+            ["days"] = r => r.DaysInStock.ToString(),
+            ["price"] = r => r.CurrentPrice.ToString("N2")
+        };
+
+        private static readonly Dictionary<string, Func<VehicleMasterDto, string?>> DealerStockProjections = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["dealer"] = r => r.DealershipName,
+            ["chassis"] = r => r.ChassisNumber,
+            ["model"] = r => r.ModelName,
+            ["color"] = r => r.ColorName,
+            ["motor"] = r => r.MotorNo,
+            ["battery"] = r => r.BatteryNo,
+            ["status"] = r => r.IsAllocated ? "Allocated" : "Available",
+            ["received"] = r => r.ReceivedDate.ToString("yyyy-MM-dd"),
+            ["invoice"] = r => r.AmpereInvoiceDate.ToString("yyyy-MM-dd"),
+            ["year"] = r => r.ManufacturingYear.ToString()
         };
 
         private static readonly Dictionary<string, Func<CommissionDto, string?>> CommissionApprovalProjections = new(StringComparer.OrdinalIgnoreCase)
@@ -431,7 +472,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
         private static readonly Dictionary<string, Func<AccountTransactionDto, string?>> AccountStatementProjections = new(StringComparer.OrdinalIgnoreCase)
         {
             ["type"] = t => t.CategoryLabel,
-            ["description"] = t => string.IsNullOrWhiteSpace(t.ChassisNumber) ? t.Reason : $"{t.Reason} {t.ChassisNumber}".Trim(),
+            ["description"] = t => (t.Reason ?? "").Replace("\n", " "),
             ["customer"] = t => t.CustomerName,
             ["payType"] = t => t.PaymentType,
             ["finance"] = t => t.FinanceName,

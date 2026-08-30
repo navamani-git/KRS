@@ -12,5 +12,9 @@ namespace KRSDealerManagement.Application.Queries
         public string? SearchTerm { get; set; }
         public string? DealershipLocation { get; set; }
         public Dictionary<string, string>? ColumnFilters { get; set; }
+        /// <summary>When true, only dealer-rejected vehicles (subdealer rejected view).</summary>
+        public bool RejectedOnly { get; set; }
+        /// <summary>Hide rejected vehicles from the main list (subdealer My Vehicles).</summary>
+        public bool ExcludeRejected { get; set; }
     }
 }

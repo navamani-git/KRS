@@ -1,8 +1,22 @@
 @{ ViewData["Title"] = "Add RTO Location"; ViewData["ExcelImportKey"] = KRSDealerManagement.Web.Helpers.ExcelImport.ExcelImportKeys.RtoLocations; ViewData["ExcelImportReturnAction"] = "Create"; }
+@{
+    var districts = ViewBag.Districts as IEnumerable<KRSDealerManagement.Domain.Entities.RtoDistrictMaster>;
+}
 <div class="row mb-3"><div class="col-md-8"><h1>Add RTO Location</h1></div>
-<div class="col-md-4 text-end"><a href="@Url.Action("Index")" class="btn btn-secondary">Back</a></div></div>
-<div class="card" style="max-width:480px"><div class="card-body">
+<div class="col-md-4 text-end">
+    <a href="@Url.Action("Index", "RtoDistricts")" class="btn btn-outline-secondary">Districts</a>
+    <a href="@Url.Action("Index")" class="btn btn-secondary">Back</a>
+</div></div>
+<div class="card" style="max-width:520px"><div class="card-body">
 <partial name="_ExcelImport" />
 <form method="post">@Html.AntiForgeryToken()
-<div class="mb-3"><label class="fw-bold">Location Name</label><input name="locationName" class="form-control" required /></div>
+<div class="mb-3">
+    <label class="fw-bold">District</label>
+    <select name="rtoDistrictId" class="form-select" required>
+        <option value="">-- Select district --</option>
+        @foreach (var d in districts ?? Enumerable.Empty<KRSDealerManagement.Domain.Entities.RtoDistrictMaster>())
+        { <option value="@d.RtoDistrictId">@d.DistrictName</option> }
+    </select>
+</div>
+<div class="mb-3"><label class="fw-bold">Location Name</label><input name="locationName" class="form-control" placeholder="e.g. Mettur, Omalur" required /></div>
 <button type="submit" class="btn btn-primary">Save</button></form></div></div>

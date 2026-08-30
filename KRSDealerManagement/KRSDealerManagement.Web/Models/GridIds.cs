@@ -25,5 +25,7 @@ namespace KRSDealerManagement.Web.Models
         public const string VehicleColors = KRSDealerManagement.Shared.Constants.GridScreenIds.VehicleColors;
         public const string VehicleModels = KRSDealerManagement.Shared.Constants.GridScreenIds.VehicleModels;
         public const string Vehicles = KRSDealerManagement.Shared.Constants.GridScreenIds.Vehicles;
+        public const string ShowroomStock = KRSDealerManagement.Shared.Constants.GridScreenIds.ShowroomStock;
+        public const string DealerStock = KRSDealerManagement.Shared.Constants.GridScreenIds.DealerStock;
     }
 }

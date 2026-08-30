@@ -48,21 +48,13 @@
                         </td>
                         <td><span class="badge bg-secondary">@t.CategoryLabel</span></td>
                         <td>
-                            @if (!string.IsNullOrEmpty(t.Reason) && t.Reason.Contains('\n'))
+                            @if (!string.IsNullOrEmpty(t.Reason))
                             {
                                 @Html.Raw(System.Net.WebUtility.HtmlEncode(t.Reason).Replace("\n", "<br />"))
                             }
-                            else
+                            else if (t.IsPaymentTransaction() && t.ReferenceId.HasValue)
                             {
-                                @t.Reason
-                                @if (!string.IsNullOrEmpty(t.ChassisNumber))
-                                {
-                                    <br /><small class="badge bg-dark"><code>@t.ChassisNumber</code></small>
-                                }
-                                else if (t.IsPaymentTransaction() && t.ReferenceId.HasValue)
-                                {
-                                    <br /><small class="text-muted">Payment #@t.ReferenceId</small>
-                                }
+                                <small class="text-muted">Payment #@t.ReferenceId</small>
                             }
                         </td>
                         <td><small>@(t.CustomerName ?? "-")</small></td>

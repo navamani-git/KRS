@@ -37,8 +37,8 @@
                             <small class="text-muted">Amount submitted by subdealer</small>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Payment Date <span class="text-danger">*</span></label>
-                            <input type="date" name="paymentDate" class="form-control" value="@Model.PaymentDate.ToString("yyyy-MM-dd")" required />
+                            <label class="form-label fw-bold">Payment Date &amp; Time <span class="text-danger">*</span></label>
+                            <input type="datetime-local" name="paymentDate" class="form-control" value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.PaymentDate)" required />
                         </div>
                     </div>
 
@@ -53,9 +53,9 @@
                                    value="@(Model.ActualReceivedAmount?.ToString("0.##") ?? Model.Amount.ToString("0.##"))" />
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Actual Received Date</label>
-                            <input type="date" name="actualReceivedDate" id="actualReceivedDate" class="form-control"
-                                   value="@(Model.ActualReceivedDate?.ToString("yyyy-MM-dd") ?? Model.PaymentDate.ToString("yyyy-MM-dd"))" />
+                            <label class="form-label fw-bold">Actual Received Date &amp; Time</label>
+                            <input type="datetime-local" name="actualReceivedDate" id="actualReceivedDate" class="form-control"
+                                   value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.ActualReceivedDate ?? Model.PaymentDate)" />
                         </div>
                     </div>
 

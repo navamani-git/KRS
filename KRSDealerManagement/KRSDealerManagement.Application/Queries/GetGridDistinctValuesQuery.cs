@@ -15,6 +15,7 @@ namespace KRSDealerManagement.Application.Queries
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }
         public string? SearchTerm { get; set; }
+        public string? DealershipLocation { get; set; }
         public bool BookingPhaseOnly { get; set; }
         public int Limit { get; set; } = 100;
     }

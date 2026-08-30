@@ -3,6 +3,7 @@ using KRSDealerManagement.Domain.Entities;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Application.Commands;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Application.DTOs;
 using KRSDealerManagement.Web.Filters;
@@ -52,6 +53,110 @@ namespace KRSDealerManagement.Web.Controllers
         public Task<IActionResult> Index(int? status, int? subdealerId, int? dealershipId, string? searchTerm, int? page, int? pageSize)
             => ListBookingsAsync(status, subdealerId, dealershipId, searchTerm, page, pageSize, viewOnly: true);
 
+        [AuthorizeRole(2)]
+        [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
+        public Task<IActionResult> MyBookedToCustomer(string? searchTerm, int? page, int? pageSize)
+            => ListBookingsAsync(
+                UnifiedVehicleStatus.BookedToCustomer,
+                SessionHelper.GetUserId(HttpContext.Session),
+                null,
+                searchTerm,
+                page,
+                pageSize,
+                viewOnly: true,
+                bookedToCustomerView: true,
+                subdealerView: true);
+
+        [AuthorizeRole(2)]
+        [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
+        public Task<IActionResult> MyPaperReceived(string? searchTerm, int? page, int? pageSize)
+            => ListMyBookingsAsync(UnifiedVehicleStatus.PaperReceived, searchTerm, page, pageSize);
+
+        [AuthorizeRole(2)]
+        [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
+        public Task<IActionResult> MyInvoiced(string? searchTerm, int? page, int? pageSize)
+            => ListMyBookingsAsync(UnifiedVehicleStatus.Invoiced, searchTerm, page, pageSize);
+
+        [AuthorizeRole(2)]
+        [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
+        public Task<IActionResult> MyInsuranceCreated(string? searchTerm, int? page, int? pageSize)
+            => ListMyBookingsAsync(UnifiedVehicleStatus.InsuranceCreated, searchTerm, page, pageSize);
+
+        [AuthorizeRole(2)]
+        [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
+        public Task<IActionResult> MyRtoRequested(string? searchTerm, int? page, int? pageSize)
+            => ListMyBookingsAsync(UnifiedVehicleStatus.RtoRequested, searchTerm, page, pageSize);
+
+        [AuthorizeRole(1, 4)]
+        [AuthorizeMenuAny(StaffMenuAccess.VehicleBookings, StaffMenuAccess.BookedToCustomerView)]
+        public Task<IActionResult> SubsidyIdPending(int? subdealerId, int? dealershipId, string? searchTerm, int? page, int? pageSize)
+            => ListBookingsAsync(
+                null,
+                subdealerId,
+                dealershipId,
+                searchTerm,
+                page,
+                pageSize,
+                viewOnly: true,
+                subsidyIdPendingOnly: true);
+
+        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.VehicleBookings)]
+        public Task<IActionResult> SubsidyDocsPending(int? subdealerId, int? dealershipId, string? searchTerm, int? page, int? pageSize)
+            => ListBookingsAsync(
+                null,
+                subdealerId,
+                dealershipId,
+                searchTerm,
+                page,
+                pageSize,
+                viewOnly: true,
+                subsidyDocsPendingOnly: true);
+
+        [AuthorizeRole(2)]
+        [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
+        public Task<IActionResult> MySubsidyDocsPending(string? searchTerm, int? page, int? pageSize)
+            => ListBookingsAsync(
+                null,
+                null,
+                null,
+                searchTerm,
+                page,
+                pageSize,
+                viewOnly: true,
+                subsidyDocsPendingOnly: true,
+                subdealerView: true);
+
+        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.VehicleBookings)]
+        public Task<IActionResult> RegisteredAwaitingPlate(int? subdealerId, int? dealershipId, string? searchTerm, int? page, int? pageSize)
+            => ListBookingsAsync(
+                null,
+                subdealerId,
+                dealershipId,
+                searchTerm,
+                page,
+                pageSize,
+                viewOnly: true,
+                registeredAwaitingPlateOnly: true);
+
+        [AuthorizeRole(2)]
+        [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
+        public Task<IActionResult> MyRegisteredAwaitingPlate(string? searchTerm, int? page, int? pageSize)
+            => ListBookingsAsync(
+                null,
+                null,
+                null,
+                searchTerm,
+                page,
+                pageSize,
+                viewOnly: true,
+                registeredAwaitingPlateOnly: true,
+                subdealerView: true);
+
+        private Task<IActionResult> ListMyBookingsAsync(int status, string? searchTerm, int? page, int? pageSize)
+            => ListBookingsAsync(status, null, null, searchTerm, page, pageSize, viewOnly: true, subdealerView: true);
+
         private async Task<IActionResult> ListBookingsAsync(
             int? status,
             int? subdealerId,
@@ -61,10 +166,20 @@ namespace KRSDealerManagement.Web.Controllers
             int? pageSize,
             bool viewOnly,
             bool bookingPhaseOnly = false,
-            bool bookedToCustomerView = false)
+            bool bookedToCustomerView = false,
+            bool subsidyIdPendingOnly = false,
+            bool subsidyDocsPendingOnly = false,
+            bool registeredAwaitingPlateOnly = false,
+            bool subdealerView = false)
         {
             var (scopedIds, effectiveDealershipId, isAdmin) = await GetBookingScopeAsync(dealershipId);
-            if (subdealerId.HasValue && !scopedIds.Contains(subdealerId.Value))
+            if (subdealerView)
+            {
+                var currentUserId = SessionHelper.GetUserId(HttpContext.Session);
+                if (currentUserId.HasValue)
+                    subdealerId = currentUserId;
+            }
+            else if (subdealerId.HasValue && !scopedIds.Contains(subdealerId.Value))
                 subdealerId = null;
 
             var bookings = (await _unitOfWork.VehicleBookings.GetAllAsync()).ToList();
@@ -85,12 +200,44 @@ namespace KRSDealerManagement.Web.Controllers
                     Chassis = v?.ChassisNumber ?? "-",
                     Subdealer = u?.GetFullName() ?? "Unknown",
                     StatusName = statusName,
-                    VehicleStatus = vehicleStatus
+                    VehicleStatus = vehicleStatus,
+                    RegistrationNumber = v?.RegistrationNumber
                 });
             }
 
             var list = rows.AsEnumerable();
-            if (status.HasValue)
+            if (subsidyIdPendingOnly)
+            {
+                list = list.Where(x => BookingStageFilter.IsSubsidyIdPending(
+                    x.Booking.InvoiceDate,
+                    x.Booking.InsuranceDate,
+                    x.Booking.SubsidyId,
+                    x.VehicleStatus));
+            }
+            else if (subsidyDocsPendingOnly)
+            {
+                list = list.Where(x => BookingStageFilter.IsSubsidyDocsPending(
+                    x.Booking.SubsidyId,
+                    x.Booking.FaceVerificationPath,
+                    x.Booking.RcImagePath,
+                    x.Booking.BoothPhotoPath,
+                    x.Booking.SubsidyUndertakingPath,
+                    x.VehicleStatus));
+            }
+            else if (registeredAwaitingPlateOnly)
+            {
+                list = list.Where(x => BookingStageFilter.IsRegisteredAwaitingNumberPlate(
+                    x.VehicleStatus,
+                    x.Booking.PaperReceivedDate,
+                    x.Booking.InvoiceDate,
+                    x.Booking.InsuranceDate,
+                    x.Booking.AgentDate,
+                    x.Booking.RegistrationDate,
+                    x.Booking.SubsidyId,
+                    x.Booking.NumberPlateReceivedDate,
+                    x.Booking.NumberPlateReceivedBy));
+            }
+            else if (status.HasValue)
                 list = list.Where(x => BookingStageFilter.MatchesStage(
                     x.VehicleStatus,
                     status.Value,
@@ -134,16 +281,34 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.SelectedStatus = status;
             ViewBag.SelectedSubdealerId = subdealerId;
             ViewBag.SelectedDealershipId = effectiveDealershipId;
-            ViewBag.ShowDealershipFilter = isAdmin;
-            ViewBag.LockStatusFilter = status.HasValue && viewOnly;
-            ViewBag.ShowManage = !viewOnly;
-            ViewBag.PageTitle = GetBookingPageTitle(status, viewOnly);
+            ViewBag.ShowDealershipFilter = isAdmin && !subdealerView;
+            ViewBag.ShowSubdealerFilter = !subdealerView;
+            ViewBag.IsSubdealerView = subdealerView;
+            ViewBag.LockStatusFilter = (status.HasValue || subsidyIdPendingOnly || subsidyDocsPendingOnly || registeredAwaitingPlateOnly) && viewOnly;
+            ViewBag.ShowManage = !viewOnly || subdealerView;
+            ViewBag.PageTitle = subsidyIdPendingOnly
+                ? "Subsidy ID Pending"
+                : subsidyDocsPendingOnly
+                    ? "Subsidy Docs Pending"
+                    : registeredAwaitingPlateOnly
+                        ? "Registered"
+                        : GetBookingPageTitle(status, viewOnly, bookedToCustomerView);
             ViewBag.BookingPhaseOnly = bookingPhaseOnly;
             ViewBag.BookedToCustomerView = bookedToCustomerView;
-            var stageInfo = BookingGridStageInfo.Describe(status, bookingPhaseOnly, bookedToCustomerView);
-            ViewBag.GridStageShowing = stageInfo.Showing;
-            ViewBag.GridStageRemovedWhen = stageInfo.RemovedWhen;
-            ViewBag.GridStageHint = BookingGridStageInfo.FormatForHeader(status, bookingPhaseOnly, bookedToCustomerView);
+            ViewBag.SubsidyIdPendingOnly = subsidyIdPendingOnly;
+            ViewBag.SubsidyDocsPendingOnly = subsidyDocsPendingOnly;
+            ViewBag.RegisteredAwaitingPlateOnly = registeredAwaitingPlateOnly;
+            var stageHelp = BookingGridStageInfo.GetHelp(
+                status,
+                bookingPhaseOnly,
+                bookedToCustomerView,
+                subsidyIdPendingOnly,
+                subsidyDocsPendingOnly,
+                registeredAwaitingPlateOnly);
+            ViewBag.GridStageShowing = stageHelp.Showing;
+            ViewBag.GridStageRemovedWhen = stageHelp.RemovedWhen;
+            ViewBag.GridStagePurpose = stageHelp.ScreenPurpose;
+            ViewBag.GridStageHint = $"Showing: {stageHelp.Showing} · Removed when: {stageHelp.RemovedWhen}";
             ViewBag.SearchTerm = searchTerm;
             return View("Index", pageItems);
         }
@@ -233,7 +398,7 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         [AuthorizeRole(2)]
-        [AuthorizeMenu(MenuKeys.VehiclesView)]
+        [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public async Task<IActionResult> Book(int vehicleId)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
@@ -265,7 +430,7 @@ namespace KRSDealerManagement.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AuthorizeRole(2)]
-        [AuthorizeMenu(MenuKeys.VehiclesView)]
+        [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public async Task<IActionResult> Book(int vehicleId, string customerName, bool isCompanyBooking,
             string customerMobile, string alternativeMobile, string customerEmail,
             string eAadhaarPassword, int documentTypeId, int rtoLocationId, bool fancyNumber,
@@ -294,20 +459,22 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction("Index", "Vehicles");
             }
 
-            if (string.IsNullOrWhiteSpace(customerName) || string.IsNullOrWhiteSpace(customerMobile)
-                || string.IsNullOrWhiteSpace(alternativeMobile) || string.IsNullOrWhiteSpace(customerEmail)
-                || string.IsNullOrWhiteSpace(eAadhaarPassword) || string.IsNullOrWhiteSpace(nomineeName)
-                || string.IsNullOrWhiteSpace(nomineeRelationship))
+            var validationError = BookingFormValidationHelper.ValidateCreateBooking(
+                customerName, customerMobile, alternativeMobile, customerEmail, eAadhaarPassword,
+                nomineeRelationship, isCompanyBooking, eAadhaarFile, documentFile, gstCertificateFile,
+                customerPhoto, chassisPhoto, customerSign);
+            if (validationError != null)
             {
-                TempData["Error"] = "Please fill all mandatory fields.";
+                TempData["Error"] = validationError;
                 return RedirectToAction(nameof(Book), new { vehicleId });
             }
 
-            if (isCompanyBooking && (gstCertificateFile == null || gstCertificateFile.Length == 0))
-            {
-                TempData["Error"] = "GST Certificate is required for company bookings.";
-                return RedirectToAction(nameof(Book), new { vehicleId });
-            }
+            customerName = BookingFormValidationHelper.NormalizeCustomerName(customerName);
+            customerEmail = BookingFormValidationHelper.NormalizeEmail(customerEmail);
+            customerMobile = customerMobile.Trim();
+            alternativeMobile = alternativeMobile.Trim();
+            eAadhaarPassword = eAadhaarPassword.Trim();
+            nomineeRelationship = nomineeRelationship.Trim();
 
             try
             {
@@ -317,12 +484,12 @@ namespace KRSDealerManagement.Web.Controllers
                     VehicleId = vehicleId,
                     SubdealerId = userId.Value,
                     BookingStatus = UnifiedVehicleStatus.BookedToCustomer,
-                    CustomerName = customerName.Trim(),
+                    CustomerName = customerName,
                     IsCompanyBooking = isCompanyBooking,
-                    CustomerMobile = customerMobile.Trim(),
-                    AlternativeMobile = alternativeMobile.Trim(),
-                    CustomerEmail = customerEmail.Trim(),
-                    EAadhaarPassword = eAadhaarPassword.Trim(),
+                    CustomerMobile = customerMobile,
+                    AlternativeMobile = alternativeMobile,
+                    CustomerEmail = customerEmail,
+                    EAadhaarPassword = eAadhaarPassword,
                     DocumentTypeId = documentTypeId,
                     RtoLocationId = rtoLocationId,
                     FancyNumber = fancyNumber,
@@ -330,10 +497,10 @@ namespace KRSDealerManagement.Web.Controllers
                     FinanceNameId = financeNameId,
                     NomineeName = nomineeName.Trim(),
                     NomineeDob = nomineeDob.Date,
-                    NomineeRelationship = nomineeRelationship.Trim(),
-                    EAadhaarPath = await BookingFileHelper.SavePdfAsync(eAadhaarFile, root),
-                    DocumentPath = await BookingFileHelper.SavePdfAsync(documentFile, root),
-                    GstCertificatePath = isCompanyBooking ? await BookingFileHelper.SavePdfAsync(gstCertificateFile!, root) : null,
+                    NomineeRelationship = nomineeRelationship,
+                    EAadhaarPath = await BookingFileHelper.SaveEAadhaarPdfAsync(eAadhaarFile, root),
+                    DocumentPath = await BookingFileHelper.SaveIdentityDocumentPdfAsync(documentFile, root),
+                    GstCertificatePath = isCompanyBooking ? await BookingFileHelper.SaveGstCertificatePdfAsync(gstCertificateFile!, root) : null,
                     CustomerPhotoPath = await BookingFileHelper.SaveImageAsync(customerPhoto, root),
                     ChassisPhotoPath = await BookingFileHelper.SaveImageAsync(chassisPhoto, root),
                     CustomerSignPath = await BookingFileHelper.SaveImageAsync(customerSign, root),
@@ -353,6 +520,10 @@ namespace KRSDealerManagement.Web.Controllers
                 if (!await _unitOfWork.Vehicles.UpdateAsync(vehicleEntity))
                     throw new InvalidOperationException("Failed to update vehicle status after booking.");
 
+                await VehicleHistoryHelper.LogSubdealerEventAsync(
+                    _unitOfWork, vehicleId, "BookedToCustomer", userId,
+                    $"Customer {customerName.Trim()} ({customerMobile.Trim()}).");
+
                 TempData["Success"] = "Vehicle booked successfully.";
                 return this.RedirectEncrypted(nameof(Manage), new { id });
             }
@@ -370,30 +541,48 @@ namespace KRSDealerManagement.Web.Controllers
             }
         }
 
-        [AuthorizeRole(2)]
-        [AuthorizeMenu(MenuKeys.VehiclesView)]
+        [AuthorizeRole(1, 2)]
+        [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public async Task<IActionResult> Edit(int id)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
+            var isAdmin = SessionHelper.IsSystemAdmin(HttpContext.Session);
             var booking = await _unitOfWork.VehicleBookings.GetByIdAsync(id);
-            if (booking == null || booking.SubdealerId != userId) { TempData["Error"] = "Booking not found."; return RedirectToAction("Index", "Vehicles"); }
-            if (booking.InvoiceDate.HasValue) { TempData["Error"] = "This booking can no longer be edited — the vehicle has been invoiced."; return this.RedirectEncrypted(nameof(Manage), new { id }); }
+            if (booking == null) { TempData["Error"] = "Booking not found."; return RedirectToAction("Index", "Vehicles"); }
 
-            var vehicle = await LoadVehicleOrNull(booking.VehicleId, userId.Value);
+            if (isAdmin)
+            {
+                if (!await CanAccessBooking(booking))
+                    return RedirectToAction("AccessDenied", "Account");
+            }
+            else if (booking.SubdealerId != userId)
+            {
+                TempData["Error"] = "Booking not found.";
+                return RedirectToAction("Index", "Vehicles");
+            }
+            else if (booking.InvoiceDate.HasValue)
+            {
+                TempData["Error"] = "This booking can no longer be edited — the vehicle has been invoiced.";
+                return this.RedirectEncrypted(nameof(Manage), new { id });
+            }
+
+            var vehicle = await LoadBookingVehicleAsync(booking, userId.Value);
             if (vehicle == null) { TempData["Error"] = "Vehicle not found."; return RedirectToAction("Index", "Vehicles"); }
 
-            await LoadBookingFormViewBags();
+            await LoadBookingFormViewBags(booking.RtoLocationId);
             ViewBag.Vehicle = vehicle;
             ViewBag.Booking = booking;
+            ViewBag.HasGstCertificate = !string.IsNullOrWhiteSpace(booking.GstCertificatePath);
+            ViewBag.IsAdminEdit = isAdmin;
             return View(booking);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(2)]
-        [AuthorizeMenu(MenuKeys.VehiclesView)]
+        [AuthorizeRole(1, 2)]
+        [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public async Task<IActionResult> Edit(int id, string customerName, bool isCompanyBooking,
             string customerMobile, string alternativeMobile, string customerEmail,
             string eAadhaarPassword, int documentTypeId, int rtoLocationId, bool fancyNumber,
@@ -405,24 +594,42 @@ namespace KRSDealerManagement.Web.Controllers
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
+            var isAdmin = SessionHelper.IsSystemAdmin(HttpContext.Session);
             var booking = await _unitOfWork.VehicleBookings.GetByIdAsync(id);
-            if (booking == null || booking.SubdealerId != userId) { TempData["Error"] = "Booking not found."; return RedirectToAction("Index", "Vehicles"); }
-            if (booking.InvoiceDate.HasValue) { TempData["Error"] = "This booking can no longer be edited."; return this.RedirectEncrypted(nameof(Manage), new { id }); }
+            if (booking == null) { TempData["Error"] = "Booking not found."; return RedirectToAction("Index", "Vehicles"); }
 
-            if (string.IsNullOrWhiteSpace(customerName) || string.IsNullOrWhiteSpace(customerMobile)
-                || string.IsNullOrWhiteSpace(alternativeMobile) || string.IsNullOrWhiteSpace(customerEmail)
-                || string.IsNullOrWhiteSpace(eAadhaarPassword) || string.IsNullOrWhiteSpace(nomineeName)
-                || string.IsNullOrWhiteSpace(nomineeRelationship))
+            if (isAdmin)
             {
-                TempData["Error"] = "Please fill all mandatory fields.";
+                if (!await CanAccessBooking(booking))
+                    return RedirectToAction("AccessDenied", "Account");
+            }
+            else if (booking.SubdealerId != userId)
+            {
+                TempData["Error"] = "Booking not found.";
+                return RedirectToAction("Index", "Vehicles");
+            }
+            else if (booking.InvoiceDate.HasValue)
+            {
+                TempData["Error"] = "This booking can no longer be edited.";
+                return this.RedirectEncrypted(nameof(Manage), new { id });
+            }
+
+            var validationError = BookingFormValidationHelper.ValidateEditBooking(
+                customerName, customerMobile, alternativeMobile, customerEmail, eAadhaarPassword,
+                nomineeRelationship, isCompanyBooking, !string.IsNullOrWhiteSpace(booking.GstCertificatePath),
+                eAadhaarFile, documentFile, gstCertificateFile, customerPhoto, chassisPhoto, customerSign);
+            if (validationError != null)
+            {
+                TempData["Error"] = validationError;
                 return RedirectToAction(nameof(Edit), new { id });
             }
 
-            if (isCompanyBooking && gstCertificateFile == null && string.IsNullOrWhiteSpace(booking.GstCertificatePath))
-            {
-                TempData["Error"] = "GST Certificate is required for company bookings.";
-                return RedirectToAction(nameof(Edit), new { id });
-            }
+            customerName = BookingFormValidationHelper.NormalizeCustomerName(customerName);
+            customerEmail = BookingFormValidationHelper.NormalizeEmail(customerEmail);
+            customerMobile = customerMobile.Trim();
+            alternativeMobile = alternativeMobile.Trim();
+            eAadhaarPassword = eAadhaarPassword.Trim();
+            nomineeRelationship = nomineeRelationship.Trim();
 
             try
             {
@@ -430,7 +637,8 @@ namespace KRSDealerManagement.Web.Controllers
                 var cmd = new UpdateSubdealerBookingCommand
                 {
                     VehicleBookingId = id,
-                    SubdealerId = userId.Value,
+                    SubdealerId = booking.SubdealerId,
+                    AllowAdminOverride = isAdmin,
                     CustomerName = customerName,
                     IsCompanyBooking = isCompanyBooking,
                     CustomerMobile = customerMobile,
@@ -442,7 +650,7 @@ namespace KRSDealerManagement.Web.Controllers
                     FancyNumber = fancyNumber,
                     PaymentMode = paymentMode,
                     FinanceNameId = financeNameId,
-                    NomineeName = nomineeName,
+                    NomineeName = nomineeName.Trim(),
                     NomineeDob = nomineeDob,
                     NomineeRelationship = nomineeRelationship,
                     EditReason = editReason,
@@ -451,11 +659,11 @@ namespace KRSDealerManagement.Web.Controllers
                 };
 
                 if (eAadhaarFile != null && eAadhaarFile.Length > 0)
-                    cmd.EAadhaarPath = await BookingFileHelper.SavePdfAsync(eAadhaarFile, root);
+                    cmd.EAadhaarPath = await BookingFileHelper.SaveEAadhaarPdfAsync(eAadhaarFile, root);
                 if (documentFile != null && documentFile.Length > 0)
-                    cmd.DocumentPath = await BookingFileHelper.SavePdfAsync(documentFile, root);
+                    cmd.DocumentPath = await BookingFileHelper.SaveIdentityDocumentPdfAsync(documentFile, root);
                 if (gstCertificateFile != null && gstCertificateFile.Length > 0)
-                    cmd.GstCertificatePath = await BookingFileHelper.SavePdfAsync(gstCertificateFile, root);
+                    cmd.GstCertificatePath = await BookingFileHelper.SaveGstCertificatePdfAsync(gstCertificateFile, root);
                 if (customerPhoto != null && customerPhoto.Length > 0)
                     cmd.CustomerPhotoPath = await BookingFileHelper.SaveImageAsync(customerPhoto, root);
                 if (chassisPhoto != null && chassisPhoto.Length > 0)
@@ -494,7 +702,7 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeRole(1, 4)]
         public async Task<IActionResult> Manage(int id, int bookingStatus, string? subsidyId,
             DateTime? paperReceivedDate, DateTime? invoiceDate, DateTime? insuranceDate, DateTime? agentDate,
-            DateTime? registrationDate, string? rtoNumber, DateTime? numberPlateReceivedDate,
+            DateTime? registrationDate, string? rtoNumber,
             IFormFile? invoiceFile, IFormFile? insuranceFile, bool confirmPriceAdjustment = false)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
@@ -511,25 +719,38 @@ namespace KRSDealerManagement.Web.Controllers
             if (vehicle != null && vehicle.Status == UnifiedVehicleStatus.Delivered)
                 bookingStatus = UnifiedVehicleStatus.Delivered;
 
-            var previousInvoiceDate = booking.InvoiceDate?.Date;
-            var newInvoiceDate = invoiceDate?.Date;
+            var previousInvoiceDate = booking.InvoiceDate;
+            var newInvoiceDate = invoiceDate;
             var invoiceDateChanged = newInvoiceDate.HasValue && newInvoiceDate != previousInvoiceDate;
+            var previousVehicleStatus = vehicle?.Status ?? booking.BookingStatus;
+            var hadSubsidyId = !string.IsNullOrWhiteSpace(booking.SubsidyId);
+            var beforePaper = booking.PaperReceivedDate;
+            var beforeInsurance = booking.InsuranceDate;
+            var beforeAgent = booking.AgentDate;
+            var beforeRegistration = booking.RegistrationDate;
+            var beforeRto = booking.RtoNumber;
+            var beforeSubsidyId = booking.SubsidyId;
+            var hadInvoiceFile = !string.IsNullOrWhiteSpace(booking.InvoicePath);
+            var hadInsuranceFile = !string.IsNullOrWhiteSpace(booking.InsurancePath);
 
             try
             {
                 var root = _env;
-                if (invoiceFile != null && invoiceFile.Length > 0)
+                var uploadedInvoice = invoiceFile != null && invoiceFile.Length > 0;
+                var uploadedInsurance = insuranceFile != null && insuranceFile.Length > 0;
+                if (uploadedInvoice)
                     booking.InvoicePath = await BookingFileHelper.SaveInvoiceDocumentAsync(invoiceFile, root);
-                if (insuranceFile != null && insuranceFile.Length > 0)
+                if (uploadedInsurance)
                     booking.InsurancePath = await BookingFileHelper.SaveInsuranceDocumentAsync(insuranceFile, root);
 
-                booking.PaperReceivedDate = paperReceivedDate?.Date;
+                booking.PaperReceivedDate = paperReceivedDate;
                 booking.InvoiceDate = newInvoiceDate;
-                booking.InsuranceDate = insuranceDate?.Date;
-                booking.AgentDate = agentDate?.Date;
-                booking.RegistrationDate = registrationDate?.Date;
+                booking.InsuranceDate = insuranceDate;
+                booking.AgentDate = agentDate;
+                booking.RegistrationDate = registrationDate;
                 booking.RtoNumber = rtoNumber?.Trim();
-                booking.NumberPlateReceivedDate = numberPlateReceivedDate?.Date;
+                if (!string.IsNullOrWhiteSpace(booking.RtoNumber) && vehicle != null)
+                    vehicle.RegistrationNumber = booking.RtoNumber;
                 if (!string.IsNullOrWhiteSpace(subsidyId))
                 {
                     booking.SubsidyId = subsidyId.Trim();
@@ -570,6 +791,36 @@ namespace KRSDealerManagement.Web.Controllers
                 booking.ModifiedBy = userId;
                 booking.ModifiedDate = DateTime.UtcNow;
                 await _unitOfWork.VehicleBookings.UpdateAsync(booking);
+
+                if (vehicle != null && vehicle.Status != previousVehicleStatus)
+                {
+                    await VehicleHistoryHelper.LogStatusChangeAsync(
+                        _unitOfWork, vehicle.VehicleId, vehicle.Status, userId);
+                }
+
+                if (!hadSubsidyId && !string.IsNullOrWhiteSpace(booking.SubsidyId))
+                {
+                    await VehicleHistoryHelper.LogSubdealerEventAsync(
+                        _unitOfWork, booking.VehicleId, "SubsidyIdCreated", userId,
+                        $"Subsidy ID {booking.SubsidyId.Trim()}");
+                }
+
+                var historyNotes = new List<string>();
+                void Track(string? note) { if (!string.IsNullOrWhiteSpace(note)) historyNotes.Add(note); }
+                Track(VehicleBookingHistoryHelper.DescribeDateTimeChange("Paper received", beforePaper, booking.PaperReceivedDate));
+                Track(VehicleBookingHistoryHelper.DescribeDateTimeChange("Invoice date", previousInvoiceDate, booking.InvoiceDate));
+                Track(VehicleBookingHistoryHelper.DescribeDateTimeChange("Insurance date", beforeInsurance, booking.InsuranceDate));
+                Track(VehicleBookingHistoryHelper.DescribeDateTimeChange("Agent date", beforeAgent, booking.AgentDate));
+                Track(VehicleBookingHistoryHelper.DescribeDateTimeChange("Registration date", beforeRegistration, booking.RegistrationDate));
+                Track(VehicleBookingHistoryHelper.DescribeTextChange("RTO number", beforeRto, booking.RtoNumber));
+                Track(VehicleBookingHistoryHelper.DescribeTextChange("Subsidy ID", beforeSubsidyId, booking.SubsidyId));
+                if (uploadedInvoice)
+                    Track(hadInvoiceFile ? "Invoice document replaced" : "Invoice document uploaded");
+                if (uploadedInsurance)
+                    Track(hadInsuranceFile ? "Insurance document replaced" : "Insurance document uploaded");
+
+                await VehicleBookingHistoryHelper.LogChangesAsync(
+                    _unitOfWork, booking.VehicleId, userId, historyNotes);
             }
             catch (Exception ex)
             {
@@ -581,7 +832,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             if (invoiceDateChanged && newInvoiceDate.HasValue)
             {
-                var preview = await _priceService.GetInvoicePriceChangePreviewAsync(booking.VehicleId, newInvoiceDate.Value);
+                var preview = await _priceService.GetInvoicePriceChangePreviewAsync(booking.VehicleId, newInvoiceDate.Value.Date);
                 if (!preview.HasCatalogPrice)
                 {
                     TempData["Error"] = preview.ErrorMessage ?? "No catalogue price for the invoice date.";
@@ -597,7 +848,7 @@ namespace KRSDealerManagement.Web.Controllers
                 try
                 {
                     var priceAdjusted = preview.WouldChange && confirmPriceAdjustment
-                        ? await _priceService.ApplyPriceOnInvoiceAsync(booking.VehicleId, newInvoiceDate.Value, userId ?? 0)
+                        ? await _priceService.ApplyPriceOnInvoiceAsync(booking.VehicleId, newInvoiceDate.Value.Date, userId ?? 0)
                         : false;
                     TempData["Success"] = priceAdjusted
                         ? $"Booking updated. Price changed from ₹{preview.CurrentVehiclePrice:N2} to ₹{preview.CatalogPrice:N2}; dealer account adjusted."
@@ -643,7 +894,7 @@ namespace KRSDealerManagement.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AuthorizeRole(2)]
-        [AuthorizeMenu(MenuKeys.VehiclesView)]
+        [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public async Task<IActionResult> MarkDelivered(int id, DateTime deliveryDate)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
@@ -676,54 +927,192 @@ namespace KRSDealerManagement.Web.Controllers
             return this.RedirectEncrypted(nameof(Manage), new { id });
         }
 
-        [AuthorizeRole(2)]
-        [AuthorizeMenu(MenuKeys.VehiclesView)]
+        [AuthorizeRole(1, 2)]
+        [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public async Task<IActionResult> SubsidyDocs(int id)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
+            var isAdmin = SessionHelper.IsSystemAdmin(HttpContext.Session);
             var booking = await _unitOfWork.VehicleBookings.GetByIdAsync(id);
-            if (booking == null || booking.SubdealerId != userId) { TempData["Error"] = "Not found."; return RedirectToAction("Index", "Vehicles"); }
+            if (booking == null) { TempData["Error"] = "Not found."; return RedirectToAction("Index", "Vehicles"); }
+
+            if (isAdmin)
+            {
+                if (!await CanAccessBooking(booking))
+                    return RedirectToAction("AccessDenied", "Account");
+            }
+            else if (booking.SubdealerId != userId)
+            {
+                TempData["Error"] = "Not found.";
+                return RedirectToAction("Index", "Vehicles");
+            }
+
             if (string.IsNullOrWhiteSpace(booking.SubsidyId)) { TempData["Error"] = "Subsidy ID not yet assigned by dealer."; return RedirectToAction("Index", "Vehicles"); }
-            if (booking.SubsidyDocsSubmittedDate.HasValue) { TempData["Info"] = "Subsidy documents already submitted."; return this.RedirectEncrypted(nameof(Manage), new { id }); }
+            if (!isAdmin && BookingStageFilter.HasAllSubsidyDocs(
+                booking.FaceVerificationPath,
+                booking.RcImagePath,
+                booking.BoothPhotoPath,
+                booking.SubsidyUndertakingPath))
+            {
+                TempData["Info"] = "All subsidy documents are already uploaded.";
+                return this.RedirectEncrypted(nameof(Manage), new { id });
+            }
 
             var vehicle = (await _unitOfWork.Vehicles.GetByIdAsync(booking.VehicleId));
             ViewBag.Vehicle = vehicle;
             ViewBag.CustomerNameCaps = booking.CustomerName.Trim().ToUpperInvariant();
+            ViewBag.IsAdminEdit = isAdmin;
             return View(booking);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(2)]
-        [AuthorizeMenu(MenuKeys.VehiclesView)]
-        public async Task<IActionResult> SubsidyDocs(int id, IFormFile faceVerification, IFormFile rcImage,
-            IFormFile boothPhoto, IFormFile subsidyUndertaking)
+        [AuthorizeRole(1, 2)]
+        [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
+        public async Task<IActionResult> SubsidyDocs(int id, IFormFile? faceVerification, IFormFile? rcImage,
+            IFormFile? boothPhoto, IFormFile? subsidyUndertaking)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
+            var isAdmin = SessionHelper.IsSystemAdmin(HttpContext.Session);
             var booking = await _unitOfWork.VehicleBookings.GetByIdAsync(id);
-            if (booking == null || booking.SubdealerId != userId) { TempData["Error"] = "Not found."; return RedirectToAction("Index", "Vehicles"); }
+            if (booking == null) { TempData["Error"] = "Not found."; return RedirectToAction("Index", "Vehicles"); }
+
+            if (isAdmin)
+            {
+                if (!await CanAccessBooking(booking))
+                    return RedirectToAction("AccessDenied", "Account");
+            }
+            else if (booking.SubdealerId != userId)
+            {
+                TempData["Error"] = "Not found.";
+                return RedirectToAction("Index", "Vehicles");
+            }
+
             if (string.IsNullOrWhiteSpace(booking.SubsidyId)) { TempData["Error"] = "Subsidy ID required first."; return RedirectToAction("Index", "Vehicles"); }
 
             try
             {
+                if ((faceVerification == null || faceVerification.Length == 0)
+                    && (rcImage == null || rcImage.Length == 0)
+                    && (boothPhoto == null || boothPhoto.Length == 0)
+                    && (subsidyUndertaking == null || subsidyUndertaking.Length == 0))
+                {
+                    TempData["Error"] = "Select at least one document to upload.";
+                    return RedirectToAction(nameof(SubsidyDocs), new { id });
+                }
+
                 var root = _env;
                 booking.SubsidyCustomerNameCaps = booking.CustomerName.Trim().ToUpperInvariant();
-                booking.FaceVerificationPath = await BookingFileHelper.SaveImageAsync(faceVerification, root);
-                booking.RcImagePath = await BookingFileHelper.SaveImageAsync(rcImage, root);
-                booking.BoothPhotoPath = await BookingFileHelper.SaveImageAsync(boothPhoto, root);
-                booking.SubsidyUndertakingPath = await BookingFileHelper.SaveImageAsync(subsidyUndertaking, root);
-                booking.SubsidyDocsSubmittedDate = DateTime.UtcNow;
+                var replacedDocs = new List<string>();
+                if (faceVerification != null && faceVerification.Length > 0)
+                {
+                    booking.FaceVerificationPath = await BookingFileHelper.SaveImageAsync(faceVerification, root);
+                    replacedDocs.Add("Face verification");
+                }
+                if (rcImage != null && rcImage.Length > 0)
+                {
+                    booking.RcImagePath = await BookingFileHelper.SaveImageAsync(rcImage, root);
+                    replacedDocs.Add("RC image");
+                }
+                if (boothPhoto != null && boothPhoto.Length > 0)
+                {
+                    booking.BoothPhotoPath = await BookingFileHelper.SaveImageAsync(boothPhoto, root);
+                    replacedDocs.Add("Booth photo");
+                }
+                if (subsidyUndertaking != null && subsidyUndertaking.Length > 0)
+                {
+                    booking.SubsidyUndertakingPath = await BookingFileHelper.SaveImageAsync(subsidyUndertaking, root);
+                    replacedDocs.Add("Subsidy undertaking");
+                }
+
+                var allComplete = BookingStageFilter.HasAllSubsidyDocs(
+                    booking.FaceVerificationPath,
+                    booking.RcImagePath,
+                    booking.BoothPhotoPath,
+                    booking.SubsidyUndertakingPath);
+                var hadSubmittedDate = booking.SubsidyDocsSubmittedDate.HasValue;
+
+                if (replacedDocs.Count > 0)
+                {
+                    var firstComplete = allComplete && !hadSubmittedDate;
+                    if (allComplete)
+                        booking.SubsidyDocsSubmittedDate = DateTime.UtcNow;
+
+                    var action = firstComplete ? "SubsidyDocsSubmitted" : "SubsidyDocsUpdated";
+                    var remarks = firstComplete
+                        ? "All subsidy documents submitted"
+                        : $"Updated: {string.Join(", ", replacedDocs)}";
+
+                    await VehicleHistoryHelper.LogSubdealerEventAsync(
+                        _unitOfWork, booking.VehicleId, action, userId, remarks);
+                }
+
                 booking.ModifiedBy = userId;
                 booking.ModifiedDate = DateTime.UtcNow;
                 await _unitOfWork.VehicleBookings.UpdateAsync(booking);
-                TempData["Success"] = "Subsidy documents submitted.";
-                return this.RedirectEncrypted(nameof(Manage), new { id });
+                TempData["Success"] = allComplete && !hadSubmittedDate
+                    ? "All subsidy documents submitted."
+                    : replacedDocs.Count > 0
+                        ? "Subsidy document(s) updated."
+                        : "Document saved. Upload the remaining documents when ready.";
+                return this.RedirectEncrypted(nameof(SubsidyDocs), new { id });
             }
             catch (Exception ex)
             {
                 TempData["Error"] = ex.Message;
                 return RedirectToAction(nameof(SubsidyDocs), new { id });
             }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AuthorizeRole(2)]
+        [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
+        public async Task<IActionResult> NumberPlateReceived(int id, DateTime? numberPlateReceivedDate, string? numberPlateReceivedBy)
+        {
+            var userId = SessionHelper.GetUserId(HttpContext.Session);
+            var booking = await _unitOfWork.VehicleBookings.GetByIdAsync(id);
+            if (booking == null || booking.SubdealerId != userId)
+            {
+                TempData["Error"] = "Booking not found.";
+                return RedirectToAction("Index", "Vehicles");
+            }
+
+            if (!numberPlateReceivedDate.HasValue || string.IsNullOrWhiteSpace(numberPlateReceivedBy))
+            {
+                TempData["Error"] = "Number plate received date and received-by name are required.";
+                return RedirectToAction(nameof(MyRegisteredAwaitingPlate));
+            }
+
+            var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(booking.VehicleId);
+            if (!BookingStageFilter.IsRegisteredAwaitingNumberPlate(
+                vehicle?.Status ?? booking.BookingStatus,
+                booking.PaperReceivedDate,
+                booking.InvoiceDate,
+                booking.InsuranceDate,
+                booking.AgentDate,
+                booking.RegistrationDate,
+                booking.SubsidyId,
+                booking.NumberPlateReceivedDate,
+                booking.NumberPlateReceivedBy))
+            {
+                TempData["Error"] = "This vehicle is not awaiting number plate receipt.";
+                return RedirectToAction(nameof(MyRegisteredAwaitingPlate));
+            }
+
+            booking.NumberPlateReceivedDate = numberPlateReceivedDate.Value;
+            booking.NumberPlateReceivedBy = numberPlateReceivedBy.Trim();
+            booking.ModifiedBy = userId;
+            booking.ModifiedDate = DateTime.UtcNow;
+            await _unitOfWork.VehicleBookings.UpdateAsync(booking);
+            await VehicleHistoryHelper.LogSubdealerEventAsync(
+                _unitOfWork,
+                booking.VehicleId,
+                "NumberPlateReceived",
+                userId,
+                $"{numberPlateReceivedDate.Value:yyyy-MM-dd HH:mm} — received by {numberPlateReceivedBy.Trim()}");
+            TempData["Success"] = "Number plate received details saved.";
+            return RedirectToAction(nameof(MyRegisteredAwaitingPlate));
         }
 
         [AuthorizeRole(1, 2, 4)]
@@ -782,10 +1171,28 @@ namespace KRSDealerManagement.Web.Controllers
             return vehicles.FirstOrDefault(v => v.VehicleId == vehicleId);
         }
 
-        private async Task LoadBookingFormViewBags()
+        private async Task<KRSDealerManagement.Application.DTOs.VehicleDto?> LoadBookingVehicleAsync(VehicleBooking booking, int userId)
+        {
+            if (SessionHelper.IsSystemAdmin(HttpContext.Session))
+            {
+                var vehicles = await _mediator.Send(new GetVehiclesQuery { SubdealerId = booking.SubdealerId });
+                return vehicles.FirstOrDefault(v => v.VehicleId == booking.VehicleId);
+            }
+
+            return await LoadVehicleOrNull(booking.VehicleId, userId);
+        }
+
+        private async Task LoadBookingFormViewBags(int? selectedRtoLocationId = null)
         {
             ViewBag.DocumentTypes = (await _unitOfWork.DocumentTypes.GetAllAsync()).Where(d => d.IsActive).OrderBy(d => d.TypeName);
+            ViewBag.RtoDistricts = (await _unitOfWork.RtoDistricts.GetAllAsync()).Where(d => d.IsActive).OrderBy(d => d.DistrictName);
             ViewBag.RtoLocations = (await _unitOfWork.RtoLocations.GetAllAsync()).Where(r => r.IsActive).OrderBy(r => r.LocationName);
+            if (selectedRtoLocationId is int locationId)
+            {
+                var location = (await _unitOfWork.RtoLocations.GetAllAsync()).FirstOrDefault(r => r.RtoLocationId == locationId);
+                ViewBag.SelectedRtoDistrictId = location?.RtoDistrictId;
+                ViewBag.SelectedRtoLocationId = locationId;
+            }
             ViewBag.FinanceNames = (await _unitOfWork.FinanceNames.GetAllAsync()).Where(f => f.IsActive).OrderBy(f => f.FinanceName);
             ViewBag.PaymentModes = VehiclePaymentModes.All;
         }
@@ -807,17 +1214,28 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.PaymentModeLabel = VehiclePaymentModes.GetLabel(booking.PaymentMode);
             ViewBag.CanSubmitSubsidyDocs = SessionHelper.IsSubdealer(HttpContext.Session)
                 && !string.IsNullOrWhiteSpace(booking.SubsidyId)
-                && !booking.SubsidyDocsSubmittedDate.HasValue;
+                && BookingStageFilter.IsSubsidyDocsPending(
+                    booking.SubsidyId,
+                    booking.FaceVerificationPath,
+                    booking.RcImagePath,
+                    booking.BoothPhotoPath,
+                    booking.SubsidyUndertakingPath,
+                    vehicle?.Status ?? booking.BookingStatus);
             ViewBag.CanMarkDelivered = SessionHelper.IsSubdealer(HttpContext.Session)
                 && vehicle != null
                 && vehicle.Status != UnifiedVehicleStatus.Delivered;
             ViewBag.MinDeliveryDate = vehicle?.PurchaseOrderId is int poId
-                ? (await _unitOfWork.PurchaseOrders.GetByIdAsync(poId))?.CreatedDate.ToString("yyyy-MM-dd")
-                : vehicle?.CreatedDate.ToString("yyyy-MM-dd");
-            ViewBag.MaxDeliveryDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
-            ViewBag.DeliveryDate = vehicle?.DeliveryDate?.ToString("yyyy-MM-dd");
-            ViewBag.CanEditBooking = SessionHelper.IsSubdealer(HttpContext.Session)
-                && !booking.InvoiceDate.HasValue;
+                ? (await _unitOfWork.PurchaseOrders.GetByIdAsync(poId))?.CreatedDate.ToString("yyyy-MM-ddTHH:mm")
+                : vehicle?.CreatedDate.ToString("yyyy-MM-ddTHH:mm");
+            ViewBag.MaxDeliveryDate = DateTime.Now.ToString("yyyy-MM-ddTHH:mm");
+            ViewBag.DeliveryDate = vehicle?.DeliveryDate.HasValue == true
+                ? FormDateTimeHelper.FormatDisplay(vehicle.DeliveryDate)
+                : null;
+            ViewBag.CanEditBooking = SessionHelper.IsSystemAdmin(HttpContext.Session)
+                || (SessionHelper.IsSubdealer(HttpContext.Session) && !booking.InvoiceDate.HasValue);
+            ViewBag.CanEditSubsidyDocs = SessionHelper.IsSystemAdmin(HttpContext.Session)
+                || (SessionHelper.IsSubdealer(HttpContext.Session)
+                    && !string.IsNullOrWhiteSpace(booking.SubsidyId));
             ViewBag.VehicleStatus = vehicle == null
                 ? booking.BookingStatus
                 : BookingStageFilter.ResolveEffectiveStage(
@@ -840,6 +1258,7 @@ namespace KRSDealerManagement.Web.Controllers
             if (vehicle == null || vehicle.Status == UnifiedVehicleStatus.Delivered)
                 return;
 
+            var previousStatus = vehicle.Status;
             var expected = BookingStageFilter.ResolveFromMilestones(
                 booking.PaperReceivedDate,
                 booking.InvoiceDate,
@@ -858,6 +1277,13 @@ namespace KRSDealerManagement.Web.Controllers
             vehicle.ModifiedDate = DateTime.UtcNow;
             await _unitOfWork.Vehicles.UpdateAsync(vehicle);
             await _unitOfWork.VehicleBookings.UpdateAsync(booking);
+
+            if (effective != previousStatus)
+            {
+                var userId = SessionHelper.GetUserId(HttpContext.Session);
+                await VehicleHistoryHelper.LogStatusChangeAsync(
+                    _unitOfWork, vehicle.VehicleId, effective, userId);
+            }
         }
 
         private async Task<(HashSet<int> ScopedIds, int? EffectiveDealershipId, bool IsAdmin)> GetBookingScopeAsync(int? dealershipId)
@@ -865,6 +1291,14 @@ namespace KRSDealerManagement.Web.Controllers
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             var isAdmin = SessionHelper.IsSystemAdmin(HttpContext.Session);
             var effectiveDealershipId = scope ?? dealershipId;
+
+            if (SessionHelper.IsSubdealer(HttpContext.Session))
+            {
+                var userId = SessionHelper.GetUserId(HttpContext.Session);
+                return userId.HasValue
+                    ? (new HashSet<int> { userId.Value }, SessionHelper.GetDealershipId(HttpContext.Session), false)
+                    : (new HashSet<int>(), effectiveDealershipId, false);
+            }
 
             var roles = (await _unitOfWork.Roles.GetAllAsync()).ToList();
             var subRole = roles.FirstOrDefault(r =>
@@ -880,9 +1314,9 @@ namespace KRSDealerManagement.Web.Controllers
             return (scopedIds, effectiveDealershipId, isAdmin);
         }
 
-        private static string GetBookingPageTitle(int? status, bool viewOnly = false)
+        private static string GetBookingPageTitle(int? status, bool viewOnly = false, bool bookedToCustomerView = false)
         {
-            if (viewOnly && status == UnifiedVehicleStatus.BookedToCustomer)
+            if (viewOnly && (bookedToCustomerView || status == UnifiedVehicleStatus.BookedToCustomer))
                 return "Booked to Customer";
 
             if (!viewOnly && !status.HasValue)

@@ -102,7 +102,37 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 summary.PendingPayments = 0;
             }
 
-            LoadBookingStatusCounts(summary, allVehicles, scopedIds, await _unitOfWork.VehicleBookings.GetAllAsync());
+            var allBookings = await _unitOfWork.VehicleBookings.GetAllAsync();
+            LoadBookingStatusCounts(summary, allVehicles, scopedIds, allBookings);
+            summary.ShowroomStockCount = CountShowroomStock(allVehicles, scopedIds, allBookings);
+
+            var dealerStock = await _unitOfWork.VehicleMasters.GetAllAsync();
+            summary.DealerStockCount = dealerStock.Count(m =>
+                !m.IsAllocated
+                && (!request.DealershipId.HasValue || m.DealershipId == request.DealershipId));
+        }
+
+        private static int CountShowroomStock(
+            IEnumerable<Vehicle> vehicles,
+            HashSet<int>? scopedIds,
+            IEnumerable<VehicleBooking> bookings)
+        {
+            var bookingsByVehicle = bookings
+                .GroupBy(b => b.VehicleId)
+                .ToDictionary(g => g.Key, g => g.OrderByDescending(b => b.SubmittedDate).First());
+
+            return vehicles.Count(v =>
+            {
+                if (!v.SubdealerId.HasValue || !IsInScope(v.SubdealerId.Value, scopedIds))
+                    return false;
+
+                bookingsByVehicle.TryGetValue(v.VehicleId, out var booking);
+                return ShowroomStockFilter.IsShowroomStock(
+                    v.Status,
+                    v.SubdealerId,
+                    booking?.InvoiceDate,
+                    booking != null);
+            });
         }
 
         private static void LoadBookingStatusCounts(
@@ -137,7 +167,51 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             summary.InvoicedCount = Count(UnifiedVehicleStatus.Invoiced);
             summary.InsuranceCreatedCount = Count(UnifiedVehicleStatus.InsuranceCreated);
             summary.RtoRequestedCount = Count(UnifiedVehicleStatus.RtoRequested);
-            summary.RegisteredCount = Count(UnifiedVehicleStatus.Registered);
+            summary.RegisteredCount = bookings.Count(b =>
+            {
+                if (!IsInScope(b.SubdealerId, scopedIds))
+                    return false;
+                if (!vehicleById.TryGetValue(b.VehicleId, out var vehicle))
+                    return false;
+                return BookingStageFilter.IsRegisteredAwaitingNumberPlate(
+                    vehicle.Status,
+                    b.PaperReceivedDate,
+                    b.InvoiceDate,
+                    b.InsuranceDate,
+                    b.AgentDate,
+                    b.RegistrationDate,
+                    b.SubsidyId,
+                    b.NumberPlateReceivedDate,
+                    b.NumberPlateReceivedBy);
+            });
+
+            summary.SubsidyIdPendingCount = bookings.Count(b =>
+            {
+                if (!IsInScope(b.SubdealerId, scopedIds))
+                    return false;
+                if (!vehicleById.TryGetValue(b.VehicleId, out var vehicle))
+                    return false;
+                return BookingStageFilter.IsSubsidyIdPending(
+                    b.InvoiceDate,
+                    b.InsuranceDate,
+                    b.SubsidyId,
+                    vehicle.Status);
+            });
+
+            summary.SubsidyDocsPendingCount = bookings.Count(b =>
+            {
+                if (!IsInScope(b.SubdealerId, scopedIds))
+                    return false;
+                if (!vehicleById.TryGetValue(b.VehicleId, out var vehicle))
+                    return false;
+                return BookingStageFilter.IsSubsidyDocsPending(
+                    b.SubsidyId,
+                    b.FaceVerificationPath,
+                    b.RcImagePath,
+                    b.BoothPhotoPath,
+                    b.SubsidyUndertakingPath,
+                    vehicle.Status);
+            });
         }
 
         private async Task LoadSubdealerDashboard(DashboardSummary summary, int subdealerId)
@@ -173,6 +247,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
             var payments = await _unitOfWork.Payments.GetAllAsync();
             summary.PendingPayments = payments.Count(p => p.SubdealerId == subdealerId && p.Status == 0);
+
+            var scopedIds = new HashSet<int> { subdealerId };
+            LoadBookingStatusCounts(summary, allVehicles, scopedIds, await _unitOfWork.VehicleBookings.GetAllAsync());
         }
 
         private async Task LoadRecentActivities(DashboardSummary summary, int? subdealerId, int? dealershipId)

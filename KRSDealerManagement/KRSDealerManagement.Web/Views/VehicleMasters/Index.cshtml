@@ -1,0 +1,144 @@
+@using KRSDealerManagement.Application.Queries
+@model IEnumerable<KRSDealerManagement.Application.DTOs.VehicleMasterDto>
+@using KRSDealerManagement.Web.Models
+@{
+    ViewData["Title"] = "Dealer Stock";
+    ViewData["ExcelImportKey"] = KRSDealerManagement.Web.Helpers.ExcelImport.ExcelImportKeys.VehicleMasters;
+    ViewData["ExcelImportReturnAction"] = "Index";
+    var searchTerm = ViewBag.SearchTerm as string;
+    var isAllocated = ViewBag.IsAllocated as bool?;
+    var showDealershipColumn = ViewBag.ShowDealershipColumn as bool? ?? false;
+    var dealerships = ViewBag.Dealerships as IEnumerable<DealershipDto> ?? Enumerable.Empty<DealershipDto>();
+    var selectedDealershipId = ViewBag.SelectedDealershipId as int?;
+}
+
+<div class="row mb-3">
+    <div class="col-lg-8">
+        <h1 class="m-0"><i class="bi bi-boxes"></i> Dealer Stock</h1>
+        <p class="text-muted mb-0">Physical OEM inventory from Ampere. Unallocated vehicles are available for PO allocation.</p>
+    </div>
+    <div class="col-lg-4 text-lg-end mt-2 mt-lg-0">
+        <partial name="_ExportExcel" />
+        <a href="@Url.Action("Create")" class="btn btn-primary mt-2"><i class="bi bi-plus-circle"></i> Add Vehicle</a>
+    </div>
+</div>
+
+<partial name="_ExcelImport" />
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end" id="gridFilterForm">
+            @if (showDealershipColumn)
+            {
+                <div class="col-md-3">
+                    <label class="form-label form-label-sm mb-0">Dealership</label>
+                    <select name="dealershipId" class="form-select form-select-sm">
+                        <option value="">All dealers</option>
+                        @foreach (var d in dealerships)
+                        {
+                            <option value="@d.DealershipId" selected="@(selectedDealershipId == d.DealershipId)">@d.DealershipName</option>
+                        }
+                    </select>
+                </div>
+            }
+            <div class="col-md-4">
+                <label class="form-label form-label-sm mb-0">Search</label>
+                <input type="text" name="searchTerm" class="form-control form-control-sm" placeholder="Chassis / motor..." value="@searchTerm" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label form-label-sm mb-0">Status</label>
+                <select name="isAllocated" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    <option value="false" selected="@(isAllocated == false)">Available</option>
+                    <option value="true" selected="@(isAllocated == true)">Allocated</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-sm btn-primary w-100" type="submit"><i class="bi bi-funnel"></i> Filter</button>
+            </div>
+            <div class="col-md-2">
+                <a href="@Url.Action("Index")" class="btn btn-sm btn-secondary w-100">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between">
+        <h3 class="card-title mb-0">Stock list (@(ViewBag.TotalItems ?? Model.Count()))</h3>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Any())
+        {
+            <partial name="_GridScrollHint" />
+            <div class="table-responsive">
+                <table class="table table-sm table-hover table-striped mb-0 grid-excel-table grid-data-table" data-grid-id="@GridIds.DealerStock">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="grid-col-rownum">#</th>
+                            @if (showDealershipColumn)
+                            {
+                                <th>Dealer</th>
+                            }
+                            <th>Chassis</th>
+                            <th>Model</th>
+                            <th>Color</th>
+                            <th>Motor</th>
+                            <th>Battery</th>
+                            <th>Received</th>
+                            <th>Ampere Invoice</th>
+                            <th>Mfg Year</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                        <partial name="_PaginatedGridFilters" />
+                    </thead>
+                    <tbody>
+                        @{ var rowNum = (ViewBag.PageStart ?? 1); }
+                        @foreach (var m in Model)
+                        {
+                            <tr>
+                                <td>@(rowNum++)</td>
+                                @if (showDealershipColumn)
+                                {
+                                    <td>@m.DealershipName</td>
+                                }
+                                <td><strong>@m.ChassisNumber</strong></td>
+                                <td>@m.ModelName</td>
+                                <td>@m.ColorName</td>
+                                <td><small>@m.MotorNo</small></td>
+                                <td><small>@m.BatteryNo</small></td>
+                                <td>@m.ReceivedDate.ToString("dd-MMM-yyyy")</td>
+                                <td>@m.AmpereInvoiceDate.ToString("dd-MMM-yyyy")</td>
+                                <td>@m.ManufacturingYear</td>
+                                <td>
+                                    @if (m.IsAllocated)
+                                    { <span class="badge bg-secondary">Allocated</span> }
+                                    else
+                                    { <span class="badge bg-success">Available</span> }
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    @if (!m.IsAllocated)
+                                    {
+                                        <a href="@Url.Action("Edit", new { id = m.VehicleMasterId })" class="btn btn-sm btn-outline-primary">Edit</a>
+                                        <form method="post" asp-action="Delete" class="d-inline" onsubmit="return confirm('Delete this vehicle from dealer stock?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@m.VehicleMasterId" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info m-3 mb-0">No vehicles in dealer stock. Add manually or import from Excel.</div>
+        }
+    </div>
+</div>
+
+<partial name="_Pagination" />

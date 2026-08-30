@@ -1,5 +1,6 @@
 using MediatR;
 using KRSDealerManagement.Application.Commands;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
 
@@ -23,12 +24,16 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             if (vehicle.Status == UnifiedVehicleStatus.Delivered)
                 throw new InvalidOperationException("Vehicle is already marked as delivered.");
 
+            if (vehicle.Status == UnifiedVehicleStatus.RejectedByDealer)
+                throw new InvalidOperationException("This vehicle was rejected by the dealer and cannot be marked as delivered.");
+
             if (!vehicle.SubdealerId.HasValue || vehicle.SubdealerId.Value != request.MarkedBy)
                 throw new InvalidOperationException("You can only mark delivery for your own vehicles.");
 
-            var deliveryDate = request.DeliveryDate.Date;
+            var deliveryAt = request.DeliveryDate;
+            var deliveryDay = deliveryAt.Date;
             var today = DateTime.UtcNow.Date;
-            if (deliveryDate > today)
+            if (deliveryDay > today)
                 throw new InvalidOperationException("Delivery date cannot be in the future.");
 
             DateTime? orderDate = null;
@@ -38,11 +43,11 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 orderDate = order?.CreatedDate.Date;
             }
 
-            if (orderDate.HasValue && deliveryDate < orderDate.Value)
+            if (orderDate.HasValue && deliveryDay < orderDate.Value)
                 throw new InvalidOperationException("Delivery date cannot be before the order date.");
 
             vehicle.Status = UnifiedVehicleStatus.Delivered;
-            vehicle.DeliveryDate = deliveryDate;
+            vehicle.DeliveryDate = deliveryAt;
             vehicle.ModifiedBy = request.MarkedBy;
             vehicle.ModifiedDate = DateTime.UtcNow;
             await _unitOfWork.Vehicles.UpdateAsync(vehicle);
@@ -59,6 +64,15 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 booking.ModifiedDate = DateTime.UtcNow;
                 await _unitOfWork.VehicleBookings.UpdateAsync(booking);
             }
+
+            await VehicleHistoryHelper.LogSubdealerEventAsync(
+                _unitOfWork,
+                vehicle.VehicleId,
+                "Delivered",
+                request.MarkedBy,
+                vehicle.DeliveryDate.HasValue
+                    ? $"Delivered on {vehicle.DeliveryDate:yyyy-MM-dd HH:mm}."
+                    : null);
 
             await _unitOfWork.SaveChangesAsync();
             return true;

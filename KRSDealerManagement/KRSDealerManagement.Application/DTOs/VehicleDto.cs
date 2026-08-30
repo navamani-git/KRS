@@ -55,7 +55,8 @@ namespace KRSDealerManagement.Application.DTOs
             && Status == UnifiedVehicleStatus.Submitted;
         public bool CanSubmitSubsidyDocs { get; set; }
         public bool CanMarkDelivered => SubdealerId.HasValue
-            && Status != UnifiedVehicleStatus.Delivered;
+            && Status != UnifiedVehicleStatus.Delivered
+            && Status != UnifiedVehicleStatus.RejectedByDealer;
         public bool IsDelivered => Status == UnifiedVehicleStatus.Delivered;
         public bool CanRequestReturn { get; set; }
         public bool IsReturnPending => Status == UnifiedVehicleStatus.ReturnRequested;
@@ -106,5 +107,7 @@ namespace KRSDealerManagement.Application.DTOs
         {
             return $"Chassis: {ChassisNumber} | Status: {GetStatusDisplay()}";
         }
+
+        public string GetSourceDisplay() => CreatedByDealer ? "Dealer" : "My order";
     }
 }

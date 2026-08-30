@@ -34,6 +34,13 @@ namespace KRSDealerManagement.Domain.Repositories
         IRepository<Vehicle> Vehicles { get; }
 
         /// <summary>
+        /// Dealer OEM stock (VehicleMasters).
+        /// </summary>
+        IVehicleMasterRepository VehicleMasters { get; }
+
+        ISubdealerVehicleHistoryRepository SubdealerVehicleHistories { get; }
+
+        /// <summary>
         /// Repository for VehicleModel entities
         /// </summary>
         IRepository<VehicleModel> VehicleModels { get; }
@@ -102,11 +109,13 @@ namespace KRSDealerManagement.Domain.Repositories
         IRepository<Dealership> Dealerships { get; }
         IRepository<SubDealer> SubDealers { get; }
         IRepository<RoleMenu> RoleMenus { get; }
+        IRoleTemplateRepository RoleTemplates { get; }
         IRepository<UserOrgRole> UserOrgRoles { get; }
         IRepository<PaymentType> PaymentTypes { get; }
         IRepository<FinanceNameMaster> FinanceNames { get; }
         IRepository<StatusLookup> StatusLookups { get; }
         IRepository<DocumentTypeMaster> DocumentTypes { get; }
+        IRepository<RtoDistrictMaster> RtoDistricts { get; }
         IRepository<RtoLocationMaster> RtoLocations { get; }
         IRepository<VehicleBooking> VehicleBookings { get; }
 

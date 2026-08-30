@@ -1,4 +1,5 @@
 using ClosedXML.Excel;
+using KRSDealerManagement.Shared.Helpers;
 
 namespace KRSDealerManagement.Web.Helpers
 {
@@ -24,8 +25,8 @@ namespace KRSDealerManagement.Web.Helpers
                     var cell = ws.Cell(rowIndex, c + 1);
                     var val = row[c];
                     if (val is DateTime dt) cell.Value = dt;
-                    else if (val is decimal dec) cell.Value = dec;
-                    else if (val is double dbl) cell.Value = dbl;
+                    else if (val is decimal dec) cell.Value = IndianNumberFormat.Format(dec);
+                    else if (val is double dbl) cell.Value = IndianNumberFormat.Format(dbl);
                     else if (val is int i) cell.Value = i;
                     else if (val is long l) cell.Value = l;
                     else if (val is bool b) cell.Value = b;

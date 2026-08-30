@@ -1,4 +1,6 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
+using System.Reflection;
 using Dapper;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Infrastructure.Data;
@@ -35,15 +37,24 @@ namespace KRSDealerManagement.Infrastructure.Repositories
             }
         }
 
+        protected List<PropertyInfo> GetPersistedProperties()
+            => typeof(T).GetProperties()
+                .Where(p => p.Name != _pkColumn
+                            && p.CanRead
+                            && p.CanWrite
+                            && p.GetCustomAttribute<NotMappedAttribute>() == null)
+                .ToList();
+
+        protected static string GetColumnName(PropertyInfo property)
+            => property.GetCustomAttribute<ColumnAttribute>()?.Name ?? property.Name;
+
         public virtual async Task<int> AddAsync(T entity)
         {
             return await WithConnectionAsync(async (connection, transaction) =>
             {
-                var properties = typeof(T).GetProperties()
-                    .Where(p => p.Name != _pkColumn && p.CanRead && p.CanWrite)
-                    .ToList();
+                var properties = GetPersistedProperties();
 
-                var columnNames = string.Join(", ", properties.Select(p => p.Name));
+                var columnNames = string.Join(", ", properties.Select(GetColumnName));
                 var paramNames = string.Join(", ", properties.Select(p => $"@{p.Name}"));
                 var sql = $"INSERT INTO {_tableName} ({columnNames}) VALUES ({paramNames}); SELECT CAST(SCOPE_IDENTITY() as int)";
 
@@ -70,11 +81,9 @@ namespace KRSDealerManagement.Infrastructure.Repositories
         {
             return await WithConnectionAsync(async (connection, transaction) =>
             {
-                var properties = typeof(T).GetProperties()
-                    .Where(p => p.Name != _pkColumn && p.CanRead && p.CanWrite)
-                    .ToList();
+                var properties = GetPersistedProperties();
 
-                var setClause = string.Join(", ", properties.Select(p => $"{p.Name} = @{p.Name}"));
+                var setClause = string.Join(", ", properties.Select(p => $"{GetColumnName(p)} = @{p.Name}"));
                 var sql = $"UPDATE {_tableName} SET {setClause} WHERE {_pkColumn} = @{_pkColumn}";
 
                 var rows = await connection.ExecuteAsync(sql, entity, transaction);

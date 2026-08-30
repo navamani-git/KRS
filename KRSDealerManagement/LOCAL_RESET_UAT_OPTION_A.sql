@@ -6,7 +6,8 @@
   CLEARED:
     AccountTransactionCorrections, AccountTransactions, AuditLog,
     Payments, ReturnRequests, CommissionHistory,
-    VehicleBookings, PurchaseOrderItems, Vehicles, PurchaseOrders
+    VehicleBookings, PurchaseOrderItems, SubdealerVehicleHistory, SubdealerVehicles,
+    VehicleMasterHistory, VehicleMasters, PurchaseOrders
 
   KEPT:
     Users, UserOrgRoles, SubDealers, SubdealerAccounts, AccountPermissions,
@@ -37,8 +38,11 @@ INSERT INTO @clear (TableName, SortOrder) VALUES
     (N'CommissionHistory', 6),
     (N'VehicleBookings', 7),
     (N'PurchaseOrderItems', 8),
-    (N'Vehicles', 9),
-    (N'PurchaseOrders', 10);
+    (N'SubdealerVehicleHistory', 9),
+    (N'SubdealerVehicles', 10),
+    (N'VehicleMasterHistory', 11),
+    (N'VehicleMasters', 12),
+    (N'PurchaseOrders', 13);
 
 DECLARE @sql NVARCHAR(MAX) = N'';
 

@@ -71,11 +71,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                                  : null,
                              CreatedDate = r.CreatedDate,
                              ModifiedDate = r.ModifiedDate,
-                             CanAllocateToSubdealer = displayStatus == UnifiedVehicleStatus.ReturnApproved
-                                 && veh != null
-                                 && !veh.SubdealerId.HasValue
-                                 && veh.Status == UnifiedVehicleStatus.ApprovedByDealer
-                                 && !bookedVehicleIds.Contains(veh.VehicleId)
+                             CanAllocateToSubdealer = false
                          };
 
             if (request.ReturnRequestId.HasValue)

@@ -1,0 +1,14 @@
+@{
+    var modelColorMapJson = ViewBag.ModelColorMapJson as string ?? "{}";
+}
+<script src="~/js/model-color-filter.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const modelSelect = document.getElementById('modelId');
+        const colorSelect = document.getElementById('colorId');
+        if (!modelSelect || !colorSelect) return;
+
+        KrsModelColors.init(@Html.Raw(modelColorMapJson));
+        KrsModelColors.bind(modelSelect, colorSelect);
+    });
+</script>

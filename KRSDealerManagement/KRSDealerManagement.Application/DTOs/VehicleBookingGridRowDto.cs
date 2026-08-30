@@ -10,5 +10,6 @@ namespace KRSDealerManagement.Application.DTOs
         public required string Subdealer { get; init; }
         public required string StatusName { get; init; }
         public int VehicleStatus { get; init; }
+        public string? RegistrationNumber { get; init; }
     }
 }

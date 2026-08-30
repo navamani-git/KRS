@@ -222,6 +222,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             var items = await _mediator.Send(new GetPurchaseOrderItemsQuery { OrderId = id });
             ViewBag.Items = items;
+            ViewBag.DealershipId = await ResolveOrderDealershipIdAsync(order.SubdealerId);
             return View(order);
         }
 
@@ -232,6 +233,7 @@ namespace KRSDealerManagement.Web.Controllers
         public async Task<IActionResult> Allocate(int orderId, string remarks,
             [FromForm] List<int> orderItemIds,
             [FromForm] List<string> actionFlags,
+            [FromForm] List<int> vehicleMasterIds,
             [FromForm] List<string> chassisNumbers,
             [FromForm] List<string> motorNos,
             [FromForm] List<string> batteryNos,
@@ -261,6 +263,9 @@ namespace KRSDealerManagement.Web.Controllers
                 {
                     OrderItemId = orderItemIds[i],
                     Approve = action == "approve",
+                    VehicleMasterId = vehicleMasterIds != null && i < vehicleMasterIds.Count && vehicleMasterIds[i] > 0
+                        ? vehicleMasterIds[i]
+                        : null,
                     ChassisNumber = chassisNumbers != null && i < chassisNumbers.Count ? chassisNumbers[i] : null,
                     MotorNo = motorNos != null && i < motorNos.Count ? motorNos[i] : null,
                     BatteryNo = batteryNos != null && i < batteryNos.Count ? batteryNos[i] : null,
@@ -387,9 +392,7 @@ namespace KRSDealerManagement.Web.Controllers
             string? adminNotes,
             [FromForm] List<int> modelIds, [FromForm] List<int> colorIds,
             [FromForm] List<decimal> unitPrices,
-            [FromForm] List<string> chassisNumbers, [FromForm] List<string> motorNos,
-            [FromForm] List<string> batteryNos, [FromForm] List<string> chargerNos,
-            [FromForm] List<string> controllerNos, [FromForm] List<string> converterNos)
+            [FromForm] List<int> vehicleMasterIds)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
@@ -421,12 +424,7 @@ namespace KRSDealerManagement.Web.Controllers
                 ColorId = colorIds[i],
                 Quantity = 1,
                 UnitPrice = unitPrices[i],
-                ChassisNumber = chassisNumbers.Count > i ? chassisNumbers[i]?.Trim() : null,
-                MotorNo = motorNos.Count > i ? motorNos[i]?.Trim() : null,
-                BatteryNo = batteryNos.Count > i ? batteryNos[i]?.Trim() : null,
-                ChargerNo = chargerNos.Count > i ? chargerNos[i]?.Trim() : null,
-                ControllerNo = controllerNos.Count > i ? controllerNos[i]?.Trim() : null,
-                ConverterNo = converterNos.Count > i ? converterNos[i]?.Trim() : null
+                VehicleMasterId = vehicleMasterIds.Count > i ? vehicleMasterIds[i] : null
             }).Where(item => item.UnitPrice > 0).ToList();
 
             if (!items.Any())
@@ -435,17 +433,11 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction(nameof(CreateForSubdealer));
             }
 
-            var missingSerials = items.Any(item =>
-                string.IsNullOrWhiteSpace(item.ChassisNumber)
-                || string.IsNullOrWhiteSpace(item.MotorNo)
-                || string.IsNullOrWhiteSpace(item.BatteryNo)
-                || string.IsNullOrWhiteSpace(item.ChargerNo)
-                || string.IsNullOrWhiteSpace(item.ControllerNo)
-                || string.IsNullOrWhiteSpace(item.ConverterNo));
+            var missingMaster = items.Any(item => !item.VehicleMasterId.HasValue || item.VehicleMasterId.Value <= 0);
 
-            if (missingSerials)
+            if (missingMaster)
             {
-                TempData["Error"] = "Chassis, motor, battery, charger, controller, and converter numbers are required for each vehicle.";
+                TempData["Error"] = "Select a chassis from dealer stock for each vehicle.";
                 return RedirectToAction(nameof(CreateForSubdealer));
             }
 
@@ -556,6 +548,16 @@ namespace KRSDealerManagement.Web.Controllers
             var colorName = colors.FirstOrDefault(c => c.ColorId == colorId)?.ColorName ?? "";
 
             return Json(new { success = true, price = price.Value, modelName, colorName, asOfDate = date.ToString("yyyy-MM-dd") });
+        }
+
+        private async Task<int?> ResolveOrderDealershipIdAsync(int subdealerUserId)
+        {
+            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
+            if (scope.HasValue)
+                return scope.Value;
+
+            var subdealer = await _mediator.Send(new GetSubdealerDetailQuery { UserId = subdealerUserId });
+            return subdealer?.DealershipId;
         }
     }
 }

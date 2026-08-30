@@ -9,6 +9,7 @@
     var items = ViewBag.Items as IEnumerable<PurchaseOrderItemDto> ?? Enumerable.Empty<PurchaseOrderItemDto>();
 
     var pending = items.Where(i => i.CanBeAllocated()).ToList();
+    var dealershipId = ViewBag.DealershipId as int?;
 
 }
 
@@ -21,6 +22,7 @@
         <h1 class="m-0"><i class="bi bi-box-seam"></i> Allocate / Approve — @Model.OrderNumber</h1>
 
         <p class="text-muted">@Model.SubdealerName · Ordered @Model.TotalQuantity · Pending @pending.Count · Approved @Model.ApprovedItemCount</p>
+        <p class="small text-muted mb-0"><i class="bi bi-info-circle"></i> <strong>Approve</strong> — pick chassis from dealer stock; serial numbers auto-fill. <strong>Reject</strong> — no chassis needed.</p>
 
     </div>
 
@@ -116,7 +118,7 @@ else
 
                         {
 
-                            <tr>
+                            <tr data-model-id="@item.ModelId" data-color-id="@item.ColorId">
 
                                 <td>
 
@@ -146,17 +148,22 @@ else
 
                                 </td>
 
-                                <td><input type="text" name="chassisNumbers[@idx]" id="chassis_@idx" class="form-control form-control-sm serial" maxlength="50" disabled /></td>
+                                <td>
+                                    <select name="vehicleMasterIds[@idx]" id="master_@idx" class="form-select form-select-sm chassis-select" data-idx="@idx" disabled>
+                                        <option value="">Select chassis</option>
+                                    </select>
+                                    <input type="hidden" name="chassisNumbers[@idx]" id="chassis_@idx" />
+                                </td>
 
-                                <td><input type="text" name="motorNos[@idx]" id="motor_@idx" class="form-control form-control-sm serial" disabled /></td>
+                                <td><input type="text" name="motorNos[@idx]" id="motor_@idx" class="form-control form-control-sm serial" readonly disabled /></td>
 
-                                <td><input type="text" name="batteryNos[@idx]" id="battery_@idx" class="form-control form-control-sm serial" disabled /></td>
+                                <td><input type="text" name="batteryNos[@idx]" id="battery_@idx" class="form-control form-control-sm serial" readonly disabled /></td>
 
-                                <td><input type="text" name="chargerNos[@idx]" id="charger_@idx" class="form-control form-control-sm serial" disabled /></td>
+                                <td><input type="text" name="chargerNos[@idx]" id="charger_@idx" class="form-control form-control-sm serial" readonly disabled /></td>
 
-                                <td><input type="text" name="controllerNos[@idx]" id="controller_@idx" class="form-control form-control-sm serial" disabled /></td>
+                                <td><input type="text" name="controllerNos[@idx]" id="controller_@idx" class="form-control form-control-sm serial" readonly disabled /></td>
 
-                                <td><input type="text" name="converterNos[@idx]" id="converter_@idx" class="form-control form-control-sm serial" disabled /></td>
+                                <td><input type="text" name="converterNos[@idx]" id="converter_@idx" class="form-control form-control-sm serial" readonly disabled /></td>
 
                             </tr>
 
@@ -192,7 +199,7 @@ else
 
                 Set each row to <strong>Approve</strong> or <strong>Reject</strong> before submit. Rows left as <strong>Pending</strong> are skipped — allocate one vehicle or many in the same submit.
 
-                Approved rows require Chassis No plus all 5 component serials.
+                Approved rows require selecting a chassis from dealer stock.
 
             </p>
 
@@ -283,97 +290,115 @@ else
 @section Scripts {
 
 <script>
+    const dealershipId = @(dealershipId?.ToString() ?? "null");
+    const masterCache = {};
+
+    async function loadMasters(idx) {
+        const row = document.querySelector(`select[name="actionFlags[${idx}]"]`).closest('tr');
+        const modelId = row.dataset.modelId;
+        const colorId = row.dataset.colorId;
+        const key = `${modelId}_${colorId}`;
+        const select = document.getElementById(`master_${idx}`);
+        if (!dealershipId || !modelId || !colorId) return;
+
+        if (!masterCache[key]) {
+            const res = await fetch(`/VehicleMasters/Available?dealershipId=${dealershipId}&modelId=${modelId}&colorId=${colorId}`);
+            masterCache[key] = await res.json();
+        }
+
+        const current = select.value;
+        select.innerHTML = '<option value="">Select chassis</option>';
+        masterCache[key].forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.vehicleMasterId;
+            opt.textContent = m.chassisNumber;
+            opt.dataset.motor = m.motorNo || '';
+            opt.dataset.battery = m.batteryNo || '';
+            opt.dataset.charger = m.chargerNo || '';
+            opt.dataset.controller = m.controllerNo || '';
+            opt.dataset.converter = m.converterNo || '';
+            opt.dataset.chassis = m.chassisNumber || '';
+            select.appendChild(opt);
+        });
+        if (current) select.value = current;
+    }
+
+    function applyMasterSelection(idx) {
+        const select = document.getElementById(`master_${idx}`);
+        const opt = select.selectedOptions[0];
+        document.getElementById(`chassis_${idx}`).value = opt?.dataset.chassis || '';
+        document.getElementById(`motor_${idx}`).value = opt?.dataset.motor || '';
+        document.getElementById(`battery_${idx}`).value = opt?.dataset.battery || '';
+        document.getElementById(`charger_${idx}`).value = opt?.dataset.charger || '';
+        document.getElementById(`controller_${idx}`).value = opt?.dataset.controller || '';
+        document.getElementById(`converter_${idx}`).value = opt?.dataset.converter || '';
+    }
 
     function toggleSerials(idx) {
-
         const action = document.querySelector(`select[name="actionFlags[${idx}]"]`).value;
-
         const approve = action === 'approve';
-
-        ['chassis','motor','battery','charger','controller','converter'].forEach(p => {
-
+        const masterSelect = document.getElementById(`master_${idx}`);
+        masterSelect.disabled = !approve;
+        masterSelect.required = approve;
+        ['motor','battery','charger','controller','converter'].forEach(p => {
             const el = document.getElementById(`${p}_${idx}`);
-
-            el.required = approve;
-
-            el.disabled = action === 'pending';
-
-            if (action !== 'approve') el.value = '';
-
+            el.disabled = !approve;
+            if (!approve) el.value = '';
         });
-
+        if (approve) {
+            loadMasters(idx);
+        } else {
+            masterSelect.value = '';
+            document.getElementById(`chassis_${idx}`).value = '';
+        }
     }
 
     function markAll(action) {
-
         document.querySelectorAll('.action-flag').forEach(sel => {
-
             sel.value = action;
-
             toggleSerials(sel.dataset.idx);
-
         });
-
     }
 
-    document.getElementById('allocForm')?.addEventListener('submit', function (e) {
+    document.querySelectorAll('.chassis-select').forEach(sel => {
+        sel.addEventListener('change', () => applyMasterSelection(sel.dataset.idx));
+    });
 
+    document.getElementById('allocForm')?.addEventListener('submit', function (e) {
         let hasWork = false;
-        const chassisSeen = new Set();
+        const masterSeen = new Set();
 
         document.querySelectorAll('.action-flag').forEach(sel => {
-
             const action = sel.value;
-
             if (action === 'approve' || action === 'reject') hasWork = true;
 
             if (action === 'approve') {
-
                 const idx = sel.dataset.idx;
-
-                ['chassis','motor','battery','charger','controller','converter'].forEach(p => {
-
-                    const el = document.getElementById(`${p}_${idx}`);
-
-                    if (!el.value.trim()) {
-
-                        e.preventDefault();
-
-                        el.focus();
-
-                        alert('Fill all serial numbers for rows set to Approve.');
-
-                    }
-
-                });
-
-                const chassisEl = document.getElementById(`chassis_${idx}`);
-                const chassis = chassisEl?.value.trim().toUpperCase();
-                if (chassis) {
-                    if (chassisSeen.has(chassis)) {
-                        e.preventDefault();
-                        chassisEl.focus();
-                        alert(`Duplicate chassis number "${chassis}" in this form. Each row must have a unique chassis.`);
-                    }
-                    chassisSeen.add(chassis);
+                const masterSelect = document.getElementById(`master_${idx}`);
+                if (!masterSelect.value) {
+                    e.preventDefault();
+                    masterSelect.focus();
+                    alert('Select a chassis from dealer stock for each approved row.');
+                    return;
                 }
-
+                if (masterSeen.has(masterSelect.value)) {
+                    e.preventDefault();
+                    masterSelect.focus();
+                    alert('The same chassis cannot be allocated to multiple rows.');
+                    return;
+                }
+                masterSeen.add(masterSelect.value);
+                applyMasterSelection(idx);
             }
-
         });
 
         if (!hasWork) {
-
             e.preventDefault();
-
             alert('Set at least one row to Approve or Reject before submitting.');
-
         }
-
     });
 
     document.querySelectorAll('.action-flag').forEach(sel => toggleSerials(sel.dataset.idx));
-
 </script>
 
 }

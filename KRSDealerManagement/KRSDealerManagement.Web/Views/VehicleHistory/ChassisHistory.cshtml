@@ -9,7 +9,7 @@
 <div class="row mb-3">
     <div class="col-md-8">
         <h1 class="m-0"><i class="bi bi-clock-history"></i> Chassis History</h1>
-        <p class="text-muted mb-0">Events ordered by date &amp; time. Same date/time steps are combined automatically.</p>
+        <p class="text-muted mb-0">Full lifecycle timeline in chronological order (oldest first).</p>
     </div>
 </div>
 
@@ -38,88 +38,146 @@
 @if (history != null)
 {
     <div class="card mb-3">
-        <div class="card-header">
-            <h3 class="card-title mb-0">@history.ChassisNumber</h3>
+        <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <h3 class="card-title mb-0"><code>@history.ChassisNumber</code></h3>
+            <span class="badge bg-primary">@(history.CurrentStatusName ?? history.CurrentStatus.ToString())</span>
         </div>
         <div class="card-body">
-            <div class="row mb-3">
-                <div class="col-md-3"><strong>Model</strong><br />@history.ModelName</div>
-                <div class="col-md-3"><strong>Color</strong><br />@history.ColorName</div>
-                <div class="col-md-3"><strong>Current status</strong><br />@(history.CurrentStatusName ?? history.CurrentStatus.ToString())</div>
-                <div class="col-md-3"><strong>Current holder</strong><br />@history.CurrentHolder</div>
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-md-3">
+                    <div class="border rounded p-2 h-100 bg-light">
+                        <div class="text-muted small">Model</div>
+                        <div class="fw-semibold">@history.ModelName</div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-3">
+                    <div class="border rounded p-2 h-100 bg-light">
+                        <div class="text-muted small">Color</div>
+                        <div class="fw-semibold">@history.ColorName</div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-3">
+                    <div class="border rounded p-2 h-100 bg-light">
+                        <div class="text-muted small">Current holder</div>
+                        <div class="fw-semibold">@history.CurrentHolder</div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-3">
+                    <div class="border rounded p-2 h-100 bg-light">
+                        <div class="text-muted small">Total events</div>
+                        <div class="fw-semibold">@history.Events.Count</div>
+                    </div>
+                </div>
             </div>
 
             @if (history.Events.Any())
             {
                 var dateGroups = history.Events.GroupBy(e => e.OccurredAtLocal.Date).OrderBy(g => g.Key);
                 <style>
-                    .chassis-history-table { table-layout: fixed; width: 100%; }
-                    .chassis-history-table th,
-                    .chassis-history-table td { vertical-align: top; word-wrap: break-word; overflow-wrap: anywhere; }
-                    .chassis-history-table .col-step { width: 2.5rem; }
-                    .chassis-history-table .col-time { width: 4.5rem; }
-                    .chassis-history-table .col-order { width: 7rem; }
-                    .chassis-history-table .col-status { width: 11rem; }
-                    .chassis-history-table .col-holder { width: 9rem; }
-                    .chassis-history-status .badge {
-                        white-space: normal;
-                        text-align: left;
-                        line-height: 1.35;
-                        font-weight: 500;
-                        display: inline-block;
-                        max-width: 100%;
+                    .chassis-timeline { position: relative; padding-left: 0.25rem; }
+                    .chassis-timeline-day {
+                        font-weight: 600;
+                        color: #495057;
+                        margin: 1.25rem 0 0.75rem;
+                        padding: 0.5rem 0.75rem;
+                        background: #f8f9fa;
+                        border-left: 4px solid #0d6efd;
+                        border-radius: 0.25rem;
+                    }
+                    .chassis-timeline-day:first-child { margin-top: 0; }
+                    .chassis-timeline-item {
+                        display: grid;
+                        grid-template-columns: 2.75rem 1fr;
+                        gap: 0.75rem 1rem;
+                        margin-bottom: 0.75rem;
+                        padding-bottom: 0.75rem;
+                        border-bottom: 1px solid #e9ecef;
+                    }
+                    .chassis-timeline-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+                    .chassis-timeline-step {
+                        width: 2.75rem;
+                        height: 2.75rem;
+                        border-radius: 50%;
+                        background: #e7f1ff;
+                        color: #0d6efd;
+                        font-weight: 700;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        flex-shrink: 0;
+                    }
+                    .chassis-timeline-card {
+                        background: #fff;
+                        border: 1px solid #dee2e6;
+                        border-radius: 0.5rem;
+                        padding: 0.85rem 1rem;
+                    }
+                    .chassis-timeline-meta {
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 0.5rem 1rem;
+                        align-items: center;
+                        margin-bottom: 0.5rem;
+                    }
+                    .chassis-timeline-desc {
+                        line-height: 1.5;
+                        margin-bottom: 0.35rem;
+                        word-break: break-word;
+                    }
+                    .chassis-timeline-footer {
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 0.5rem 1.25rem;
+                        font-size: 0.875rem;
+                        color: #6c757d;
+                    }
+                    .chassis-timeline-footer span { white-space: nowrap; }
+                    @@media (max-width: 576px) {
+                        .chassis-timeline-item { grid-template-columns: 2.25rem 1fr; }
+                        .chassis-timeline-step { width: 2.25rem; height: 2.25rem; font-size: 0.85rem; }
                     }
                 </style>
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover chassis-history-table">
-                        <thead class="table-dark">
-                            <tr>
-                                <th class="col-step">#</th>
-                                <th class="col-time">Time</th>
-                                <th class="col-order">Order</th>
-                                <th class="col-status">Status</th>
-                                <th>Details</th>
-                                <th class="col-holder">Showroom / Holder</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var group in dateGroups)
-                            {
-                                <tr class="table-secondary">
-                                    <td colspan="6" class="fw-semibold py-2">
-                                        <i class="bi bi-calendar3"></i>
-                                        @group.Key.ToString("dddd, dd MMM yyyy")
-                                    </td>
-                                </tr>
-                                @foreach (var e in group.OrderBy(x => x.OccurredAtLocal))
-                                {
-                                    var statusParts = e.Title.Split(" / ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                                    <tr>
-                                        <td class="fw-bold text-muted">@e.Step</td>
-                                        <td><small>@e.OccurredAtLocal.ToString("HH:mm")</small></td>
-                                        <td><small>@(e.OrderNumber ?? "—")</small></td>
-                                        <td class="chassis-history-status">
-                                            <div class="d-flex flex-wrap gap-1">
-                                                @foreach (var part in statusParts)
-                                                {
-                                                    <span class="badge @(e.StatusBadgeClass ?? "bg-secondary")">@part</span>
-                                                }
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="small">@e.Description</div>
-                                            @if (!string.IsNullOrWhiteSpace(e.Actor)
-                                                 && !string.Equals(e.Actor, e.Location, StringComparison.OrdinalIgnoreCase))
-                                            {
-                                                <small class="text-muted"><i class="bi bi-person"></i> @e.Actor</small>
-                                            }
-                                        </td>
-                                        <td><small>@(e.Location ?? "—")</small></td>
-                                    </tr>
-                                }
-                            }
-                        </tbody>
-                    </table>
+
+                <div class="chassis-timeline">
+                    @foreach (var group in dateGroups)
+                    {
+                        <div class="chassis-timeline-day">
+                            <i class="bi bi-calendar3"></i>
+                            @group.Key.ToString("dddd, dd MMMM yyyy")
+                        </div>
+
+                        @foreach (var e in group.OrderBy(x => x.OccurredAt).ThenBy(x => x.Step))
+                        {
+                            <div class="chassis-timeline-item">
+                                <div class="chassis-timeline-step">@e.Step</div>
+                                <div class="chassis-timeline-card">
+                                    <div class="chassis-timeline-meta">
+                                        <span class="badge @(e.StatusBadgeClass ?? "bg-secondary")">@e.Title</span>
+                                        <span class="text-muted small">
+                                            <i class="bi bi-clock"></i> @e.OccurredAtLocal.ToString("HH:mm")
+                                        </span>
+                                        @if (!string.IsNullOrWhiteSpace(e.OrderNumber))
+                                        {
+                                            <span class="text-muted small">
+                                                <i class="bi bi-receipt"></i> @e.OrderNumber
+                                            </span>
+                                        }
+                                    </div>
+                                    <div class="chassis-timeline-desc">@e.Description</div>
+                                    <div class="chassis-timeline-footer">
+                                        @if (!string.IsNullOrWhiteSpace(e.Actor))
+                                        {
+                                            <span><i class="bi bi-person"></i> @e.Actor</span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(e.Location))
+                                        {
+                                            <span><i class="bi bi-geo-alt"></i> @e.Location</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
                 </div>
             }
             else

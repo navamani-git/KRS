@@ -6,7 +6,8 @@
 
     // ID, Chassis, Subdealer, Customer, Mobile, Status, dates×4, Inv/Ins doc, Registered, Actions
     var DEFAULT_WIDTHS = {
-        vehicle_bookings: [52, 110, 160, 120, 100, 100, 82, 82, 82, 82, 64, 64, 82, 58]
+        vehicle_bookings: [52, 110, 160, 120, 100, 100, 82, 82, 82, 82, 64, 64, 82, 58],
+        showroom_stock: [44, 90, 130, 110, 100, 90, 90, 88, 72, 88]
     };
 
     var fillTimer;
@@ -186,6 +187,10 @@
         if (gridId === 'vehicle_bookings' || gridId.indexOf('vehicle_bookings') >= 0) {
             var preset = DEFAULT_WIDTHS.vehicle_bookings;
             if (preset.length === count) return preset.slice();
+        }
+        if (gridId === 'showroom_stock' || gridId.indexOf('showroom_stock') >= 0) {
+            var stockPreset = DEFAULT_WIDTHS.showroom_stock;
+            if (stockPreset.length === count) return stockPreset.slice();
         }
         return Array.from({ length: count }, function (_, i) {
             return i === 0 ? 42 : (i === count - 1 ? 58 : 78);

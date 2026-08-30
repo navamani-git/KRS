@@ -13,12 +13,17 @@ namespace KRSDealerManagement.Application.Handlers.Commands
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IAuditService _auditService;
+        private readonly IRoleTemplateService _roleTemplateService;
         private readonly PasswordHasher<string> _passwordHasher = new();
 
-        public LoginCommandHandler(IUnitOfWork unitOfWork, IAuditService auditService)
+        public LoginCommandHandler(
+            IUnitOfWork unitOfWork,
+            IAuditService auditService,
+            IRoleTemplateService roleTemplateService)
         {
             _unitOfWork = unitOfWork;
             _auditService = auditService;
+            _roleTemplateService = roleTemplateService;
         }
 
         public async Task<Result<LoginResult>> Handle(LoginCommand request, CancellationToken cancellationToken)
@@ -72,7 +77,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 var menus = await MenuAccessResolver.ResolveAsync(_unitOfWork, user.UserId, role);
                 var menuAccess = await MenuAccessResolver.ResolveMapAsync(_unitOfWork, user.UserId, role);
 
-                int legacyRole = RoleTemplateDefaults.MapTemplateToLegacyUserRole(role.RoleTemplateCode ?? role.RoleCode);
+                int legacyRole = _roleTemplateService.MapTemplateToLegacyUserRole(role.RoleTemplateCode ?? role.RoleCode);
                 if (role.RoleCode.Equals(RoleCodes.SystemAdmin, StringComparison.OrdinalIgnoreCase)) legacyRole = 1;
                 else if (role.RoleCode.Equals(RoleCodes.Subdealer, StringComparison.OrdinalIgnoreCase)) legacyRole = 2;
                 if (user.UserRole != legacyRole)

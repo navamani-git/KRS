@@ -17,6 +17,7 @@ namespace KRSDealerManagement.Application.Commands
     {
         public int OrderItemId { get; set; }
         public bool Approve { get; set; }
+        public int? VehicleMasterId { get; set; }
         public string? ChassisNumber { get; set; }
         public string? MotorNo { get; set; }
         public string? BatteryNo { get; set; }

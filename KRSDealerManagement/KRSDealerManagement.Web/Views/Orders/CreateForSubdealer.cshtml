@@ -1,4 +1,5 @@
 @using KRSDealerManagement.Application.DTOs
+@using KRSDealerManagement.Web.Helpers
 @{
     ViewData["Title"] = "Create Order for Subdealer";
     var subdealers = ViewBag.Subdealers as IEnumerable<UserDto>;
@@ -12,7 +13,7 @@
 <div class="row mb-3">
     <div class="col-md-6">
         <h1 class="m-0"><i class="bi bi-cart-plus"></i> Create Order for Subdealer</h1>
-        <p class="text-muted">Auto-approved with serial numbers — same as the allocate/approve step. Staff may proceed even if balance is low or negative.</p>
+        <p class="text-muted">Auto-approved from dealer stock — pick chassis per vehicle. Staff may proceed even if balance is low or negative.</p>
     </div>
     <div class="col-md-6 text-end">
         <a href="@Url.Action("Index")" class="btn btn-secondary">
@@ -91,12 +92,12 @@
                                     <th>Model</th>
                                     <th>Color</th>
                                     <th>Price (₹)</th>
-                                    <th>Chassis No <span class="text-danger">*</span></th>
-                                    <th>Motor No <span class="text-danger">*</span></th>
-                                    <th>Battery No <span class="text-danger">*</span></th>
-                                    <th>Charger No <span class="text-danger">*</span></th>
-                                    <th>Controller No <span class="text-danger">*</span></th>
-                                    <th>Converter No <span class="text-danger">*</span></th>
+                                    <th>Chassis (Dealer Stock) <span class="text-danger">*</span></th>
+                                    <th>Motor No</th>
+                                    <th>Battery No</th>
+                                    <th>Charger No</th>
+                                    <th>Controller No</th>
+                                    <th>Converter No</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -111,7 +112,7 @@
                         </table>
                     </div>
                     <div id="noItemsMsg" class="alert alert-warning m-3">
-                        <i class="bi bi-info-circle"></i> Select a subdealer and click "Add Vehicle". Enter serial numbers for each vehicle (one row = one approved vehicle).
+                        <i class="bi bi-info-circle"></i> Select a subdealer and click "Add Vehicle". Pick chassis from dealer stock for each row.
                     </div>
                 </div>
                 <div class="card-footer">
@@ -129,6 +130,7 @@
     <script>
         (function () {
             const canViewBalances = @(canViewBalances ? "true" : "false");
+            const dealershipId = @(SessionHelper.GetDealershipScope(Context.Session)?.ToString() ?? "null");
             const models = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
                 (models ?? new List<VehicleModelDto>())
                 .Select(m => new { id = m.ModelId, name = m.ModelName })));
@@ -149,8 +151,47 @@
                     <option value="">-- Select Model First --</option></select>`;
             }
 
-            function serialInput(name) {
-                return `<input type="text" name="${name}" class="form-control form-control-sm serial-input" required />`;
+            function chassisSelect(id) {
+                return `<select name="vehicleMasterIds" id="master_${id}" class="form-select form-select-sm" required onchange="onChassisChanged(${id})">
+                    <option value="">Select chassis</option></select>`;
+            }
+
+            function readonlySerial(name, fieldId) {
+                return `<input type="text" name="${name}" id="${fieldId}" class="form-control form-control-sm" readonly />`;
+            }
+
+            window.onChassisChanged = function (id) {
+                const select = document.getElementById(`master_${id}`);
+                const opt = select.selectedOptions[0];
+                document.getElementById(`motor_${id}`).value = opt?.dataset.motor || '';
+                document.getElementById(`battery_${id}`).value = opt?.dataset.battery || '';
+                document.getElementById(`charger_${id}`).value = opt?.dataset.charger || '';
+                document.getElementById(`controller_${id}`).value = opt?.dataset.controller || '';
+                document.getElementById(`converter_${id}`).value = opt?.dataset.converter || '';
+            };
+
+            async function loadChassisOptions(id) {
+                const modelId = document.getElementById(`model_${id}`).value;
+                const colorId = document.getElementById(`color_${id}`).value;
+                const select = document.getElementById(`master_${id}`);
+                if (!dealershipId || !modelId || !colorId) return;
+                const res = await fetch(`/VehicleMasters/Available?dealershipId=${dealershipId}&modelId=${modelId}&colorId=${colorId}`);
+                const options = await res.json();
+                const current = select.value;
+                select.innerHTML = '<option value="">Select chassis</option>';
+                options.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.vehicleMasterId;
+                    opt.textContent = m.chassisNumber;
+                    opt.dataset.motor = m.motorNo || '';
+                    opt.dataset.battery = m.batteryNo || '';
+                    opt.dataset.charger = m.chargerNo || '';
+                    opt.dataset.controller = m.controllerNo || '';
+                    opt.dataset.converter = m.converterNo || '';
+                    select.appendChild(opt);
+                });
+                if (current) select.value = current;
+                onChassisChanged(id);
             }
 
             window.loadAccount = function () {
@@ -199,12 +240,12 @@
                             value="0" min="0" step="0.01" readonly style="width:100px"/>
                         <span id="total_${id}" class="d-none">0</span>
                     </td>
-                    <td>${serialInput('chassisNumbers')}</td>
-                    <td>${serialInput('motorNos')}</td>
-                    <td>${serialInput('batteryNos')}</td>
-                    <td>${serialInput('chargerNos')}</td>
-                    <td>${serialInput('controllerNos')}</td>
-                    <td>${serialInput('converterNos')}</td>
+                    <td>${chassisSelect(id)}</td>
+                    <td>${readonlySerial('motorNos', `motor_${id}`)}</td>
+                    <td>${readonlySerial('batteryNos', `battery_${id}`)}</td>
+                    <td>${readonlySerial('chargerNos', `charger_${id}`)}</td>
+                    <td>${readonlySerial('controllerNos', `controller_${id}`)}</td>
+                    <td>${readonlySerial('converterNos', `converter_${id}`)}</td>
                     <td><button type="button" class="btn btn-sm btn-danger" onclick="removeItem(${id})">
                         <i class="bi bi-trash"></i></button></td>`;
                 document.getElementById('itemsBody').appendChild(row);
@@ -241,6 +282,7 @@
                         document.getElementById(`total_${id}`).textContent = data.success ? data.price : 0;
                         updateTotals();
                         if (!data.success) alert(data.message);
+                        loadChassisOptions(id);
                     });
             };
 

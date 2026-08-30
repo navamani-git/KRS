@@ -26,13 +26,17 @@ namespace KRSDealerManagement.Shared.Constants
         public const string Reports = "admin_reports";
         public const string StaffUsers = "admin_staff_users";
         public const string StaffRoles = "admin_staff_roles";
+        public const string RoleTemplates = "admin_role_templates";
         public const string FinanceNames = "admin_finance_names";
         public const string PaymentTypes = "admin_payment_types";
         public const string DocumentTypes = "admin_document_types";
+        public const string RtoDistricts = "admin_rto_districts";
         public const string RtoLocations = "admin_rto_locations";
         public const string VehicleBookings = "admin_vehicle_bookings";
         public const string BookedToCustomerView = "admin_booked_to_customer";
         public const string ChassisHistory = "admin_chassis_history";
+        public const string ShowroomStock = "admin_showroom_stock";
+        public const string DealerStock = "admin_dealer_stock";
         public const string StatusLookups = "admin_status_lookups";
 
         public static IReadOnlyList<(string Key, string Name)> AllAdminMenus() => new List<(string, string)>
@@ -44,6 +48,7 @@ namespace KRSDealerManagement.Shared.Constants
             (FinanceNames, "Finance Names"),
             (PaymentTypes, "Payment Types"),
             (DocumentTypes, "Document Types"),
+            (RtoDistricts, "RTO Districts"),
             (RtoLocations, "RTO Locations"),
             (StatusLookups, "Status Master"),
             (Subdealers, "Subdealers"),
@@ -57,11 +62,14 @@ namespace KRSDealerManagement.Shared.Constants
             (BookedToCustomerView, "Booked to Customer"),
             (ChassisHistory, "Chassis History"),
             (Vehicles, "Subdealer Vehicles"),
+            (DealerStock, "Dealer Stock"),
+            (ShowroomStock, "Subdealer Stock"),
             (Returns, "Return Requests"),
             (Payments, "Payment Approvals"),
             (Reports, "Reports"),
             (StaffUsers, "Staff Users"),
-            (StaffRoles, "Staff Roles")
+            (StaffRoles, "Staff Roles"),
+            (RoleTemplates, "Role Templates")
         };
 
         public static bool CanAccess(int userRole, string menuKey)
@@ -78,7 +86,7 @@ namespace KRSDealerManagement.Shared.Constants
                 },
                 UserRoleEnum.DealerBranchManager => new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 {
-                    Subdealers, Orders, Vehicles, VehicleBookings, BookedToCustomerView, Returns, Balances
+                    Subdealers, Orders, Vehicles, DealerStock, ShowroomStock, VehicleBookings, BookedToCustomerView, Returns, Balances
                 },
                 _ => new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             };
@@ -122,6 +130,12 @@ namespace KRSDealerManagement.Shared.Constants
                         },
                         new MenuItemDefinition
                         {
+                            Key = RoleTemplates, Name = "Role Templates",
+                            Controller = "RoleTemplates", Action = "Index", Icon = "bi-diagram-3",
+                            Actions = new[] { "Index", "Create", "Edit" }
+                        },
+                        new MenuItemDefinition
+                        {
                             Key = VehicleModels, Name = "Vehicle Models",
                             Controller = "VehicleModels", Action = "Index", Icon = "bi-car-front",
                             Actions = new[] { "Index", "Create", "Edit", "Details" }
@@ -157,8 +171,15 @@ namespace KRSDealerManagement.Shared.Constants
                         },
                         new MenuItemDefinition
                         {
+                            Key = RtoDistricts, Name = "RTO Districts",
+                            Controller = "RtoDistricts", Action = "Index", Icon = "bi-map",
+                            Actions = new[] { "Index", "Create", "Edit" }
+                        },
+                        new MenuItemDefinition
+                        {
                             Key = RtoLocations, Name = "RTO Locations",
-                            Controller = "RtoLocations", Action = "Index", Icon = "bi-geo"
+                            Controller = "RtoLocations", Action = "Index", Icon = "bi-geo",
+                            Actions = new[] { "Index", "Create", "Edit" }
                         },
                         new MenuItemDefinition
                         {
@@ -210,6 +231,12 @@ namespace KRSDealerManagement.Shared.Constants
                         },
                         new MenuItemDefinition
                         {
+                            Key = DealerStock, Name = "Dealer Stock",
+                            Controller = "VehicleMasters", Action = "Index", Icon = "bi-boxes",
+                            Actions = new[] { "Index", "Create", "Edit" }
+                        },
+                        new MenuItemDefinition
+                        {
                             Key = Orders, Name = "Manage Orders",
                             Controller = "Orders", Action = "Index", Icon = "bi-cart-check",
                             Actions = new[] { "Index", "Details", "Allocate" }
@@ -219,6 +246,12 @@ namespace KRSDealerManagement.Shared.Constants
                             Key = Vehicles, Name = "Subdealer Vehicles",
                             Controller = "Vehicles", Action = "Index", Icon = "bi-ev-front",
                             Actions = new[] { "Index", "AdminEdit", "AdminDelete" }
+                        },
+                        new MenuItemDefinition
+                        {
+                            Key = ShowroomStock, Name = "Subdealer Stock",
+                            Controller = "Stock", Action = "Index", Icon = "bi-box-seam",
+                            Actions = new[] { "Index" }
                         },
                         new MenuItemDefinition
                         {
@@ -253,6 +286,13 @@ namespace KRSDealerManagement.Shared.Constants
                 },
                 new()
                 {
+                    ParentKey = "rto_subsidy_progress",
+                    ParentName = "RTO & Subsidy Progress",
+                    Icon = "bi-signpost-split",
+                    Children = GetRtoSubsidyProgressMenuItems()
+                },
+                new()
+                {
                     ParentKey = "reports",
                     ParentName = "Reports",
                     Icon = "bi-graph-up",
@@ -284,7 +324,37 @@ namespace KRSDealerManagement.Shared.Constants
             BookingMenuItem("Invoiced", UnifiedVehicleStatus.Invoiced, "bi-receipt"),
             BookingMenuItem("Insurance Created", UnifiedVehicleStatus.InsuranceCreated, "bi-shield-check"),
             BookingMenuItem("RTO Requested", UnifiedVehicleStatus.RtoRequested, "bi-signpost"),
-            BookingMenuItem("Registered", UnifiedVehicleStatus.Registered, "bi-card-checklist")
+            new MenuItemDefinition
+            {
+                Key = VehicleBookings,
+                Name = "Subsidy ID Pending",
+                Controller = "VehicleBookings",
+                Action = "SubsidyIdPending",
+                Icon = "bi-tag",
+                Actions = new[] { "SubsidyIdPending", "Export" }
+            }
+        };
+
+        private static IReadOnlyList<MenuItemDefinition> GetRtoSubsidyProgressMenuItems() => new[]
+        {
+            new MenuItemDefinition
+            {
+                Key = VehicleBookings,
+                Name = "Subsidy Docs Pending",
+                Controller = "VehicleBookings",
+                Action = "SubsidyDocsPending",
+                Icon = "bi-file-earmark-person",
+                Actions = new[] { "SubsidyDocsPending", "SubsidyDocs", "ExportSubsidyDocsPending" }
+            },
+            new MenuItemDefinition
+            {
+                Key = VehicleBookings,
+                Name = "Registered",
+                Controller = "VehicleBookings",
+                Action = "RegisteredAwaitingPlate",
+                Icon = "bi-card-checklist",
+                Actions = new[] { "RegisteredAwaitingPlate", "NumberPlateReceived", "ExportRegisteredAwaitingPlate" }
+            }
         };
 
         private static MenuItemDefinition BookingMenuItem(string name, int status, string icon) => new()
@@ -299,8 +369,24 @@ namespace KRSDealerManagement.Shared.Constants
         };
 
         public static bool TryResolveMenuKey(string controller, string action, out string menuKey)
+            => TryResolveMenuKey(controller, action, null, null, out menuKey);
+
+        public static bool TryResolveMenuKey(
+            string controller,
+            string action,
+            string? returnController,
+            string? returnAction,
+            out string menuKey)
         {
             menuKey = "";
+            if (string.Equals(controller, "ExcelImport", StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(returnController))
+            {
+                controller = returnController;
+                if (!string.IsNullOrWhiteSpace(returnAction))
+                    action = returnAction;
+            }
+
             if (string.IsNullOrWhiteSpace(controller) || string.IsNullOrWhiteSpace(action))
                 return false;
 

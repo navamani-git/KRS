@@ -11,6 +11,17 @@
     var session = Context.Session;
     var navController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
     var navAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    if (string.Equals(navController, "ExcelImport", StringComparison.OrdinalIgnoreCase))
+    {
+        var returnController = Context.Request.Query["returnController"].ToString();
+        if (!string.IsNullOrWhiteSpace(returnController))
+        {
+            navController = returnController;
+            var returnAction = Context.Request.Query["returnAction"].ToString();
+            if (!string.IsNullOrWhiteSpace(returnAction))
+                navAction = returnAction;
+        }
+    }
 }
 
 <!DOCTYPE html>
@@ -179,7 +190,7 @@
                                 {
                                     var item = visible[0];
                                     <li class="nav-item">
-                                        <a href="@Url.Action(item.Action, item.Controller)" class="nav-link @NavMenuHelper.ActiveClassForMenuItem(navController, navAction, item, Context.Request)">
+                                        <a href="@(item.RouteValues is { Count: > 0 } ? Url.Action(item.Action, item.Controller, item.RouteValues) : Url.Action(item.Action, item.Controller))" class="nav-link @NavMenuHelper.ActiveClassForMenuItem(navController, navAction, item, Context.Request)">
                                             <i class="nav-icon bi @(item.Icon ?? "bi-circle")"></i>
                                             <p>@item.Name</p>
                                         </a>

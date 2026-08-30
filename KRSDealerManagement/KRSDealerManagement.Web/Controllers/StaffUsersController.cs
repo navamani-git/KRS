@@ -106,7 +106,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, string fullName, string? email, string? phoneNumber, int dealershipId, int roleId, bool isActive, string? password)
+        public async Task<IActionResult> Edit(int id, string fullName, string username, string? email, string? phoneNumber, int dealershipId, int roleId, bool isActive, string? password)
         {
             var user = await _unitOfWork.Users.GetByIdAsync(id);
             var assignment = (await _unitOfWork.UserOrgRoles.GetAllAsync()).FirstOrDefault(a => a.UserId == id && a.IsActive);
@@ -126,6 +126,26 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction(nameof(Edit), new { id });
             }
 
+            var normalizedUsername = (username ?? "").Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(normalizedUsername) || normalizedUsername.Length < 3)
+            {
+                TempData["Error"] = "Username must be at least 3 characters.";
+                return RedirectToAction(nameof(Edit), new { id });
+            }
+
+            if (normalizedUsername.Any(char.IsWhiteSpace))
+            {
+                TempData["Error"] = "Username cannot contain spaces.";
+                return RedirectToAction(nameof(Edit), new { id });
+            }
+
+            var allUsers = await _unitOfWork.Users.GetAllAsync();
+            if (allUsers.Any(u => u.UserId != id && u.Username.Equals(normalizedUsername, StringComparison.OrdinalIgnoreCase)))
+            {
+                TempData["Error"] = $"Username '{normalizedUsername}' is already taken.";
+                return RedirectToAction(nameof(Edit), new { id });
+            }
+
             var selectedRole = await _unitOfWork.Roles.GetByIdAsync(roleId);
             if (selectedRole == null || !selectedRole.IsActive || selectedRole.IsSystemRole
                 || !selectedRole.DealershipId.HasValue || selectedRole.DealershipId.Value != dealershipId)
@@ -137,6 +157,7 @@ namespace KRSDealerManagement.Web.Controllers
             var nameParts = fullName.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
             user.FirstName = nameParts[0];
             user.LastName = nameParts.Length > 1 ? nameParts[1] : user.LastName;
+            user.Username = normalizedUsername;
             user.Email = string.IsNullOrWhiteSpace(email) ? user.Email : email.Trim();
             user.PhoneNumber = phoneNumber?.Trim() ?? "";
             user.IsActive = isActive;

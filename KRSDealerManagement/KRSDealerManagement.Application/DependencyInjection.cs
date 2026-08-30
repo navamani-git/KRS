@@ -43,6 +43,7 @@ namespace KRSDealerManagement.Application
             services.AddScoped<IStatusLookupService, StatusLookupService>();
             services.AddScoped<IVehiclePriceService, VehiclePriceService>();
             services.AddScoped<ICommissionRateService, CommissionRateService>();
+            services.AddScoped<IRoleTemplateService, RoleTemplateService>();
 
             return services;
         }

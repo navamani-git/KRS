@@ -1,6 +1,7 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace KRSDealerManagement.Domain.Entities
-{
-    /// <summary>
+{    /// <summary>
     /// One requested vehicle line on a purchase order.
     /// Qty is expanded into one row per vehicle at order create time.
     /// </summary>
@@ -21,7 +22,15 @@ namespace KRSDealerManagement.Domain.Entities
         public string? ControllerNo { get; set; }
         public string? ConverterNo { get; set; }
         public string? ChassisNumber { get; set; }
-        public int? VehicleId { get; set; }
+        public int? SubdealerVehicleId { get; set; }
+
+        /// <summary>Backward-compatible alias for SubdealerVehicleId.</summary>
+        [NotMapped]
+        public int? VehicleId
+        {
+            get => SubdealerVehicleId;
+            set => SubdealerVehicleId = value;
+        }
 
         public int? ApprovedBy { get; set; }
         public DateTime? ApprovedDate { get; set; }

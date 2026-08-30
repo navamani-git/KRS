@@ -4,7 +4,7 @@ namespace KRSDealerManagement.Web.Helpers
 {
     public static class GridColumnRegistry
     {
-        public static IReadOnlyList<GridFilterColumn> Get(string gridId, bool hideLogins = false, bool hideActions = false, bool isSubdealer = false)
+        public static IReadOnlyList<GridFilterColumn> Get(string gridId, bool hideLogins = false, bool hideActions = false, bool isSubdealer = false, bool showDealership = false)
         {
             return gridId switch
             {
@@ -31,6 +31,8 @@ namespace KRSDealerManagement.Web.Helpers
                 GridIds.VehicleBookings => VehicleBookings(),
                 GridIds.VehicleColors => VehicleColors(),
                 GridIds.VehicleModels => VehicleModels(),
+                GridIds.ShowroomStock => ShowroomStock(),
+                GridIds.DealerStock => DealerStock(showDealership),
                 _ => Array.Empty<GridFilterColumn>()
             };
         }
@@ -64,7 +66,7 @@ namespace KRSDealerManagement.Web.Helpers
                 GridFilterColumn.Combo("color", "Color"),
                 GridFilterColumn.Combo("chassis", "Chassis")
             });
-            if (isSubdealer) cols.Add(GridFilterColumn.Select("source", "Dealer", "Subdealer"));
+            if (isSubdealer) cols.Add(GridFilterColumn.Select("source", "Dealer", "My order"));
             cols.AddRange(new[]
             {
                 GridFilterColumn.Combo("price", "Price"),
@@ -354,5 +356,40 @@ namespace KRSDealerManagement.Web.Helpers
             GridFilterColumn.DateCol("created", "Created"),
             GridFilterColumn.Actions()
         };
+
+        private static List<GridFilterColumn> ShowroomStock() => new()
+        {
+            GridFilterColumn.Skip(),
+            GridFilterColumn.Combo("location", "Location"),
+            GridFilterColumn.Combo("subdealer", "Subdealer"),
+            GridFilterColumn.Combo("chassis", "Chassis"),
+            GridFilterColumn.Combo("model", "Model"),
+            GridFilterColumn.Combo("color", "Color"),
+            GridFilterColumn.Combo("order", "Order #"),
+            GridFilterColumn.DateCol("allocated", "Allocated"),
+            GridFilterColumn.Combo("days", "Days in stock"),
+            GridFilterColumn.Combo("price", "Price")
+        };
+
+        private static List<GridFilterColumn> DealerStock(bool showDealership)
+        {
+            var cols = new List<GridFilterColumn> { GridFilterColumn.Skip() };
+            if (showDealership)
+                cols.Add(GridFilterColumn.Combo("dealer", "Dealer"));
+            cols.AddRange(new[]
+            {
+                GridFilterColumn.Combo("chassis", "Chassis"),
+                GridFilterColumn.Combo("model", "Model"),
+                GridFilterColumn.Combo("color", "Color"),
+                GridFilterColumn.Combo("motor", "Motor"),
+                GridFilterColumn.Combo("battery", "Battery"),
+                GridFilterColumn.DateCol("received", "Received"),
+                GridFilterColumn.DateCol("invoice", "Ampere Invoice"),
+                GridFilterColumn.Combo("year", "Mfg Year"),
+                GridFilterColumn.Select("status", "Available", "Allocated"),
+                GridFilterColumn.Actions()
+            });
+            return cols;
+        }
     }
 }

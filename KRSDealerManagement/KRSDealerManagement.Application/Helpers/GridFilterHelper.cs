@@ -31,6 +31,12 @@ namespace KRSDealerManagement.Application.Helpers
         public static bool MatchesDateTime(DateTime value, DateTime? from, DateTime? to)
             => MatchesDate(value, from, to);
 
+        public static bool MatchesExact(string? value, string? filter)
+        {
+            if (string.IsNullOrWhiteSpace(filter)) return true;
+            return string.Equals(value?.Trim(), filter.Trim(), StringComparison.OrdinalIgnoreCase);
+        }
+
         public static string? GetFilter(IReadOnlyDictionary<string, string>? filters, string key)
         {
             if (filters == null || filters.Count == 0) return null;

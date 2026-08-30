@@ -1,5 +1,8 @@
 @model KRSDealerManagement.Domain.Entities.RtoLocationMaster
 @{ ViewData["Title"] = "Edit RTO Location"; }
+@{
+    var districts = ViewBag.Districts as IEnumerable<KRSDealerManagement.Domain.Entities.RtoDistrictMaster>;
+}
 
 <div class="row mb-3">
     <div class="col-md-8"><h1 class="m-0">Edit RTO Location</h1></div>
@@ -11,6 +14,22 @@
         @Html.AntiForgeryToken()
         <input type="hidden" name="id" value="@Model.RtoLocationId" />
         <div class="card-body">
+            <div class="mb-3">
+                <label class="fw-bold">District <span class="text-danger">*</span></label>
+                <select name="rtoDistrictId" class="form-select" required>
+                    @foreach (var d in districts ?? Enumerable.Empty<KRSDealerManagement.Domain.Entities.RtoDistrictMaster>())
+                    {
+                        if (d.RtoDistrictId == Model.RtoDistrictId)
+                        {
+                            <option value="@d.RtoDistrictId" selected>@d.DistrictName</option>
+                        }
+                        else
+                        {
+                            <option value="@d.RtoDistrictId">@d.DistrictName</option>
+                        }
+                    }
+                </select>
+            </div>
             <div class="mb-3">
                 <label class="fw-bold">Location Name <span class="text-danger">*</span></label>
                 <input name="locationName" class="form-control" value="@Model.LocationName" required />

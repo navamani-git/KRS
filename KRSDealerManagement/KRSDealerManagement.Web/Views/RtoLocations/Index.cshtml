@@ -1,10 +1,14 @@
 @model IEnumerable<KRSDealerManagement.Domain.Entities.RtoLocationMaster>
 @using KRSDealerManagement.Web.Models
 @{ ViewData["Title"] = "RTO Locations"; }
+@{
+    var districtNames = ViewBag.DistrictNames as IDictionary<int, string> ?? new Dictionary<int, string>();
+}
 
 <div class="row mb-3">
     <div class="col-md-6"><h1 class="m-0"><i class="bi bi-geo-alt"></i> RTO Locations</h1></div>
     <div class="col-md-6 text-end">
+        <a href="@Url.Action("Index", "RtoDistricts")" class="btn btn-outline-secondary">Districts</a>
         <partial name="_ExportExcel" />
         <a href="@Url.Action("Create")" class="btn btn-primary"><i class="bi bi-plus"></i> Add</a>
     </div>
@@ -17,7 +21,7 @@
         <div class="table-responsive">
             <table class="table table-sm table-hover table-striped mb-0 grid-excel-table grid-data-table" data-grid-id="@GridIds.RtoLocations">
             <thead class="table-dark">
-                <tr><th class="grid-col-rownum">#</th><th>Location</th><th>Status</th><th>Actions</th></tr>
+                <tr><th class="grid-col-rownum">#</th><th>District</th><th>Location</th><th>Status</th><th>Actions</th></tr>
                 <partial name="_PaginatedGridFilters" />
             </thead>
             <tbody>
@@ -26,6 +30,7 @@
                 {
                     <tr>
                         <td>@(i++)</td>
+                        <td>@(districtNames.TryGetValue(r.RtoDistrictId, out var districtName) ? districtName : $"#{r.RtoDistrictId}")</td>
                         <td>@r.LocationName</td>
                         <td><span class="badge @(r.IsActive ? "bg-success" : "bg-secondary")">@(r.IsActive ? "Active" : "Inactive")</span></td>
                         <td>

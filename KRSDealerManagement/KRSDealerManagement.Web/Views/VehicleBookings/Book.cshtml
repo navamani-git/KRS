@@ -1,12 +1,7 @@
 @using KRSDealerManagement.Application.DTOs
-@using KRSDealerManagement.Shared.Constants
 @{
     ViewData["Title"] = "Book Vehicle";
     var vehicle = ViewBag.Vehicle as VehicleDto;
-    var docTypes = ViewBag.DocumentTypes as IEnumerable<KRSDealerManagement.Domain.Entities.DocumentTypeMaster>;
-    var rtoLocs = ViewBag.RtoLocations as IEnumerable<KRSDealerManagement.Domain.Entities.RtoLocationMaster>;
-    var financeNames = ViewBag.FinanceNames as IEnumerable<KRSDealerManagement.Domain.Entities.FinanceNameMaster>;
-    var paymentModes = ViewBag.PaymentModes as IEnumerable<(string Value, string Label)>;
 }
 
 <div class="row mb-3">
@@ -23,88 +18,11 @@
     @Html.AntiForgeryToken()
     <input type="hidden" name="vehicleId" value="@vehicle?.VehicleId" />
 
-    <div class="card mb-3">
-        <div class="card-header"><h3 class="card-title mb-0">Customer Details</h3></div>
-        <div class="card-body row g-3">
-            <div class="col-md-6">
-                <label class="fw-bold">Customer Name <span class="text-danger">*</span></label>
-                <input name="customerName" class="form-control" required />
-                <small class="text-muted">For individual: name must match E-Aadhaar exactly. For company: enter name as per GST certificate.</small>
-            </div>
-            <div class="col-md-6 d-flex align-items-end">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="isCompanyBooking" value="true" id="isCompany" onchange="toggleGst()" />
-                    <label class="form-check-label" for="isCompany">Booking in company name</label>
-                </div>
-            </div>
-            <div class="col-md-4"><label class="fw-bold">Mobile (Aadhaar linked) *</label><input name="customerMobile" class="form-control" required maxlength="15" /></div>
-            <div class="col-md-4"><label class="fw-bold">Alternative Mobile *</label><input name="alternativeMobile" class="form-control" required maxlength="15" /></div>
-            <div class="col-md-4"><label class="fw-bold">Email *</label><input name="customerEmail" type="email" class="form-control" required /></div>
-            <div class="col-md-4"><label class="fw-bold">E-Aadhaar (PDF, max 10MB) *</label><input name="eAadhaarFile" type="file" accept=".pdf" class="form-control" required /></div>
-            <div class="col-md-4"><label class="fw-bold">E-Aadhaar Password *</label><input name="eAadhaarPassword" class="form-control" required /></div>
-            <div class="col-md-4"><label class="fw-bold">Document Type *</label>
-                <select name="documentTypeId" class="form-select" required>
-                    <option value="">-- Select --</option>
-                    @foreach (var d in docTypes ?? Enumerable.Empty<KRSDealerManagement.Domain.Entities.DocumentTypeMaster>())
-                    { <option value="@d.DocumentTypeId">@d.TypeName</option> }
-                </select>
-            </div>
-            <div class="col-md-6"><label class="fw-bold">ID Document (PDF, colour) *</label><input name="documentFile" type="file" accept=".pdf" class="form-control" required /></div>
-            <div class="col-md-6" id="gstBlock" style="display:none"><label class="fw-bold">GST Certificate (PDF) *</label><input name="gstCertificateFile" type="file" accept=".pdf" class="form-control" /></div>
-        </div>
-    </div>
-
-    <div class="card mb-3">
-        <div class="card-header"><h3 class="card-title mb-0">Vehicle & Payment</h3></div>
-        <div class="card-body row g-3">
-            <div class="col-md-4"><label class="fw-bold">Customer Photo *</label><input name="customerPhoto" type="file" accept="image/*" class="form-control" required /></div>
-            <div class="col-md-4"><label class="fw-bold">Chassis Photo *</label><input name="chassisPhoto" type="file" accept="image/*" class="form-control" required /></div>
-            <div class="col-md-4"><label class="fw-bold">Customer Sign / Company Seal *</label><input name="customerSign" type="file" accept="image/*" class="form-control" required /></div>
-            <div class="col-md-4"><label class="fw-bold">RTO Location *</label>
-                <select name="rtoLocationId" class="form-select" required>
-                    @foreach (var r in rtoLocs ?? Enumerable.Empty<KRSDealerManagement.Domain.Entities.RtoLocationMaster>())
-                    { <option value="@r.RtoLocationId">@r.LocationName</option> }
-                </select>
-            </div>
-            <div class="col-md-4"><label class="fw-bold">Fancy Number *</label>
-                <select name="fancyNumber" class="form-select" required>
-                    <option value="false">No</option><option value="true">Yes</option>
-                </select>
-            </div>
-            <div class="col-md-4"><label class="fw-bold">Payment Mode *</label>
-                <select name="paymentMode" class="form-select" required>
-                    @foreach (var p in paymentModes ?? VehiclePaymentModes.All)
-                    { <option value="@p.Value">@p.Label</option> }
-                </select>
-            </div>
-            <div class="col-md-6"><label class="fw-bold">Financier Name *</label>
-                <select name="financeNameId" class="form-select" required>
-                    @foreach (var f in financeNames ?? Enumerable.Empty<KRSDealerManagement.Domain.Entities.FinanceNameMaster>())
-                    { <option value="@f.FinanceNameId">@f.FinanceName</option> }
-                </select>
-            </div>
-        </div>
-    </div>
-
-    <div class="card mb-3">
-        <div class="card-header"><h3 class="card-title mb-0">Nominee</h3></div>
-        <div class="card-body row g-3">
-            <div class="col-md-4"><label class="fw-bold">Nominee Name *</label><input name="nomineeName" class="form-control" required /></div>
-            <div class="col-md-4"><label class="fw-bold">Nominee DOB *</label><input name="nomineeDob" type="date" class="form-control" required /></div>
-            <div class="col-md-4"><label class="fw-bold">Relationship *</label><input name="nomineeRelationship" class="form-control" required /></div>
-        </div>
-    </div>
+    <partial name="_BookingCustomerFormFields" />
 
     <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-check-circle"></i> Submit Booking</button>
 </form>
 
 @section Scripts {
-<script>
-function toggleGst() {
-    const show = document.getElementById('isCompany').checked;
-    const block = document.getElementById('gstBlock');
-    block.style.display = show ? 'block' : 'none';
-    block.querySelector('input').required = show;
-}
-</script>
+    <partial name="_BookingFormScripts" />
 }

@@ -16,7 +16,7 @@ namespace KRSDealerManagement.Infrastructure.Repositories
 
             const string sql = @"
 INSERT INTO CommissionHistory (
-    VehicleId, SubdealerId, CommissionMonth, CommissionYear,
+    SubdealerVehicleId, SubdealerId, CommissionMonth, CommissionYear,
     SubmittedAmount, CommissionStatus, ApprovalReason,
     SubmittedBy, SubmittedDate, ModifiedDate
 )
@@ -102,7 +102,8 @@ WHERE CommissionId = @CommissionId";
         private const string SelectSql = @"
 SELECT
     CommissionId,
-    VehicleId,
+    SubdealerVehicleId,
+    SubdealerVehicleId AS VehicleId,
     SubdealerId,
     CommissionMonth AS Month,
     CommissionYear AS Year,

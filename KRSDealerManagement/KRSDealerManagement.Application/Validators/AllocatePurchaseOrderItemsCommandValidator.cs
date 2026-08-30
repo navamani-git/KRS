@@ -13,20 +13,9 @@ namespace KRSDealerManagement.Application.Validators
 
             RuleForEach(x => x.Items).ChildRules(item =>
             {
-                // OrderItemId is identity; allow 0 if DB ever seeded/reseeds to 0
                 item.RuleFor(i => i.OrderItemId).GreaterThanOrEqualTo(0);
-                item.RuleFor(i => i.ChassisNumber).NotEmpty().When(i => i.Approve)
-                    .WithMessage("Chassis Number is required for approval");
-                item.RuleFor(i => i.MotorNo).NotEmpty().When(i => i.Approve)
-                    .WithMessage("Motor No is required for approval");
-                item.RuleFor(i => i.BatteryNo).NotEmpty().When(i => i.Approve)
-                    .WithMessage("Battery No is required for approval");
-                item.RuleFor(i => i.ChargerNo).NotEmpty().When(i => i.Approve)
-                    .WithMessage("Charger No is required for approval");
-                item.RuleFor(i => i.ControllerNo).NotEmpty().When(i => i.Approve)
-                    .WithMessage("Controller No is required for approval");
-                item.RuleFor(i => i.ConverterNo).NotEmpty().When(i => i.Approve)
-                    .WithMessage("Converter No is required for approval");
+                item.RuleFor(i => i.VehicleMasterId).NotNull().GreaterThan(0).When(i => i.Approve)
+                    .WithMessage("Select a chassis from dealer stock for approval");
             });
         }
     }

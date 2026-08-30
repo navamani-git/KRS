@@ -27,7 +27,10 @@ namespace KRSDealerManagement.Application.Commands
         public int Quantity { get; set; }
         public decimal UnitPrice { get; set; }
 
-        /// <summary>Serial numbers — required when staff auto-approves (one vehicle per item).</summary>
+        /// <summary>Vehicle master row when staff auto-approves or allocates from dealer stock.</summary>
+        public int? VehicleMasterId { get; set; }
+
+        /// <summary>Serial numbers — populated from master on allocation (read-only display).</summary>
         public string? ChassisNumber { get; set; }
         public string? MotorNo { get; set; }
         public string? BatteryNo { get; set; }

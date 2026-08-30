@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using KRSDealerManagement.Domain.ValueObjects;
 using KRSDealerManagement.Shared.Enums;
 
@@ -9,12 +10,25 @@ namespace KRSDealerManagement.Domain.Entities
     public class Vehicle
     {
         /// <summary>
-        /// Unique identifier
+        /// Subdealer vehicle identifier (SubdealerVehicles table).
         /// </summary>
-        public int VehicleId { get; set; }
+        public int SubdealerVehicleId { get; set; }
+
+        /// <summary>Backward-compatible alias for SubdealerVehicleId.</summary>
+        [NotMapped]
+        public int VehicleId
+        {
+            get => SubdealerVehicleId;
+            set => SubdealerVehicleId = value;
+        }
 
         /// <summary>
-        /// Reference to VehicleModel
+        /// Link to physical stock in VehicleMasters.
+        /// </summary>
+        public int VehicleMasterId { get; set; }
+
+        /// <summary>
+        /// Reference to VehicleModel (from master join).
         /// </summary>
         public int ModelId { get; set; }
 

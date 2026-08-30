@@ -1,0 +1,64 @@
+@using KRSDealerManagement.Domain.Entities
+@{
+    var districts = ViewBag.RtoDistricts as IEnumerable<RtoDistrictMaster> ?? Enumerable.Empty<RtoDistrictMaster>();
+    var locations = ViewBag.RtoLocations as IEnumerable<RtoLocationMaster> ?? Enumerable.Empty<RtoLocationMaster>();
+    var selectedDistrictId = ViewBag.SelectedRtoDistrictId as int?;
+    var selectedLocationId = ViewBag.SelectedRtoLocationId as int?;
+    var locationsJson = System.Text.Json.JsonSerializer.Serialize(
+        locations.Select(l => new { rtoLocationId = l.RtoLocationId, rtoDistrictId = l.RtoDistrictId, locationName = l.LocationName }));
+}
+
+<div class="col-md-4">
+    <label class="fw-bold">RTO District <span class="text-danger">*</span></label>
+    <select id="rtoDistrictId" class="form-select" required>
+        <option value="">-- Select district --</option>
+        @foreach (var d in districts.Where(d => d.IsActive).OrderBy(d => d.DistrictName))
+        {
+            if (selectedDistrictId == d.RtoDistrictId)
+            {
+                <option value="@d.RtoDistrictId" selected>@d.DistrictName</option>
+            }
+            else
+            {
+                <option value="@d.RtoDistrictId">@d.DistrictName</option>
+            }
+        }
+    </select>
+</div>
+<div class="col-md-4">
+    <label class="fw-bold">RTO Location <span class="text-danger">*</span></label>
+    <select name="rtoLocationId" id="rtoLocationId" class="form-select" required>
+        <option value="">-- Select location --</option>
+    </select>
+</div>
+
+<script>
+    (function () {
+        const allLocations = @Html.Raw(locationsJson);
+        const districtSelect = document.getElementById('rtoDistrictId');
+        const locationSelect = document.getElementById('rtoLocationId');
+        const selectedLocationId = @(selectedLocationId?.ToString() ?? "null");
+
+        function renderLocations() {
+            const districtId = parseInt(districtSelect.value, 10);
+            locationSelect.innerHTML = '<option value="">-- Select location --</option>';
+            if (!districtId) return;
+
+            allLocations
+                .filter(l => l.rtoDistrictId === districtId)
+                .sort((a, b) => a.locationName.localeCompare(b.locationName))
+                .forEach(l => {
+                    const opt = document.createElement('option');
+                    opt.value = l.rtoLocationId;
+                    opt.textContent = l.locationName;
+                    if (selectedLocationId && selectedLocationId === l.rtoLocationId) {
+                        opt.selected = true;
+                    }
+                    locationSelect.appendChild(opt);
+                });
+        }
+
+        districtSelect.addEventListener('change', renderLocations);
+        renderLocations();
+    })();
+</script>

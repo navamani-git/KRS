@@ -135,5 +135,84 @@ namespace KRSDealerManagement.Shared.Helpers
                 agentDate,
                 registrationDate,
                 subsidyId) == null;
+
+        /// <summary>
+        /// Invoice and insurance are done but dealer has not yet assigned a subsidy ID.
+        /// </summary>
+        public static bool IsSubsidyIdPending(
+            DateTime? invoiceDate,
+            DateTime? insuranceDate,
+            string? subsidyId,
+            int vehicleStatus)
+        {
+            if (vehicleStatus == UnifiedVehicleStatus.ReturnRequested)
+                return false;
+
+            return invoiceDate.HasValue
+                && insuranceDate.HasValue
+                && string.IsNullOrWhiteSpace(subsidyId);
+        }
+
+        public static bool HasAllSubsidyDocs(
+            string? faceVerificationPath,
+            string? rcImagePath,
+            string? boothPhotoPath,
+            string? subsidyUndertakingPath) =>
+            !string.IsNullOrWhiteSpace(faceVerificationPath)
+            && !string.IsNullOrWhiteSpace(rcImagePath)
+            && !string.IsNullOrWhiteSpace(boothPhotoPath)
+            && !string.IsNullOrWhiteSpace(subsidyUndertakingPath);
+
+        /// <summary>
+        /// Subsidy ID is assigned but one or more subsidy documents are still missing.
+        /// </summary>
+        public static bool IsSubsidyDocsPending(
+            string? subsidyId,
+            string? faceVerificationPath,
+            string? rcImagePath,
+            string? boothPhotoPath,
+            string? subsidyUndertakingPath,
+            int vehicleStatus)
+        {
+            if (vehicleStatus == UnifiedVehicleStatus.ReturnRequested)
+                return false;
+
+            if (string.IsNullOrWhiteSpace(subsidyId))
+                return false;
+
+            return !HasAllSubsidyDocs(
+                faceVerificationPath,
+                rcImagePath,
+                boothPhotoPath,
+                subsidyUndertakingPath);
+        }
+
+        /// <summary>
+        /// Registered at RTO but number plate not yet received by subdealer.
+        /// </summary>
+        public static bool IsRegisteredAwaitingNumberPlate(
+            int vehicleStatus,
+            DateTime? paperReceivedDate,
+            DateTime? invoiceDate,
+            DateTime? insuranceDate,
+            DateTime? agentDate,
+            DateTime? registrationDate,
+            string? subsidyId,
+            DateTime? numberPlateReceivedDate,
+            string? numberPlateReceivedBy = null)
+        {
+            if (numberPlateReceivedDate.HasValue && !string.IsNullOrWhiteSpace(numberPlateReceivedBy))
+                return false;
+
+            return MatchesStage(
+                vehicleStatus,
+                UnifiedVehicleStatus.Registered,
+                paperReceivedDate,
+                invoiceDate,
+                insuranceDate,
+                agentDate,
+                registrationDate,
+                subsidyId);
+        }
     }
 }

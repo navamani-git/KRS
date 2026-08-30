@@ -25,11 +25,13 @@ namespace KRSDealerManagement.Web.Services.ExcelImport
                 ?? throw new InvalidOperationException($"Unknown import type: {key}");
 
             var lookups = processor.GetLookupsAsync(context).GetAwaiter().GetResult();
+            var referenceTables = processor.GetReferenceTablesAsync(context).GetAwaiter().GetResult();
             return ExcelImportWorkbookHelper.BuildTemplate(
                 processor.DataSheetName,
                 processor.DataHeaders,
                 processor.ExampleRows,
-                lookups);
+                lookups,
+                referenceTables);
         }
 
         public async Task<ExcelImportResult> ImportAsync(string key, IFormFile file, ExcelImportContext context)

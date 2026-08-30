@@ -12,16 +12,19 @@
         <div class="fw-bold text-primary mb-2">
             <i class="bi @(group.Icon ?? "bi-folder") me-1"></i> @group.ParentName
         </div>
-        @foreach (var item in group.Children)
+        @foreach (var item in group.Children.GroupBy(c => c.Key).Select(g => g.First()))
         {
             var on = permMap.TryGetValue(item.Key, out var allowed)
                 ? allowed
                 : (useDefaults && item.DefaultAccessible);
+            var label = string.Equals(group.ParentKey, "manage_vehicles", StringComparison.OrdinalIgnoreCase)
+                ? MenuKeys.GetDisplayName(MenuKeys.VehiclesBookingStages)
+                : item.Name;
             <div class="form-check ms-3 mb-1">
                 <input class="form-check-input" type="checkbox" name="accessibleMenus"
-                       value="@item.Key" id="@(idPrefix)_@item.Key" @(on ? "checked" : null) />
-                <label class="form-check-label" for="@(idPrefix)_@item.Key">
-                    @item.Name <code class="small text-muted">(@item.Key)</code>
+                       value="@item.Key" id="@($"{idPrefix}_{group.ParentKey}_{item.Key}")" @(on ? "checked" : null) />
+                <label class="form-check-label" for="@($"{idPrefix}_{group.ParentKey}_{item.Key}")">
+                    @label <code class="small text-muted">(@item.Key)</code>
                 </label>
             </div>
         }

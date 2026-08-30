@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace KRSDealerManagement.Domain.Entities
 {
     /// <summary>
@@ -14,6 +16,7 @@ namespace KRSDealerManagement.Domain.Entities
         /// <summary>
         /// Optional reference to a physical Vehicle (null for catalogue model+color pricing)
         /// </summary>
+        [Column("SubdealerVehicleId")]
         public int? VehicleId { get; set; }
 
         /// <summary>

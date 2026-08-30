@@ -3,13 +3,15 @@
     var PAGE_CONTEXT_PARAMS = [
         'status',
         'dealershipId',
+        'dealershipLocation',
         'subdealerId',
         'bookingPhaseOnly',
         'fromDate',
         'toDate',
         'accountId',
         'id',
-        'isActive'
+        'isActive',
+        'searchTerm'
     ];
     var activeInput = null;
     var suggestEl = null;

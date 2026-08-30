@@ -11,8 +11,13 @@ namespace KRSDealerManagement.Application.Handlers.Queries
     public class GetStaffRolesQueryHandler : IRequestHandler<GetStaffRolesQuery, IEnumerable<StaffRoleDto>>
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IRoleTemplateService _roleTemplateService;
 
-        public GetStaffRolesQueryHandler(IUnitOfWork unitOfWork) => _unitOfWork = unitOfWork;
+        public GetStaffRolesQueryHandler(IUnitOfWork unitOfWork, IRoleTemplateService roleTemplateService)
+        {
+            _unitOfWork = unitOfWork;
+            _roleTemplateService = roleTemplateService;
+        }
 
         public async Task<IEnumerable<StaffRoleDto>> Handle(GetStaffRolesQuery request, CancellationToken cancellationToken)
         {
@@ -20,6 +25,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToDictionary(d => d.DealershipId);
             var roleMenus = (await _unitOfWork.RoleMenus.GetAllAsync()).ToList();
             var assignments = (await _unitOfWork.UserOrgRoles.GetAllAsync()).Where(a => a.IsActive).ToList();
+            var catalog = await _roleTemplateService.GetCatalogAsync(includeInactive: true);
 
             roles = roles.Where(r =>
                 !r.RoleCode.Equals(RoleCodes.SystemAdmin, StringComparison.OrdinalIgnoreCase)
@@ -46,7 +52,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             return roles
                 .OrderBy(r => r.DealershipId)
                 .ThenBy(r => r.RoleName)
-                .Select(r => MapRole(r, dealerships, roleMenus, assignments))
+                .Select(r => MapRole(r, dealerships, roleMenus, assignments, catalog))
                 .ToList();
         }
 
@@ -54,11 +60,16 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             Domain.Entities.Role role,
             Dictionary<int, Domain.Entities.Dealership> dealerships,
             List<Domain.Entities.RoleMenu> roleMenus,
-            List<Domain.Entities.UserOrgRole> assignments)
+            List<Domain.Entities.UserOrgRole> assignments,
+            IReadOnlyList<RoleTemplateCatalogItem> catalog)
         {
             dealerships.TryGetValue(role.DealershipId ?? 0, out var dealership);
             var menus = roleMenus.Where(m => m.RoleId == role.RoleId && m.IsAccessible).OrderBy(m => m.SortOrder).ToList();
-            var template = RoleTemplateCodes.All.FirstOrDefault(t => t.Code.Equals(role.RoleTemplateCode ?? "", StringComparison.OrdinalIgnoreCase));
+            var template = catalog.FirstOrDefault(t =>
+                t.Code.Equals(role.RoleTemplateCode ?? "", StringComparison.OrdinalIgnoreCase));
+            var templateName = template?.Name
+                ?? RoleTemplateCodes.All.FirstOrDefault(t =>
+                    t.Code.Equals(role.RoleTemplateCode ?? "", StringComparison.OrdinalIgnoreCase)).Name;
 
             return new StaffRoleDto
             {
@@ -67,7 +78,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 RoleName = role.RoleName,
                 Description = role.Description,
                 RoleTemplateCode = role.RoleTemplateCode,
-                RoleTemplateName = template.Name,
+                RoleTemplateName = templateName,
                 DealershipId = role.DealershipId,
                 DealershipName = dealership?.DealershipName,
                 IsSystemRole = role.IsSystemRole,
@@ -87,8 +98,13 @@ namespace KRSDealerManagement.Application.Handlers.Queries
     public class GetStaffRoleByIdQueryHandler : IRequestHandler<GetStaffRoleByIdQuery, StaffRoleDto?>
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IRoleTemplateService _roleTemplateService;
 
-        public GetStaffRoleByIdQueryHandler(IUnitOfWork unitOfWork) => _unitOfWork = unitOfWork;
+        public GetStaffRoleByIdQueryHandler(IUnitOfWork unitOfWork, IRoleTemplateService roleTemplateService)
+        {
+            _unitOfWork = unitOfWork;
+            _roleTemplateService = roleTemplateService;
+        }
 
         public async Task<StaffRoleDto?> Handle(GetStaffRoleByIdQuery request, CancellationToken cancellationToken)
         {
@@ -98,7 +114,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToDictionary(d => d.DealershipId);
             var roleMenus = (await _unitOfWork.RoleMenus.GetAllAsync()).ToList();
             var assignments = (await _unitOfWork.UserOrgRoles.GetAllAsync()).Where(a => a.IsActive).ToList();
-            return GetStaffRolesQueryHandler.MapRole(role, dealerships, roleMenus, assignments);
+            var catalog = await _roleTemplateService.GetCatalogAsync(includeInactive: true);
+            return GetStaffRolesQueryHandler.MapRole(role, dealerships, roleMenus, assignments, catalog);
         }
     }
 }

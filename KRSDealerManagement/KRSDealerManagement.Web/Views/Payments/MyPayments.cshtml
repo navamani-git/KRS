@@ -169,9 +169,9 @@
                             </div>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="fw-bold">Payment Date <span class="text-danger">*</span></label>
-                            <input type="date" name="paymentDate" class="form-control"
-                                   value="@DateTime.Now.ToString("yyyy-MM-dd")" required />
+                            <label class="fw-bold">Payment Date &amp; Time <span class="text-danger">*</span></label>
+                            <input type="datetime-local" name="paymentDate" class="form-control"
+                                   value="@FormDateTimeHelper.ToDateTimeLocalValue(DateTime.Now)" required />
                         </div>
                     </div>
 

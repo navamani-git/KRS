@@ -27,6 +27,7 @@ namespace KRSDealerManagement.Shared.Constants
         // Vehicles (Subdealer features)
         public const string Vehicles = "vehicles";
         public const string VehiclesView = "vehicles_view";
+        public const string VehiclesBookingStages = "vehicles_booking_stages";
         public const string VehiclesCreate = "vehicles_create";
         public const string VehiclesEdit = "vehicles_edit";
         public const string MyReturns = "my_returns";
@@ -58,7 +59,7 @@ namespace KRSDealerManagement.Shared.Constants
                 Dashboard, Home,
                 PurchaseOrders, PurchaseOrderCreate, PurchaseOrderView, PurchaseOrderEdit, PurchaseOrderApprove,
                 Commissions, CommissionSubmit, CommissionView, CommissionInvoiced, CommissionApprove,
-                Vehicles, VehiclesView, VehiclesCreate, VehiclesEdit, MyReturns,
+                Vehicles, VehiclesView, VehiclesBookingStages, VehiclesCreate, VehiclesEdit, MyReturns,
                 Account, AccountBalance, AccountTransactions, AccountStatements, MyPayments, Reports,
                 AdminPanel, SubdealerManagement, AccountManagement, PermissionManagement,
                 PriceManagement, VehicleManagement, ReportsAdmin
@@ -121,8 +122,27 @@ namespace KRSDealerManagement.Shared.Constants
                         {
                             Key = MyReturns, Name = GetDisplayName(MyReturns),
                             DefaultAccessible = true, Controller = "Returns", Action = "MyReturns", Icon = "bi-arrow-return-left"
+                        },
+                        new MenuItemDefinition
+                        {
+                            Key = VehiclesView, Name = "Rejected Vehicles",
+                            DefaultAccessible = true, Controller = "Vehicles", Action = "Rejected", Icon = "bi-x-octagon"
                         }
                     }
+                },
+                new()
+                {
+                    ParentKey = "manage_vehicles",
+                    ParentName = "Manage Vehicles",
+                    Icon = "bi-journal-check",
+                    Children = GetSubdealerManageVehiclesMenuItems()
+                },
+                new()
+                {
+                    ParentKey = "rto_subsidy_progress",
+                    ParentName = "RTO & Subsidy Progress",
+                    Icon = "bi-signpost-split",
+                    Children = GetSubdealerRtoSubsidyProgressMenuItems()
                 },
                 new()
                 {
@@ -178,6 +198,59 @@ namespace KRSDealerManagement.Shared.Constants
                 .SelectMany(g => g.Children.Select(c => (c.Key, c.Name, c.DefaultAccessible)))
                 .ToList();
 
+        private static IReadOnlyList<MenuItemDefinition> GetSubdealerManageVehiclesMenuItems() => new[]
+        {
+            new MenuItemDefinition
+            {
+                Key = VehiclesBookingStages,
+                Name = "Booked to Customer",
+                DefaultAccessible = true,
+                Controller = "VehicleBookings",
+                Action = "MyBookedToCustomer",
+                Icon = "bi-person-check",
+                Actions = new[] { "MyBookedToCustomer" }
+            },
+            SubdealerBookingMenuItem("Paper Received", "MyPaperReceived", "bi-file-earmark-text"),
+            SubdealerBookingMenuItem("Invoiced", "MyInvoiced", "bi-receipt"),
+            SubdealerBookingMenuItem("Insurance Created", "MyInsuranceCreated", "bi-shield-check"),
+            SubdealerBookingMenuItem("RTO Requested", "MyRtoRequested", "bi-signpost")
+        };
+
+        private static IReadOnlyList<MenuItemDefinition> GetSubdealerRtoSubsidyProgressMenuItems() => new[]
+        {
+            new MenuItemDefinition
+            {
+                Key = VehiclesBookingStages,
+                Name = "Subsidy Docs Pending",
+                DefaultAccessible = true,
+                Controller = "VehicleBookings",
+                Action = "MySubsidyDocsPending",
+                Icon = "bi-file-earmark-person",
+                Actions = new[] { "MySubsidyDocsPending", "SubsidyDocs" }
+            },
+            new MenuItemDefinition
+            {
+                Key = VehiclesBookingStages,
+                Name = "Registered",
+                DefaultAccessible = true,
+                Controller = "VehicleBookings",
+                Action = "MyRegisteredAwaitingPlate",
+                Icon = "bi-card-checklist",
+                Actions = new[] { "MyRegisteredAwaitingPlate", "NumberPlateReceived" }
+            }
+        };
+
+        private static MenuItemDefinition SubdealerBookingMenuItem(string name, string action, string icon) => new()
+        {
+            Key = VehiclesBookingStages,
+            Name = name,
+            DefaultAccessible = true,
+            Controller = "VehicleBookings",
+            Action = action,
+            Icon = icon,
+            Actions = new[] { action }
+        };
+
         /// <summary>
         /// Get menu display name for UI
         /// </summary>
@@ -199,6 +272,7 @@ namespace KRSDealerManagement.Shared.Constants
                 CommissionApprove => "Approve Commissions",
                 Vehicles => "Vehicles",
                 VehiclesView => "View Vehicles",
+                VehiclesBookingStages => "Vehicle Booking Stages",
                 MyReturns => "My Returns",
                 VehiclesCreate => "Create Vehicles",
                 VehiclesEdit => "Edit Vehicles",

@@ -17,5 +17,6 @@ namespace KRSDealerManagement.Web.Helpers.ExcelImport
         public const string SubdealerAccounts = "SubdealerAccounts";
         public const string OrdersSubdealer = "OrdersSubdealer";
         public const string OrdersForSubdealer = "OrdersForSubdealer";
+        public const string VehicleMasters = "VehicleMasters";
     }
 }

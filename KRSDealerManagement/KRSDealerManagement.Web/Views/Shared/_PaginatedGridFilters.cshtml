@@ -11,7 +11,8 @@
         gridId,
         hideLogins: ViewBag.HideLogins as bool? ?? false,
         hideActions: ViewBag.IsBranchManager as bool? ?? SessionHelper.IsBranchManager(Context.Session),
-        isSubdealer: ViewBag.IsSubdealer as bool? ?? SessionHelper.IsSubdealer(Context.Session));
+        isSubdealer: ViewBag.IsSubdealer as bool? ?? SessionHelper.IsSubdealer(Context.Session),
+        showDealership: ViewBag.ShowDealershipColumn as bool? ?? false);
 
     if (columns.Count == 0)
     {

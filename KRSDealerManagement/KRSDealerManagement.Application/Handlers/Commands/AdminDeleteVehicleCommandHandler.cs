@@ -69,6 +69,13 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
                 await UnlinkPurchaseOrderItemsAsync(vehicle.VehicleId);
 
+                if (vehicle.VehicleMasterId > 0)
+                    await VehicleAllocationHelper.ReleaseMasterAsync(
+                        _unitOfWork, vehicle.VehicleMasterId, request.DeletedBy, request.DeleteReason);
+
+                await VehicleAllocationHelper.LogSubdealerEventAsync(
+                    _unitOfWork, vehicle.VehicleId, "Deleted", request.DeletedBy, request.DeleteReason);
+
                 var deleted = await _unitOfWork.Vehicles.DeleteAsync(vehicle.VehicleId);
                 if (!deleted)
                     throw new InvalidOperationException("Failed to delete vehicle record.");

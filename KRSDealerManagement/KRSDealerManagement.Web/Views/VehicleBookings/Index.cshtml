@@ -14,17 +14,25 @@
     var lockStatus = ViewBag.LockStatusFilter as bool? ?? false;
     var showDealershipFilter = ViewBag.ShowDealershipFilter as bool? ?? false;
     var showManage = ViewBag.ShowManage as bool? ?? true;
+    var showSubdealerFilter = ViewBag.ShowSubdealerFilter as bool? ?? true;
+    var subsidyIdPendingOnly = ViewBag.SubsidyIdPendingOnly as bool? ?? false;
+    var subsidyDocsPendingOnly = ViewBag.SubsidyDocsPendingOnly as bool? ?? false;
+    var registeredAwaitingPlateOnly = ViewBag.RegisteredAwaitingPlateOnly as bool? ?? false;
+    var isSubdealerView = ViewBag.IsSubdealerView as bool? ?? false;
     var selectedStatus = ViewBag.SelectedStatus as int?;
     var bookingPhaseOnly = ViewBag.BookingPhaseOnly as bool? ?? false;
     var bookedToCustomerView = ViewBag.BookedToCustomerView as bool? ?? false;
     var stageShowing = ViewBag.GridStageShowing as string;
     var stageRemovedWhen = ViewBag.GridStageRemovedWhen as string;
+    var stagePurpose = ViewBag.GridStagePurpose as string;
     if (string.IsNullOrWhiteSpace(stageShowing) || string.IsNullOrWhiteSpace(stageRemovedWhen))
     {
-        var stageInfo = BookingGridStageInfo.Describe(selectedStatus, bookingPhaseOnly, bookedToCustomerView);
+        var stageInfo = BookingGridStageInfo.GetHelp(selectedStatus, bookingPhaseOnly, bookedToCustomerView, subsidyIdPendingOnly, subsidyDocsPendingOnly, registeredAwaitingPlateOnly);
         stageShowing = stageInfo.Showing;
         stageRemovedWhen = stageInfo.RemovedWhen;
+        stagePurpose ??= stageInfo.ScreenPurpose;
     }
+    stagePurpose ??= BookingGridStageInfo.GetHelp(selectedStatus, bookingPhaseOnly, bookedToCustomerView, subsidyIdPendingOnly, subsidyDocsPendingOnly, registeredAwaitingPlateOnly).ScreenPurpose;
     var totalItems = (int)(ViewBag.TotalItems ?? Model.Count());
 
     string FmtDate(DateTime? value) => value?.ToString("yyyy-MM-dd") ?? "—";
@@ -36,14 +44,20 @@
             <h1 class="m-0 page-title"><i class="bi bi-journal-check"></i> @pageTitle</h1>
             <div class="page-stage-banner mt-2">
                 <div class="page-stage-row">
-                    <span class="page-stage-label">Showing</span>
+                    <span class="page-stage-label">What shows here</span>
                     <span class="page-stage-value">@stageShowing</span>
                 </div>
                 <div class="page-stage-row">
-                    <span class="page-stage-label">Removed when</span>
+                    <span class="page-stage-label">Leaves this list when</span>
                     <span class="page-stage-value">@stageRemovedWhen</span>
                 </div>
             </div>
+            @if (!string.IsNullOrWhiteSpace(stagePurpose))
+            {
+                <p class="page-stage-purpose mt-2 mb-0">
+                    <i class="bi bi-info-circle text-primary"></i> @stagePurpose
+                </p>
+            }
         </div>
         <div class="col-lg-4 text-lg-end mt-2 mt-lg-0">
             <partial name="_ExportExcel" />
@@ -72,6 +86,8 @@
                     </select>
                 </div>
             }
+            @if (!subsidyIdPendingOnly && !subsidyDocsPendingOnly && !registeredAwaitingPlateOnly)
+            {
             @if (lockStatus && ViewBag.SelectedStatus != null)
             {
                 <input type="hidden" name="status" value="@ViewBag.SelectedStatus" />
@@ -89,6 +105,9 @@
                     </select>
                 </div>
             }
+            }
+            @if (showSubdealerFilter)
+            {
             <div class="col-md-3">
                 <label class="form-label form-label-sm mb-0">Subdealer</label>
                 <select name="subdealerId" id="subdealerFilter" class="form-select form-select-sm">
@@ -102,6 +121,7 @@
                     }
                 </select>
             </div>
+            }
             <div class="col-md-3">
                 <label class="form-label form-label-sm mb-0">Search</label>
                 <input name="searchTerm" class="form-control form-control-sm" value="@ViewBag.SearchTerm" placeholder="Chassis, customer, subdealer..." />
@@ -130,67 +150,127 @@
                         <tr>
                             <th class="grid-col-narrow">ID</th>
                             <th>Chassis</th>
-                            <th class="grid-col-flex">Subdealer</th>
+                            @if (!isSubdealerView)
+                            {
+                                <th class="grid-col-flex">Subdealer</th>
+                            }
                             <th class="grid-col-flex">Customer</th>
                             <th class="grid-col-flex">Mobile</th>
-                            <th class="grid-col-flex">Status</th>
-                            <th class="grid-col-date">Submitted</th>
-                            <th class="grid-col-date">Paper Rcvd</th>
-                            <th class="grid-col-date">Invoice</th>
-                            <th class="grid-col-date">Insurance</th>
-                            <th>Inv Doc</th>
-                            <th>Ins Doc</th>
-                            <th class="grid-col-date">Registered</th>
-                            <th class="grid-col-actions">@(showManage ? "Manage" : "View")</th>
+                            @if (subsidyDocsPendingOnly)
+                            {
+                                <th>Face</th>
+                                <th>RC</th>
+                                <th>Booth</th>
+                                <th>Undertaking</th>
+                            }
+                            else if (registeredAwaitingPlateOnly)
+                            {
+                                <th>RTO Number</th>
+                                <th class="grid-col-date">Registered</th>
+                            }
+                            else
+                            {
+                                <th class="grid-col-flex">Status</th>
+                                <th class="grid-col-date">Submitted</th>
+                                <th class="grid-col-date">Paper Rcvd</th>
+                                <th class="grid-col-date">Invoice</th>
+                                <th class="grid-col-date">Insurance</th>
+                                <th>Inv Doc</th>
+                                <th>Ins Doc</th>
+                                <th class="grid-col-date">Registered</th>
+                            }
+                            <th class="grid-col-actions">Actions</th>
                         </tr>
-                        <partial name="_PaginatedGridFilters" />
+                        @if (!subsidyDocsPendingOnly && !registeredAwaitingPlateOnly)
+                        {
+                            <partial name="_PaginatedGridFilters" />
+                        }
                     </thead>
                     <tbody>
                         @foreach (var row in Model)
                         {
                             var b = row.Booking;
+                            string DocBadge(string? path) => string.IsNullOrWhiteSpace(path)
+                                ? "<span class=\"badge bg-warning text-dark\">Pending</span>"
+                                : "<span class=\"badge bg-success\">Done</span>";
+                            var rtoNumber = !string.IsNullOrWhiteSpace(b.RtoNumber) ? b.RtoNumber : row.RegistrationNumber;
                             <tr>
                                 <td>@b.VehicleBookingId</td>
                                 <td>
                                     <partial name="_ChassisLink" view-data='new ViewDataDictionary(ViewData) {
                                         { "VehicleId", row.VehicleId }, { "Chassis", row.Chassis } }' />
                                 </td>
-                                <td>@row.Subdealer</td>
+                                @if (!isSubdealerView)
+                                {
+                                    <td>@row.Subdealer</td>
+                                }
                                 <td>@b.CustomerName</td>
                                 <td>@b.CustomerMobile</td>
-                                <td><span class="badge bg-info text-truncate d-inline-block" style="max-width:100%;font-size:0.75rem">@row.StatusName</span></td>
-                                <td><small>@b.SubmittedDate.ToString("yyyy-MM-dd")</small></td>
-                                <td><small>@FmtDate(b.PaperReceivedDate)</small></td>
-                                <td><small>@FmtDate(b.InvoiceDate)</small></td>
-                                <td><small>@FmtDate(b.InsuranceDate)</small></td>
-                                <td>
-                                    @if (!string.IsNullOrWhiteSpace(b.InvoicePath))
-                                    {
-                                        <a href="@BookingFileUrls.View(Url, QueryCrypto, b.InvoicePath)" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-1" target="_blank" rel="noopener" title="View invoice"><i class="bi bi-eye"></i></a>
-                                        <a href="@BookingFileUrls.Download(Url, QueryCrypto, b.InvoicePath)" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-1" title="Download invoice"><i class="bi bi-download"></i></a>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">—</span>
-                                    }
-                                </td>
-                                <td>
-                                    @if (!string.IsNullOrWhiteSpace(b.InsurancePath))
-                                    {
-                                        <a href="@BookingFileUrls.View(Url, QueryCrypto, b.InsurancePath)" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-1" target="_blank" rel="noopener" title="View insurance"><i class="bi bi-eye"></i></a>
-                                        <a href="@BookingFileUrls.Download(Url, QueryCrypto, b.InsurancePath)" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-1" title="Download insurance"><i class="bi bi-download"></i></a>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">—</span>
-                                    }
-                                </td>
-                                <td><small>@FmtDate(b.RegistrationDate)</small></td>
+                                @if (subsidyDocsPendingOnly)
+                                {
+                                    <td>@Html.Raw(DocBadge(b.FaceVerificationPath))</td>
+                                    <td>@Html.Raw(DocBadge(b.RcImagePath))</td>
+                                    <td>@Html.Raw(DocBadge(b.BoothPhotoPath))</td>
+                                    <td>@Html.Raw(DocBadge(b.SubsidyUndertakingPath))</td>
+                                }
+                                else if (registeredAwaitingPlateOnly)
+                                {
+                                    <td><code class="small">@(string.IsNullOrWhiteSpace(rtoNumber) ? "—" : rtoNumber)</code></td>
+                                    <td><small>@FmtDate(b.RegistrationDate)</small></td>
+                                }
+                                else
+                                {
+                                    <td><span class="badge bg-info text-truncate d-inline-block" style="max-width:100%;font-size:0.8125rem">@row.StatusName</span></td>
+                                    <td><small>@b.SubmittedDate.ToString("yyyy-MM-dd")</small></td>
+                                    <td><small>@FmtDate(b.PaperReceivedDate)</small></td>
+                                    <td><small>@FmtDate(b.InvoiceDate)</small></td>
+                                    <td><small>@FmtDate(b.InsuranceDate)</small></td>
+                                    <td>
+                                        @if (!string.IsNullOrWhiteSpace(b.InvoicePath))
+                                        {
+                                            <a href="@BookingFileUrls.View(Url, QueryCrypto, b.InvoicePath)" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-1" target="_blank" rel="noopener" title="View invoice"><i class="bi bi-eye"></i></a>
+                                            <a href="@BookingFileUrls.Download(Url, QueryCrypto, b.InvoicePath)" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-1" title="Download invoice"><i class="bi bi-download"></i></a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrWhiteSpace(b.InsurancePath))
+                                        {
+                                            <a href="@BookingFileUrls.View(Url, QueryCrypto, b.InsurancePath)" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-1" target="_blank" rel="noopener" title="View insurance"><i class="bi bi-eye"></i></a>
+                                            <a href="@BookingFileUrls.Download(Url, QueryCrypto, b.InsurancePath)" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-1" title="Download insurance"><i class="bi bi-download"></i></a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                    <td><small>@FmtDate(b.RegistrationDate)</small></td>
+                                }
                                 <td class="grid-col-actions">
-                                    <a href="@Url.EAction(QueryCrypto, "Manage", new { id = b.VehicleBookingId }, "VehicleBookings")"
-                                       class="btn btn-sm py-0 px-2 @(showManage ? "btn-info" : "btn-outline-secondary")">
-                                        @(showManage ? "Manage" : "View")
-                                    </a>
+                                    @if (subsidyDocsPendingOnly && isSubdealerView)
+                                    {
+                                        <a href="@Url.EAction(QueryCrypto, "SubsidyDocs", new { id = b.VehicleBookingId }, "VehicleBookings")"
+                                           class="btn btn-sm btn-warning py-0 px-2">Upload docs</a>
+                                    }
+                                    else if (registeredAwaitingPlateOnly && isSubdealerView)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-primary py-0 px-2 number-plate-btn"
+                                                data-id="@b.VehicleBookingId"
+                                                data-chassis="@row.Chassis"
+                                                data-rto="@rtoNumber">
+                                            Number plate received
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <a href="@Url.EAction(QueryCrypto, "Manage", new { id = b.VehicleBookingId }, "VehicleBookings")"
+                                           class="btn btn-sm py-0 px-2 @(showManage ? "btn-info" : "btn-outline-secondary")">
+                                            @(showManage ? "Manage" : "View")
+                                        </a>
+                                    }
                                 </td>
                             </tr>
                         }
@@ -210,6 +290,40 @@
         }
     </div>
 </div>
+
+@if (registeredAwaitingPlateOnly && isSubdealerView)
+{
+    <div class="modal fade" id="numberPlateModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <form method="post" asp-action="NumberPlateReceived" class="modal-content">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="numberPlateBookingId" />
+                <div class="modal-header">
+                    <h5 class="modal-title">Number plate received</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">
+                        Chassis: <strong id="numberPlateChassis"></strong><br />
+                        RTO number: <strong id="numberPlateRto"></strong>
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label">Received date *</label>
+                        <input type="datetime-local" name="numberPlateReceivedDate" class="form-control" required />
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label">Received by (name) *</label>
+                        <input type="text" name="numberPlateReceivedBy" class="form-control" maxlength="200" required placeholder="Person who received the number plate" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
 
 @if (showDealershipFilter)
 {
@@ -252,6 +366,27 @@
 
                 if (initialSubdealer && !subSel.value)
                     subSel.value = initialSubdealer;
+            })();
+        </script>
+    }
+}
+
+@if (registeredAwaitingPlateOnly && isSubdealerView)
+{
+    @section Scripts {
+        <script>
+            (function () {
+                var modalEl = document.getElementById('numberPlateModal');
+                if (!modalEl) return;
+                var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                document.querySelectorAll('.number-plate-btn').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        document.getElementById('numberPlateBookingId').value = btn.dataset.id || '';
+                        document.getElementById('numberPlateChassis').textContent = btn.dataset.chassis || '—';
+                        document.getElementById('numberPlateRto').textContent = btn.dataset.rto || '—';
+                        modal.show();
+                    });
+                });
             })();
         </script>
     }

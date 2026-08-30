@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace KRSDealerManagement.Domain.Entities
 {
     public class DocumentTypeMaster
@@ -9,9 +11,19 @@ namespace KRSDealerManagement.Domain.Entities
         public DateTime ModifiedDate { get; set; } = DateTime.UtcNow;
     }
 
+    public class RtoDistrictMaster
+    {
+        public int RtoDistrictId { get; set; }
+        public string DistrictName { get; set; } = "";
+        public bool IsActive { get; set; } = true;
+        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+        public DateTime ModifiedDate { get; set; } = DateTime.UtcNow;
+    }
+
     public class RtoLocationMaster
     {
         public int RtoLocationId { get; set; }
+        public int RtoDistrictId { get; set; }
         public string LocationName { get; set; } = "";
         public bool IsActive { get; set; } = true;
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
@@ -21,6 +33,7 @@ namespace KRSDealerManagement.Domain.Entities
   public class VehicleBooking
     {
         public int VehicleBookingId { get; set; }
+        [Column("SubdealerVehicleId")]
         public int VehicleId { get; set; }
         public int SubdealerId { get; set; }
         public int BookingStatus { get; set; } = 1;
@@ -54,6 +67,7 @@ namespace KRSDealerManagement.Domain.Entities
         public DateTime? RegistrationDate { get; set; }
         public string? RtoNumber { get; set; }
         public DateTime? NumberPlateReceivedDate { get; set; }
+        public string? NumberPlateReceivedBy { get; set; }
         public string? SubsidyId { get; set; }
         public string? SubsidyCustomerNameCaps { get; set; }
         public string? FaceVerificationPath { get; set; }

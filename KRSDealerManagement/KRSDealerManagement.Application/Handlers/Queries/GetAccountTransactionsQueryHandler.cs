@@ -2,6 +2,7 @@ using MediatR;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Application.DTOs;
 using KRSDealerManagement.Application.Services;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Helpers;
 
@@ -48,6 +49,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var commissions = (await _unitOfWork.Commissions.GetAllAsync()).ToDictionary(c => c.CommissionId);
             var returns = (await _unitOfWork.ReturnRequests.GetAllAsync()).ToDictionary(r => r.ReturnRequestId);
             var vehicles = (await _unitOfWork.Vehicles.GetAllAsync()).ToDictionary(v => v.VehicleId);
+            var models = (await _unitOfWork.VehicleModels.GetAllAsync()).ToDictionary(m => m.ModelId);
+            var colors = (await _unitOfWork.VehicleColors.GetAllAsync()).ToDictionary(c => c.ColorId);
             var paymentsList = (await _unitOfWork.Payments.GetAllAsync()).ToList();
             var payments = paymentsList.ToDictionary(p => p.PaymentId);
             var paymentsByTransactionId = paymentsList
@@ -61,7 +64,28 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 .Select(t =>
                 {
                     var chassis = ResolveChassis(t.ReferenceType, t.ReferenceId, commissions, returns, vehicles);
-                    var reason = EnrichReason(t.Reason, t.ReferenceType, chassis);
+                    string reason;
+
+                    if (string.Equals(t.ReferenceType, "Vehicle", StringComparison.OrdinalIgnoreCase)
+                        && t.ReferenceId.HasValue
+                        && vehicles.TryGetValue(t.ReferenceId.Value, out var vehicle))
+                    {
+                        models.TryGetValue(vehicle.ModelId, out var model);
+                        colors.TryGetValue(vehicle.ColorId, out var color);
+                        var formattedChassis = TransactionReasonHelper.FormatChassis(vehicle.ChassisNumber)
+                            ?? vehicle.ChassisNumber
+                            ?? "-";
+                        chassis = formattedChassis;
+                        reason = AccountStatementDescriptionHelper.FormatVehicle(
+                            formattedChassis,
+                            model?.ModelName ?? "Unknown",
+                            color?.ColorName ?? "Unknown");
+                    }
+                    else
+                    {
+                        reason = AccountStatementDescriptionHelper.NormalizeOrderVehicleReason(t.Reason);
+                        reason = EnrichReason(reason, t.ReferenceType, chassis);
+                    }
 
                     string? customerName = null;
                     string? paymentType = null;

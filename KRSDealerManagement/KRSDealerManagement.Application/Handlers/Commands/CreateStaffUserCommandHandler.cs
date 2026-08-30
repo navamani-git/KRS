@@ -12,11 +12,16 @@ namespace KRSDealerManagement.Application.Handlers.Commands
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IAuditService _auditService;
+        private readonly IRoleTemplateService _roleTemplateService;
 
-        public CreateStaffUserCommandHandler(IUnitOfWork unitOfWork, IAuditService auditService)
+        public CreateStaffUserCommandHandler(
+            IUnitOfWork unitOfWork,
+            IAuditService auditService,
+            IRoleTemplateService roleTemplateService)
         {
             _unitOfWork = unitOfWork;
             _auditService = auditService;
+            _roleTemplateService = roleTemplateService;
         }
 
         public async Task<int> Handle(CreateStaffUserCommand request, CancellationToken cancellationToken)
@@ -42,7 +47,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             if (existing)
                 throw new InvalidOperationException($"Username '{username}' is already taken.");
 
-            var legacyRole = RoleTemplateDefaults.MapTemplateToLegacyUserRole(role.RoleTemplateCode);
+            var legacyRole = _roleTemplateService.MapTemplateToLegacyUserRole(role.RoleTemplateCode);
             var nameParts = request.FullName.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
             var firstName = nameParts[0];
             var lastName = nameParts.Length > 1 ? nameParts[1] : role.RoleName;

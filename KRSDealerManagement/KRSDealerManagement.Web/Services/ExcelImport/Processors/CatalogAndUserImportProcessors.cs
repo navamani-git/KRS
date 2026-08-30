@@ -2,6 +2,7 @@ using MediatR;
 using KRSDealerManagement.Application.Commands;
 using KRSDealerManagement.Application.DTOs;
 using KRSDealerManagement.Application.Queries;
+using KRSDealerManagement.Domain.Entities;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
 using KRSDealerManagement.Shared.Enums;
@@ -29,6 +30,9 @@ namespace KRSDealerManagement.Web.Services.ExcelImport.Processors
                 IsActive = true,
                 DealershipId = ctx.DealershipScopeId
             })).ToList();
+
+        public static async Task<IReadOnlyList<RtoDistrictMaster>> GetRtoDistrictsAsync(ExcelImportContext ctx)
+            => (await ctx.Services.GetRequiredService<IUnitOfWork>().RtoDistricts.GetAllAsync()).ToList();
 
         public static VehicleModelDto? FindModel(IEnumerable<VehicleModelDto> models, string? name)
             => models.FirstOrDefault(m => m.ModelName.Equals(name?.Trim(), StringComparison.OrdinalIgnoreCase));

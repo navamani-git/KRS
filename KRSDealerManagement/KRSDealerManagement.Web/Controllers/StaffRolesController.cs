@@ -5,6 +5,7 @@ using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Shared.Constants;
 using KRSDealerManagement.Shared.Enums;
 using KRSDealerManagement.Web.Filters;
+using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Web.Helpers;
 
 namespace KRSDealerManagement.Web.Controllers
@@ -14,8 +15,13 @@ namespace KRSDealerManagement.Web.Controllers
     public class StaffRolesController : Controller
     {
         private readonly IMediator _mediator;
+        private readonly IRoleTemplateService _roleTemplateService;
 
-        public StaffRolesController(IMediator mediator) => _mediator = mediator;
+        public StaffRolesController(IMediator mediator, IRoleTemplateService roleTemplateService)
+        {
+            _mediator = mediator;
+            _roleTemplateService = roleTemplateService;
+        }
 
         public async Task<IActionResult> Index(int? dealershipId, bool? isActive, string? searchTerm)
         {
@@ -115,11 +121,10 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         [HttpGet]
-        public IActionResult TemplateDefaults(string templateCode)
+        public async Task<IActionResult> TemplateDefaults(string templateCode)
         {
-            var defaults = Application.Services.RoleTemplateDefaults.GetDefaultMenus(templateCode)
-                .ToDictionary(kv => kv.Key, kv => (int)kv.Value);
-            return Json(defaults);
+            var defaults = await _roleTemplateService.GetDefaultMenusAsync(templateCode);
+            return Json(defaults.ToDictionary(kv => kv.Key, kv => (int)kv.Value));
         }
 
         [HttpGet]
@@ -128,17 +133,21 @@ namespace KRSDealerManagement.Web.Controllers
             var dealerships = _mediator.Send(new GetDealershipsQuery { IsActive = true }).GetAwaiter().GetResult();
             var dealer = dealerships.FirstOrDefault(d => d.DealershipId == dealershipId);
             if (dealer == null) return Json(new { code = "" });
-            var code = Application.Services.RoleTemplateDefaults.BuildSuggestedRoleCode(dealer.DealershipCode, templateCode);
+            var code = _roleTemplateService.BuildSuggestedRoleCode(dealer.DealershipCode, templateCode);
             return Json(new { code });
         }
 
         private async Task LoadFormViewBags(int? dealershipId = null, string? templateCode = null)
         {
             ViewBag.Dealerships = await _mediator.Send(new GetDealershipsQuery { IsActive = true });
-            ViewBag.Templates = RoleTemplateCodes.All;
+            var catalog = await _roleTemplateService.GetCatalogAsync();
+            ViewBag.Templates = catalog
+                .Where(t => t.IsActive)
+                .Select(t => (t.Code, t.Name, t.Description ?? ""))
+                .ToList();
             ViewBag.AllMenus = StaffMenuAccess.AllAdminMenus();
-            ViewBag.DefaultMenus = Application.Services.RoleTemplateDefaults.GetDefaultMenus(templateCode ?? RoleTemplateCodes.Manager)
-                .ToDictionary(kv => kv.Key, kv => (int)kv.Value);
+            var defaults = await _roleTemplateService.GetDefaultMenusAsync(templateCode ?? RoleTemplateCodes.Manager);
+            ViewBag.DefaultMenus = defaults.ToDictionary(kv => kv.Key, kv => (int)kv.Value);
             ViewBag.SelectedDealershipId = dealershipId;
         }
 

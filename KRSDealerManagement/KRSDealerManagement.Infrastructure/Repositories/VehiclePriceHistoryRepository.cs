@@ -20,7 +20,7 @@ namespace KRSDealerManagement.Infrastructure.Repositories
 
             const string sql = @"
 INSERT INTO VehiclePriceHistory (
-    ModelId, ColorId, VehicleId,
+    ModelId, ColorId, SubdealerVehicleId,
     Price, PriceMonth, PriceYear,
     EffectiveFrom, EffectiveTo,
     Notes, ChangeReason,
@@ -74,7 +74,8 @@ SELECT
     PriceHistoryId,
     ModelId,
     ColorId,
-    VehicleId,
+    SubdealerVehicleId,
+    SubdealerVehicleId AS VehicleId,
     Price,
     PriceMonth AS Month,
     PriceYear AS Year,
@@ -100,7 +101,8 @@ SELECT
     PriceHistoryId,
     ModelId,
     ColorId,
-    VehicleId,
+    SubdealerVehicleId,
+    SubdealerVehicleId AS VehicleId,
     Price,
     PriceMonth AS Month,
     PriceYear AS Year,

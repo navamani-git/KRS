@@ -30,47 +30,53 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 if (order == null) return false;
 
                 var lineItems = (await _unitOfWork.PurchaseOrderItems.GetByOrderIdAsync(request.OrderId)).ToList();
-                var vehicles = await LoadVehiclesForLineItemsAsync(lineItems, _unitOfWork);
                 var models = (await _unitOfWork.VehicleModels.GetAllAsync()).ToDictionary(m => m.ModelId);
                 var colors = (await _unitOfWork.VehicleColors.GetAllAsync()).ToDictionary(c => c.ColorId);
                 var balance = await _unitOfWork.AccountBalances.GetByIdAsync(order.AccountId)
                     ?? throw new InvalidOperationException("Account balance not found.");
 
-                ValidateChassisNumbers(request, lineItems, vehicles, await _unitOfWork.Vehicles.GetAllAsync());
+                var dealershipId = await ResolveDealershipIdAsync(order.SubdealerId);
+                ValidateMasterSelections(request, lineItems, dealershipId);
 
                 decimal approvedAmount = 0;
                 int approvedCount = 0;
                 decimal rejectedAmount = 0;
                 int rejectedCount = 0;
                 var approvedDebits = new List<(Vehicle Vehicle, PurchaseOrderItem Item, string ModelName, string ColorName)>();
+                var orderVehicles = new List<Vehicle>();
 
                 foreach (var alloc in request.Items)
                 {
                     var item = lineItems.FirstOrDefault(x => x.OrderItemId == alloc.OrderItemId);
-                    if (item == null || !item.CanBeApproved() || !item.VehicleId.HasValue) continue;
-
-                    if (!vehicles.TryGetValue(item.VehicleId.Value, out var vehicle)) continue;
+                    if (item == null || !item.CanBeApproved()) continue;
 
                     if (alloc.Approve)
                     {
-                        var chassis = alloc.ChassisNumber!.Trim().ToUpperInvariant();
-                        vehicle.ChassisNumber = chassis;
-                        vehicle.Status = UnifiedVehicleStatus.ApprovedByDealer;
-                        vehicle.MotorNo = alloc.MotorNo?.Trim();
-                        vehicle.BatteryNo = alloc.BatteryNo?.Trim();
-                        vehicle.ChargerNo = alloc.ChargerNo?.Trim();
-                        vehicle.ControllerNo = alloc.ControllerNo?.Trim();
-                        vehicle.ConverterNo = alloc.ConverterNo?.Trim();
-                        vehicle.ModifiedDate = DateTime.UtcNow;
-                        await _unitOfWork.Vehicles.UpdateAsync(vehicle);
+                        if (!alloc.VehicleMasterId.HasValue || alloc.VehicleMasterId.Value <= 0)
+                            throw new InvalidOperationException("Select a chassis from dealer stock for each approved line.");
+
+                        var subdealerVehicleId = await VehicleAllocationHelper.AllocateFromMasterAsync(
+                            _unitOfWork,
+                            alloc.VehicleMasterId.Value,
+                            item,
+                            order.OrderId,
+                            order.SubdealerId,
+                            request.ApprovedBy,
+                            UnifiedVehicleStatus.ApprovedByDealer,
+                            item.UnitPrice,
+                            alloc.Remarks ?? request.Remarks);
+
+                        var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(subdealerVehicleId)
+                            ?? throw new InvalidOperationException("Failed to load allocated vehicle.");
 
                         item.Status = 1;
-                        item.MotorNo = alloc.MotorNo?.Trim();
-                        item.BatteryNo = alloc.BatteryNo?.Trim();
-                        item.ChargerNo = alloc.ChargerNo?.Trim();
-                        item.ControllerNo = alloc.ControllerNo?.Trim();
-                        item.ConverterNo = alloc.ConverterNo?.Trim();
-                        item.ChassisNumber = chassis;
+                        item.SubdealerVehicleId = subdealerVehicleId;
+                        item.MotorNo = vehicle.MotorNo;
+                        item.BatteryNo = vehicle.BatteryNo;
+                        item.ChargerNo = vehicle.ChargerNo;
+                        item.ControllerNo = vehicle.ControllerNo;
+                        item.ConverterNo = vehicle.ConverterNo;
+                        item.ChassisNumber = vehicle.ChassisNumber;
                         item.ApprovedBy = request.ApprovedBy;
                         item.ApprovedDate = DateTime.UtcNow;
                         item.Remarks = alloc.Remarks ?? request.Remarks;
@@ -82,13 +88,10 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                         models.TryGetValue(vehicle.ModelId, out var model);
                         colors.TryGetValue(vehicle.ColorId, out var color);
                         approvedDebits.Add((vehicle, item, model?.ModelName ?? "Unknown", color?.ColorName ?? "Unknown"));
+                        orderVehicles.Add(vehicle);
                     }
                     else
                     {
-                        vehicle.Status = UnifiedVehicleStatus.RejectedByDealer;
-                        vehicle.ModifiedDate = DateTime.UtcNow;
-                        await _unitOfWork.Vehicles.UpdateAsync(vehicle);
-
                         item.Status = 2;
                         item.RejectedBy = request.ApprovedBy;
                         item.RejectedDate = DateTime.UtcNow;
@@ -114,12 +117,19 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 balance.ModifiedDate = DateTime.UtcNow;
                 await _unitOfWork.AccountBalances.UpdateAsync(balance);
 
-                var orderVehicles = vehicles.Values.ToList();
-                int pendingLeft = lineItems.Count(i => i.Status == 0);
-                int totalApproved = lineItems.Count(i => i.Status == 1);
-                decimal totalApprovedAmt = lineItems.Where(i => i.Status == 1).Sum(i => i.UnitPrice);
+                var refreshedItems = (await _unitOfWork.PurchaseOrderItems.GetByOrderIdAsync(request.OrderId)).ToList();
+                var allocatedVehicleIds = refreshedItems.Where(i => i.SubdealerVehicleId.HasValue).Select(i => i.SubdealerVehicleId!.Value).ToList();
+                foreach (var vid in allocatedVehicleIds)
+                {
+                    var v = await _unitOfWork.Vehicles.GetByIdAsync(vid);
+                    if (v != null) orderVehicles.Add(v);
+                }
 
-                order.Status = VehicleStatusResolver.ResolveOrderDisplayStatus(orderVehicles, lineItems);
+                int pendingLeft = refreshedItems.Count(i => i.Status == 0);
+                int totalApproved = refreshedItems.Count(i => i.Status == 1);
+                decimal totalApprovedAmt = refreshedItems.Where(i => i.Status == 1).Sum(i => i.UnitPrice);
+
+                order.Status = VehicleStatusResolver.ResolveOrderDisplayStatus(orderVehicles, refreshedItems);
                 order.ApprovedAmount = totalApprovedAmt;
                 order.ApprovedVehicleCount = totalApproved;
                 order.AdminNotes = request.Remarks;
@@ -133,7 +143,6 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
                 if (approvedAmount > 0)
                 {
-                    // CurrentBalance already reduced by approvedAmount; start from pre-debit balance for running ledger.
                     var runningBalance = balance.CurrentBalance + approvedAmount;
                     foreach (var (vehicle, item, modelName, colorName) in approvedDebits)
                     {
@@ -177,60 +186,33 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             }
         }
 
-        private static async Task<Dictionary<int, Vehicle>> LoadVehiclesForLineItemsAsync(
-            List<PurchaseOrderItem> lineItems, IUnitOfWork unitOfWork)
+        private static async Task<int> ResolveDealershipIdAsync(int subdealerId, IUnitOfWork unitOfWork)
         {
-            var vehicles = new Dictionary<int, Vehicle>();
-            foreach (var vehicleId in lineItems.Where(i => i.VehicleId.HasValue).Select(i => i.VehicleId!.Value).Distinct())
-            {
-                var vehicle = await unitOfWork.Vehicles.GetByIdAsync(vehicleId);
-                if (vehicle != null)
-                    vehicles[vehicleId] = vehicle;
-            }
-
-            return vehicles;
+            var orgRole = (await unitOfWork.UserOrgRoles.GetAllAsync())
+                .Where(a => a.UserId == subdealerId && a.IsActive)
+                .OrderByDescending(a => a.IsPrimary)
+                .FirstOrDefault();
+            if (orgRole?.DealershipId == null)
+                throw new InvalidOperationException("Subdealer is not linked to a dealership.");
+            return orgRole.DealershipId.Value;
         }
 
-        private static void ValidateChassisNumbers(
+        private async Task<int> ResolveDealershipIdAsync(int subdealerId)
+            => await ResolveDealershipIdAsync(subdealerId, _unitOfWork);
+
+        private static void ValidateMasterSelections(
             AllocatePurchaseOrderItemsCommand request,
             List<PurchaseOrderItem> lineItems,
-            Dictionary<int, Vehicle> orderVehicles,
-            IEnumerable<Vehicle> allVehicles)
+            int dealershipId)
         {
-            var approved = request.Items
-                .Where(i => i.Approve && !string.IsNullOrWhiteSpace(i.ChassisNumber))
-                .Select(i => i.ChassisNumber!.Trim().ToUpperInvariant())
+            var masterIds = request.Items
+                .Where(i => i.Approve && i.VehicleMasterId.HasValue)
+                .Select(i => i.VehicleMasterId!.Value)
                 .ToList();
 
-            var dupInForm = approved
-                .GroupBy(c => c)
-                .Where(g => g.Count() > 1)
-                .Select(g => g.Key)
-                .ToList();
-
-            if (dupInForm.Count > 0)
-                throw new InvalidOperationException(
-                    $"Duplicate chassis number(s) in this allocation: {string.Join(", ", dupInForm)}.");
-
-            var batchVehicleIds = new HashSet<int>();
-            foreach (var alloc in request.Items.Where(i => i.Approve))
-            {
-                var item = lineItems.FirstOrDefault(x => x.OrderItemId == alloc.OrderItemId);
-                if (item?.VehicleId is int vid)
-                    batchVehicleIds.Add(vid);
-            }
-
-            foreach (var chassis in approved.Distinct())
-            {
-                var conflict = allVehicles.FirstOrDefault(v =>
-                    !string.IsNullOrWhiteSpace(v.ChassisNumber)
-                    && string.Equals(v.ChassisNumber.Trim(), chassis, StringComparison.OrdinalIgnoreCase)
-                    && !batchVehicleIds.Contains(v.VehicleId));
-
-                if (conflict != null)
-                    throw new InvalidOperationException(
-                        $"Chassis {chassis} already exists in the system (vehicle #{conflict.VehicleId}).");
-            }
+            var dup = masterIds.GroupBy(id => id).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+            if (dup.Count > 0)
+                throw new InvalidOperationException("The same chassis cannot be allocated to multiple lines in one batch.");
         }
     }
 

@@ -94,7 +94,17 @@ namespace KRSDealerManagement.Web.Helpers
             if (IsSystemAdmin(session)) return MenuAccessLevel.Full;
 
             var map = GetMenuAccessMap(session);
-            return map.TryGetValue(menuKey, out var level) ? level : MenuAccessLevel.None;
+            if (map.TryGetValue(menuKey, out var level))
+                return level;
+
+            if (IsSubdealer(session)
+                && string.Equals(menuKey, MenuKeys.VehiclesBookingStages, StringComparison.OrdinalIgnoreCase)
+                && map.TryGetValue(MenuKeys.VehiclesView, out var vehiclesView))
+            {
+                return vehiclesView;
+            }
+
+            return MenuAccessLevel.None;
         }
 
         public static bool HasMenuAccess(ISession session, string menuKey)

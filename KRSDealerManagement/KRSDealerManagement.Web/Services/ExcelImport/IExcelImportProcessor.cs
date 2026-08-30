@@ -18,6 +18,8 @@ namespace KRSDealerManagement.Web.Services.ExcelImport
         IReadOnlyList<string> DataHeaders { get; }
         IReadOnlyList<IReadOnlyList<object?>> ExampleRows { get; }
         Task<IReadOnlyDictionary<string, IReadOnlyList<string>>> GetLookupsAsync(ExcelImportContext context);
+        Task<IReadOnlyList<ExcelReferenceTable>> GetReferenceTablesAsync(ExcelImportContext context)
+            => Task.FromResult<IReadOnlyList<ExcelReferenceTable>>(Array.Empty<ExcelReferenceTable>());
         Task<IReadOnlyList<ExcelImportError>> ValidateAsync(IReadOnlyList<ExcelImportRow> rows, ExcelImportContext context);
         Task<int> InsertAsync(IReadOnlyList<ExcelImportRow> rows, ExcelImportContext context);
     }

@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using KRSDealerManagement.Shared.Enums;
 using KRSDealerManagement.Shared.Helpers;
 
@@ -27,6 +28,7 @@ namespace KRSDealerManagement.Domain.Entities
         /// <summary>
         /// Reference to Vehicle for which commission is earned
         /// </summary>
+        [Column("SubdealerVehicleId")]
         public int VehicleId { get; set; }
 
         /// <summary>

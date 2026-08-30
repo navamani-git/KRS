@@ -10,8 +10,7 @@ using System.Text.Json;
 namespace KRSDealerManagement.Application.Handlers.Commands
 {
     /// <summary>
-    /// Creates purchase order + line items + one vehicle per line at Submitted (#1).
-    /// Staff AutoApprove: dealer-created PO, vehicles at Approved (#2) with chassis.
+    /// Creates purchase order + line items. Vehicles are created only on allocation (or dealer auto-approve from master).
     /// </summary>
     public class CreatePurchaseOrderCommandHandler : IRequestHandler<CreatePurchaseOrderCommand, int>
     {
@@ -58,6 +57,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                         throw new InvalidOperationException(priceError);
                 }
 
+                var dealershipId = await ResolveDealershipIdAsync(request.SubdealerId);
+
                 var allOrders = await _unitOfWork.PurchaseOrders.GetAllAsync();
                 string orderNumber = $"ORD-{DateTime.UtcNow.Year}-{(allOrders.Count() + 1):D5}";
 
@@ -84,7 +85,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
                 var models = (await _unitOfWork.VehicleModels.GetAllAsync()).ToDictionary(m => m.ModelId);
                 var colors = (await _unitOfWork.VehicleColors.GetAllAsync()).ToDictionary(c => c.ColorId);
-                var autoApproveDebits = new List<(int VehicleId, string Chassis, int ModelId, int ColorId, decimal Amount)>();
+                var autoApproveDebits = new List<(int SubdealerVehicleId, string Chassis, int ModelId, int ColorId, decimal Amount)>();
 
                 foreach (var group in request.Items)
                 {
@@ -104,45 +105,35 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                         };
 
                         var itemId = await _unitOfWork.PurchaseOrderItems.AddAsync(item);
+                        item.OrderItemId = itemId;
 
                         if (request.AutoApprove)
                         {
-                            if (string.IsNullOrWhiteSpace(group.ChassisNumber)
-                                || string.IsNullOrWhiteSpace(group.MotorNo)
-                                || string.IsNullOrWhiteSpace(group.BatteryNo))
-                            {
-                                throw new InvalidOperationException(
-                                    "Chassis, motor, and battery numbers are required for dealer-created orders.");
-                            }
+                            if (!group.VehicleMasterId.HasValue || group.VehicleMasterId.Value <= 0)
+                                throw new InvalidOperationException("Select a chassis from dealer stock for dealer-created orders.");
 
-                            var chassis = group.ChassisNumber.Trim().ToUpperInvariant();
-                            var vehicleId = await CreateVehicleAsync(
-                                item, orderId, request.SubdealerId, request.CreatedBy,
-                                UnifiedVehicleStatus.ApprovedByDealer, chassis, group);
+                            var subdealerVehicleId = await VehicleAllocationHelper.AllocateFromMasterAsync(
+                                _unitOfWork,
+                                group.VehicleMasterId.Value,
+                                item,
+                                orderId,
+                                request.SubdealerId,
+                                request.CreatedBy,
+                                UnifiedVehicleStatus.ApprovedByDealer,
+                                item.UnitPrice,
+                                request.AdminNotes);
 
-                            item.OrderItemId = itemId;
-                            item.ChassisNumber = chassis;
-                            item.MotorNo = group.MotorNo?.Trim();
-                            item.BatteryNo = group.BatteryNo?.Trim();
-                            item.ChargerNo = group.ChargerNo?.Trim();
-                            item.ControllerNo = group.ControllerNo?.Trim();
-                            item.ConverterNo = group.ConverterNo?.Trim();
-                            item.VehicleId = vehicleId;
+                            var master = await _unitOfWork.VehicleMasters.GetByIdAsync(group.VehicleMasterId.Value);
+                            item.SubdealerVehicleId = subdealerVehicleId;
+                            item.ChassisNumber = master?.ChassisNumber;
+                            item.MotorNo = master?.MotorNo;
+                            item.BatteryNo = master?.BatteryNo;
+                            item.ChargerNo = master?.ChargerNo;
+                            item.ControllerNo = master?.ControllerNo;
+                            item.ConverterNo = master?.ConverterNo;
                             await _unitOfWork.PurchaseOrderItems.UpdateAsync(item);
 
-                            autoApproveDebits.Add((vehicleId, chassis, item.ModelId, item.ColorId, item.UnitPrice));
-                        }
-                        else
-                        {
-                            var placeholder = UnifiedVehicleStatus.PlaceholderChassis(orderId, itemId);
-                            var vehicleId = await CreateVehicleAsync(
-                                item, orderId, request.SubdealerId, request.CreatedBy,
-                                UnifiedVehicleStatus.Submitted, placeholder, group);
-
-                            item.OrderItemId = itemId;
-                            item.VehicleId = vehicleId;
-                            item.ChassisNumber = placeholder;
-                            await _unitOfWork.PurchaseOrderItems.UpdateAsync(item);
+                            autoApproveDebits.Add((subdealerVehicleId, master?.ChassisNumber ?? "", item.ModelId, item.ColorId, item.UnitPrice));
                         }
                     }
                 }
@@ -184,7 +175,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                                 model?.ModelName ?? "Unknown",
                                 color?.ColorName ?? "Unknown"),
                             referenceType: "Vehicle",
-                            referenceId: debit.VehicleId,
+                            referenceId: debit.SubdealerVehicleId,
                             remarks: request.AdminNotes,
                             initiatedBy: request.CreatedBy);
                     }
@@ -206,29 +197,15 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             }
         }
 
-        private async Task<int> CreateVehicleAsync(
-            PurchaseOrderItem item, int orderId, int subdealerId, int createdBy,
-            int status, string chassis, OrderItem group)
+        private async Task<int> ResolveDealershipIdAsync(int subdealerId)
         {
-            return await _unitOfWork.Vehicles.AddAsync(new Vehicle
-            {
-                ModelId = item.ModelId,
-                ColorId = item.ColorId,
-                ChassisNumber = chassis,
-                Status = status,
-                PurchaseOrderId = orderId,
-                SubdealerId = subdealerId,
-                CurrentPrice = item.UnitPrice,
-                OriginalPrice = item.UnitPrice,
-                MotorNo = group.MotorNo?.Trim(),
-                BatteryNo = group.BatteryNo?.Trim(),
-                ChargerNo = group.ChargerNo?.Trim(),
-                ControllerNo = group.ControllerNo?.Trim(),
-                ConverterNo = group.ConverterNo?.Trim(),
-                CreatedBy = createdBy,
-                CreatedDate = DateTime.UtcNow,
-                ModifiedDate = DateTime.UtcNow
-            });
+            var orgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync())
+                .Where(a => a.UserId == subdealerId && a.IsActive)
+                .OrderByDescending(a => a.IsPrimary)
+                .FirstOrDefault();
+            if (orgRoles?.DealershipId == null)
+                throw new InvalidOperationException("Subdealer is not linked to a dealership.");
+            return orgRoles.DealershipId.Value;
         }
     }
 }

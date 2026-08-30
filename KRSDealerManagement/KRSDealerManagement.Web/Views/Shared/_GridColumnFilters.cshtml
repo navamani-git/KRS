@@ -14,20 +14,7 @@
         <th class="@thClass" data-grid-col-index="@colIndex" data-filter-key="@col.Key">
             @if (col.Key.StartsWith("_"))
             {
-                @if (col.Key == "_actions")
-                {
-                    <div class="d-flex gap-1 grid-column-filter-actions">
-                        <button type="submit" form="@formId" class="btn btn-sm btn-outline-primary flex-fill" title="Apply column filters">
-                            <i class="bi bi-funnel"></i>
-                        </button>
-                        <button type="button"
-                                class="btn btn-sm btn-outline-secondary flex-fill grid-clear-column-filters"
-                                data-filter-form="@formId"
-                                title="Clear all column filters">
-                            <i class="bi bi-x-circle"></i>
-                        </button>
-                    </div>
-                }
+                @* Row # and Actions columns have no column filters *@
             }
             else if (col.IsDate || col.InputType == GridFilterInputType.Date)
             {

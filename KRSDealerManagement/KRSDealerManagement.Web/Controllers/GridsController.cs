@@ -26,6 +26,7 @@ namespace KRSDealerManagement.Web.Controllers
             DateTime? fromDate,
             DateTime? toDate,
             string? searchTerm,
+            string? dealershipLocation,
             bool? bookingPhaseOnly)
         {
             if (string.IsNullOrWhiteSpace(grid) || string.IsNullOrWhiteSpace(column))
@@ -45,7 +46,8 @@ namespace KRSDealerManagement.Web.Controllers
                 Status = status,
                 FromDate = fromDate,
                 ToDate = toDate,
-                SearchTerm = null,
+                SearchTerm = searchTerm,
+                DealershipLocation = dealershipLocation,
                 BookingPhaseOnly = bookingPhaseOnly == true,
                 Limit = 100
             });

@@ -29,6 +29,7 @@ namespace KRSDealerManagement.Web.Controllers
                 [ExcelImportKeys.SubdealerAccounts] = (new[] { 1, 3, 4 }, StaffMenuAccess.Balances, "Create"),
                 [ExcelImportKeys.OrdersSubdealer] = (new[] { 2 }, MenuKeys.PurchaseOrderCreate, "Create"),
                 [ExcelImportKeys.OrdersForSubdealer] = (new[] { 1, 4 }, null, "CreateForSubdealer"),
+                [ExcelImportKeys.VehicleMasters] = (new[] { 1, 4 }, StaffMenuAccess.DealerStock, "Index"),
             };
 
         public ExcelImportController(ExcelImportService excelImport) => _excelImport = excelImport;
@@ -124,6 +125,7 @@ namespace KRSDealerManagement.Web.Controllers
             ExcelImportKeys.SubdealerAccounts => "Accounts",
             ExcelImportKeys.OrdersSubdealer => "Orders",
             ExcelImportKeys.OrdersForSubdealer => "Orders",
+            ExcelImportKeys.VehicleMasters => "VehicleMasters",
             _ => "Home"
         };
     }

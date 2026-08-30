@@ -1,0 +1,65 @@
+@model KRSDealerManagement.Web.Controllers.RoleTemplateFormModel
+@{
+    ViewData["Title"] = "Edit Role Template";
+    ViewData["RoleForm"] = new KRSDealerManagement.Web.Controllers.StaffRoleFormModel
+    {
+        MenuKeys = Model.MenuKeys,
+        MenuAccessLevels = Model.MenuAccessLevels
+    };
+}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1 class="m-0"><i class="bi bi-pencil-square"></i> Edit Role Template</h1>
+        <p class="text-muted mb-0"><code>@Model.TemplateCode</code></p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="@Url.Action("Index")" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+    </div>
+</div>
+
+<form method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="RoleTemplateId" value="@Model.RoleTemplateId" />
+
+    <div class="card card-primary mb-3">
+        <div class="card-header"><h3 class="card-title mb-0">Template Details</h3></div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Template Code</label>
+                    <input type="text" class="form-control" value="@Model.TemplateCode" readonly />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Display Name <span class="text-danger">*</span></label>
+                    <input type="text" name="TemplateName" class="form-control" value="@Model.TemplateName" required />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Legacy User Role</label>
+                    <select name="LegacyUserRole" class="form-select">
+                        <option value="4" selected="@(Model.LegacyUserRole == 4)">Staff (4)</option>
+                        <option value="3" selected="@(Model.LegacyUserRole == 3)">Finance (3)</option>
+                    </select>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label fw-bold">Description</label>
+                    <input type="text" name="Description" class="form-control" value="@Model.Description" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Status</label>
+                    <select name="IsActive" class="form-select">
+                        <option value="true" selected="@Model.IsActive">Active</option>
+                        <option value="false" selected="@(!Model.IsActive)">Inactive</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <partial name="../StaffRoles/_MenuPermissionMatrix" />
+
+    <div class="mt-3">
+        <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-save"></i> Save Template</button>
+        <a href="@Url.Action("Index")" class="btn btn-secondary btn-lg ms-2">Cancel</a>
+    </div>
+</form>

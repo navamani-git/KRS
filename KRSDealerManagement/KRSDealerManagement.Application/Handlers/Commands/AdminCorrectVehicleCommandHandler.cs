@@ -1,6 +1,7 @@
 using MediatR;
 using KRSDealerManagement.Application.Commands;
 using KRSDealerManagement.Application.Helpers;
+using KRSDealerManagement.Domain.Entities;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Repositories;
@@ -48,8 +49,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 changes.Add(CorrectionNoteHelper.DescribeChange("Subdealer", vehicle.SubdealerId, request.SubdealerId));
             if (vehicle.DeliveryDate?.Date != request.DeliveryDate?.Date)
                 changes.Add(CorrectionNoteHelper.DescribeChange("Delivery Date",
-                    oldDeliveryDate?.ToString("yyyy-MM-dd"),
-                    request.DeliveryDate?.ToString("yyyy-MM-dd")));
+                    oldDeliveryDate.HasValue ? oldDeliveryDate.Value.ToString("yyyy-MM-dd HH:mm") : null,
+                    request.DeliveryDate?.ToString("yyyy-MM-dd HH:mm")));
             if (!string.Equals(vehicle.MotorNo, request.MotorNo, StringComparison.OrdinalIgnoreCase))
                 changes.Add(CorrectionNoteHelper.DescribeChange("Motor", vehicle.MotorNo, request.MotorNo));
             if (!string.Equals(vehicle.BatteryNo, request.BatteryNo, StringComparison.OrdinalIgnoreCase))
@@ -71,24 +72,57 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
             var noteEntry = CorrectionNoteHelper.FormatEntry(request.CorrectedByName, request.CorrectionReason, changes);
 
-            vehicle.ModelId = request.ModelId;
-            vehicle.ColorId = request.ColorId;
-            vehicle.ChassisNumber = request.ChassisNumber.Trim().ToUpperInvariant();
+            if (vehicle.VehicleMasterId > 0)
+            {
+                var master = await _unitOfWork.VehicleMasters.GetByIdAsync(vehicle.VehicleMasterId)
+                    ?? throw new InvalidOperationException("Linked vehicle master record not found.");
+
+                var newChassis = request.ChassisNumber.Trim().ToUpperInvariant();
+                if (!string.Equals(master.ChassisNumber, newChassis, StringComparison.OrdinalIgnoreCase)
+                    && await _unitOfWork.VehicleMasters.ChassisExistsAsync(newChassis, master.VehicleMasterId))
+                    throw new InvalidOperationException($"Chassis {newChassis} already exists in dealer stock.");
+
+                master.ModelId = request.ModelId;
+                master.ColorId = request.ColorId;
+                master.ChassisNumber = newChassis;
+                master.MotorNo = request.MotorNo?.Trim() ?? "";
+                master.BatteryNo = request.BatteryNo?.Trim() ?? "";
+                master.ChargerNo = request.ChargerNo?.Trim() ?? "";
+                master.ControllerNo = request.ControllerNo?.Trim() ?? "";
+                master.ConverterNo = request.ConverterNo?.Trim() ?? "";
+                master.ModifiedBy = request.CorrectedBy;
+                master.ModifiedDate = DateTime.UtcNow;
+                await _unitOfWork.VehicleMasters.UpdateAsync(master);
+                await _unitOfWork.VehicleMasters.AddHistoryAsync(new Domain.Entities.VehicleMasterHistory
+                {
+                    VehicleMasterId = master.VehicleMasterId,
+                    Action = "Edited",
+                    Remarks = noteEntry,
+                    UserId = request.CorrectedBy
+                });
+
+                vehicle.ModelId = master.ModelId;
+                vehicle.ColorId = master.ColorId;
+                vehicle.ChassisNumber = master.ChassisNumber;
+                vehicle.MotorNo = master.MotorNo;
+                vehicle.BatteryNo = master.BatteryNo;
+                vehicle.ChargerNo = master.ChargerNo;
+                vehicle.ControllerNo = master.ControllerNo;
+                vehicle.ConverterNo = master.ConverterNo;
+            }
+
             vehicle.Status = request.Status;
             vehicle.CurrentPrice = request.CurrentPrice;
             vehicle.SubdealerId = request.SubdealerId;
             vehicle.DeliveryDate = request.Status == UnifiedVehicleStatus.Delivered
-                ? (request.DeliveryDate?.Date ?? DateTime.UtcNow.Date)
-                : (request.DeliveryDate?.Date);
-            vehicle.MotorNo = request.MotorNo?.Trim();
-            vehicle.BatteryNo = request.BatteryNo?.Trim();
-            vehicle.ChargerNo = request.ChargerNo?.Trim();
-            vehicle.ControllerNo = request.ControllerNo?.Trim();
-            vehicle.ConverterNo = request.ConverterNo?.Trim();
+                ? (request.DeliveryDate ?? DateTime.UtcNow)
+                : request.DeliveryDate;
             vehicle.ModifiedDate = DateTime.UtcNow;
             vehicle.Notes = CorrectionNoteHelper.Append(vehicle.Notes, noteEntry);
 
             await _unitOfWork.Vehicles.UpdateAsync(vehicle);
+            await VehicleAllocationHelper.LogSubdealerEventAsync(
+                _unitOfWork, vehicle.VehicleId, "Edited", request.CorrectedBy, noteEntry);
 
             if (request.BookingStatus.HasValue)
             {

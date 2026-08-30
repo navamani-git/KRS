@@ -35,6 +35,10 @@ namespace KRSDealerManagement.Application.Queries
         public int RtoRequestedCount { get; set; }
         public int RegisteredCount { get; set; }
         public int DeliveredCount { get; set; }
+        public int SubsidyIdPendingCount { get; set; }
+        public int SubsidyDocsPendingCount { get; set; }
+        public int ShowroomStockCount { get; set; }
+        public int DealerStockCount { get; set; }
         public List<RecentActivityItem> RecentActivities { get; set; } = new();
     }
 

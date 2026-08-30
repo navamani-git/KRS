@@ -26,5 +26,7 @@ namespace KRSDealerManagement.Shared.Constants
         public const string VehicleColors = "vehicle_colors";
         public const string VehicleModels = "vehicle_models";
         public const string Vehicles = "vehicles";
+        public const string ShowroomStock = "showroom_stock";
+        public const string DealerStock = "dealer_stock";
     }
 }

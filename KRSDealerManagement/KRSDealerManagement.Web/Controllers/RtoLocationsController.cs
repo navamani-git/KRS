@@ -18,6 +18,8 @@ namespace KRSDealerManagement.Web.Controllers
         public async Task<IActionResult> Index(int? page, int? pageSize)
         {
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.RtoLocations);
+            var districts = (await _unitOfWork.RtoDistricts.GetAllAsync()).ToDictionary(d => d.RtoDistrictId, d => d.DistrictName);
+            ViewBag.DistrictNames = districts;
             var list = GridScreenFilterHelper.ApplyRtoLocations(
                 (await _unitOfWork.RtoLocations.GetAllAsync()).OrderByDescending(r => r.IsActive).ThenBy(r => r.LocationName),
                 columnFilters).ToList();
@@ -26,28 +28,60 @@ namespace KRSDealerManagement.Web.Controllers
             return View(pageItems);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> LocationsByDistrict(int districtId)
+        {
+            var locations = (await _unitOfWork.RtoLocations.GetAllAsync())
+                .Where(r => r.IsActive && r.RtoDistrictId == districtId)
+                .OrderBy(r => r.LocationName)
+                .Select(r => new { r.RtoLocationId, r.LocationName });
+            return Json(locations);
+        }
+
         public async Task<IActionResult> Export()
         {
+            var districts = (await _unitOfWork.RtoDistricts.GetAllAsync()).ToDictionary(d => d.RtoDistrictId, d => d.DistrictName);
             var list = (await _unitOfWork.RtoLocations.GetAllAsync()).OrderByDescending(r => r.IsActive).ThenBy(r => r.LocationName).ToList();
-            var headers = new[] { "Location", "Status", "Created" };
+            var headers = new[] { "District", "Location", "Status", "Created" };
             var rows = list.Select(r => (IReadOnlyList<object?>)new List<object?>
             {
-                r.LocationName, r.IsActive ? "Active" : "Inactive", r.CreatedDate
+                districts.GetValueOrDefault(r.RtoDistrictId, $"#{r.RtoDistrictId}"),
+                r.LocationName,
+                r.IsActive ? "Active" : "Inactive",
+                r.CreatedDate
             });
             return ExcelExportHelper.ToFileResult(this, $"rto_locations_{DateTime.Now:yyyyMMdd}.xlsx", headers, rows, "RTO Locations");
         }
 
-        public IActionResult Create() => View();
+        public async Task<IActionResult> Create()
+        {
+            ViewBag.Districts = (await _unitOfWork.RtoDistricts.GetAllAsync()).Where(d => d.IsActive).OrderBy(d => d.DistrictName);
+            return View();
+        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(string locationName)
+        public async Task<IActionResult> Create(int rtoDistrictId, string locationName)
         {
-            if (string.IsNullOrWhiteSpace(locationName)) { TempData["Error"] = "Name required."; return View(); }
+            ViewBag.Districts = (await _unitOfWork.RtoDistricts.GetAllAsync()).Where(d => d.IsActive).OrderBy(d => d.DistrictName);
+            if (rtoDistrictId <= 0) { TempData["Error"] = "District is required."; return View(); }
+            if (string.IsNullOrWhiteSpace(locationName)) { TempData["Error"] = "Location name is required."; return View(); }
+
+            var district = await _unitOfWork.RtoDistricts.GetByIdAsync(rtoDistrictId);
+            if (district == null || !district.IsActive) { TempData["Error"] = "Selected district is not available."; return View(); }
+
             var name = locationName.Trim();
             if ((await _unitOfWork.RtoLocations.GetAllAsync()).Any(r => r.LocationName.Equals(name, StringComparison.OrdinalIgnoreCase)))
-            { TempData["Error"] = "Already exists."; return View(); }
-            await _unitOfWork.RtoLocations.AddAsync(new RtoLocationMaster { LocationName = name, IsActive = true, CreatedDate = DateTime.UtcNow, ModifiedDate = DateTime.UtcNow });
+            { TempData["Error"] = "Location already exists."; return View(); }
+
+            await _unitOfWork.RtoLocations.AddAsync(new RtoLocationMaster
+            {
+                RtoDistrictId = rtoDistrictId,
+                LocationName = name,
+                IsActive = true,
+                CreatedDate = DateTime.UtcNow,
+                ModifiedDate = DateTime.UtcNow
+            });
             TempData["Success"] = "RTO location added.";
             return RedirectToAction(nameof(Index));
         }
@@ -68,21 +102,26 @@ namespace KRSDealerManagement.Web.Controllers
         {
             var row = await _unitOfWork.RtoLocations.GetByIdAsync(id);
             if (row == null) { TempData["Error"] = "Not found."; return RedirectToAction(nameof(Index)); }
+            ViewBag.Districts = (await _unitOfWork.RtoDistricts.GetAllAsync()).Where(d => d.IsActive).OrderBy(d => d.DistrictName);
             return View(row);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, string locationName, bool isActive)
+        public async Task<IActionResult> Edit(int id, int rtoDistrictId, string locationName, bool isActive)
         {
             var row = await _unitOfWork.RtoLocations.GetByIdAsync(id);
             if (row == null) { TempData["Error"] = "Not found."; return RedirectToAction(nameof(Index)); }
-            if (string.IsNullOrWhiteSpace(locationName)) { TempData["Error"] = "Name required."; return View(row); }
+            ViewBag.Districts = (await _unitOfWork.RtoDistricts.GetAllAsync()).Where(d => d.IsActive).OrderBy(d => d.DistrictName);
+
+            if (rtoDistrictId <= 0) { TempData["Error"] = "District is required."; return View(row); }
+            if (string.IsNullOrWhiteSpace(locationName)) { TempData["Error"] = "Location name is required."; return View(row); }
 
             var name = locationName.Trim();
             if ((await _unitOfWork.RtoLocations.GetAllAsync()).Any(r => r.RtoLocationId != id && r.LocationName.Equals(name, StringComparison.OrdinalIgnoreCase)))
-            { TempData["Error"] = "Already exists."; return View(row); }
+            { TempData["Error"] = "Location already exists."; return View(row); }
 
+            row.RtoDistrictId = rtoDistrictId;
             row.LocationName = name;
             row.IsActive = isActive;
             row.ModifiedDate = DateTime.UtcNow;

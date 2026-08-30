@@ -29,5 +29,6 @@ namespace KRSDealerManagement.Application.Commands
         public string? CustomerSignPath { get; set; }
         public int UpdatedBy { get; set; }
         public string? UpdatedByName { get; set; }
+        public bool AllowAdminOverride { get; set; }
     }
 }

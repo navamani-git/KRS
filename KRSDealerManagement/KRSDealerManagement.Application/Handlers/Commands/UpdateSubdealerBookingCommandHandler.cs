@@ -21,10 +21,13 @@ namespace KRSDealerManagement.Application.Handlers.Commands
         public async Task<bool> Handle(UpdateSubdealerBookingCommand request, CancellationToken cancellationToken)
         {
             var booking = await _unitOfWork.VehicleBookings.GetByIdAsync(request.VehicleBookingId);
-            if (booking == null || booking.SubdealerId != request.SubdealerId)
+            if (booking == null)
                 return false;
 
-            if (booking.InvoiceDate.HasValue)
+            if (!request.AllowAdminOverride && booking.SubdealerId != request.SubdealerId)
+                return false;
+
+            if (!request.AllowAdminOverride && booking.InvoiceDate.HasValue)
                 throw new InvalidOperationException("Booking cannot be edited after the vehicle has been invoiced.");
 
             var changes = new List<string>();
@@ -85,15 +88,25 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             booking.ModifiedDate = DateTime.UtcNow;
             await _unitOfWork.VehicleBookings.UpdateAsync(booking);
 
+            if (changes.Count > 0)
+            {
+                await VehicleBookingHistoryHelper.LogChangesAsync(
+                    _unitOfWork,
+                    booking.VehicleId,
+                    request.UpdatedBy,
+                    changes,
+                    request.AllowAdminOverride ? "BookingEdited" : "BookingEdited");
+            }
+
             var reason = string.IsNullOrWhiteSpace(request.EditReason) ? "Subdealer booking update" : request.EditReason.Trim();
             var note = CorrectionNoteHelper.FormatEntry(request.UpdatedByName ?? $"User #{request.UpdatedBy}", reason, changes);
 
             await _auditService.LogActionAsync(
                 entityType: "VehicleBooking",
                 entityId: booking.VehicleBookingId,
-                action: "SubdealerUpdate",
+                action: request.AllowAdminOverride ? "AdminBookingUpdate" : "SubdealerUpdate",
                 userId: request.UpdatedBy,
-                userRole: "Subdealer",
+                userRole: request.AllowAdminOverride ? "Admin" : "Subdealer",
                 newValue: JsonSerializer.Serialize(new { booking.VehicleBookingId, Changes = changes }),
                 remarks: note);
 

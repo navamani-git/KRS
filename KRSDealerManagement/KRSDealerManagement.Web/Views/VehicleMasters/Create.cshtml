@@ -1,0 +1,66 @@
+@{
+    ViewData["Title"] = "Add Dealer Stock";
+    var models = ViewBag.Models as IEnumerable<KRSDealerManagement.Application.DTOs.VehicleModelDto> ?? Enumerable.Empty<KRSDealerManagement.Application.DTOs.VehicleModelDto>();
+    var colors = ViewBag.Colors as IEnumerable<KRSDealerManagement.Application.DTOs.VehicleColorDto> ?? Enumerable.Empty<KRSDealerManagement.Application.DTOs.VehicleColorDto>();
+    var requireDealership = ViewBag.RequireDealershipSelection as bool? == true;
+    var dealerships = ViewBag.Dealerships as IEnumerable<KRSDealerManagement.Application.Queries.DealershipDto>
+        ?? Enumerable.Empty<KRSDealerManagement.Application.Queries.DealershipDto>();
+}
+
+<h1 class="mb-3"><i class="bi bi-plus-circle"></i> Add to Dealer Stock</h1>
+
+<form method="post" class="card">
+    <div class="card-body">
+        @Html.AntiForgeryToken()
+        <div class="row g-3">
+            @if (requireDealership)
+            {
+                <div class="col-md-4">
+                    <label class="form-label">Dealership *</label>
+                    <select name="dealershipId" class="form-select" required>
+                        <option value="">Select dealership</option>
+                        @foreach (var d in dealerships)
+                        {
+                            <option value="@d.DealershipId">@d.DealershipName (@d.DealershipCode)</option>
+                        }
+                    </select>
+                </div>
+            }
+            <div class="col-md-4">
+                <label class="form-label">Chassis Number *</label>
+                <input type="text" name="chassisNumber" class="form-control" required maxlength="50" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Model *</label>
+                <select name="modelId" id="modelId" class="form-select" required>
+                    <option value="">Select model</option>
+                    @foreach (var m in models) { <option value="@m.ModelId">@m.ModelName</option> }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Color *</label>
+                <select name="colorId" id="colorId" class="form-select" required>
+                    <option value="">Select color</option>
+                    @foreach (var c in colors) { <option value="@c.ColorId">@c.ColorName</option> }
+                </select>
+            </div>
+            <div class="col-md-4"><label class="form-label">Motor No *</label><input name="motorNo" class="form-control" required /></div>
+            <div class="col-md-4"><label class="form-label">Battery No *</label><input name="batteryNo" class="form-control" required /></div>
+            <div class="col-md-4"><label class="form-label">Charger No *</label><input name="chargerNo" class="form-control" required /></div>
+            <div class="col-md-4"><label class="form-label">Controller No *</label><input name="controllerNo" class="form-control" required /></div>
+            <div class="col-md-4"><label class="form-label">Converter No *</label><input name="converterNo" class="form-control" required /></div>
+            <div class="col-md-4"><label class="form-label">Manufacturing Year *</label><input type="number" name="manufacturingYear" class="form-control" required min="2000" max="2100" value="@DateTime.Today.Year" /></div>
+            <div class="col-md-4"><label class="form-label">Ampere Invoice *</label><input type="datetime-local" name="ampereInvoiceDate" class="form-control" required value="@FormDateTimeHelper.ToDateTimeLocalValue(DateTime.Now)" /></div>
+            <div class="col-md-4"><label class="form-label">Received *</label><input type="datetime-local" name="receivedDate" class="form-control" required value="@FormDateTimeHelper.ToDateTimeLocalValue(DateTime.Now)" /></div>
+            <div class="col-12"><label class="form-label">Remarks</label><input name="remarks" class="form-control" /></div>
+        </div>
+    </div>
+    <div class="card-footer">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a href="@Url.Action("Index")" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ModelColorFilter" />
+}

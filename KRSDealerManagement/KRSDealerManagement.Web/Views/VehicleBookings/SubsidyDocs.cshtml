@@ -1,8 +1,10 @@
 @model KRSDealerManagement.Domain.Entities.VehicleBooking
+@using KRSDealerManagement.Shared.Helpers
 @{
     ViewData["Title"] = "Subsidy Documents";
     var vehicle = ViewBag.Vehicle as KRSDealerManagement.Domain.Entities.Vehicle;
     var chassis = vehicle?.ChassisNumber;
+    bool Has(string? path) => !string.IsNullOrWhiteSpace(path);
 }
 
 <div class="row mb-3">
@@ -14,23 +16,65 @@
         <a href="@Url.EAction(QueryCrypto, "Manage", new { id = Model.VehicleBookingId }, "VehicleBookings")" class="btn btn-secondary">
             <i class="bi bi-arrow-left"></i> Back
         </a>
-        <a href="@Url.Action("Index", "Vehicles")" class="btn btn-outline-secondary">My Vehicles</a>
+        <a href="@Url.Action("MySubsidyDocsPending", "VehicleBookings")" class="btn btn-outline-secondary">Subsidy Docs Pending</a>
     </div>
 </div>
 
 <div class="alert alert-info">
     Customer Name (CAPS): <strong>@ViewBag.CustomerNameCaps</strong> — auto-filled from booking name.
+    Upload each document when ready. You can save partial progress and return later.
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row g-2 small">
+            <div class="col-md-3"><span class="badge @(Has(Model.FaceVerificationPath) ? "bg-success" : "bg-warning text-dark")">Face verification @(Has(Model.FaceVerificationPath) ? "✓" : "pending")</span></div>
+            <div class="col-md-3"><span class="badge @(Has(Model.RcImagePath) ? "bg-success" : "bg-warning text-dark")">RC image @(Has(Model.RcImagePath) ? "✓" : "pending")</span></div>
+            <div class="col-md-3"><span class="badge @(Has(Model.BoothPhotoPath) ? "bg-success" : "bg-warning text-dark")">Booth photo @(Has(Model.BoothPhotoPath) ? "✓" : "pending")</span></div>
+            <div class="col-md-3"><span class="badge @(Has(Model.SubsidyUndertakingPath) ? "bg-success" : "bg-warning text-dark")">Undertaking @(Has(Model.SubsidyUndertakingPath) ? "✓" : "pending")</span></div>
+        </div>
+    </div>
 </div>
 
 <form method="post" enctype="multipart/form-data">
     @Html.AntiForgeryToken()
     <input type="hidden" name="id" value="@Model.VehicleBookingId" />
     <div class="card"><div class="card-body row g-3">
-        <div class="col-md-6"><label class="fw-bold">Face Verification Screenshot *</label><input name="faceVerification" type="file" accept="image/*" class="form-control" required /></div>
-        <div class="col-md-6"><label class="fw-bold">RC Image (Front & Back, single image) *</label><input name="rcImage" type="file" accept="image/*" class="form-control" required /></div>
-        <div class="col-md-6"><label class="fw-bold">Booth Photo *</label><input name="boothPhoto" type="file" accept="image/*" class="form-control" required /></div>
-        <div class="col-md-6"><label class="fw-bold">Subsidy Undertaking (clear image) *</label><input name="subsidyUndertaking" type="file" accept="image/*" class="form-control" required /></div>
+        <div class="col-md-6">
+            <label class="fw-bold">Face Verification Screenshot</label>
+            @if (Has(Model.FaceVerificationPath))
+            {
+                <div class="small text-success mb-1"><i class="bi bi-check-circle"></i> Already uploaded — choose a file only to replace it.</div>
+            }
+            <input name="faceVerification" type="file" accept="image/*" class="form-control" />
+        </div>
+        <div class="col-md-6">
+            <label class="fw-bold">RC Image (Front &amp; Back, single image)</label>
+            @if (Has(Model.RcImagePath))
+            {
+                <div class="small text-success mb-1"><i class="bi bi-check-circle"></i> Already uploaded — choose a file only to replace it.</div>
+            }
+            <input name="rcImage" type="file" accept="image/*" class="form-control" />
+        </div>
+        <div class="col-md-6">
+            <label class="fw-bold">Booth Photo</label>
+            @if (Has(Model.BoothPhotoPath))
+            {
+                <div class="small text-success mb-1"><i class="bi bi-check-circle"></i> Already uploaded — choose a file only to replace it.</div>
+            }
+            <input name="boothPhoto" type="file" accept="image/*" class="form-control" />
+        </div>
+        <div class="col-md-6">
+            <label class="fw-bold">Subsidy Undertaking (clear image)</label>
+            @if (Has(Model.SubsidyUndertakingPath))
+            {
+                <div class="small text-success mb-1"><i class="bi bi-check-circle"></i> Already uploaded — choose a file only to replace it.</div>
+            }
+            <input name="subsidyUndertaking" type="file" accept="image/*" class="form-control" />
+        </div>
     </div>
-    <div class="card-footer"><button type="submit" class="btn btn-primary">Submit Subsidy Documents</button></div>
+    <div class="card-footer">
+        <button type="submit" class="btn btn-primary">Save uploaded documents</button>
+    </div>
     </div>
 </form>

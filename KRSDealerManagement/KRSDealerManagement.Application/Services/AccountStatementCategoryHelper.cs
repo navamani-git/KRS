@@ -62,8 +62,8 @@ namespace KRSDealerManagement.Application.Services
 
             if (string.Equals(referenceType, "Vehicle", StringComparison.OrdinalIgnoreCase))
             {
-                if (AccountTransactionTypeHelper.IsDebit(transactionType)) return "Price Adjustment Debit";
-                if (AccountTransactionTypeHelper.IsCredit(transactionType)) return "Price Adjustment Credit";
+                if (AccountTransactionTypeHelper.IsDebit(transactionType)) return "Purchase Debit";
+                if (AccountTransactionTypeHelper.IsCredit(transactionType)) return "Purchase Credit";
             }
 
             if (!string.IsNullOrWhiteSpace(reason)

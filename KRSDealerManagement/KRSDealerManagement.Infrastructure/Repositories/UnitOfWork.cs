@@ -20,6 +20,8 @@ namespace KRSDealerManagement.Infrastructure.Repositories
         private IRepository<AccountPermission> _accountPermissions;
         private IRepository<AccountBalance> _accountBalances;
         private IRepository<Vehicle> _vehicles;
+        private IVehicleMasterRepository _vehicleMasters;
+        private ISubdealerVehicleHistoryRepository _subdealerVehicleHistories;
         private IRepository<VehicleModel> _vehicleModels;
         private IRepository<VehicleColor> _vehicleColors;
         private IVehicleModelColorRepository _vehicleModelColors;
@@ -37,11 +39,13 @@ namespace KRSDealerManagement.Infrastructure.Repositories
         private IRepository<Dealership> _dealerships;
         private IRepository<SubDealer> _subDealers;
         private IRepository<RoleMenu> _roleMenus;
+        private IRoleTemplateRepository _roleTemplates;
         private IRepository<UserOrgRole> _userOrgRoles;
         private IRepository<PaymentType> _paymentTypes;
         private IRepository<FinanceNameMaster> _financeNames;
         private IRepository<StatusLookup> _statusLookups;
         private IRepository<DocumentTypeMaster> _documentTypes;
+        private IRepository<RtoDistrictMaster> _rtoDistricts;
         private IRepository<RtoLocationMaster> _rtoLocations;
         private IRepository<VehicleBooking> _vehicleBookings;
 
@@ -56,6 +60,8 @@ namespace KRSDealerManagement.Infrastructure.Repositories
         public IRepository<AccountPermission> AccountPermissions => _accountPermissions ??= new AccountPermissionRepository(_context);
         public IRepository<AccountBalance> AccountBalances => _accountBalances ??= new AccountBalanceRepository(_context);
         public IRepository<Vehicle> Vehicles => _vehicles ??= new VehicleRepository(_context);
+        public IVehicleMasterRepository VehicleMasters => _vehicleMasters ??= new VehicleMasterRepository(_context);
+        public ISubdealerVehicleHistoryRepository SubdealerVehicleHistories => _subdealerVehicleHistories ??= new SubdealerVehicleHistoryRepository(_context);
         public IRepository<VehicleModel> VehicleModels => _vehicleModels ??= new VehicleModelRepository(_context);
         public IRepository<VehicleColor> VehicleColors => _vehicleColors ??= new VehicleColorRepository(_context);
         public IVehicleModelColorRepository VehicleModelColors => _vehicleModelColors ??= new VehicleModelColorRepository(_context);
@@ -73,11 +79,13 @@ namespace KRSDealerManagement.Infrastructure.Repositories
         public IRepository<Dealership> Dealerships => _dealerships ??= new Repository<Dealership>(_context, "Dealerships", "DealershipId");
         public IRepository<SubDealer> SubDealers => _subDealers ??= new Repository<SubDealer>(_context, "SubDealers", "SubDealerId");
         public IRepository<RoleMenu> RoleMenus => _roleMenus ??= new Repository<RoleMenu>(_context, "RoleMenus", "RoleMenuId");
+        public IRoleTemplateRepository RoleTemplates => _roleTemplates ??= new RoleTemplateRepository(_context);
         public IRepository<UserOrgRole> UserOrgRoles => _userOrgRoles ??= new Repository<UserOrgRole>(_context, "UserOrgRoles", "UserOrgRoleId");
         public IRepository<PaymentType> PaymentTypes => _paymentTypes ??= new Repository<PaymentType>(_context, "PaymentTypes", "PaymentTypeId");
         public IRepository<FinanceNameMaster> FinanceNames => _financeNames ??= new Repository<FinanceNameMaster>(_context, "FinanceNames", "FinanceNameId");
         public IRepository<StatusLookup> StatusLookups => _statusLookups ??= new Repository<StatusLookup>(_context, "StatusLookups", "StatusLookupId");
         public IRepository<DocumentTypeMaster> DocumentTypes => _documentTypes ??= new Repository<DocumentTypeMaster>(_context, "DocumentTypeMasters", "DocumentTypeId");
+        public IRepository<RtoDistrictMaster> RtoDistricts => _rtoDistricts ??= new Repository<RtoDistrictMaster>(_context, "RtoDistrictMasters", "RtoDistrictId");
         public IRepository<RtoLocationMaster> RtoLocations => _rtoLocations ??= new Repository<RtoLocationMaster>(_context, "RtoLocationMasters", "RtoLocationId");
         public IRepository<VehicleBooking> VehicleBookings => _vehicleBookings ??= new VehicleBookingRepository(_context);
 

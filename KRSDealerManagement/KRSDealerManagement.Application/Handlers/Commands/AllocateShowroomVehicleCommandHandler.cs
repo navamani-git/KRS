@@ -1,5 +1,6 @@
 using MediatR;
 using KRSDealerManagement.Application.Commands;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
@@ -69,6 +70,9 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 vehicle.SubdealerId = walletUserId;
                 vehicle.ModifiedDate = DateTime.UtcNow;
                 await _unitOfWork.Vehicles.UpdateAsync(vehicle);
+
+                await VehicleAllocationHelper.LogSubdealerEventAsync(
+                    _unitOfWork, vehicle.VehicleId, "AllocatedToSubdealer", request.AllocatedBy, request.Remarks);
 
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();

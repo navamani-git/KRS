@@ -43,11 +43,7 @@ namespace KRSDealerManagement.Web.Helpers
                 });
 
         private static string? FormatDescription(AccountTransactionDto t)
-        {
-            if (!string.IsNullOrWhiteSpace(t.ChassisNumber))
-                return $"{t.Reason} {t.ChassisNumber}".Trim();
-            return t.Reason;
-        }
+            => string.IsNullOrWhiteSpace(t.Reason) ? null : t.Reason.Replace("\n", " ");
 
         public static IEnumerable<ReturnRequestDto> ApplyReturns(IEnumerable<ReturnRequestDto> rows, IReadOnlyDictionary<string, string>? filters, bool myReturns = false)
         {
@@ -257,6 +253,47 @@ namespace KRSDealerManagement.Web.Helpers
                     ["invoiceDate"] = r => r.Booking.InvoiceDate,
                     ["insuranceDate"] = r => r.Booking.InsuranceDate,
                     ["registration"] = r => r.Booking.RegistrationDate
+                });
+
+        public static IEnumerable<ShowroomStockRowDto> ApplyShowroomStock(
+            IEnumerable<ShowroomStockRowDto> rows,
+            IReadOnlyDictionary<string, string>? filters)
+            => GridRowFilterApplier.Apply(GridScreenIds.ShowroomStock, rows, filters,
+                new Dictionary<string, Func<ShowroomStockRowDto, string?>>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["location"] = r => r.DealershipLocation,
+                    ["subdealer"] = r => r.SubdealerName,
+                    ["chassis"] = r => r.ChassisNumber,
+                    ["model"] = r => r.ModelName,
+                    ["color"] = r => r.ColorName,
+                    ["order"] = r => r.OrderNumber,
+                    ["days"] = r => r.DaysInStock.ToString(),
+                    ["price"] = r => r.CurrentPrice.ToString("N2")
+                },
+                new Dictionary<string, Func<ShowroomStockRowDto, DateTime?>>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["allocated"] = r => r.AllocatedDate
+                });
+
+        public static IEnumerable<VehicleMasterDto> ApplyDealerStock(
+            IEnumerable<VehicleMasterDto> rows,
+            IReadOnlyDictionary<string, string>? filters)
+            => GridRowFilterApplier.Apply(GridScreenIds.DealerStock, rows, filters,
+                new Dictionary<string, Func<VehicleMasterDto, string?>>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["dealer"] = r => r.DealershipName,
+                    ["chassis"] = r => r.ChassisNumber,
+                    ["model"] = r => r.ModelName,
+                    ["color"] = r => r.ColorName,
+                    ["motor"] = r => r.MotorNo,
+                    ["battery"] = r => r.BatteryNo,
+                    ["status"] = r => r.IsAllocated ? "Allocated" : "Available",
+                    ["year"] = r => r.ManufacturingYear.ToString()
+                },
+                new Dictionary<string, Func<VehicleMasterDto, DateTime?>>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["received"] = r => r.ReceivedDate,
+                    ["invoice"] = r => r.AmpereInvoiceDate
                 });
 
         public static IEnumerable<StatusLookup> ApplyStatusLookups(IEnumerable<StatusLookup> rows, IReadOnlyDictionary<string, string>? filters)

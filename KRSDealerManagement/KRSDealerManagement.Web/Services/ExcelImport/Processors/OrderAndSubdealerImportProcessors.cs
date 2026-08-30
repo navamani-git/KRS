@@ -227,13 +227,11 @@ namespace KRSDealerManagement.Web.Services.ExcelImport.Processors
         public string DataSheetName => "Staff Order";
         public IReadOnlyList<string> DataHeaders => new[]
         {
-            "SubdealerName", "AdminNotes", "ModelName", "ColorName", "UnitPrice",
-            "ChassisNumber", "MotorNo", "BatteryNo", "ChargerNo", "ControllerNo", "ConverterNo"
+            "SubdealerName", "AdminNotes", "ModelName", "ColorName", "UnitPrice", "ChassisNumber"
         };
         public IReadOnlyList<IReadOnlyList<object?>> ExampleRows => new[]
         {
-            new List<object?> { "ABC Motors", "Showroom stock", "Nexus E5", "Pearl White", 85000m,
-                "CHASSIS001", "MOT001", "BAT001", "CHG001", "CTRL001", "CONV001" }
+            new List<object?> { "ABC Motors", "Showroom stock", "Nexus E5", "Pearl White", 85000m, "CHASSIS001" }
         };
 
         public async Task<IReadOnlyDictionary<string, IReadOnlyList<string>>> GetLookupsAsync(ExcelImportContext context)
@@ -271,24 +269,45 @@ namespace KRSDealerManagement.Web.Services.ExcelImport.Processors
             }
 
             var mediator = context.Services.GetRequiredService<IMediator>();
+            var unitOfWork = context.Services.GetRequiredService<KRSDealerManagement.Domain.Repositories.IUnitOfWork>();
             var account = await AccountHelper.GetPrimaryAccountAsync(mediator, sub.UserId);
             if (account == null)
                 errors.Add(new ExcelImportError { RowNumber = 0, Message = "No account found for the selected subdealer." });
+
+            var chassisInFile = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var row in rows)
             {
                 ExcelImportValidationHelper.Require(row, "ModelName", errors);
                 ExcelImportValidationHelper.Require(row, "ColorName", errors);
+                ExcelImportValidationHelper.Require(row, "ChassisNumber", errors);
                 ExcelImportValidationHelper.TryDecimal(row, "UnitPrice", errors, out var price);
-                foreach (var col in new[] { "ChassisNumber", "MotorNo", "BatteryNo", "ChargerNo", "ControllerNo", "ConverterNo" })
-                    ExcelImportValidationHelper.Require(row, col, errors);
                 if (price <= 0) errors.Add(new ExcelImportError { RowNumber = row.RowNumber, Column = "UnitPrice", Message = "UnitPrice must be greater than zero." });
                 var modelName = row.Get("ModelName");
                 var colorName = row.Get("ColorName");
-                if (ExcelImportLookupHelper.FindModel(models, modelName) == null)
+                var model = ExcelImportLookupHelper.FindModel(models, modelName);
+                var color = ExcelImportLookupHelper.FindColor(colors, colorName);
+                if (model == null)
                     errors.Add(new ExcelImportError { RowNumber = row.RowNumber, Column = "ModelName", Message = $"Unknown model '{modelName}'." });
-                if (ExcelImportLookupHelper.FindColor(colors, colorName) == null)
+                if (color == null)
                     errors.Add(new ExcelImportError { RowNumber = row.RowNumber, Column = "ColorName", Message = $"Unknown color '{colorName}'." });
+
+                var chassis = row.Get("ChassisNumber")?.Trim().ToUpperInvariant() ?? "";
+                if (!string.IsNullOrWhiteSpace(chassis))
+                {
+                    if (!chassisInFile.Add(chassis))
+                        errors.Add(new ExcelImportError { RowNumber = row.RowNumber, Column = "ChassisNumber", Message = $"Duplicate chassis '{chassis}' in file." });
+
+                    var master = await unitOfWork.VehicleMasters.GetByChassisAsync(chassis);
+                    if (master == null)
+                        errors.Add(new ExcelImportError { RowNumber = row.RowNumber, Column = "ChassisNumber", Message = $"Chassis '{chassis}' not found in dealer stock." });
+                    else if (master.IsAllocated)
+                        errors.Add(new ExcelImportError { RowNumber = row.RowNumber, Column = "ChassisNumber", Message = $"Chassis '{chassis}' is already allocated." });
+                    else if (model != null && color != null && (master.ModelId != model.ModelId || master.ColorId != color.ColorId))
+                        errors.Add(new ExcelImportError { RowNumber = row.RowNumber, Column = "ChassisNumber", Message = $"Chassis '{chassis}' does not match model/color." });
+                    else if (context.DealershipScopeId.HasValue && master?.DealershipId != context.DealershipScopeId.Value)
+                        errors.Add(new ExcelImportError { RowNumber = row.RowNumber, Column = "ChassisNumber", Message = $"Chassis '{chassis}' is outside your dealership scope." });
+                }
             }
             return errors;
         }
@@ -296,6 +315,7 @@ namespace KRSDealerManagement.Web.Services.ExcelImport.Processors
         public async Task<int> InsertAsync(IReadOnlyList<ExcelImportRow> rows, ExcelImportContext context)
         {
             var mediator = context.Services.GetRequiredService<IMediator>();
+            var unitOfWork = context.Services.GetRequiredService<KRSDealerManagement.Domain.Repositories.IUnitOfWork>();
             var models = await ExcelImportLookupHelper.GetModelsAsync(context);
             var colors = await ExcelImportLookupHelper.GetColorsAsync(context);
             var subdealers = await ExcelImportLookupHelper.GetSubdealersAsync(context);
@@ -304,19 +324,21 @@ namespace KRSDealerManagement.Web.Services.ExcelImport.Processors
             var account = await AccountHelper.GetPrimaryAccountAsync(mediator, sub.UserId)
                 ?? throw new InvalidOperationException("No account found.");
 
-            var items = rows.Select(row => new OrderItem
+            var items = new List<OrderItem>();
+            foreach (var row in rows)
             {
-                ModelId = ExcelImportLookupHelper.FindModel(models, row.Get("ModelName"))!.ModelId,
-                ColorId = ExcelImportLookupHelper.FindColor(colors, row.Get("ColorName"))!.ColorId,
-                Quantity = 1,
-                UnitPrice = decimal.Parse(row.Get("UnitPrice")!),
-                ChassisNumber = row.Get("ChassisNumber")!.Trim().ToUpperInvariant(),
-                MotorNo = row.Get("MotorNo")!.Trim(),
-                BatteryNo = row.Get("BatteryNo")!.Trim(),
-                ChargerNo = row.Get("ChargerNo")!.Trim(),
-                ControllerNo = row.Get("ControllerNo")!.Trim(),
-                ConverterNo = row.Get("ConverterNo")!.Trim()
-            }).ToList();
+                var chassis = row.Get("ChassisNumber")!.Trim().ToUpperInvariant();
+                var master = await unitOfWork.VehicleMasters.GetByChassisAsync(chassis)
+                    ?? throw new InvalidOperationException($"Chassis '{chassis}' not found.");
+                items.Add(new OrderItem
+                {
+                    ModelId = ExcelImportLookupHelper.FindModel(models, row.Get("ModelName"))!.ModelId,
+                    ColorId = ExcelImportLookupHelper.FindColor(colors, row.Get("ColorName"))!.ColorId,
+                    Quantity = 1,
+                    UnitPrice = decimal.Parse(row.Get("UnitPrice")!),
+                    VehicleMasterId = master.VehicleMasterId
+                });
+            }
 
             var adminNotes = rows.Select(r => r.Get("AdminNotes")?.Trim()).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
 
