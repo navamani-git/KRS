@@ -30,34 +30,53 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             if (!request.AllowAdminOverride && booking.InvoiceDate.HasValue)
                 throw new InvalidOperationException("Booking cannot be edited after the vehicle has been invoiced.");
 
+            var labels = await CorrectionNoteLabelResolver.LoadAsync(_unitOfWork);
             var changes = new List<string>();
 
             if (!string.Equals(booking.CustomerName?.Trim(), request.CustomerName.Trim(), StringComparison.OrdinalIgnoreCase))
-                changes.Add(CorrectionNoteHelper.DescribeChange("Customer", booking.CustomerName, request.CustomerName.Trim()));
+                changes.Add(CorrectionNoteHelper.DescribeChange("Customer name", booking.CustomerName, request.CustomerName.Trim()));
             if (booking.IsCompanyBooking != request.IsCompanyBooking)
-                changes.Add(CorrectionNoteHelper.DescribeChange("Company Booking", booking.IsCompanyBooking, request.IsCompanyBooking));
+                changes.Add(CorrectionNoteHelper.DescribeChange(
+                    "Company booking",
+                    CorrectionNoteLabelResolver.YesNo(booking.IsCompanyBooking),
+                    CorrectionNoteLabelResolver.YesNo(request.IsCompanyBooking)));
             if (!string.Equals(booking.CustomerMobile?.Trim(), request.CustomerMobile.Trim(), StringComparison.OrdinalIgnoreCase))
-                changes.Add(CorrectionNoteHelper.DescribeChange("Mobile", booking.CustomerMobile, request.CustomerMobile.Trim()));
+                changes.Add(CorrectionNoteHelper.DescribeChange("Mobile number", booking.CustomerMobile, request.CustomerMobile.Trim()));
             if (!string.Equals(booking.AlternativeMobile?.Trim(), request.AlternativeMobile.Trim(), StringComparison.OrdinalIgnoreCase))
-                changes.Add(CorrectionNoteHelper.DescribeChange("Alt Mobile", booking.AlternativeMobile, request.AlternativeMobile.Trim()));
+                changes.Add(CorrectionNoteHelper.DescribeChange("Alternate mobile", booking.AlternativeMobile, request.AlternativeMobile.Trim()));
             if (!string.Equals(booking.CustomerEmail?.Trim(), request.CustomerEmail.Trim(), StringComparison.OrdinalIgnoreCase))
                 changes.Add(CorrectionNoteHelper.DescribeChange("Email", booking.CustomerEmail, request.CustomerEmail.Trim()));
             if (booking.DocumentTypeId != request.DocumentTypeId)
-                changes.Add(CorrectionNoteHelper.DescribeChange("Document Type", booking.DocumentTypeId, request.DocumentTypeId));
+                changes.Add(CorrectionNoteHelper.DescribeChange(
+                    "ID document type",
+                    labels.DocumentType(booking.DocumentTypeId),
+                    labels.DocumentType(request.DocumentTypeId)));
             if (booking.RtoLocationId != request.RtoLocationId)
-                changes.Add(CorrectionNoteHelper.DescribeChange("RTO", booking.RtoLocationId, request.RtoLocationId));
+                changes.Add(CorrectionNoteHelper.DescribeChange(
+                    "RTO location",
+                    labels.RtoLocation(booking.RtoLocationId),
+                    labels.RtoLocation(request.RtoLocationId)));
             if (booking.FancyNumber != request.FancyNumber)
-                changes.Add(CorrectionNoteHelper.DescribeChange("Fancy Number", booking.FancyNumber, request.FancyNumber));
+                changes.Add(CorrectionNoteHelper.DescribeChange(
+                    "Fancy number",
+                    CorrectionNoteLabelResolver.YesNo(booking.FancyNumber),
+                    CorrectionNoteLabelResolver.YesNo(request.FancyNumber)));
             if (!string.Equals(booking.PaymentMode, request.PaymentMode, StringComparison.OrdinalIgnoreCase))
-                changes.Add(CorrectionNoteHelper.DescribeChange("Payment Mode", booking.PaymentMode, request.PaymentMode));
+                changes.Add(CorrectionNoteHelper.DescribeChange("Payment mode", booking.PaymentMode, request.PaymentMode));
             if (booking.FinanceNameId != request.FinanceNameId)
-                changes.Add(CorrectionNoteHelper.DescribeChange("Finance", booking.FinanceNameId, request.FinanceNameId));
+                changes.Add(CorrectionNoteHelper.DescribeChange(
+                    "Finance company",
+                    labels.FinanceName(booking.FinanceNameId),
+                    labels.FinanceName(request.FinanceNameId)));
             if (!string.Equals(booking.NomineeName?.Trim(), request.NomineeName.Trim(), StringComparison.OrdinalIgnoreCase))
-                changes.Add(CorrectionNoteHelper.DescribeChange("Nominee", booking.NomineeName, request.NomineeName.Trim()));
+                changes.Add(CorrectionNoteHelper.DescribeChange("Nominee name", booking.NomineeName, request.NomineeName.Trim()));
             if (booking.NomineeDob.Date != request.NomineeDob.Date)
-                changes.Add(CorrectionNoteHelper.DescribeChange("Nominee DOB", booking.NomineeDob.ToString("yyyy-MM-dd"), request.NomineeDob.ToString("yyyy-MM-dd")));
+                changes.Add(CorrectionNoteHelper.DescribeChange(
+                    "Nominee date of birth",
+                    booking.NomineeDob.ToString("dd MMM yyyy"),
+                    request.NomineeDob.ToString("dd MMM yyyy")));
             if (!string.Equals(booking.NomineeRelationship?.Trim(), request.NomineeRelationship.Trim(), StringComparison.OrdinalIgnoreCase))
-                changes.Add(CorrectionNoteHelper.DescribeChange("Nominee Relation", booking.NomineeRelationship, request.NomineeRelationship.Trim()));
+                changes.Add(CorrectionNoteHelper.DescribeChange("Nominee relationship", booking.NomineeRelationship, request.NomineeRelationship.Trim()));
 
             booking.CustomerName = request.CustomerName.Trim();
             booking.IsCompanyBooking = request.IsCompanyBooking;

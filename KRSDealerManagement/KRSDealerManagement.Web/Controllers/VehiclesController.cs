@@ -352,7 +352,9 @@ namespace KRSDealerManagement.Web.Controllers
                 .FirstOrDefault(v => v.VehicleId == vehicleId);
             if (vehicle == null || !vehicle.CanRequestReturn)
             {
-                TempData["Error"] = "This vehicle cannot be returned in its current status.";
+                TempData["Error"] = vehicle?.IsDelivered == true
+                    ? "Delivered vehicles cannot be returned."
+                    : "This vehicle cannot be returned in its current status.";
                 return RedirectToAction(nameof(Index));
             }
 

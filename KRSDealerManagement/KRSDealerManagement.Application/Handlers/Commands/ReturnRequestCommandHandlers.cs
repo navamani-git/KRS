@@ -29,6 +29,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
             var booking = (await _unitOfWork.VehicleBookings.GetAllAsync())
                 .FirstOrDefault(b => b.VehicleId == request.VehicleId);
+            if (vehicle.Status == UnifiedVehicleStatus.Delivered)
+                throw new InvalidOperationException("Delivered vehicles cannot be returned.");
             if (!UnifiedVehicleStatus.CanBookOrReturnPreInvoice(
                     vehicle.Status, booking != null, booking?.InvoiceDate)
                 || !UnifiedVehicleStatus.CanRequestReturn(vehicle.Status))
@@ -106,7 +108,20 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                     return false;
 
                 var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(returnRequest.VehicleId);
-                if (vehicle == null || vehicle.Status != UnifiedVehicleStatus.ReturnRequested)
+                if (vehicle == null)
+                    return false;
+
+                if (vehicle.Status == UnifiedVehicleStatus.Delivered)
+                    return false;
+
+                if (returnRequest.Status == 0 && vehicle.Status != UnifiedVehicleStatus.ReturnRequested)
+                {
+                    vehicle.Status = UnifiedVehicleStatus.ReturnRequested;
+                    vehicle.DeliveryDate = null;
+                    vehicle.ModifiedDate = DateTime.UtcNow;
+                    await _unitOfWork.Vehicles.UpdateAsync(vehicle);
+                }
+                else if (vehicle.Status != UnifiedVehicleStatus.ReturnRequested)
                     return false;
 
                 var existingTransactions = (await _unitOfWork.AccountTransactions.GetAllAsync()).ToList();

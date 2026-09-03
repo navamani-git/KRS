@@ -48,6 +48,7 @@ wwwroot\Files\vehicle_booking\2026_08_22\639222506938931227_639220549056169529_I
 wwwroot\css\site.css
 wwwroot\images\krslogo.png
 wwwroot\js\amount-format.js
+wwwroot\js\dashboard-widgets.js
 wwwroot\js\grid-columns.js
 wwwroot\js\grid-combobox.js
 wwwroot\js\grid-resize.js

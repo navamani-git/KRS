@@ -26,10 +26,10 @@ namespace KRSDealerManagement.Shared.Constants
 
         /// <summary>
         /// Subdealer may return an allocated vehicle before customer booking and before invoice.
-        /// Includes vehicles mistakenly marked Delivered before booking.
+        /// Delivered vehicles cannot be returned.
         /// </summary>
         public static bool CanRequestReturn(int status) =>
-            status is ApprovedByDealer or Delivered;
+            status is ApprovedByDealer;
 
         /// <summary>
         /// Subdealer may start customer booking before invoice.

@@ -28,46 +28,55 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(request.VehicleId);
             if (vehicle == null) return false;
 
+            var oldVehicleStatus = vehicle.Status;
+            var pendingReturns = (await _unitOfWork.ReturnRequests.GetAllAsync())
+                .Where(r => r.VehicleId == vehicle.VehicleId && r.Status == 0)
+                .ToList();
+
             await ModelColorValidation.EnsureMappedAsync(_unitOfWork, request.ModelId, request.ColorId);
 
+            var labels = await CorrectionNoteLabelResolver.LoadAsync(_unitOfWork);
             var changes = new List<string>();
             var oldPrice = vehicle.CurrentPrice;
             var oldSubdealerId = vehicle.SubdealerId;
             var oldDeliveryDate = vehicle.DeliveryDate;
 
             if (vehicle.ModelId != request.ModelId)
-                changes.Add(CorrectionNoteHelper.DescribeChange("ModelId", vehicle.ModelId, request.ModelId));
+                changes.Add(CorrectionNoteHelper.DescribeChange("Model", labels.Model(vehicle.ModelId), labels.Model(request.ModelId)));
             if (vehicle.ColorId != request.ColorId)
-                changes.Add(CorrectionNoteHelper.DescribeChange("ColorId", vehicle.ColorId, request.ColorId));
+                changes.Add(CorrectionNoteHelper.DescribeChange("Colour", labels.Color(vehicle.ColorId), labels.Color(request.ColorId)));
             if (!string.Equals(vehicle.ChassisNumber?.Trim(), request.ChassisNumber.Trim(), StringComparison.OrdinalIgnoreCase))
-                changes.Add(CorrectionNoteHelper.DescribeChange("Chassis", vehicle.ChassisNumber, request.ChassisNumber.Trim().ToUpperInvariant()));
+                changes.Add(CorrectionNoteHelper.DescribeChange("Chassis number", vehicle.ChassisNumber, request.ChassisNumber.Trim().ToUpperInvariant()));
             if (vehicle.Status != request.Status)
-                changes.Add(CorrectionNoteHelper.DescribeChange("Vehicle Status", vehicle.Status, request.Status));
+                changes.Add(CorrectionNoteHelper.DescribeChange("Vehicle status", labels.VehicleStatus(vehicle.Status), labels.VehicleStatus(request.Status)));
             if (vehicle.CurrentPrice != request.CurrentPrice)
                 changes.Add(CorrectionNoteHelper.DescribeChange("Price", $"₹{vehicle.CurrentPrice:N2}", $"₹{request.CurrentPrice:N2}"));
             if (vehicle.SubdealerId != request.SubdealerId)
-                changes.Add(CorrectionNoteHelper.DescribeChange("Subdealer", vehicle.SubdealerId, request.SubdealerId));
+                changes.Add(CorrectionNoteHelper.DescribeChange("Assigned to", labels.Subdealer(vehicle.SubdealerId), labels.Subdealer(request.SubdealerId)));
             if (vehicle.DeliveryDate?.Date != request.DeliveryDate?.Date)
-                changes.Add(CorrectionNoteHelper.DescribeChange("Delivery Date",
-                    oldDeliveryDate.HasValue ? oldDeliveryDate.Value.ToString("yyyy-MM-dd HH:mm") : null,
-                    request.DeliveryDate?.ToString("yyyy-MM-dd HH:mm")));
+                changes.Add(CorrectionNoteHelper.DescribeChange("Delivery date",
+                    CorrectionNoteLabelResolver.DateTimeValue(oldDeliveryDate),
+                    CorrectionNoteLabelResolver.DateTimeValue(request.DeliveryDate)));
             if (!string.Equals(vehicle.MotorNo, request.MotorNo, StringComparison.OrdinalIgnoreCase))
-                changes.Add(CorrectionNoteHelper.DescribeChange("Motor", vehicle.MotorNo, request.MotorNo));
+                changes.Add(CorrectionNoteHelper.DescribeChange("Motor number", vehicle.MotorNo, request.MotorNo));
             if (!string.Equals(vehicle.BatteryNo, request.BatteryNo, StringComparison.OrdinalIgnoreCase))
-                changes.Add(CorrectionNoteHelper.DescribeChange("Battery", vehicle.BatteryNo, request.BatteryNo));
+                changes.Add(CorrectionNoteHelper.DescribeChange("Battery number", vehicle.BatteryNo, request.BatteryNo));
             if (!string.Equals(vehicle.ChargerNo, request.ChargerNo, StringComparison.OrdinalIgnoreCase))
-                changes.Add(CorrectionNoteHelper.DescribeChange("Charger", vehicle.ChargerNo, request.ChargerNo));
+                changes.Add(CorrectionNoteHelper.DescribeChange("Charger number", vehicle.ChargerNo, request.ChargerNo));
             if (!string.Equals(vehicle.ControllerNo, request.ControllerNo, StringComparison.OrdinalIgnoreCase))
-                changes.Add(CorrectionNoteHelper.DescribeChange("Controller", vehicle.ControllerNo, request.ControllerNo));
+                changes.Add(CorrectionNoteHelper.DescribeChange("Controller number", vehicle.ControllerNo, request.ControllerNo));
             if (!string.Equals(vehicle.ConverterNo, request.ConverterNo, StringComparison.OrdinalIgnoreCase))
-                changes.Add(CorrectionNoteHelper.DescribeChange("Converter", vehicle.ConverterNo, request.ConverterNo));
+                changes.Add(CorrectionNoteHelper.DescribeChange("Converter number", vehicle.ConverterNo, request.ConverterNo));
 
             if (request.BookingStatus.HasValue)
             {
                 var booking = (await _unitOfWork.VehicleBookings.GetAllAsync())
                     .FirstOrDefault(b => b.VehicleId == vehicle.VehicleId);
                 if (booking != null && booking.BookingStatus != request.BookingStatus.Value)
-                    changes.Add(CorrectionNoteHelper.DescribeChange("Booking Status", booking.BookingStatus, request.BookingStatus.Value));
+                    changes.Add(CorrectionNoteHelper.DescribeChange(
+                        "Booking stage",
+                        labels.VehicleStatus(booking.BookingStatus),
+                        labels.VehicleStatus(request.BookingStatus.Value)));
             }
 
             var noteEntry = CorrectionNoteHelper.FormatEntry(request.CorrectedByName, request.CorrectionReason, changes);
@@ -114,9 +123,43 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             vehicle.Status = request.Status;
             vehicle.CurrentPrice = request.CurrentPrice;
             vehicle.SubdealerId = request.SubdealerId;
-            vehicle.DeliveryDate = request.Status == UnifiedVehicleStatus.Delivered
-                ? (request.DeliveryDate ?? DateTime.UtcNow)
-                : request.DeliveryDate;
+
+            if (pendingReturns.Count > 0)
+            {
+                var adminMovedOffReturn = oldVehicleStatus == UnifiedVehicleStatus.ReturnRequested
+                    && request.Status != UnifiedVehicleStatus.ReturnRequested;
+                var adminChoseDifferentNonReturnStatus = request.Status != UnifiedVehicleStatus.ReturnRequested
+                    && request.Status != oldVehicleStatus;
+
+                if (adminMovedOffReturn || adminChoseDifferentNonReturnStatus)
+                {
+                    var cancelNote = $"Return cancelled due to admin correction: {request.CorrectionReason}";
+                    foreach (var pendingReturn in pendingReturns)
+                    {
+                        pendingReturn.Reject(request.CorrectedBy, cancelNote);
+                        await _unitOfWork.ReturnRequests.UpdateAsync(pendingReturn);
+                    }
+
+                    await VehicleHistoryHelper.LogSubdealerEventAsync(
+                        _unitOfWork, vehicle.VehicleId, "ReturnRejected", request.CorrectedBy, cancelNote);
+
+                    vehicle.DeliveryDate = request.Status == UnifiedVehicleStatus.Delivered
+                        ? (request.DeliveryDate ?? DateTime.UtcNow)
+                        : null;
+                }
+                else
+                {
+                    vehicle.Status = UnifiedVehicleStatus.ReturnRequested;
+                    vehicle.DeliveryDate = null;
+                }
+            }
+            else
+            {
+                vehicle.DeliveryDate = request.Status == UnifiedVehicleStatus.Delivered
+                    ? (request.DeliveryDate ?? DateTime.UtcNow)
+                    : null;
+            }
+
             vehicle.ModifiedDate = DateTime.UtcNow;
             vehicle.Notes = CorrectionNoteHelper.Append(vehicle.Notes, noteEntry);
 

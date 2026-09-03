@@ -47,6 +47,6 @@ namespace KRSDealerManagement.Application.Helpers
         }
 
         private static string Format(DateTime? value)
-            => value.HasValue ? value.Value.ToString("yyyy-MM-dd HH:mm") : "(none)";
+            => CorrectionNoteLabelResolver.DateTimeValue(value);
     }
 }

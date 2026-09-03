@@ -26,15 +26,36 @@ namespace KRSDealerManagement.Application.Helpers
 
         public static string FormatEntry(string correctedByName, string reason, IEnumerable<string> changes)
         {
-            var changeText = changes.Any()
-                ? string.Join("; ", changes)
-                : "No field changes recorded";
-            return $"[{DateTime.UtcNow:yyyy-MM-dd HH:mm}] Correction by {correctedByName}: {reason.Trim()}. Changes: {changeText}.";
+            var changeLines = changes
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Select(c => c.Trim())
+                .ToList();
+
+            var header = $"{DateTime.UtcNow:dd MMM yyyy, h:mm tt} UTC — {correctedByName.Trim()} updated this record.";
+            var reasonLine = $"Reason: {reason.Trim()}";
+
+            if (changeLines.Count == 0)
+                return $"{header}\n{reasonLine}\n• No field changes recorded.";
+
+            var bullets = string.Join("\n", changeLines.Select(c => $"• {c}"));
+            return $"{header}\n{reasonLine}\n{bullets}";
         }
 
         public static string DescribeChange(string field, object? oldValue, object? newValue)
         {
-            return $"{field}: '{oldValue ?? "-"}' → '{newValue ?? "-"}'";
+            return $"{field}: {Display(oldValue)} → {Display(newValue)}";
+        }
+
+        private static string Display(object? value)
+        {
+            if (value == null)
+                return "Not set";
+
+            if (value is bool b)
+                return CorrectionNoteLabelResolver.YesNo(b);
+
+            var text = value.ToString()?.Trim();
+            return string.IsNullOrWhiteSpace(text) ? "Not set" : text;
         }
     }
 }

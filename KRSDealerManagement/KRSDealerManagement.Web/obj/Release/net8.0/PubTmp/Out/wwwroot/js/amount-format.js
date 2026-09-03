@@ -29,10 +29,16 @@
 
     function isAmountField(el) {
         if (!el || el.tagName !== 'INPUT' || el.readOnly || el.disabled) return false;
-        if (el.type === 'number') return true;
+        if (el.classList.contains('grid-combobox')) return false;
+        var type = (el.type || '').toLowerCase();
+        if (type === 'date' || type === 'datetime-local' || type === 'time' || type === 'month' || type === 'week') return false;
+        if (type === 'hidden' || type === 'file') return false;
+        if (type === 'number') return true;
         if (el.classList.contains('amount-input')) return true;
         var name = (el.getAttribute('name') || '').toLowerCase();
-        return /amount|balance|price|commission|payment/.test(name);
+        if (name.indexOf('cf_') === 0) return false;
+        if (/date|time|type|proof|remarks|mode|status/.test(name)) return false;
+        return /amount|balance|price|commission/.test(name);
     }
 
     function attach(el) {

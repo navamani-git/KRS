@@ -27,6 +27,10 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             var type = paymentTypes.FirstOrDefault(t => t.PaymentTypeId == request.PaymentTypeId);
             if (type == null) throw new InvalidOperationException("Invalid payment type.");
 
+            var labels = await CorrectionNoteLabelResolver.LoadAsync(_unitOfWork);
+            var oldFinanceName = labels.FinanceName(payment.FinanceNameId);
+            var newFinanceName = labels.FinanceName(request.FinanceNameId);
+
             var changes = new List<string>();
             var oldStatus = payment.Status;
             var wasApplied = payment.IsApplied;
@@ -58,7 +62,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             if (!string.Equals(payment.CustomerName, request.CustomerName, StringComparison.OrdinalIgnoreCase))
                 changes.Add(CorrectionNoteHelper.DescribeChange("Customer", payment.CustomerName, request.CustomerName));
             if (payment.FinanceNameId != request.FinanceNameId)
-                changes.Add(CorrectionNoteHelper.DescribeChange("Finance", payment.FinanceNameId, request.FinanceNameId));
+                changes.Add(CorrectionNoteHelper.DescribeChange("Finance company", oldFinanceName, newFinanceName));
             if (!string.Equals(payment.VinNumber, request.VinNumber, StringComparison.OrdinalIgnoreCase))
                 changes.Add(CorrectionNoteHelper.DescribeChange("VIN", payment.VinNumber, request.VinNumber));
             if (!string.Equals(payment.SubdealerRemarks, request.SubdealerRemarks, StringComparison.Ordinal))
