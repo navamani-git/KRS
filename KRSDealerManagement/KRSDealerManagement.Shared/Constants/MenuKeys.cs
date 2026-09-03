@@ -139,13 +139,6 @@ namespace KRSDealerManagement.Shared.Constants
                 },
                 new()
                 {
-                    ParentKey = "rto_subsidy_progress",
-                    ParentName = "RTO & Subsidy Progress",
-                    Icon = "bi-signpost-split",
-                    Children = GetSubdealerRtoSubsidyProgressMenuItems()
-                },
-                new()
-                {
                     ParentKey = "commission_payments",
                     ParentName = "Commission & Payments",
                     Icon = "bi-cash-stack",
@@ -192,10 +185,17 @@ namespace KRSDealerManagement.Shared.Constants
 
         /// <summary>
         /// Menus an admin can grant/revoke for a subdealer account.
+        /// One row per MenuKey (booking stages share a key across multiple sidebar items).
         /// </summary>
         public static IReadOnlyList<(string Key, string Name, bool DefaultAccessible)> GetSubdealerConfigurableMenus()
             => GetSubdealerMenuGroups()
-                .SelectMany(g => g.Children.Select(c => (c.Key, c.Name, c.DefaultAccessible)))
+                .SelectMany(g => g.Children)
+                .GroupBy(c => c.Key, StringComparer.OrdinalIgnoreCase)
+                .Select(g =>
+                {
+                    var first = g.First();
+                    return (g.Key, GetDisplayName(g.Key), g.Any(c => c.DefaultAccessible));
+                })
                 .ToList();
 
         private static IReadOnlyList<MenuItemDefinition> GetSubdealerManageVehiclesMenuItems() => new[]
@@ -213,11 +213,17 @@ namespace KRSDealerManagement.Shared.Constants
             SubdealerBookingMenuItem("Paper Received", "MyPaperReceived", "bi-file-earmark-text"),
             SubdealerBookingMenuItem("Invoiced", "MyInvoiced", "bi-receipt"),
             SubdealerBookingMenuItem("Insurance Created", "MyInsuranceCreated", "bi-shield-check"),
-            SubdealerBookingMenuItem("RTO Requested", "MyRtoRequested", "bi-signpost")
-        };
-
-        private static IReadOnlyList<MenuItemDefinition> GetSubdealerRtoSubsidyProgressMenuItems() => new[]
-        {
+            SubdealerBookingMenuItem("RTO Requested", "MyRtoRequested", "bi-signpost"),
+            new MenuItemDefinition
+            {
+                Key = VehiclesBookingStages,
+                Name = "Subsidy ID Pending",
+                DefaultAccessible = true,
+                Controller = "VehicleBookings",
+                Action = "MySubsidyIdPending",
+                Icon = "bi-tag",
+                Actions = new[] { "MySubsidyIdPending" }
+            },
             new MenuItemDefinition
             {
                 Key = VehiclesBookingStages,

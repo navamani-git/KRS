@@ -35,9 +35,15 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.SearchTerm = searchTerm;
             ViewBag.IsAllocated = isAllocated;
             ViewBag.SelectedDealershipId = dealershipId;
-            ViewBag.ShowDealershipColumn = SessionHelper.IsSystemAdmin(HttpContext.Session);
+            ViewBag.ShowBranchColumn = true;
+            ViewBag.ShowDealershipFilter = SessionHelper.IsSystemAdmin(HttpContext.Session);
+            ViewBag.ShowDealershipColumn = true;
             if (SessionHelper.IsSystemAdmin(HttpContext.Session))
                 ViewBag.Dealerships = await _mediator.Send(new GetDealershipsQuery { IsActive = true });
+            ViewBag.TransferDealerships = (await _mediator.Send(new GetDealershipsQuery { IsActive = true }))
+                .OrderBy(d => d.DealershipName)
+                .ToList();
+            ViewBag.IsAdmin = SessionHelper.IsSystemAdmin(HttpContext.Session);
             return View(pageItems);
         }
 
@@ -55,20 +61,12 @@ namespace KRSDealerManagement.Web.Controllers
                 }),
                 columnFilters).ToList();
 
-            var showDealer = SessionHelper.IsSystemAdmin(HttpContext.Session);
-            var headers = showDealer
-                ? new[] { "Dealer", "Chassis", "Model", "Color", "Motor", "Battery", "Charger", "Controller", "Converter", "Mfg Year", "Ampere Invoice", "Received", "Status", "Remarks" }
-                : new[] { "Chassis", "Model", "Color", "Motor", "Battery", "Charger", "Controller", "Converter", "Mfg Year", "Ampere Invoice", "Received", "Status", "Remarks" };
-            var rows = masters.Select(m =>
+            var headers = new[] { "Branch", "Chassis", "Model", "Color", "Motor", "Battery", "Charger", "Controller", "Converter", "Invoice No", "Ampere Invoice", "Received", "Status", "Allocated To", "Remarks" };
+            var rows = masters.Select(m => (IReadOnlyList<object?>)new List<object?>
             {
-                var baseRow = new List<object?>
-                {
-                    m.ChassisNumber, m.ModelName, m.ColorName, m.MotorNo, m.BatteryNo, m.ChargerNo, m.ControllerNo, m.ConverterNo,
-                    m.ManufacturingYear, m.AmpereInvoiceDate, m.ReceivedDate, m.IsAllocated ? "Allocated" : "Available", m.Remarks ?? ""
-                };
-                if (showDealer)
-                    baseRow.Insert(0, m.DealershipName);
-                return (IReadOnlyList<object?>)baseRow;
+                m.DealershipName, m.ChassisNumber, m.ModelName, m.ColorName, m.MotorNo, m.BatteryNo, m.ChargerNo, m.ControllerNo, m.ConverterNo,
+                m.AmpereInvoiceNo, m.AmpereInvoiceDate, m.ReceivedDate, m.IsAllocated ? "Allocated" : "Available",
+                m.AllocatedToSubdealerName ?? "", m.Remarks ?? ""
             });
             return ExcelExportHelper.ToFileResult(this, $"dealer_stock_{DateTime.Now:yyyyMMdd}.xlsx", headers, rows, "Dealer Stock");
         }
@@ -87,7 +85,7 @@ namespace KRSDealerManagement.Web.Controllers
             int? dealershipId,
             string chassisNumber, int modelId, int colorId,
             string motorNo, string batteryNo, string chargerNo, string controllerNo, string converterNo,
-            int manufacturingYear, DateTime ampereInvoiceDate, DateTime receivedDate, string? remarks)
+            string ampereInvoiceNo, DateTime ampereInvoiceDate, DateTime receivedDate, string? remarks)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             var resolvedDealershipId = ResolveDealershipId(dealershipId);
@@ -123,7 +121,7 @@ namespace KRSDealerManagement.Web.Controllers
                     ChargerNo = chargerNo,
                     ControllerNo = controllerNo,
                     ConverterNo = converterNo,
-                    ManufacturingYear = manufacturingYear,
+                    AmpereInvoiceNo = ampereInvoiceNo,
                     AmpereInvoiceDate = ampereInvoiceDate,
                     ReceivedDate = receivedDate,
                     Remarks = remarks,
@@ -166,10 +164,19 @@ namespace KRSDealerManagement.Web.Controllers
         public async Task<IActionResult> Edit(
             int vehicleMasterId, int modelId, int colorId,
             string motorNo, string batteryNo, string chargerNo, string controllerNo, string converterNo,
-            int manufacturingYear, DateTime ampereInvoiceDate, DateTime receivedDate, string? remarks)
+            string ampereInvoiceNo, DateTime ampereInvoiceDate, DateTime receivedDate, string? remarks)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
+
+            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
+            var master = (await _mediator.Send(new GetVehicleMastersQuery { DealershipId = scope }))
+                .FirstOrDefault(m => m.VehicleMasterId == vehicleMasterId);
+            if (master == null)
+            {
+                TempData["Error"] = "Vehicle not found or outside your branch scope.";
+                return RedirectToAction(nameof(Index));
+            }
 
             try
             {
@@ -183,7 +190,7 @@ namespace KRSDealerManagement.Web.Controllers
                     ChargerNo = chargerNo,
                     ControllerNo = controllerNo,
                     ConverterNo = converterNo,
-                    ManufacturingYear = manufacturingYear,
+                    AmpereInvoiceNo = ampereInvoiceNo,
                     AmpereInvoiceDate = ampereInvoiceDate,
                     ReceivedDate = receivedDate,
                     Remarks = remarks,
@@ -207,6 +214,15 @@ namespace KRSDealerManagement.Web.Controllers
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
+            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
+            var master = (await _mediator.Send(new GetVehicleMastersQuery { DealershipId = scope }))
+                .FirstOrDefault(m => m.VehicleMasterId == id);
+            if (master == null)
+            {
+                TempData["Error"] = "Vehicle not found or outside your branch scope.";
+                return RedirectToAction(nameof(Index));
+            }
+
             try
             {
                 await _mediator.Send(new DeleteVehicleMasterCommand
@@ -221,6 +237,60 @@ namespace KRSDealerManagement.Web.Controllers
             {
                 TempData["Error"] = ex.Message;
             }
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AuthorizeMenu(StaffMenuAccess.DealerStock)]
+        public async Task<IActionResult> Transfer(int id, int targetDealershipId, string? remarks)
+        {
+            var userId = SessionHelper.GetUserId(HttpContext.Session);
+            if (!userId.HasValue) return RedirectToAction("Login", "Account");
+
+            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
+            var master = (await _mediator.Send(new GetVehicleMastersQuery { DealershipId = scope }))
+                .FirstOrDefault(m => m.VehicleMasterId == id);
+            if (master == null && scope.HasValue)
+            {
+                TempData["Error"] = "Vehicle not found in your branch.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (master == null)
+            {
+                master = (await _mediator.Send(new GetVehicleMastersQuery()))
+                    .FirstOrDefault(m => m.VehicleMasterId == id);
+            }
+
+            if (master == null)
+            {
+                TempData["Error"] = "Record not found.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (scope.HasValue && master.DealershipId != scope.Value)
+            {
+                TempData["Error"] = "You can only transfer vehicles from your branch.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            try
+            {
+                await _mediator.Send(new TransferVehicleMasterCommand
+                {
+                    VehicleMasterId = id,
+                    TargetDealershipId = targetDealershipId,
+                    TransferredBy = userId.Value,
+                    Remarks = remarks
+                });
+                TempData["Success"] = $"Vehicle {master.ChassisNumber} transferred successfully.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+
             return RedirectToAction(nameof(Index));
         }
 

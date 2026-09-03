@@ -286,13 +286,6 @@ namespace KRSDealerManagement.Shared.Constants
                 },
                 new()
                 {
-                    ParentKey = "rto_subsidy_progress",
-                    ParentName = "RTO & Subsidy Progress",
-                    Icon = "bi-signpost-split",
-                    Children = GetRtoSubsidyProgressMenuItems()
-                },
-                new()
-                {
                     ParentKey = "reports",
                     ParentName = "Reports",
                     Icon = "bi-graph-up",
@@ -332,11 +325,7 @@ namespace KRSDealerManagement.Shared.Constants
                 Action = "SubsidyIdPending",
                 Icon = "bi-tag",
                 Actions = new[] { "SubsidyIdPending", "Export" }
-            }
-        };
-
-        private static IReadOnlyList<MenuItemDefinition> GetRtoSubsidyProgressMenuItems() => new[]
-        {
+            },
             new MenuItemDefinition
             {
                 Key = VehicleBookings,

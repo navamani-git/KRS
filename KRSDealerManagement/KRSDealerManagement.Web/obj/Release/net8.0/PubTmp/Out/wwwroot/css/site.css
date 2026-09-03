@@ -72,10 +72,44 @@ body {
     color: white !important;
 }
 
-/* Sidebar */
+/* Sidebar — flex column so expanded submenus scroll instead of clipping Reports */
+.layout-fixed .main-sidebar {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+}
+
+.layout-fixed .main-sidebar .brand-link {
+    flex: 0 0 auto;
+}
+
+.main-sidebar .sidebar {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable;
+    padding-bottom: 2rem;
+}
+
 .sidebar {
     background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
-    min-height: 100vh;
+    min-height: 0 !important;
+}
+
+.main-sidebar .nav-sidebar,
+.main-sidebar .nav-treeview {
+    overflow: visible;
+}
+
+.main-sidebar .nav-sidebar > .nav-item.menu-open > .nav-treeview {
+    display: block;
 }
 
 .sidebar .brand-section {
@@ -1330,8 +1364,9 @@ table.grid-excel-table td.grid-sticky-col-2 {
 @media (max-width: 991.98px) {
     .main-sidebar .sidebar {
         margin-left: 0 !important;
-        overflow-y: auto;
+        height: calc(100vh - 3.5rem);
         max-height: calc(100vh - 3.5rem);
+        overflow-y: auto !important;
     }
 
     body.sidebar-open .main-sidebar {
@@ -1380,6 +1415,242 @@ table.grid-excel-table td.grid-sticky-col-2 {
 .role-menu-row-label {
     font-size: 0.9rem;
     color: #343a40;
+}
+
+.bg-teal {
+    background-color: #20c997 !important;
+    color: #fff !important;
+}
+
+/* Floating Quick Actions widget */
+.krs-quick-actions {
+    position: fixed;
+    right: 1.25rem;
+    bottom: 1.5rem;
+    z-index: 1050;
+    pointer-events: none;
+}
+
+.krs-quick-actions-fab {
+    width: 3.25rem;
+    height: 3.25rem;
+    border: none;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    font-size: 1.35rem;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.45);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+    position: relative;
+    z-index: 2;
+}
+
+.krs-quick-actions-fab:hover,
+.krs-quick-actions.is-open .krs-quick-actions-fab {
+    transform: scale(1.06);
+    box-shadow: 0 6px 22px rgba(102, 126, 234, 0.55);
+}
+
+.krs-quick-actions-panel {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 0.75rem);
+    width: min(18rem, calc(100vw - 2.5rem));
+    max-height: min(24rem, calc(100vh - 8rem));
+    background: #fff;
+    border-radius: 0.75rem;
+    box-shadow: 0 8px 32px rgba(15, 23, 42, 0.18);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(0.5rem) scale(0.96);
+    transform-origin: bottom right;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.krs-quick-actions.is-open .krs-quick-actions-panel {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.krs-quick-actions-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.65rem 0.85rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+}
+
+.krs-quick-actions-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.krs-quick-actions-customize {
+    color: rgba(255, 255, 255, 0.9) !important;
+    text-decoration: none !important;
+}
+
+.krs-quick-actions-body {
+    padding: 0.5rem;
+    overflow-y: auto;
+    flex: 1 1 auto;
+}
+
+.krs-quick-actions-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.45rem 0.5rem;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    color: #1e293b;
+    font-size: 0.875rem;
+    transition: background 0.15s ease;
+}
+
+.krs-quick-actions-item:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.krs-quick-actions-icon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.45rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.95rem;
+    color: #fff;
+}
+
+.krs-quick-actions-label {
+    line-height: 1.3;
+    font-weight: 500;
+}
+
+.krs-quick-actions-footer {
+    padding: 0.4rem 0.75rem 0.55rem;
+    font-size: 0.7rem;
+    text-align: center;
+    border-top: 1px solid #f1f5f9;
+}
+
+.krs-quick-actions-empty {
+    padding: 0.25rem 0.35rem;
+}
+
+@media (max-width: 576px) {
+    .krs-quick-actions {
+        right: 0.75rem;
+        bottom: 1rem;
+    }
+
+    .krs-quick-actions-panel {
+        width: calc(100vw - 1.5rem);
+    }
+}
+
+/* Customize Quick Actions modal — scrollable menu list, fixed Save/Cancel */
+#quickActionsModal:not(.show) {
+    pointer-events: none;
+}
+
+#quickActionsModal {
+    z-index: 1060 !important;
+}
+
+#quickActionsModal .krs-quick-actions-modal-dialog {
+    width: min(36rem, calc(100vw - 2rem));
+    max-width: min(36rem, calc(100vw - 2rem));
+    margin: 1rem auto;
+}
+
+#quickActionsModal .modal-content {
+    overflow: hidden;
+}
+
+#quickActionsModal .krs-quick-actions-modal-form {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 2rem);
+}
+
+#quickActionsModal .modal-header,
+#quickActionsModal .modal-footer {
+    flex-shrink: 0;
+}
+
+#quickActionsModal .modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 0.5rem;
+}
+
+#quickActionsModal .krs-quick-actions-modal-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: min(52vh, 28rem);
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding-right: 0.35rem;
+    margin-right: -0.15rem;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 0.5rem;
+}
+
+#quickActionsModal .krs-quick-actions-modal-scroll:focus {
+    outline: none;
+}
+
+#quickActionsModal .krs-quick-actions-modal-footer {
+    background: #fff;
+    border-top: 1px solid #dee2e6;
+    box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.06);
+}
+
+@media (max-width: 576px) {
+    #quickActionsModal .krs-quick-actions-modal-dialog {
+        margin: 0.5rem auto;
+        width: calc(100vw - 1rem);
+        max-width: calc(100vw - 1rem);
+    }
+
+    #quickActionsModal .krs-quick-actions-modal-form {
+        max-height: calc(100vh - 1rem);
+    }
+
+    #quickActionsModal .krs-quick-actions-modal-scroll {
+        max-height: min(48vh, 22rem);
+    }
+
+    #quickActionsModal .krs-quick-actions-modal-footer {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    #quickActionsModal .krs-quick-actions-modal-footer .btn {
+        min-width: 5.5rem;
+    }
 }
 
 @media (max-width: 576px) {

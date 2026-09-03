@@ -19,6 +19,9 @@
     var showBookingCounts = canViewBookings && (isAdmin || isBranchManager || isSubdealer);
     var showStaffOnlyBookingStages = isAdmin || isBranchManager;
 
+    var subsidyIdPendingUrl = isSubdealer
+        ? Url.Action("MySubsidyIdPending", "VehicleBookings")!
+        : Url.Action("SubsidyIdPending", "VehicleBookings")!;
     var subsidyDocsPendingUrl = isSubdealer
         ? Url.Action("MySubsidyDocsPending", "VehicleBookings")!
         : Url.Action("SubsidyDocsPending", "VehicleBookings")!;
@@ -62,6 +65,30 @@
     var registeredHelp = BookingGridStageInfo.RegisteredAwaitingPlate();
     var subsidyDocsHelp = BookingGridStageInfo.SubsidyDocsPending();
     var subsidyHelp = BookingGridStageInfo.SubsidyIdPending();
+
+    var widgetModel = ViewBag.DashboardWidgets as KRSDealerManagement.Web.Models.DashboardWidgetsCustomizeModel
+        ?? new KRSDealerManagement.Web.Models.DashboardWidgetsCustomizeModel();
+    var widgetSharedData = new ViewDataDictionary(ViewData)
+    {
+        ["PendingOrdersUrl"] = pendingOrdersUrl,
+        ["PendingReturnsUrl"] = pendingReturnsUrl,
+        ["PendingPaymentsUrl"] = pendingPaymentsUrl,
+        ["PendingCommissionsUrl"] = pendingCommissionsUrl,
+        ["BookedToCustomerUrl"] = bookedToCustomerUrl,
+        ["SubsidyDocsPendingUrl"] = subsidyDocsPendingUrl,
+        ["SubsidyIdPendingUrl"] = subsidyIdPendingUrl,
+        ["RegisteredAwaitingPlateUrl"] = registeredAwaitingPlateUrl
+    };
+    foreach (var status in new[]
+    {
+        UnifiedVehicleStatus.PaperReceived,
+        UnifiedVehicleStatus.Invoiced,
+        UnifiedVehicleStatus.InsuranceCreated,
+        UnifiedVehicleStatus.RtoRequested
+    })
+    {
+        widgetSharedData[$"BookingUrl_{status}"] = BookingUrl(status);
+    }
 }
 
 <!-- Page Header -->
@@ -195,261 +222,106 @@
     }
 </div>
 
-@if ((isAdmin || isBranchManager) && (canViewDealerStock || canViewShowroomStock))
+@if (widgetModel.Sections.Any())
 {
     <div class="row mb-2">
-        <div class="col-12">
-            <h5 class="text-muted mb-1"><i class="bi bi-boxes"></i> Stock</h5>
-            <p class="text-muted small mb-2">@DashboardWidgetHelp.StockSection</p>
+        <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <p class="text-muted small mb-0">Drag pills in customize mode to change your dashboard layout.</p>
+            @if (widgetModel.CanCustomize)
+            {
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#dashboardWidgetsModal">
+                    <i class="bi bi-sliders"></i> Customize dashboard
+                </button>
+            }
         </div>
     </div>
-    <div class="row mb-3">
-        @if (canViewDealerStock)
-        {
-            <div class="col-lg-3 col-6">
-                <a href="@Url.Action("Index", "VehicleMasters", new { isAllocated = false })" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@DashboardWidgetHelp.DealerStock">
-                    <div class="info-box mb-3 dashboard-stage-box">
-                        <span class="info-box-icon bg-primary"><i class="bi bi-boxes"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">Dealer Stock</span>
-                            <span class="info-box-number">@Model.DealerStockCount</span>
-                            <span class="info-box-hint">@DashboardWidgetHelp.DealerStock</span>
-                        </div>
-                    </div>
-                </a>
-            </div>
+
+    <style>
+        .dashboard-pending-link .info-box {
+            transition: box-shadow 0.15s ease, transform 0.15s ease;
+            cursor: pointer;
         }
-        @if (canViewShowroomStock)
-        {
-            <div class="col-lg-3 col-6">
-                <a href="@Url.Action("Index", "Stock")" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@DashboardWidgetHelp.ShowroomStock">
-                    <div class="info-box mb-3 dashboard-stage-box">
-                        <span class="info-box-icon bg-teal"><i class="bi bi-box-seam"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text">Subdealer Stock</span>
-                            <span class="info-box-number">@Model.ShowroomStockCount</span>
-                            <span class="info-box-hint">@DashboardWidgetHelp.ShowroomStock</span>
-                        </div>
-                    </div>
-                </a>
-            </div>
+        .dashboard-pending-link:hover .info-box {
+            box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.12);
+            transform: translateY(-1px);
         }
-    </div>
+        .dashboard-stage-box { min-height: 6.5rem; }
+        .info-box-hint {
+            display: block;
+            font-size: 0.8125rem;
+            line-height: 1.35;
+            color: #64748b;
+            margin-top: 0.2rem;
+            white-space: normal;
+        }
+        #dashboardWidgetSortable li {
+            cursor: grab;
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            padding: 0.65rem 0.85rem;
+            margin-bottom: 0.5rem;
+            background: #fff;
+        }
+        #dashboardWidgetSortable li.dragging { opacity: 0.55; }
+    </style>
+
+    @foreach (var widgetSection in widgetModel.Sections)
+    {
+        <div class="row mb-2 mt-2">
+            <div class="col-12">
+                <h5 class="text-muted mb-1">
+                    @if (!string.IsNullOrWhiteSpace(widgetSection.IconClass))
+                    {
+                        <i class="bi @widgetSection.IconClass"></i>
+                    }
+                    @widgetSection.Group
+                </h5>
+                @if (!string.IsNullOrWhiteSpace(widgetSection.HelpText))
+                {
+                    <p class="text-muted small mb-2">@widgetSection.HelpText</p>
+                }
+            </div>
+        </div>
+        <div class="row mb-3">
+            @foreach (var widgetKey in widgetSection.Keys)
+            {
+                var itemData = new ViewDataDictionary(widgetSharedData) { ["WidgetKey"] = widgetKey };
+                @await Html.PartialAsync("_DashboardWidget", Model, itemData)
+            }
+        </div>
+    }
 }
 
-@if (showBookingCounts)
+@if (widgetModel.CanCustomize)
 {
-    <div class="row mb-2">
-        <div class="col-12">
-            <h5 class="text-muted mb-1"><i class="bi bi-truck-front"></i> Manage Vehicles</h5>
-            <p class="text-muted small mb-2">@DashboardWidgetHelp.ManageVehiclesSection</p>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-lg-3 col-6">
-            <a href="@bookedToCustomerUrl" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@bookedHelp.ScreenPurpose">
-                <div class="info-box mb-3 dashboard-stage-box">
-                    <span class="info-box-icon bg-primary"><i class="bi bi-person-check"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Booked to Customer</span>
-                        <span class="info-box-number">@Model.BookedToCustomerCount</span>
-                        <span class="info-box-hint">@bookedHelp.PillSummary</span>
+    <div class="modal fade" id="dashboardWidgetsModal" tabindex="-1" aria-labelledby="dashboardWidgetsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form method="post" asp-action="SaveDashboardWidgets" id="dashboardWidgetsForm">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="dashboardWidgetsModalLabel">Customize dashboard pills</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-lg-3 col-6">
-            <a href="@BookingUrl(UnifiedVehicleStatus.PaperReceived)" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@paperHelp.ScreenPurpose">
-                <div class="info-box mb-3 dashboard-stage-box">
-                    <span class="info-box-icon bg-secondary"><i class="bi bi-file-earmark-text"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Paper Received</span>
-                        <span class="info-box-number">@Model.PaperReceivedCount</span>
-                        <span class="info-box-hint">@paperHelp.PillSummary</span>
+                    <div class="modal-body">
+                        <p class="text-muted small">Drag to reorder. Hidden pills are not removed — save to apply order.</p>
+                        <ul class="list-unstyled mb-0" id="dashboardWidgetSortable">
+                            @foreach (var key in widgetModel.OrderedKeys)
+                            {
+                                var label = widgetModel.Catalog.FirstOrDefault(c => string.Equals(c.Key, key, StringComparison.OrdinalIgnoreCase))?.Label ?? key;
+                                <li draggable="true" data-key="@key"><i class="bi bi-grip-vertical text-muted me-2"></i>@label</li>
+                            }
+                        </ul>
                     </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-lg-3 col-6">
-            <a href="@BookingUrl(UnifiedVehicleStatus.Invoiced)" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@invoicedHelp.ScreenPurpose">
-                <div class="info-box mb-3 dashboard-stage-box">
-                    <span class="info-box-icon bg-info"><i class="bi bi-receipt"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Invoiced</span>
-                        <span class="info-box-number">@Model.InvoicedCount</span>
-                        <span class="info-box-hint">@invoicedHelp.PillSummary</span>
+                    <div class="modal-footer justify-content-between">
+                        <button type="submit" name="resetOrder" value="true" class="btn btn-outline-secondary">Reset to default</button>
+                        <div>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save layout</button>
+                        </div>
                     </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-lg-3 col-6">
-            <a href="@BookingUrl(UnifiedVehicleStatus.InsuranceCreated)" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@insuranceHelp.ScreenPurpose">
-                <div class="info-box mb-3 dashboard-stage-box">
-                    <span class="info-box-icon bg-success"><i class="bi bi-shield-check"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Insurance Created</span>
-                        <span class="info-box-number">@Model.InsuranceCreatedCount</span>
-                        <span class="info-box-hint">@insuranceHelp.PillSummary</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-lg-3 col-6">
-            <a href="@BookingUrl(UnifiedVehicleStatus.RtoRequested)" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@rtoHelp.ScreenPurpose">
-                <div class="info-box mb-3 dashboard-stage-box">
-                    <span class="info-box-icon bg-warning"><i class="bi bi-signpost"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">RTO Requested</span>
-                        <span class="info-box-number">@Model.RtoRequestedCount</span>
-                        <span class="info-box-hint">@rtoHelp.PillSummary</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        @if (showStaffOnlyBookingStages)
-        {
-        <div class="col-lg-3 col-6">
-            <a href="@Url.Action("SubsidyIdPending", "VehicleBookings")" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@subsidyHelp.ScreenPurpose">
-                <div class="info-box mb-3 dashboard-stage-box">
-                    <span class="info-box-icon bg-danger"><i class="bi bi-tag"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Subsidy ID Pending</span>
-                        <span class="info-box-number">@Model.SubsidyIdPendingCount</span>
-                        <span class="info-box-hint">@subsidyHelp.PillSummary</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        }
-    </div>
-}
-
-<!-- Pending Items Row -->
-<style>
-    .dashboard-pending-link .info-box {
-        transition: box-shadow 0.15s ease, transform 0.15s ease;
-        cursor: pointer;
-    }
-    .dashboard-pending-link:hover .info-box {
-        box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.12);
-        transform: translateY(-1px);
-    }
-    .dashboard-stage-box {
-        min-height: 6.5rem;
-    }
-    .info-box-hint {
-        display: block;
-        font-size: 0.8125rem;
-        line-height: 1.35;
-        color: #64748b;
-        margin-top: 0.2rem;
-        white-space: normal;
-    }
-</style>
-<div class="row mb-2">
-    <div class="col-12">
-        <h5 class="text-muted mb-1"><i class="bi bi-hourglass-split"></i> Pending Actions</h5>
-        <p class="text-muted small mb-2">Items that need attention. The number is how many are waiting right now.</p>
-    </div>
-</div>
-<div class="row">
-    @if (canViewOrders)
-    {
-    <div class="col-lg-3 col-6">
-        <a href="@pendingOrdersUrl" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@DashboardWidgetHelp.PendingOrders">
-            <div class="info-box mb-0 dashboard-stage-box">
-                <span class="info-box-icon bg-warning"><i class="bi bi-cart-check"></i></span>
-                <div class="info-box-content">
-                    <span class="info-box-text">Pending Orders</span>
-                    <span class="info-box-number">@Model.PendingPurchaseOrders</span>
-                    <span class="info-box-hint">@DashboardWidgetHelp.PendingOrders</span>
-                </div>
+                </form>
             </div>
-        </a>
-    </div>
-    }
-
-    @if (canViewReturns)
-    {
-    <div class="col-lg-3 col-6">
-        <a href="@pendingReturnsUrl" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@DashboardWidgetHelp.PendingReturns">
-            <div class="info-box mb-0 dashboard-stage-box">
-                <span class="info-box-icon bg-danger"><i class="bi bi-arrow-return-left"></i></span>
-                <div class="info-box-content">
-                    <span class="info-box-text">Pending Returns</span>
-                    <span class="info-box-number">@Model.PendingReturnRequests</span>
-                    <span class="info-box-hint">@DashboardWidgetHelp.PendingReturns</span>
-                </div>
-            </div>
-        </a>
-    </div>
-    }
-
-    @if (canViewPayments)
-    {
-    <div class="col-lg-3 col-6">
-        <a href="@pendingPaymentsUrl" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@DashboardWidgetHelp.PendingPayments">
-            <div class="info-box mb-0 dashboard-stage-box">
-                <span class="info-box-icon bg-success"><i class="bi bi-credit-card"></i></span>
-                <div class="info-box-content">
-                    <span class="info-box-text">Pending Payments</span>
-                    <span class="info-box-number">@Model.PendingPayments</span>
-                    <span class="info-box-hint">@DashboardWidgetHelp.PendingPayments</span>
-                </div>
-            </div>
-        </a>
-    </div>
-    }
-
-    @if (canViewCommissions)
-    {
-    <div class="col-lg-3 col-6">
-        <a href="@pendingCommissionsUrl" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@DashboardWidgetHelp.PendingCommissions">
-            <div class="info-box mb-0 dashboard-stage-box">
-                <span class="info-box-icon bg-info"><i class="bi bi-cash-stack"></i></span>
-                <div class="info-box-content">
-                    <span class="info-box-text">Pending Commissions</span>
-                    <span class="info-box-number">@Model.PendingCommissions</span>
-                    <span class="info-box-hint">@DashboardWidgetHelp.PendingCommissions</span>
-                </div>
-            </div>
-        </a>
-    </div>
-    }
-</div>
-
-@if (canViewRtoSubsidyProgress)
-{
-    <div class="row mb-2 mt-3">
-        <div class="col-12">
-            <h5 class="text-muted mb-1"><i class="bi bi-signpost-split"></i> RTO &amp; Subsidy Progress</h5>
-            <p class="text-muted small mb-2">@DashboardWidgetHelp.RtoSubsidyProgressSection</p>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-lg-3 col-6">
-            <a href="@subsidyDocsPendingUrl" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@subsidyDocsHelp.ScreenPurpose">
-                <div class="info-box mb-3 dashboard-stage-box">
-                    <span class="info-box-icon bg-warning"><i class="bi bi-file-earmark-person"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Subsidy Docs Pending</span>
-                        <span class="info-box-number">@Model.SubsidyDocsPendingCount</span>
-                        <span class="info-box-hint">@subsidyDocsHelp.PillSummary</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-lg-3 col-6">
-            <a href="@registeredAwaitingPlateUrl" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@registeredHelp.ScreenPurpose">
-                <div class="info-box mb-3 dashboard-stage-box">
-                    <span class="info-box-icon bg-dark"><i class="bi bi-card-checklist"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Registered</span>
-                        <span class="info-box-number">@Model.RegisteredCount</span>
-                        <span class="info-box-hint">@registeredHelp.PillSummary</span>
-                    </div>
-                </div>
-            </a>
         </div>
     </div>
 }
@@ -510,65 +382,6 @@
     </div>
 }
 
-<!-- Quick Actions -->
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">
-                    <i class="bi bi-lightning"></i> Quick Actions
-                </h3>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    @if (isAdmin)
-                    {
-                        <div class="col-md-3 col-6 mb-3">
-                            <a href="@Url.Action("Create", "VehicleModels")" class="btn btn-primary btn-block">
-                                <i class="bi bi-car-front"></i> Add Vehicle Model
-                            </a>
-                        </div>
-                        <div class="col-md-3 col-6 mb-3">
-                            <a href="@Url.Action("Create", "Subdealers")" class="btn btn-success btn-block">
-                                <i class="bi bi-person-plus"></i> Add Subdealer
-                            </a>
-                        </div>
-                        <div class="col-md-3 col-6 mb-3">
-                            <a href="@Url.Action("Index", "Orders")" class="btn btn-warning btn-block">
-                                <i class="bi bi-cart-check"></i> Manage Orders
-                            </a>
-                        </div>
-                        <div class="col-md-3 col-6 mb-3">
-                            <a href="@Url.Action("Index", "Reports")" class="btn btn-info btn-block">
-                                <i class="bi bi-graph-up"></i> View Reports
-                            </a>
-                        </div>
-                    }
-                    else if (isSubdealer)
-                    {
-                        <div class="col-md-4 col-6 mb-3">
-                            <a href="@Url.Action("Index", "Vehicles")" class="btn btn-info btn-block">
-                                <i class="bi bi-ev-front"></i> My Vehicles
-                            </a>
-                        </div>
-                        <div class="col-md-4 col-6 mb-3">
-                            <a href="@Url.Action("Create", "Orders")" class="btn btn-primary btn-block">
-                                <i class="bi bi-cart-plus"></i> Create Order
-                            </a>
-                        </div>
-                        <div class="col-md-4 col-6 mb-3">
-                            <a href="@Url.Action("Submit", "Commissions")" class="btn btn-success btn-block">
-                                <i class="bi bi-cash-stack"></i> Submit Commission
-                            </a>
-                        </div>
-                        <div class="col-md-4 col-6 mb-3">
-                            <a href="@Url.Action("Statement", "Account")" class="btn btn-outline-info btn-block">
-                                <i class="bi bi-file-text"></i> View Statement
-                            </a>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+@section Scripts {
+    <script src="~/js/dashboard-widgets.js" asp-append-version="true"></script>
+}

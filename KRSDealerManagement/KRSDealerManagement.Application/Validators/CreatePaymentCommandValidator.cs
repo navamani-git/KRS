@@ -19,9 +19,9 @@ namespace KRSDealerManagement.Application.Validators
                 .WithMessage("Payment proof is required");
 
             RuleFor(x => x.CustomerName)
-                .NotEmpty().When(x => !x.IsCreditRequest)
-                .WithMessage("Customer name is required for all payments")
-                .Matches("^[A-Z0-9 ]+$").When(x => !x.IsCreditRequest && !string.IsNullOrWhiteSpace(x.CustomerName))
+                .NotEmpty().When(x => !x.IsCreditRequest && !x.ExemptCustomerName)
+                .WithMessage("Customer name is required for this payment type")
+                .Matches("^[A-Z0-9 ]+$").When(x => !x.IsCreditRequest && !x.ExemptCustomerName && !string.IsNullOrWhiteSpace(x.CustomerName))
                 .WithMessage("Customer name must be CAPS only");
 
             RuleFor(x => x.FinanceNameId)

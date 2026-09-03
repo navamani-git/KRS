@@ -15,6 +15,7 @@
     int SelectedLevel(string menuKey)
     {
         if (levelMap.TryGetValue(menuKey, out var lv)) return lv;
+        if (form?.RoleId > 0) return (int)MenuAccessLevel.None;
         return defaults.TryGetValue(menuKey, out var dv) ? dv : 0;
     }
 

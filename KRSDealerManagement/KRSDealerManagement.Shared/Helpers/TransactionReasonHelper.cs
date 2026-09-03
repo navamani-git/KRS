@@ -6,7 +6,10 @@ namespace KRSDealerManagement.Shared.Helpers
             => $"Commission - {FormatChassis(chassisNumber)}";
 
         public static string Return(string? chassisNumber)
-            => $"Return - {FormatChassis(chassisNumber)}";
+            => Return(chassisNumber, null, null);
+
+        public static string Return(string? chassisNumber, string? modelName, string? colorName)
+            => $"Return\n{FormatChassis(chassisNumber)}\n{(modelName ?? "-").Trim()}\n{(colorName ?? "-").Trim()}";
 
         public static string Reassignment(string? chassisNumber)
             => $"Vehicle reassignment - {FormatChassis(chassisNumber)}";

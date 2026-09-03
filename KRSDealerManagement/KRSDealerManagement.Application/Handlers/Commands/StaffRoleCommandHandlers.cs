@@ -76,7 +76,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
         internal async Task<List<RoleMenuPermissionInput>> ResolveMenusAsync(string templateCode, List<RoleMenuPermissionInput> submitted)
         {
-            if (submitted.Any(m => m.AccessLevel != MenuAccessLevel.None))
+            if (submitted.Count > 0)
             {
                 return submitted
                     .Where(m => m.AccessLevel != MenuAccessLevel.None)
@@ -93,7 +93,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
         internal static List<RoleMenuPermissionInput> ResolveMenus(string templateCode, List<RoleMenuPermissionInput> submitted)
         {
-            if (submitted.Any(m => m.AccessLevel != MenuAccessLevel.None))
+            if (submitted.Count > 0)
             {
                 return submitted
                     .Where(m => m.AccessLevel != MenuAccessLevel.None)

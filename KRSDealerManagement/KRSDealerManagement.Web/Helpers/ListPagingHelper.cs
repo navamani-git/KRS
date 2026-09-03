@@ -57,16 +57,17 @@ namespace KRSDealerManagement.Web.Helpers
         }
 
         /// <summary>
-        /// Default range: first day of previous month → today (inclusive).
+        /// Default range: first day of current month → last day of current month (inclusive).
         /// </summary>
         public static (DateTime FromDate, DateTime ToDate) ResolveDateRange(
             DateTime? fromDate,
             DateTime? toDate)
         {
             var today = DateTime.Today;
-            var defaultFrom = new DateTime(today.Year, today.Month, 1).AddMonths(-1);
-            var from = (fromDate ?? defaultFrom).Date;
-            var to = (toDate ?? today).Date;
+            var monthStart = new DateTime(today.Year, today.Month, 1);
+            var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+            var from = (fromDate ?? monthStart).Date;
+            var to = (toDate ?? monthEnd).Date;
             if (to < from) to = from;
             return (from, to);
         }

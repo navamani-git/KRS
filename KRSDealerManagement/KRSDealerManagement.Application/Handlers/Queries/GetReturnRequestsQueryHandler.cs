@@ -37,6 +37,13 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 .Select(b => b.VehicleId)
                 .ToHashSet();
 
+            var scopedUserIds = request.DealershipId.HasValue
+                ? (await _unitOfWork.UserOrgRoles.GetAllAsync())
+                    .Where(a => a.IsActive && a.DealershipId == request.DealershipId.Value)
+                    .Select(a => a.UserId)
+                    .ToHashSet()
+                : null;
+
             var result = from r in returns
                          join a in accounts on r.AccountId equals a.AccountId into accGroup
                          from acc in accGroup.DefaultIfEmpty()
@@ -71,7 +78,11 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                                  : null,
                              CreatedDate = r.CreatedDate,
                              ModifiedDate = r.ModifiedDate,
-                             CanAllocateToSubdealer = false
+                             CanAllocateToSubdealer = r.Status == 1
+                                 && veh != null
+                                 && veh.Status == UnifiedVehicleStatus.ApprovedByDealer
+                                 && !veh.SubdealerId.HasValue
+                                 && !bookedVehicleIds.Contains(veh.VehicleId)
                          };
 
             if (request.ReturnRequestId.HasValue)
@@ -98,6 +109,23 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     || (orderSubdealerById.TryGetValue(r.OrderId, out var orderSubdealerId)
                         && orgUserIds.Contains(orderSubdealerId))
                     || (r.SubdealerUserId.HasValue && orgUserIds.Contains(r.SubdealerUserId.Value)));
+            }
+
+            if (scopedUserIds != null)
+            {
+                var vehicleSubdealerById = vehicles.ToDictionary(v => v.VehicleId, v => v.SubdealerId);
+                var orderSubdealerById = orders.ToDictionary(o => o.OrderId, o => o.SubdealerId);
+                var accountSubdealerById = accounts.ToDictionary(a => a.AccountId, a => a.SubdealerId);
+
+                result = result.Where(r =>
+                    (vehicleSubdealerById.TryGetValue(r.VehicleId, out var vehicleSubdealerId)
+                        && vehicleSubdealerId.HasValue
+                        && scopedUserIds.Contains(vehicleSubdealerId.Value))
+                    || (orderSubdealerById.TryGetValue(r.OrderId, out var orderSubdealerId)
+                        && scopedUserIds.Contains(orderSubdealerId))
+                    || (accountSubdealerById.TryGetValue(r.AccountId, out var accountSubdealerId)
+                        && scopedUserIds.Contains(accountSubdealerId))
+                    || (r.SubdealerUserId.HasValue && scopedUserIds.Contains(r.SubdealerUserId.Value)));
             }
 
             if (request.Status.HasValue)

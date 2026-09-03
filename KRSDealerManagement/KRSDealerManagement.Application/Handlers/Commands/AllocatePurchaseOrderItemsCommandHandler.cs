@@ -36,7 +36,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                     ?? throw new InvalidOperationException("Account balance not found.");
 
                 var dealershipId = await ResolveDealershipIdAsync(order.SubdealerId);
-                ValidateMasterSelections(request, lineItems, dealershipId);
+                await ValidateMasterSelectionsAsync(request, dealershipId);
 
                 decimal approvedAmount = 0;
                 int approvedCount = 0;
@@ -200,9 +200,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
         private async Task<int> ResolveDealershipIdAsync(int subdealerId)
             => await ResolveDealershipIdAsync(subdealerId, _unitOfWork);
 
-        private static void ValidateMasterSelections(
+        private async Task ValidateMasterSelectionsAsync(
             AllocatePurchaseOrderItemsCommand request,
-            List<PurchaseOrderItem> lineItems,
             int dealershipId)
         {
             var masterIds = request.Items
@@ -213,6 +212,14 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             var dup = masterIds.GroupBy(id => id).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
             if (dup.Count > 0)
                 throw new InvalidOperationException("The same chassis cannot be allocated to multiple lines in one batch.");
+
+            foreach (var masterId in masterIds)
+            {
+                var master = await _unitOfWork.VehicleMasters.GetByIdAsync(masterId)
+                    ?? throw new InvalidOperationException("Selected chassis was not found in dealer stock.");
+                if (master.DealershipId != dealershipId)
+                    throw new InvalidOperationException($"Chassis {master.ChassisNumber} belongs to another branch and cannot be used for this order.");
+            }
         }
     }
 

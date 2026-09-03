@@ -13,6 +13,7 @@ namespace KRSDealerManagement.Application.DTOs
         public int? DealershipId { get; set; }
         public string? DealershipName { get; set; }
         public bool IsActive { get; set; }
+        public bool CanExport { get; set; } = true;
         public string? PasswordHash { get; set; }
         public DateTime CreatedDate { get; set; }
 

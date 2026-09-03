@@ -7,9 +7,12 @@
     ViewData["ExcelImportReturnAction"] = "Index";
     var searchTerm = ViewBag.SearchTerm as string;
     var isAllocated = ViewBag.IsAllocated as bool?;
-    var showDealershipColumn = ViewBag.ShowDealershipColumn as bool? ?? false;
+    var showBranchColumn = ViewBag.ShowBranchColumn as bool? ?? false;
+    var showDealershipFilter = ViewBag.ShowDealershipFilter as bool? ?? false;
     var dealerships = ViewBag.Dealerships as IEnumerable<DealershipDto> ?? Enumerable.Empty<DealershipDto>();
+    var transferDealerships = ViewBag.TransferDealerships as IEnumerable<DealershipDto> ?? Enumerable.Empty<DealershipDto>();
     var selectedDealershipId = ViewBag.SelectedDealershipId as int?;
+    var isAdmin = ViewBag.IsAdmin as bool? ?? false;
 }
 
 <div class="row mb-3">
@@ -28,7 +31,7 @@
 <div class="card mb-3">
     <div class="card-body py-2">
         <form method="get" class="row g-2 align-items-end" id="gridFilterForm">
-            @if (showDealershipColumn)
+            @if (showDealershipFilter)
             {
                 <div class="col-md-3">
                     <label class="form-label form-label-sm mb-0">Dealership</label>
@@ -76,9 +79,9 @@
                     <thead class="table-dark">
                         <tr>
                             <th class="grid-col-rownum">#</th>
-                            @if (showDealershipColumn)
+                            @if (showBranchColumn)
                             {
-                                <th>Dealer</th>
+                                <th>Branch</th>
                             }
                             <th>Chassis</th>
                             <th>Model</th>
@@ -87,7 +90,8 @@
                             <th>Battery</th>
                             <th>Received</th>
                             <th>Ampere Invoice</th>
-                            <th>Mfg Year</th>
+                            <th>Invoice No</th>
+                            <th>Allocated To</th>
                             <th>Status</th>
                             <th></th>
                         </tr>
@@ -99,7 +103,7 @@
                         {
                             <tr>
                                 <td>@(rowNum++)</td>
-                                @if (showDealershipColumn)
+                                @if (showBranchColumn)
                                 {
                                     <td>@m.DealershipName</td>
                                 }
@@ -110,7 +114,8 @@
                                 <td><small>@m.BatteryNo</small></td>
                                 <td>@m.ReceivedDate.ToString("dd-MMM-yyyy")</td>
                                 <td>@m.AmpereInvoiceDate.ToString("dd-MMM-yyyy")</td>
-                                <td>@m.ManufacturingYear</td>
+                                <td><small>@m.AmpereInvoiceNo</small></td>
+                                <td><small>@(m.AllocatedToSubdealerName ?? "—")</small></td>
                                 <td>
                                     @if (m.IsAllocated)
                                     { <span class="badge bg-secondary">Allocated</span> }
@@ -121,6 +126,17 @@
                                     @if (!m.IsAllocated)
                                     {
                                         <a href="@Url.Action("Edit", new { id = m.VehicleMasterId })" class="btn btn-sm btn-outline-primary">Edit</a>
+                                        @if (isAdmin && transferDealerships.Count() > 1)
+                                        {
+                                            <button type="button" class="btn btn-sm btn-outline-secondary transfer-btn"
+                                                    data-id="@m.VehicleMasterId"
+                                                    data-chassis="@m.ChassisNumber"
+                                                    data-branch="@m.DealershipName"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#transferBranchModal">
+                                                <i class="bi bi-arrow-left-right"></i> Transfer
+                                            </button>
+                                        }
                                         <form method="post" asp-action="Delete" class="d-inline" onsubmit="return confirm('Delete this vehicle from dealer stock?');">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="id" value="@m.VehicleMasterId" />
@@ -142,3 +158,57 @@
 </div>
 
 <partial name="_Pagination" />
+
+@if (isAdmin && transferDealerships.Any())
+{
+    <div class="modal fade" id="transferBranchModal" tabindex="-1" aria-labelledby="transferBranchModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" asp-action="Transfer" id="transferBranchForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" id="transferVehicleMasterId" />
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="transferBranchModalLabel">Transfer to branch</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-2">Chassis: <strong id="transferChassisLabel"></strong></p>
+                        <p class="text-muted small mb-3">Current branch: <span id="transferCurrentBranch"></span></p>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Target branch</label>
+                            <select name="targetDealershipId" id="transferTargetDealershipId" class="form-select" required>
+                                <option value="">-- Select branch --</option>
+                                @foreach (var d in transferDealerships)
+                                {
+                                    <option value="@d.DealershipId">@d.DealershipName</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label">Remarks</label>
+                            <textarea name="remarks" class="form-control" rows="2" placeholder="Optional transfer note"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-arrow-left-right"></i> Transfer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @section Scripts {
+        <script>
+            document.querySelectorAll('.transfer-btn').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    document.getElementById('transferVehicleMasterId').value = btn.dataset.id || '';
+                    document.getElementById('transferChassisLabel').textContent = btn.dataset.chassis || '';
+                    document.getElementById('transferCurrentBranch').textContent = btn.dataset.branch || '';
+                    var target = document.getElementById('transferTargetDealershipId');
+                    if (target) target.selectedIndex = 0;
+                });
+            });
+        </script>
+    }
+}

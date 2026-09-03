@@ -287,8 +287,12 @@ namespace KRSDealerManagement.Web.Helpers
                     ["color"] = r => r.ColorName,
                     ["motor"] = r => r.MotorNo,
                     ["battery"] = r => r.BatteryNo,
+                    ["charger"] = r => r.ChargerNo,
+                    ["controller"] = r => r.ControllerNo,
+                    ["converter"] = r => r.ConverterNo,
                     ["status"] = r => r.IsAllocated ? "Allocated" : "Available",
-                    ["year"] = r => r.ManufacturingYear.ToString()
+                    ["invoiceNo"] = r => r.AmpereInvoiceNo,
+                    ["allocatedTo"] = r => r.AllocatedToSubdealerName
                 },
                 new Dictionary<string, Func<VehicleMasterDto, DateTime?>>(StringComparer.OrdinalIgnoreCase)
                 {

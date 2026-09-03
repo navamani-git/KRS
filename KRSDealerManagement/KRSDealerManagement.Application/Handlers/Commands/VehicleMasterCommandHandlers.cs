@@ -31,7 +31,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 ChargerNo = request.ChargerNo.Trim(),
                 ControllerNo = request.ControllerNo.Trim(),
                 ConverterNo = request.ConverterNo.Trim(),
-                ManufacturingYear = request.ManufacturingYear,
+                AmpereInvoiceNo = request.AmpereInvoiceNo.Trim(),
                 AmpereInvoiceDate = request.AmpereInvoiceDate.Date,
                 ReceivedDate = request.ReceivedDate.Date,
                 IsAllocated = false,
@@ -77,7 +77,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             master.ChargerNo = request.ChargerNo.Trim();
             master.ControllerNo = request.ControllerNo.Trim();
             master.ConverterNo = request.ConverterNo.Trim();
-            master.ManufacturingYear = request.ManufacturingYear;
+            master.AmpereInvoiceNo = request.AmpereInvoiceNo.Trim();
             master.AmpereInvoiceDate = request.AmpereInvoiceDate;
             master.ReceivedDate = request.ReceivedDate;
             master.Remarks = request.Remarks;
@@ -179,7 +179,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                     || string.IsNullOrWhiteSpace(row.ChargerNo)
                     || string.IsNullOrWhiteSpace(row.ControllerNo)
                     || string.IsNullOrWhiteSpace(row.ConverterNo)
-                    || row.ManufacturingYear <= 0
+                    || string.IsNullOrWhiteSpace(row.AmpereInvoiceNo)
                     || row.AmpereInvoiceDate == default
                     || row.ReceivedDate == default)
                 {
@@ -239,7 +239,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                         ChargerNo = row.ChargerNo.Trim(),
                         ControllerNo = row.ControllerNo.Trim(),
                         ConverterNo = row.ConverterNo.Trim(),
-                        ManufacturingYear = row.ManufacturingYear,
+                        AmpereInvoiceNo = row.AmpereInvoiceNo.Trim(),
                         AmpereInvoiceDate = row.AmpereInvoiceDate.Date,
                         ReceivedDate = row.ReceivedDate.Date,
                         IsAllocated = false,
@@ -324,6 +324,51 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 ? $"unknown color id '{row.ColorId}'."
                 : "ColorId is required (see Lookups sheet).";
             return false;
+        }
+    }
+
+    public class TransferVehicleMasterCommandHandler : IRequestHandler<TransferVehicleMasterCommand, bool>
+    {
+        private readonly IUnitOfWork _unitOfWork;
+
+        public TransferVehicleMasterCommandHandler(IUnitOfWork unitOfWork) => _unitOfWork = unitOfWork;
+
+        public async Task<bool> Handle(TransferVehicleMasterCommand request, CancellationToken cancellationToken)
+        {
+            var master = await _unitOfWork.VehicleMasters.GetByIdAsync(request.VehicleMasterId)
+                ?? throw new InvalidOperationException("Vehicle master record not found.");
+
+            if (master.IsAllocated)
+                throw new InvalidOperationException("Allocated vehicles cannot be transferred between branches.");
+
+            if (master.DealershipId == request.TargetDealershipId)
+                throw new InvalidOperationException("Vehicle is already at the selected branch.");
+
+            var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToDictionary(d => d.DealershipId);
+            if (!dealerships.TryGetValue(request.TargetDealershipId, out var targetDealership) || !targetDealership.IsActive)
+                throw new InvalidOperationException("Target branch was not found or is inactive.");
+
+            dealerships.TryGetValue(master.DealershipId, out var sourceDealership);
+            var fromName = sourceDealership?.DealershipName ?? $"Branch #{master.DealershipId}";
+            var toName = targetDealership.DealershipName;
+            var transferNote = $"Transferred from {fromName} to {toName}";
+            if (!string.IsNullOrWhiteSpace(request.Remarks))
+                transferNote = $"{transferNote}. {request.Remarks.Trim()}";
+
+            master.DealershipId = request.TargetDealershipId;
+            master.ModifiedBy = request.TransferredBy;
+            master.ModifiedDate = DateTime.UtcNow;
+
+            await _unitOfWork.VehicleMasters.UpdateAsync(master);
+            await _unitOfWork.VehicleMasters.AddHistoryAsync(new VehicleMasterHistory
+            {
+                VehicleMasterId = master.VehicleMasterId,
+                Action = "BranchTransfer",
+                Remarks = transferNote,
+                UserId = request.TransferredBy
+            });
+            await _unitOfWork.SaveChangesAsync();
+            return true;
         }
     }
 }

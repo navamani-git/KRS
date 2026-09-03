@@ -17,6 +17,9 @@ namespace KRSDealerManagement.Web.Helpers
         private const string SessionKeySubDealerId = "SubDealerId";
         private const string SessionKeyMenus = "AccessibleMenus";
         private const string SessionKeyMenuAccess = "MenuAccessLevels";
+        private const string SessionKeyCanExport = "CanExport";
+        private const string SessionKeyQuickActionKeys = "QuickActionKeys";
+        private const string SessionKeyDashboardWidgetKeys = "DashboardWidgetKeys";
 
         public static void SetUserSession(
             ISession session,
@@ -30,7 +33,10 @@ namespace KRSDealerManagement.Web.Helpers
             string? dealershipName = null,
             int? subDealerId = null,
             IEnumerable<string>? menuKeys = null,
-            IDictionary<string, MenuAccessLevel>? menuAccess = null)
+            IDictionary<string, MenuAccessLevel>? menuAccess = null,
+            bool canExport = true,
+            string? quickActionKeys = null,
+            string? dashboardWidgetKeys = null)
         {
             session.SetInt32(SessionKeyUserId, userId);
             session.SetString(SessionKeyUsername, username);
@@ -46,6 +52,15 @@ namespace KRSDealerManagement.Web.Helpers
             else session.Remove(SessionKeySubDealerId);
             session.SetString(SessionKeyMenus, string.Join(",", menuKeys ?? Array.Empty<string>()));
             session.SetString(SessionKeyMenuAccess, SerializeMenuAccess(menuAccess));
+            session.SetString(SessionKeyCanExport, canExport ? "1" : "0");
+            if (quickActionKeys != null)
+                session.SetString(SessionKeyQuickActionKeys, quickActionKeys);
+            else
+                session.Remove(SessionKeyQuickActionKeys);
+            if (dashboardWidgetKeys != null)
+                session.SetString(SessionKeyDashboardWidgetKeys, dashboardWidgetKeys);
+            else
+                session.Remove(SessionKeyDashboardWidgetKeys);
         }
 
         public static int? GetUserId(ISession session) => session.GetInt32(SessionKeyUserId);
@@ -118,9 +133,21 @@ namespace KRSDealerManagement.Web.Helpers
 
         public static bool CanExportMenu(ISession session, string menuKey)
         {
+            if (!CanExport(session)) return false;
             var level = GetMenuAccessLevel(session, menuKey);
             return level is MenuAccessLevel.ReadOnly or MenuAccessLevel.Full;
         }
+
+        public static bool CanExport(ISession session)
+        {
+            if (IsSystemAdmin(session)) return true;
+            var raw = session.GetString(SessionKeyCanExport);
+            return raw != "0";
+        }
+
+        public static string? GetQuickActionKeys(ISession session) => session.GetString(SessionKeyQuickActionKeys);
+
+        public static string? GetDashboardWidgetKeys(ISession session) => session.GetString(SessionKeyDashboardWidgetKeys);
 
         public static Dictionary<string, MenuAccessLevel> GetMenuAccessMap(ISession session)
         {

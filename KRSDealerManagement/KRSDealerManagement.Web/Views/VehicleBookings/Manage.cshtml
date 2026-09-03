@@ -320,7 +320,7 @@
         try {
             const previewUrl = '@Url.Action("InvoicePricePreview", new { id = Model.VehicleBookingId })'
                 + '&invoiceDate=' + encodeURIComponent(invoiceDate);
-            const res = await fetch(previewUrl);
+            const res = await fetch(previewUrl, { krsNoLoader: true });
             const data = await res.json();
             if (!data.success) {
                 alert(data.message || 'Could not verify catalogue price for the invoice date.');

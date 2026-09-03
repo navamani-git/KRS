@@ -100,7 +100,10 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                     SubDealerId = assignment?.SubDealerId,
                     AccessibleMenuKeys = menus,
                     MenuAccess = menuAccess,
-                    IsActive = user.IsActive
+                    IsActive = user.IsActive,
+                    CanExport = user.CanExport,
+                    QuickActionKeys = user.QuickActionKeys,
+                    DashboardWidgetKeys = user.DashboardWidgetKeys
                 };
 
                 await _auditService.LogActionAsync(

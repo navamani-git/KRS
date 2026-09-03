@@ -1,0 +1,198 @@
+@model KRSDealerManagement.Application.Queries.DashboardSummary
+@using KRSDealerManagement.Shared.Constants
+@using KRSDealerManagement.Shared.Helpers
+@{
+    var key = ViewData["WidgetKey"] as string ?? "";
+    var pendingOrdersUrl = ViewData["PendingOrdersUrl"] as string ?? "#";
+    var pendingReturnsUrl = ViewData["PendingReturnsUrl"] as string ?? "#";
+    var pendingPaymentsUrl = ViewData["PendingPaymentsUrl"] as string ?? "#";
+    var pendingCommissionsUrl = ViewData["PendingCommissionsUrl"] as string ?? "#";
+    var bookedToCustomerUrl = ViewData["BookedToCustomerUrl"] as string ?? "#";
+    var subsidyDocsPendingUrl = ViewData["SubsidyDocsPendingUrl"] as string ?? "#";
+    var subsidyIdPendingUrl = ViewData["SubsidyIdPendingUrl"] as string ?? "#";
+    var registeredAwaitingPlateUrl = ViewData["RegisteredAwaitingPlateUrl"] as string ?? "#";
+    var bookedHelp = BookingGridStageInfo.GetHelp(UnifiedVehicleStatus.BookedToCustomer, bookedToCustomerView: true);
+    var paperHelp = BookingGridStageInfo.GetHelp(UnifiedVehicleStatus.PaperReceived);
+    var invoicedHelp = BookingGridStageInfo.GetHelp(UnifiedVehicleStatus.Invoiced);
+    var insuranceHelp = BookingGridStageInfo.GetHelp(UnifiedVehicleStatus.InsuranceCreated);
+    var rtoHelp = BookingGridStageInfo.GetHelp(UnifiedVehicleStatus.RtoRequested);
+    var registeredHelp = BookingGridStageInfo.RegisteredAwaitingPlate();
+    var subsidyDocsHelp = BookingGridStageInfo.SubsidyDocsPending();
+    var subsidyHelp = BookingGridStageInfo.SubsidyIdPending();
+    Func<int, string> bookingUrl = status => ViewData[$"BookingUrl_{status}"] as string ?? "#";
+    var marginClass = key.StartsWith("pending_", StringComparison.OrdinalIgnoreCase) ? "mb-0" : "mb-3";
+}
+
+<div class="col-lg-3 col-6">
+@switch (key)
+{
+    case DashboardWidgetKeys.PendingOrders:
+        <a href="@pendingOrdersUrl" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@DashboardWidgetHelp.PendingOrders">
+            <div class="info-box @marginClass dashboard-stage-box">
+                <span class="info-box-icon bg-warning"><i class="bi bi-cart-check"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Pending Orders</span>
+                    <span class="info-box-number">@Model.PendingPurchaseOrders</span>
+                    <span class="info-box-hint">@DashboardWidgetHelp.PendingOrders</span>
+                </div>
+            </div>
+        </a>
+        break;
+    case DashboardWidgetKeys.PendingReturns:
+        <a href="@pendingReturnsUrl" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@DashboardWidgetHelp.PendingReturns">
+            <div class="info-box @marginClass dashboard-stage-box">
+                <span class="info-box-icon bg-danger"><i class="bi bi-arrow-return-left"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Pending Returns</span>
+                    <span class="info-box-number">@Model.PendingReturnRequests</span>
+                    <span class="info-box-hint">@DashboardWidgetHelp.PendingReturns</span>
+                </div>
+            </div>
+        </a>
+        break;
+    case DashboardWidgetKeys.PendingPayments:
+        <a href="@pendingPaymentsUrl" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@DashboardWidgetHelp.PendingPayments">
+            <div class="info-box @marginClass dashboard-stage-box">
+                <span class="info-box-icon bg-success"><i class="bi bi-credit-card"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Pending Payments</span>
+                    <span class="info-box-number">@Model.PendingPayments</span>
+                    <span class="info-box-hint">@DashboardWidgetHelp.PendingPayments</span>
+                </div>
+            </div>
+        </a>
+        break;
+    case DashboardWidgetKeys.PendingCommissions:
+        <a href="@pendingCommissionsUrl" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@DashboardWidgetHelp.PendingCommissions">
+            <div class="info-box @marginClass dashboard-stage-box">
+                <span class="info-box-icon bg-info"><i class="bi bi-cash-stack"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Pending Commissions</span>
+                    <span class="info-box-number">@Model.PendingCommissions</span>
+                    <span class="info-box-hint">@DashboardWidgetHelp.PendingCommissions</span>
+                </div>
+            </div>
+        </a>
+        break;
+    case DashboardWidgetKeys.DealerStock:
+        <a href="@Url.Action("Index", "VehicleMasters", new { isAllocated = false })" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@DashboardWidgetHelp.DealerStock">
+            <div class="info-box @marginClass dashboard-stage-box">
+                <span class="info-box-icon bg-primary"><i class="bi bi-boxes"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Dealer Stock</span>
+                    <span class="info-box-number">@Model.DealerStockCount</span>
+                    <span class="info-box-hint">@DashboardWidgetHelp.DealerStock</span>
+                </div>
+            </div>
+        </a>
+        break;
+    case DashboardWidgetKeys.ShowroomStock:
+        <a href="@Url.Action("Index", "Stock")" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@DashboardWidgetHelp.ShowroomStock">
+            <div class="info-box @marginClass dashboard-stage-box">
+                <span class="info-box-icon bg-teal"><i class="bi bi-box-seam"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Subdealer Stock</span>
+                    <span class="info-box-number">@Model.ShowroomStockCount</span>
+                    <span class="info-box-hint">@DashboardWidgetHelp.ShowroomStock</span>
+                </div>
+            </div>
+        </a>
+        break;
+    case DashboardWidgetKeys.BookedToCustomer:
+        <a href="@bookedToCustomerUrl" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@bookedHelp.ScreenPurpose">
+            <div class="info-box @marginClass dashboard-stage-box">
+                <span class="info-box-icon bg-primary"><i class="bi bi-person-check"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Booked to Customer</span>
+                    <span class="info-box-number">@Model.BookedToCustomerCount</span>
+                    <span class="info-box-hint">@bookedHelp.PillSummary</span>
+                </div>
+            </div>
+        </a>
+        break;
+    case DashboardWidgetKeys.PaperReceived:
+        <a href="@bookingUrl(UnifiedVehicleStatus.PaperReceived)" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@paperHelp.ScreenPurpose">
+            <div class="info-box @marginClass dashboard-stage-box">
+                <span class="info-box-icon bg-secondary"><i class="bi bi-file-earmark-text"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Paper Received</span>
+                    <span class="info-box-number">@Model.PaperReceivedCount</span>
+                    <span class="info-box-hint">@paperHelp.PillSummary</span>
+                </div>
+            </div>
+        </a>
+        break;
+    case DashboardWidgetKeys.Invoiced:
+        <a href="@bookingUrl(UnifiedVehicleStatus.Invoiced)" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@invoicedHelp.ScreenPurpose">
+            <div class="info-box @marginClass dashboard-stage-box">
+                <span class="info-box-icon bg-info"><i class="bi bi-receipt"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Invoiced</span>
+                    <span class="info-box-number">@Model.InvoicedCount</span>
+                    <span class="info-box-hint">@invoicedHelp.PillSummary</span>
+                </div>
+            </div>
+        </a>
+        break;
+    case DashboardWidgetKeys.InsuranceCreated:
+        <a href="@bookingUrl(UnifiedVehicleStatus.InsuranceCreated)" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@insuranceHelp.ScreenPurpose">
+            <div class="info-box @marginClass dashboard-stage-box">
+                <span class="info-box-icon bg-success"><i class="bi bi-shield-check"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Insurance Created</span>
+                    <span class="info-box-number">@Model.InsuranceCreatedCount</span>
+                    <span class="info-box-hint">@insuranceHelp.PillSummary</span>
+                </div>
+            </div>
+        </a>
+        break;
+    case DashboardWidgetKeys.RtoRequested:
+        <a href="@bookingUrl(UnifiedVehicleStatus.RtoRequested)" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@rtoHelp.ScreenPurpose">
+            <div class="info-box @marginClass dashboard-stage-box">
+                <span class="info-box-icon bg-warning"><i class="bi bi-signpost"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">RTO Requested</span>
+                    <span class="info-box-number">@Model.RtoRequestedCount</span>
+                    <span class="info-box-hint">@rtoHelp.PillSummary</span>
+                </div>
+            </div>
+        </a>
+        break;
+    case DashboardWidgetKeys.SubsidyIdPending:
+        <a href="@subsidyIdPendingUrl" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@subsidyHelp.ScreenPurpose">
+            <div class="info-box @marginClass dashboard-stage-box">
+                <span class="info-box-icon bg-danger"><i class="bi bi-tag"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Subsidy ID Pending</span>
+                    <span class="info-box-number">@Model.SubsidyIdPendingCount</span>
+                    <span class="info-box-hint">@subsidyHelp.PillSummary</span>
+                </div>
+            </div>
+        </a>
+        break;
+    case DashboardWidgetKeys.SubsidyDocsPending:
+        <a href="@subsidyDocsPendingUrl" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@subsidyDocsHelp.ScreenPurpose">
+            <div class="info-box @marginClass dashboard-stage-box">
+                <span class="info-box-icon bg-warning"><i class="bi bi-file-earmark-person"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Subsidy Docs Pending</span>
+                    <span class="info-box-number">@Model.SubsidyDocsPendingCount</span>
+                    <span class="info-box-hint">@subsidyDocsHelp.PillSummary</span>
+                </div>
+            </div>
+        </a>
+        break;
+    case DashboardWidgetKeys.Registered:
+        <a href="@registeredAwaitingPlateUrl" class="text-decoration-none text-dark d-block dashboard-pending-link" title="@registeredHelp.ScreenPurpose">
+            <div class="info-box @marginClass dashboard-stage-box">
+                <span class="info-box-icon bg-dark"><i class="bi bi-card-checklist"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Registered</span>
+                    <span class="info-box-number">@Model.RegisteredCount</span>
+                    <span class="info-box-hint">@registeredHelp.PillSummary</span>
+                </div>
+            </div>
+        </a>
+        break;
+}
+</div>

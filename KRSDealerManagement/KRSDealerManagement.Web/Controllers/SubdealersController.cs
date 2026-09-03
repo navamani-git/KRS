@@ -6,6 +6,7 @@ using KRSDealerManagement.Web.Helpers;
 using KRSDealerManagement.Web.Filters;
 using KRSDealerManagement.Shared.Constants;
 using KRSDealerManagement.Web.Models;
+using KRSDealerManagement.Domain.Repositories;
 
 namespace KRSDealerManagement.Web.Controllers
 {
@@ -14,8 +15,13 @@ namespace KRSDealerManagement.Web.Controllers
     public class SubdealersController : Controller
     {
         private readonly IMediator _mediator;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public SubdealersController(IMediator mediator) => _mediator = mediator;
+        public SubdealersController(IMediator mediator, IUnitOfWork unitOfWork)
+        {
+            _mediator = mediator;
+            _unitOfWork = unitOfWork;
+        }
 
         public async Task<IActionResult> Index(string searchTerm, bool? isActive, int? page, int? pageSize)
         {
@@ -165,7 +171,9 @@ namespace KRSDealerManagement.Web.Controllers
             foreach (var login in subdealer.Logins)
             {
                 var permissions = await _mediator.Send(new GetAccountPermissionsQuery { AccountId = login.PermissionAccountId });
-                permMaps[login.PermissionAccountId] = permissions.ToDictionary(p => p.MenuKey, p => p.IsAccessible, StringComparer.OrdinalIgnoreCase);
+                permMaps[login.PermissionAccountId] = permissions
+                    .GroupBy(p => p.MenuKey, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.Any(p => p.IsAccessible), StringComparer.OrdinalIgnoreCase);
             }
             ViewBag.LoginPermMaps = permMaps;
             ViewBag.CanViewBalances = SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Balances)
@@ -332,7 +340,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ConfigurePermissions(int id, int accountId, string[]? accessibleMenus)
+        public async Task<IActionResult> ConfigurePermissions(int id, int accountId, int loginUserId, string[]? accessibleMenus, bool canExport)
         {
             var adminId = SessionHelper.GetUserId(HttpContext.Session);
             if (!adminId.HasValue) return RedirectToAction("Login", "Account");
@@ -362,6 +370,16 @@ namespace KRSDealerManagement.Web.Controllers
                     ConfiguredBy = adminId.Value,
                     Remarks = "Updated from Subdealer Details"
                 });
+
+                var loginUser = await _unitOfWork.Users.GetByIdAsync(loginUserId);
+                if (loginUser != null)
+                {
+                    loginUser.CanExport = canExport;
+                    loginUser.ModifiedDate = DateTime.UtcNow;
+                    await _unitOfWork.Users.UpdateAsync(loginUser);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
                 TempData["Success"] = "Menu permissions saved.";
             }
             catch (Exception ex)

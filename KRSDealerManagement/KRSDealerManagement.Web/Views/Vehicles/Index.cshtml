@@ -370,15 +370,21 @@
 
 @section Scripts {
 <script>
-const todayIso = new Date().toISOString().slice(0, 10);
+function toDateTimeLocalValue(d) {
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 document.querySelectorAll('.deliver-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.getElementById('deliverVehicleId').value = btn.dataset.vehicleId;
         document.getElementById('deliverChassis').value = btn.dataset.chassis;
+        const now = new Date();
         const dateInput = document.getElementById('deliverDate');
-        dateInput.min = btn.dataset.orderDate;
-        dateInput.max = todayIso;
-        dateInput.value = todayIso;
+        const orderDate = btn.dataset.orderDate || '';
+        dateInput.min = orderDate ? `${orderDate}T00:00` : '';
+        dateInput.max = toDateTimeLocalValue(now);
+        dateInput.value = toDateTimeLocalValue(now);
         new bootstrap.Modal(document.getElementById('deliverModal')).show();
     });
 });

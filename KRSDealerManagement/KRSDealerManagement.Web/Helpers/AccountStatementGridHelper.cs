@@ -17,13 +17,14 @@ namespace KRSDealerManagement.Web.Helpers
             int? page,
             int? pageSize)
         {
+            var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
             var columnFilters = GridViewHelper.SetupGridFilters(controller, GridIds.AccountStatement);
 
             var transactions = (await mediator.Send(new GetAccountTransactionsQuery
             {
                 AccountId = accountId,
-                FromDate = fromDate,
-                ToDate = toDate
+                FromDate = from,
+                ToDate = to
             })).ToList();
 
             transactions = GridScreenFilterHelper.ApplyAccountStatement(transactions, columnFilters).ToList();
@@ -33,6 +34,8 @@ namespace KRSDealerManagement.Web.Helpers
             ListPagingHelper.ApplyToViewBag(controller.ViewBag, pageInfo);
             controller.ViewBag.GridId = GridIds.AccountStatement;
             controller.ViewBag.AccountId = accountId;
+            controller.ViewBag.FromDate = from.ToString("yyyy-MM-dd");
+            controller.ViewBag.ToDate = to.ToString("yyyy-MM-dd");
 
             return pageItems.ToList();
         }

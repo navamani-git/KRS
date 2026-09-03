@@ -20,6 +20,7 @@ namespace KRSDealerManagement.Application.Commands
         public string? PaymentProofPath { get; set; }
         public string? PaymentProof2Path { get; set; }
         public bool RequiresFinanceDetails { get; set; }
+        public bool ExemptCustomerName { get; set; }
         public bool IsCreditRequest { get; set; }
         public int CreatedBy { get; set; }
     }

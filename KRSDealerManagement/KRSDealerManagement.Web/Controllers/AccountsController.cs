@@ -96,6 +96,8 @@ namespace KRSDealerManagement.Web.Controllers
             }
 
             var accountList = accounts.ToList();
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Accounts);
+            accountList = GridScreenFilterHelper.ApplyAccounts(accountList, columnFilters).ToList();
             var headers = new[] { "Subdealer", "Account", "Type", "Current Balance", "Reserved", "Available", "Status" };
             var rows = accountList.Select(a => (IReadOnlyList<object?>)new List<object?>
             {
@@ -167,8 +169,6 @@ namespace KRSDealerManagement.Web.Controllers
 
             ViewBag.Balance = balance;
             ViewBag.AccountId = id;
-            ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
-            ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
 
             return View(pageItems);
         }
@@ -189,11 +189,12 @@ namespace KRSDealerManagement.Web.Controllers
             if (!isFinanceOrAdmin && !isBranchManager)
                 return RedirectToAction("AccessDenied", "Account");
 
+            var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
             var transactions = await _mediator.Send(new GetAccountTransactionsQuery
             {
                 AccountId = id,
-                FromDate = fromDate,
-                ToDate = toDate
+                FromDate = from,
+                ToDate = to
             });
 
             return AccountStatementExportHelper.ToFileResult(this, id, balance.SubdealerName, transactions);
@@ -281,8 +282,9 @@ namespace KRSDealerManagement.Web.Controllers
             }
             ViewBag.AccountOptions = accountOptions.OrderBy(a => a.SubdealerName).ToList();
             ViewBag.SelectedAccountId = accountId;
-            ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
-            ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
+            var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
+            ViewBag.FromDate = from.ToString("yyyy-MM-dd");
+            ViewBag.ToDate = to.ToString("yyyy-MM-dd");
 
             if (!accountId.HasValue)
                 return View(Enumerable.Empty<KRSDealerManagement.Application.DTOs.AccountTransactionDto>());
@@ -298,8 +300,8 @@ namespace KRSDealerManagement.Web.Controllers
             var transactions = await _mediator.Send(new GetAccountTransactionsQuery
             {
                 AccountId = accountId.Value,
-                FromDate = fromDate,
-                ToDate = toDate
+                FromDate = from,
+                ToDate = to
             });
 
             return View(transactions);
@@ -313,14 +315,15 @@ namespace KRSDealerManagement.Web.Controllers
             var subdealers = await _mediator.Send(new GetSubdealersQuery { IsActive = true, DealershipId = scope });
             ViewBag.Subdealers = subdealers;
             ViewBag.SelectedAccountId = accountId;
-            ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
-            ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
+            var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
+            ViewBag.FromDate = from.ToString("yyyy-MM-dd");
+            ViewBag.ToDate = to.ToString("yyyy-MM-dd");
 
             var corrections = await _mediator.Send(new GetAccountTransactionCorrectionsQuery
             {
                 AccountId = accountId,
-                FromDate = fromDate,
-                ToDate = toDate
+                FromDate = from,
+                ToDate = to
             });
 
             return View(corrections);

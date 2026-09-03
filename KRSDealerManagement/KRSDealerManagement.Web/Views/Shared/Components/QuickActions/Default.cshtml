@@ -1,0 +1,97 @@
+@model KRSDealerManagement.Web.Models.QuickActionsWidgetModel
+@{
+    var catalogByGroup = Model.Catalog.GroupBy(a => a.Group).OrderBy(g => g.Key);
+    string CheckboxId(string key) => "qa_" + key.Replace("|", "_");
+}
+
+<div id="krsQuickActions" class="krs-quick-actions" aria-label="Quick actions">
+    <button type="button" class="krs-quick-actions-fab" id="krsQuickActionsFab" aria-expanded="false" aria-controls="krsQuickActionsPanel" title="Quick Actions">
+        <i class="bi bi-lightning-charge-fill"></i>
+    </button>
+
+    <div class="krs-quick-actions-panel" id="krsQuickActionsPanel" role="region" aria-label="Quick action shortcuts">
+        <div class="krs-quick-actions-header">
+            <span class="krs-quick-actions-title"><i class="bi bi-lightning-charge"></i> Quick Actions</span>
+            <button type="button" class="btn btn-sm btn-link p-0 krs-quick-actions-customize" data-bs-toggle="modal" data-bs-target="#quickActionsModal" title="Customize">
+                <i class="bi bi-sliders"></i>
+            </button>
+        </div>
+        <div class="krs-quick-actions-body">
+            @if (Model.QuickActions.Any())
+            {
+                @foreach (var action in Model.QuickActions)
+                {
+                    <a href="@action.Url" class="krs-quick-actions-item" title="@action.Label">
+                        <span class="krs-quick-actions-icon @action.IconBg"><i class="bi @action.Icon"></i></span>
+                        <span class="krs-quick-actions-label">@action.Label</span>
+                    </a>
+                }
+            }
+            else
+            {
+                <p class="krs-quick-actions-empty text-muted small mb-2">No shortcuts selected.</p>
+                <button type="button" class="btn btn-sm btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#quickActionsModal">
+                    <i class="bi bi-plus-lg"></i> Add shortcuts
+                </button>
+            }
+        </div>
+        <div class="krs-quick-actions-footer text-muted">
+            Click the bolt to open shortcuts
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="quickActionsModal" tabindex="-1" aria-labelledby="quickActionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg krs-quick-actions-modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-controller="Dashboard" asp-action="SaveQuickActions" class="krs-quick-actions-modal-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                <div class="modal-header">
+                    <h5 class="modal-title" id="quickActionsModalLabel">Customize Quick Actions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-2">
+                        All menus you can access are listed below (@Model.Catalog.Count items).
+                        Pick the shortcuts to show in your Quick Actions widget.
+                    </p>
+                    <div class="krs-quick-actions-modal-scroll" tabindex="0" aria-label="Menu list">
+                    @foreach (var grp in catalogByGroup)
+                    {
+                        <div class="mb-3">
+                            <div class="fw-semibold small text-uppercase text-muted mb-2">@grp.Key</div>
+                            @foreach (var item in grp.OrderBy(i => i.Label))
+                            {
+                                var inputId = CheckboxId(item.Key);
+                                <div class="form-check mb-1 ms-1">
+                                    @if (Model.SelectedKeys.Contains(item.Key))
+                                    {
+                                        <input class="form-check-input" type="checkbox" name="quickActions" value="@item.Key" id="@inputId" checked="checked" />
+                                    }
+                                    else
+                                    {
+                                        <input class="form-check-input" type="checkbox" name="quickActions" value="@item.Key" id="@inputId" />
+                                    }
+                                    <label class="form-check-label" for="@inputId">
+                                        <i class="bi @item.Icon text-muted me-1"></i>@item.Label
+                                    </label>
+                                </div>
+                            }
+                        </div>
+                    }
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between krs-quick-actions-modal-footer">
+                    <small class="text-muted d-none d-sm-inline">Leave all unchecked to clear the widget.</small>
+                    <div class="ms-auto">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg"></i> Save
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

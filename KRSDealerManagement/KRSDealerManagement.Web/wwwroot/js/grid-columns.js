@@ -4,6 +4,7 @@
     function isPaginatedGridCard(cardBody) {
         if (cardBody.querySelector('[aria-label="Pagination"]')) return true;
         if (cardBody.querySelector('.pagination')) return true;
+        if (cardBody.querySelector('table[data-grid-id].grid-data-table')) return true;
         var bar = cardBody.querySelector('.d-flex.flex-wrap.justify-content-between.align-items-center');
         return bar && /Showing\s+\d+/i.test(bar.textContent);
     }

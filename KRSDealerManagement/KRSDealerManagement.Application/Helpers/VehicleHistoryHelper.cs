@@ -46,6 +46,7 @@ namespace KRSDealerManagement.Application.Helpers
             "Edited" => UnifiedVehicleStatus.Submitted,
             "Deleted" => UnifiedVehicleStatus.Submitted,
             "Returned" => UnifiedVehicleStatus.Submitted,
+            "BranchTransfer" => UnifiedVehicleStatus.Submitted,
             _ => null
         };
 

@@ -7,6 +7,7 @@ using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Web.Helpers;
 using KRSDealerManagement.Web.Filters;
 using KRSDealerManagement.Shared.Constants;
+using KRSDealerManagement.Shared.Helpers;
 using KRSDealerManagement.Web.Models;
 using KRSDealerManagement.Domain.Repositories;
 
@@ -128,9 +129,10 @@ namespace KRSDealerManagement.Web.Controllers
             var requiresFinance = type.RequiresFinanceDetails
                 || type.TypeCode.Equals("FINANCE", StringComparison.OrdinalIgnoreCase);
 
-            if (string.IsNullOrWhiteSpace(customerName))
+            var exemptCustomerName = PaymentTypeHelper.ExemptsCustomerName(type.TypeCode);
+            if (!exemptCustomerName && string.IsNullOrWhiteSpace(customerName))
             {
-                TempData["Error"] = "Customer name is required for all payments.";
+                TempData["Error"] = "Customer name is required for this payment type.";
                 return RedirectToAction(nameof(MyPayments));
             }
 
@@ -186,12 +188,13 @@ namespace KRSDealerManagement.Web.Controllers
                     PaymentDate = paymentDate,
                     SubdealerRemarks = remarks,
                     OtherPaymentType = otherPaymentType,
-                    CustomerName = customerName.Trim().ToUpperInvariant(),
+                    CustomerName = string.IsNullOrWhiteSpace(customerName) ? null : customerName.Trim().ToUpperInvariant(),
                     FinanceNameId = requiresFinance ? financeNameId : null,
                     VinNumber = vinNumber,
                     PaymentProofPath = proof1,
                     PaymentProof2Path = proof2,
                     RequiresFinanceDetails = requiresFinance,
+                    ExemptCustomerName = exemptCustomerName,
                     CreatedBy = userId.Value
                 });
 
@@ -277,8 +280,11 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         [AuthorizeRole(1, 2, 3, 4)]
-        public IActionResult ViewProof(string path)
+        public async Task<IActionResult> ViewProof(string path)
         {
+            if (!await CanAccessPaymentProofAsync(path))
+                return RedirectToAction("AccessDenied", "Account");
+
             if (!FileDownloadHelper.TryResolveStoredFile(_env, path, out var absolute))
             {
                 var fallbackAction = SessionHelper.IsSubdealer(HttpContext.Session) ? "MyPayments" : "Index";
@@ -293,8 +299,11 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         [AuthorizeRole(1, 2, 3, 4)]
-        public IActionResult DownloadProof(string path)
+        public async Task<IActionResult> DownloadProof(string path)
         {
+            if (!await CanAccessPaymentProofAsync(path))
+                return RedirectToAction("AccessDenied", "Account");
+
             if (!FileDownloadHelper.TryResolveStoredFile(_env, path, out var absolute))
             {
                 var fallbackAction = SessionHelper.IsSubdealer(HttpContext.Session) ? "MyPayments" : "Index";
@@ -352,12 +361,14 @@ namespace KRSDealerManagement.Web.Controllers
         {
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Payments);
             var payments = await _mediator.Send(new GetPaymentsQuery
             {
                 Status = status,
                 SubdealerId = subdealerId,
                 FromDate = from,
-                ToDate = to
+                ToDate = to,
+                ColumnFilters = columnFilters
             });
 
             var subdealers = (await _mediator.Send(new GetSubdealersQuery { IsActive = true, DealershipId = scope })).ToList();
@@ -521,6 +532,34 @@ namespace KRSDealerManagement.Web.Controllers
                 TempData["Error"] = $"Error: {ex.Message}";
                 return this.RedirectEncrypted(nameof(AdminEdit), new { id = paymentId });
             }
+        }
+
+        private async Task<bool> CanAccessPaymentProofAsync(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return false;
+
+            var userId = SessionHelper.GetUserId(HttpContext.Session);
+            if (!userId.HasValue) return false;
+
+            var payments = (await _mediator.Send(new GetPaymentsQuery())).ToList();
+            var matching = payments.Where(p =>
+                string.Equals(p.PaymentProofPath, path, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(p.PaymentProof2Path, path, StringComparison.OrdinalIgnoreCase)).ToList();
+            if (matching.Count == 0) return false;
+
+            if (SessionHelper.IsSubdealer(HttpContext.Session))
+                return matching.Any(p => p.SubdealerId == userId.Value);
+
+            if (SessionHelper.IsSystemAdmin(HttpContext.Session))
+                return true;
+
+            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
+            if (!scope.HasValue) return true;
+
+            var allowed = (await _mediator.Send(new GetSubdealersQuery { IsActive = true, DealershipId = scope }))
+                .Select(s => s.UserId)
+                .ToHashSet();
+            return matching.Any(p => allowed.Contains(p.SubdealerId));
         }
     }
 }

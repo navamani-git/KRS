@@ -20,6 +20,35 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var models = (await _unitOfWork.VehicleModels.GetAllAsync()).ToDictionary(m => m.ModelId);
             var colors = (await _unitOfWork.VehicleColors.GetAllAsync()).ToDictionary(c => c.ColorId);
             var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToDictionary(d => d.DealershipId);
+            var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
+            var orgs = (await _unitOfWork.SubDealers.GetAllAsync()).ToDictionary(o => o.SubDealerId);
+            var userOrgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync()).ToList();
+            var allocationByMasterId = (await _unitOfWork.Vehicles.GetAllAsync())
+                .Where(v => v.VehicleMasterId > 0 && v.SubdealerId.HasValue && v.SubdealerId.Value > 0)
+                .GroupBy(v => v.VehicleMasterId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.OrderByDescending(v => v.CreatedDate).First());
+
+            string ResolveAllocatedToName(int? subdealerUserId)
+            {
+                if (!subdealerUserId.HasValue || subdealerUserId.Value <= 0)
+                    return "";
+
+                var assignment = userOrgRoles
+                    .Where(a => a.UserId == subdealerUserId.Value && a.IsActive)
+                    .OrderByDescending(a => a.IsPrimary)
+                    .FirstOrDefault();
+                if (assignment?.SubDealerId is int orgId && orgs.TryGetValue(orgId, out var org))
+                {
+                    var location = string.IsNullOrWhiteSpace(org.Location) ? "" : $" ({org.Location})";
+                    return $"{org.SubDealerName}{location}";
+                }
+
+                return users.TryGetValue(subdealerUserId.Value, out var user)
+                    ? user.GetFullName()
+                    : $"Subdealer #{subdealerUserId}";
+            }
 
             if (request.DealershipId.HasValue)
                 masters = masters.Where(m => m.DealershipId == request.DealershipId.Value);
@@ -36,27 +65,38 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             return masters
                 .OrderByDescending(m => m.ReceivedDate)
                 .ThenBy(m => m.ChassisNumber)
-                .Select(m => new VehicleMasterDto
+                .Select(m =>
                 {
-                    VehicleMasterId = m.VehicleMasterId,
-                    DealershipId = m.DealershipId,
-                    DealershipName = dealerships.TryGetValue(m.DealershipId, out var d) ? d.DealershipName : "",
-                    ChassisNumber = m.ChassisNumber,
-                    ModelId = m.ModelId,
-                    ModelName = models.TryGetValue(m.ModelId, out var model) ? model.ModelName : "",
-                    ColorId = m.ColorId,
-                    ColorName = colors.TryGetValue(m.ColorId, out var color) ? color.ColorName : "",
-                    MotorNo = m.MotorNo,
-                    BatteryNo = m.BatteryNo,
-                    ChargerNo = m.ChargerNo,
-                    ControllerNo = m.ControllerNo,
-                    ConverterNo = m.ConverterNo,
-                    ManufacturingYear = m.ManufacturingYear,
-                    AmpereInvoiceDate = m.AmpereInvoiceDate,
-                    ReceivedDate = m.ReceivedDate,
-                    IsAllocated = m.IsAllocated,
-                    Remarks = m.Remarks,
-                    CreatedDate = m.CreatedDate
+                    string? allocatedTo = null;
+                    if (m.IsAllocated
+                        && allocationByMasterId.TryGetValue(m.VehicleMasterId, out var vehicle))
+                    {
+                        allocatedTo = ResolveAllocatedToName(vehicle.SubdealerId);
+                    }
+
+                    return new VehicleMasterDto
+                    {
+                        VehicleMasterId = m.VehicleMasterId,
+                        DealershipId = m.DealershipId,
+                        DealershipName = dealerships.TryGetValue(m.DealershipId, out var d) ? d.DealershipName : "",
+                        ChassisNumber = m.ChassisNumber,
+                        ModelId = m.ModelId,
+                        ModelName = models.TryGetValue(m.ModelId, out var model) ? model.ModelName : "",
+                        ColorId = m.ColorId,
+                        ColorName = colors.TryGetValue(m.ColorId, out var color) ? color.ColorName : "",
+                        MotorNo = m.MotorNo,
+                        BatteryNo = m.BatteryNo,
+                        ChargerNo = m.ChargerNo,
+                        ControllerNo = m.ControllerNo,
+                        ConverterNo = m.ConverterNo,
+                        AmpereInvoiceNo = m.AmpereInvoiceNo,
+                        AmpereInvoiceDate = m.AmpereInvoiceDate,
+                        ReceivedDate = m.ReceivedDate,
+                        IsAllocated = m.IsAllocated,
+                        AllocatedToSubdealerName = allocatedTo,
+                        Remarks = m.Remarks,
+                        CreatedDate = m.CreatedDate
+                    };
                 });
         }
     }
@@ -81,7 +121,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 ChargerNo = m.ChargerNo,
                 ControllerNo = m.ControllerNo,
                 ConverterNo = m.ConverterNo,
-                ManufacturingYear = m.ManufacturingYear
+                AmpereInvoiceNo = m.AmpereInvoiceNo
             });
         }
     }

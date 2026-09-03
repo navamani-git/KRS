@@ -48,15 +48,16 @@ namespace KRSDealerManagement.Application.DTOs
         public string? InsurancePath { get; set; }
         public bool CreatedByDealer { get; set; }
         public bool HasBooking => VehicleBookingId.HasValue;
-        public bool CanBook => !HasBooking && SubdealerId.HasValue
-            && UnifiedVehicleStatus.CanStartBooking(Status);
+        public bool CanBook => SubdealerId.HasValue
+            && UnifiedVehicleStatus.CanBookOrReturnPreInvoice(Status, HasBooking, BookingInvoiceDate);
         public bool CanEditBooking => HasBooking && !BookingInvoiceDate.HasValue;
         public bool IsAwaitingDealerApproval => !HasBooking
             && Status == UnifiedVehicleStatus.Submitted;
         public bool CanSubmitSubsidyDocs { get; set; }
         public bool CanMarkDelivered => SubdealerId.HasValue
             && Status != UnifiedVehicleStatus.Delivered
-            && Status != UnifiedVehicleStatus.RejectedByDealer;
+            && Status != UnifiedVehicleStatus.RejectedByDealer
+            && !UnifiedVehicleStatus.IsReturnPhase(Status);
         public bool IsDelivered => Status == UnifiedVehicleStatus.Delivered;
         public bool CanRequestReturn { get; set; }
         public bool IsReturnPending => Status == UnifiedVehicleStatus.ReturnRequested;

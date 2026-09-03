@@ -1,9 +1,41 @@
+using KRSDealerManagement.Shared.Constants;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace KRSDealerManagement.Web.Helpers
 {
     public static class NavMenuHelper
     {
+        /// <summary>Every sidebar link the user can open (same rules as _Layout.cshtml).</summary>
+        public static IEnumerable<(string GroupName, MenuItemDefinition Item)> EnumerateVisibleMenuItems(ISession session)
+        {
+            if (SessionHelper.IsStaff(session))
+            {
+                foreach (var group in StaffMenuAccess.GetStaffMenuGroups())
+                {
+                    foreach (var item in group.Children
+                                 .Where(c => SessionHelper.HasMenuAccess(session, c.Key))
+                                 .OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase))
+                    {
+                        yield return (group.ParentName, item);
+                    }
+                }
+            }
+
+            if (SessionHelper.IsSubdealer(session))
+            {
+                foreach (var group in MenuKeys.GetSubdealerMenuGroups())
+                {
+                    foreach (var item in group.Children
+                                 .Where(c => SessionHelper.HasMenuAccess(session, c.Key))
+                                 .OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase))
+                    {
+                        yield return (group.ParentName, item);
+                    }
+                }
+            }
+        }
+
         public static string ActiveClass(string? currentController, string? currentAction, string controller, string? action = null)
         {
             if (!string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase))

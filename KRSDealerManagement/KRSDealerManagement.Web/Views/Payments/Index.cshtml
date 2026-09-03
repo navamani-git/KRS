@@ -251,15 +251,24 @@
 
 @section Scripts {
     <script>
+        function toDateTimeLocalValue(d) {
+            const pad = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
         function showApprove(id, amount) {
             document.getElementById('approveId').value = id;
             document.getElementById('approveAmtDisplay').textContent = `₹${parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
             document.getElementById('actualReceivedAmount').value = parseFloat(amount).toFixed(2);
-            document.getElementById('actualReceivedDate').value = new Date().toISOString().slice(0, 10);
+            document.getElementById('actualReceivedDate').value = toDateTimeLocalValue(new Date());
+            const approveRemarks = document.querySelector('#approveModal textarea[name="remarks"]');
+            if (approveRemarks) approveRemarks.value = '';
             new bootstrap.Modal(document.getElementById('approveModal')).show();
         }
         function showReject(id) {
             document.getElementById('rejectId').value = id;
+            const rejectRemarks = document.querySelector('#rejectModal textarea[name="remarks"]');
+            if (rejectRemarks) rejectRemarks.value = '';
             new bootstrap.Modal(document.getElementById('rejectModal')).show();
         }
     </script>

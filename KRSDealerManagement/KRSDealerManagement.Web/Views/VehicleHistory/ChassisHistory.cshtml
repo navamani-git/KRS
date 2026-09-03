@@ -9,7 +9,7 @@
 <div class="row mb-3">
     <div class="col-md-8">
         <h1 class="m-0"><i class="bi bi-clock-history"></i> Chassis History</h1>
-        <p class="text-muted mb-0">Full lifecycle timeline in chronological order (oldest first).</p>
+        <p class="text-muted mb-0">Full lifecycle history in chronological order (oldest first).</p>
     </div>
 </div>
 
@@ -72,112 +72,37 @@
 
             @if (history.Events.Any())
             {
-                var dateGroups = history.Events.GroupBy(e => e.OccurredAtLocal.Date).OrderBy(g => g.Key);
-                <style>
-                    .chassis-timeline { position: relative; padding-left: 0.25rem; }
-                    .chassis-timeline-day {
-                        font-weight: 600;
-                        color: #495057;
-                        margin: 1.25rem 0 0.75rem;
-                        padding: 0.5rem 0.75rem;
-                        background: #f8f9fa;
-                        border-left: 4px solid #0d6efd;
-                        border-radius: 0.25rem;
-                    }
-                    .chassis-timeline-day:first-child { margin-top: 0; }
-                    .chassis-timeline-item {
-                        display: grid;
-                        grid-template-columns: 2.75rem 1fr;
-                        gap: 0.75rem 1rem;
-                        margin-bottom: 0.75rem;
-                        padding-bottom: 0.75rem;
-                        border-bottom: 1px solid #e9ecef;
-                    }
-                    .chassis-timeline-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-                    .chassis-timeline-step {
-                        width: 2.75rem;
-                        height: 2.75rem;
-                        border-radius: 50%;
-                        background: #e7f1ff;
-                        color: #0d6efd;
-                        font-weight: 700;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        flex-shrink: 0;
-                    }
-                    .chassis-timeline-card {
-                        background: #fff;
-                        border: 1px solid #dee2e6;
-                        border-radius: 0.5rem;
-                        padding: 0.85rem 1rem;
-                    }
-                    .chassis-timeline-meta {
-                        display: flex;
-                        flex-wrap: wrap;
-                        gap: 0.5rem 1rem;
-                        align-items: center;
-                        margin-bottom: 0.5rem;
-                    }
-                    .chassis-timeline-desc {
-                        line-height: 1.5;
-                        margin-bottom: 0.35rem;
-                        word-break: break-word;
-                    }
-                    .chassis-timeline-footer {
-                        display: flex;
-                        flex-wrap: wrap;
-                        gap: 0.5rem 1.25rem;
-                        font-size: 0.875rem;
-                        color: #6c757d;
-                    }
-                    .chassis-timeline-footer span { white-space: nowrap; }
-                    @@media (max-width: 576px) {
-                        .chassis-timeline-item { grid-template-columns: 2.25rem 1fr; }
-                        .chassis-timeline-step { width: 2.25rem; height: 2.25rem; font-size: 0.85rem; }
-                    }
-                </style>
-
-                <div class="chassis-timeline">
-                    @foreach (var group in dateGroups)
-                    {
-                        <div class="chassis-timeline-day">
-                            <i class="bi bi-calendar3"></i>
-                            @group.Key.ToString("dddd, dd MMMM yyyy")
-                        </div>
-
-                        @foreach (var e in group.OrderBy(x => x.OccurredAt).ThenBy(x => x.Step))
-                        {
-                            <div class="chassis-timeline-item">
-                                <div class="chassis-timeline-step">@e.Step</div>
-                                <div class="chassis-timeline-card">
-                                    <div class="chassis-timeline-meta">
-                                        <span class="badge @(e.StatusBadgeClass ?? "bg-secondary")">@e.Title</span>
-                                        <span class="text-muted small">
-                                            <i class="bi bi-clock"></i> @e.OccurredAtLocal.ToString("HH:mm")
-                                        </span>
-                                        @if (!string.IsNullOrWhiteSpace(e.OrderNumber))
-                                        {
-                                            <span class="text-muted small">
-                                                <i class="bi bi-receipt"></i> @e.OrderNumber
-                                            </span>
-                                        }
-                                    </div>
-                                    <div class="chassis-timeline-desc">@e.Description</div>
-                                    <div class="chassis-timeline-footer">
-                                        @if (!string.IsNullOrWhiteSpace(e.Actor))
-                                        {
-                                            <span><i class="bi bi-person"></i> @e.Actor</span>
-                                        }
-                                        @if (!string.IsNullOrWhiteSpace(e.Location))
-                                        {
-                                            <span><i class="bi bi-geo-alt"></i> @e.Location</span>
-                                        }
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                    }
+                <partial name="_GridScrollHint" />
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover table-striped mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th class="grid-col-rownum">#</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th>Description</th>
+                                <th>Order</th>
+                                <th>Actor</th>
+                                <th>Location</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var e in history.Events.OrderBy(x => x.OccurredAt).ThenBy(x => x.Step))
+                            {
+                                <tr>
+                                    <td>@e.Step</td>
+                                    <td>@e.OccurredAtLocal.ToString("dd-MMM-yyyy")</td>
+                                    <td>@e.OccurredAtLocal.ToString("HH:mm")</td>
+                                    <td><span class="badge @(e.StatusBadgeClass ?? "bg-secondary")">@e.Title</span></td>
+                                    <td>@e.Description</td>
+                                    <td>@(e.OrderNumber ?? "—")</td>
+                                    <td>@(e.Actor ?? "—")</td>
+                                    <td>@(e.Location ?? "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
                 </div>
             }
             else

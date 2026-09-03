@@ -50,6 +50,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     PasswordHash = user.PasswordHash,
                     IsPrimary = assignment.IsPrimary,
                     IsActive = user.IsActive && assignment.IsActive,
+                    CanExport = user.CanExport,
                     PermissionAccountId = permAccount.AccountId,
                     CreatedDate = user.CreatedDate
                 });

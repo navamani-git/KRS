@@ -73,8 +73,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                     await VehicleAllocationHelper.ReleaseMasterAsync(
                         _unitOfWork, vehicle.VehicleMasterId, request.DeletedBy, request.DeleteReason);
 
-                await VehicleAllocationHelper.LogSubdealerEventAsync(
-                    _unitOfWork, vehicle.VehicleId, "Deleted", request.DeletedBy, request.DeleteReason);
+                await _unitOfWork.SubdealerVehicleHistories.DeleteBySubdealerVehicleIdAsync(vehicle.VehicleId);
 
                 var deleted = await _unitOfWork.Vehicles.DeleteAsync(vehicle.VehicleId);
                 if (!deleted)

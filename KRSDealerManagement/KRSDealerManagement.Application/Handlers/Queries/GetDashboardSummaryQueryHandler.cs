@@ -86,10 +86,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             summary.PendingCommissions = commissions.Count(c =>
                 c.CanBeApproved() && IsInScope(c.SubdealerId, scopedIds));
 
-            summary.PendingReturnRequests = allVehicles.Count(v =>
-                v.Status == UnifiedVehicleStatus.ReturnRequested
-                && v.SubdealerId.HasValue
-                && IsInScope(v.SubdealerId.Value, scopedIds));
+            summary.PendingReturnRequests = await CountPendingReturnRequestsAsync(scopedIds);
 
             if (request.IncludePaymentPending)
             {
@@ -242,8 +239,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var commissions = await _unitOfWork.Commissions.GetAllAsync();
             summary.PendingCommissions = commissions.Count(c => c.SubdealerId == subdealerId && c.CanBeApproved());
 
-            summary.PendingReturnRequests = allVehicles.Count(v =>
-                v.SubdealerId == subdealerId && v.Status == UnifiedVehicleStatus.ReturnRequested);
+            var orgUserIds = await SubdealerOrgService.GetOrgLoginUserIdsAsync(_unitOfWork, subdealerId);
+            summary.PendingReturnRequests = await CountPendingReturnRequestsAsync(orgUserIds);
 
             var payments = await _unitOfWork.Payments.GetAllAsync();
             summary.PendingPayments = payments.Count(p => p.SubdealerId == subdealerId && p.Status == 0);
@@ -282,6 +279,25 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     UserName = a.UserRole
                 })
                 .ToList();
+        }
+
+        private async Task<int> CountPendingReturnRequestsAsync(HashSet<int>? scopedOrgUserIds)
+        {
+            var returns = await _unitOfWork.ReturnRequests.GetAllAsync();
+            var accounts = await _unitOfWork.SubdealerAccounts.GetAllAsync();
+            var vehicles = await _unitOfWork.Vehicles.GetAllAsync();
+            var orders = await _unitOfWork.PurchaseOrders.GetAllAsync();
+
+            var accountSubdealerById = accounts.ToDictionary(a => a.AccountId, a => a.SubdealerId);
+            var vehicleSubdealerById = vehicles.ToDictionary(v => v.VehicleId, v => v.SubdealerId);
+            var orderSubdealerById = orders.ToDictionary(o => o.OrderId, o => o.SubdealerId);
+
+            return ReturnRequestScopeHelper.CountPending(
+                returns,
+                scopedOrgUserIds,
+                accountSubdealerById,
+                vehicleSubdealerById,
+                orderSubdealerById);
         }
     }
 }

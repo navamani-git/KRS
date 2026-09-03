@@ -23,20 +23,27 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             if (request.IsAccessibleOnly == true)
                 rows = rows.Where(p => p.IsAccessible);
 
-            var list = rows.Select(p => new AccountPermissionDto
-            {
-                PermissionId = p.PermissionId,
-                AccountId = p.AccountId,
-                MenuKey = p.MenuKey,
-                MenuName = p.MenuName,
-                IsAccessible = p.IsAccessible,
-                CanCreate = p.CanCreate,
-                CanEdit = p.CanEdit,
-                CanDelete = p.CanDelete,
-                CanApprove = p.CanApprove,
-                CreatedDate = p.CreatedDate,
-                ModifiedDate = p.ModifiedDate
-            }).ToList();
+            var list = rows
+                .GroupBy(p => p.MenuKey, StringComparer.OrdinalIgnoreCase)
+                .Select(g =>
+                {
+                    var p = g.OrderByDescending(x => x.ModifiedDate).First();
+                    return new AccountPermissionDto
+                    {
+                        PermissionId = p.PermissionId,
+                        AccountId = p.AccountId,
+                        MenuKey = p.MenuKey,
+                        MenuName = p.MenuName,
+                        IsAccessible = g.Any(x => x.IsAccessible),
+                        CanCreate = g.Any(x => x.CanCreate),
+                        CanEdit = g.Any(x => x.CanEdit),
+                        CanDelete = g.Any(x => x.CanDelete),
+                        CanApprove = g.Any(x => x.CanApprove),
+                        CreatedDate = p.CreatedDate,
+                        ModifiedDate = p.ModifiedDate
+                    };
+                })
+                .ToList();
 
             // No rows yet → defaults (all accessible) so existing dealers keep working
             if (!list.Any())

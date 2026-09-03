@@ -25,7 +25,12 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 .Where(p => p.AccountId == request.AccountId)
                 .ToList();
 
-            foreach (var setting in request.Permissions)
+            var settings = request.Permissions
+                .GroupBy(p => p.MenuKey, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.Last())
+                .ToList();
+
+            foreach (var setting in settings)
             {
                 var row = existing.FirstOrDefault(p =>
                     p.MenuKey.Equals(setting.MenuKey, StringComparison.OrdinalIgnoreCase));
@@ -59,7 +64,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 }
             }
 
-            var postedKeys = new HashSet<string>(request.Permissions.Select(p => p.MenuKey), StringComparer.OrdinalIgnoreCase);
+            var postedKeys = new HashSet<string>(settings.Select(p => p.MenuKey), StringComparer.OrdinalIgnoreCase);
             foreach (var menu in MenuKeys.GetSubdealerConfigurableMenus())
             {
                 if (postedKeys.Contains(menu.Key)) continue;
@@ -94,7 +99,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 action: "Configure",
                 userId: request.ConfiguredBy,
                 userRole: "Admin",
-                newValue: JsonSerializer.Serialize(request.Permissions),
+                newValue: JsonSerializer.Serialize(settings),
                 remarks: request.Remarks
             );
 

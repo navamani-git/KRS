@@ -304,12 +304,12 @@ namespace KRSDealerManagement.Web.Services.ExcelImport.Processors
         public string DataSheetName => "Dealer Stock";
         public IReadOnlyList<string> DataHeaders => new[]
         {
-            "DealershipCode", "ChassisNumber", "ModelId", "ColorId", "MotorNo", "BatteryNo", "ChargerNo",
-            "ControllerNo", "ConverterNo", "ManufacturingYear", "AmpereInvoiceDate", "ReceivedDate", "Remarks"
+            "AmpereInvoiceDate", "AmpereInvoiceNo", "DealershipCode", "ModelId", "ColorId", "ChassisNumber",
+            "BatteryNo", "MotorNo", "ChargerNo", "ControllerNo", "ConverterNo", "ReceivedDate", "Remarks"
         };
         public IReadOnlyList<IReadOnlyList<object?>> ExampleRows => new[]
         {
-            new List<object?> { "SALEM", "CHASSIS001", 1, 1, "MOT001", "BAT001", "CHG001", "CTRL001", "CONV001", 2025, DateTime.Today, DateTime.Today, "" }
+            new List<object?> { DateTime.Today, "INV-2025-001", "SALEM", 1, 1, "CHASSIS001", "BAT001", "MOT001", "CHG001", "CTRL001", "CONV001", DateTime.Today, "" }
         };
 
         public async Task<IReadOnlyDictionary<string, IReadOnlyList<string>>> GetLookupsAsync(ExcelImportContext context)
@@ -410,8 +410,8 @@ namespace KRSDealerManagement.Web.Services.ExcelImport.Processors
                     errors.Add(new ExcelImportError { RowNumber = line, Column = "ControllerNo", Message = "ControllerNo is required." });
                 if (string.IsNullOrWhiteSpace(row.Get("ConverterNo")))
                     errors.Add(new ExcelImportError { RowNumber = line, Column = "ConverterNo", Message = "ConverterNo is required." });
-                if (!int.TryParse(row.Get("ManufacturingYear"), out var year) || year <= 0)
-                    errors.Add(new ExcelImportError { RowNumber = line, Column = "ManufacturingYear", Message = "ManufacturingYear must be a whole number." });
+                if (string.IsNullOrWhiteSpace(row.Get("AmpereInvoiceNo")))
+                    errors.Add(new ExcelImportError { RowNumber = line, Column = "AmpereInvoiceNo", Message = "AmpereInvoiceNo is required." });
                 if (!DateTime.TryParse(row.Get("AmpereInvoiceDate"), CultureInfo.InvariantCulture, DateTimeStyles.None, out _)
                     && !DateTime.TryParse(row.Get("AmpereInvoiceDate"), out _))
                     errors.Add(new ExcelImportError { RowNumber = line, Column = "AmpereInvoiceDate", Message = "AmpereInvoiceDate must be a valid date (yyyy-MM-dd)." });
@@ -426,7 +426,7 @@ namespace KRSDealerManagement.Web.Services.ExcelImport.Processors
                     || string.IsNullOrWhiteSpace(row.Get("ChargerNo"))
                     || string.IsNullOrWhiteSpace(row.Get("ControllerNo"))
                     || string.IsNullOrWhiteSpace(row.Get("ConverterNo"))
-                    || year <= 0)
+                    || string.IsNullOrWhiteSpace(row.Get("AmpereInvoiceNo")))
                     continue;
 
                 if (!models.ContainsKey(modelId))
@@ -476,7 +476,7 @@ namespace KRSDealerManagement.Web.Services.ExcelImport.Processors
                 ChargerNo = row.Get("ChargerNo")?.Trim() ?? "",
                 ControllerNo = row.Get("ControllerNo")?.Trim() ?? "",
                 ConverterNo = row.Get("ConverterNo")?.Trim() ?? "",
-                ManufacturingYear = int.TryParse(row.Get("ManufacturingYear"), out var y) ? y : 0,
+                AmpereInvoiceNo = row.Get("AmpereInvoiceNo")?.Trim() ?? "",
                 AmpereInvoiceDate = ParseImportDate(row.Get("AmpereInvoiceDate")),
                 ReceivedDate = ParseImportDate(row.Get("ReceivedDate")),
                 Remarks = row.Get("Remarks")?.Trim()

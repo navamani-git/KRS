@@ -84,12 +84,14 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     else
                     {
                         reason = AccountStatementDescriptionHelper.NormalizeOrderVehicleReason(t.Reason);
-                        reason = EnrichReason(reason, t.ReferenceType, chassis);
+                        reason = EnrichReason(reason, t.ReferenceType, t.ReferenceId, chassis, returns, vehicles, models, colors);
                     }
 
                     string? customerName = null;
                     string? paymentType = null;
+                    int? paymentTypeId = null;
                     string? financeName = null;
+                    int? financeNameId = null;
                     string? vinNumber = null;
                     decimal? requestedAmount = null;
                     decimal? approvedPaymentAmount = null;
@@ -107,6 +109,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         referenceId = pay.PaymentId;
                         customerName = pay.CustomerName;
                         paymentType = pay.PaymentType;
+                        paymentTypeId = pay.PaymentTypeId;
                         vinNumber = pay.VinNumber;
                         requestedAmount = pay.Amount;
                         approvedPaymentAmount = pay.ActualReceivedAmount ?? t.Amount;
@@ -115,7 +118,10 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         approvedDate = pay.ProcessedDate;
                         receivedDate = pay.ActualReceivedDate;
                         if (pay.FinanceNameId.HasValue && financeNames.TryGetValue(pay.FinanceNameId.Value, out var fn))
+                        {
                             financeName = fn.FinanceName;
+                            financeNameId = pay.FinanceNameId;
+                        }
                     }
 
                     var category = AccountStatementCategoryHelper.Resolve(
@@ -139,7 +145,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         CreatedDate = t.CreatedDate,
                         CustomerName = customerName,
                         PaymentType = paymentType,
+                        PaymentTypeId = paymentTypeId,
                         FinanceName = financeName,
+                        FinanceNameId = financeNameId,
                         VinNumber = vinNumber,
                         RequestedAmount = requestedAmount,
                         ApprovedPaymentAmount = approvedPaymentAmount,
@@ -175,15 +183,35 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             return TransactionReasonHelper.FormatChassis(vehicle.ChassisNumber);
         }
 
-        private static string EnrichReason(string? reason, string? referenceType, string? chassis)
+        private static string EnrichReason(
+            string? reason,
+            string? referenceType,
+            int? referenceId,
+            string? chassis,
+            Dictionary<int, Domain.Entities.ReturnRequest> returns,
+            Dictionary<int, Domain.Entities.Vehicle> vehicles,
+            Dictionary<int, Domain.Entities.VehicleModel> models,
+            Dictionary<int, Domain.Entities.VehicleColor> colors)
         {
+            if (string.Equals(referenceType, "ReturnRequest", StringComparison.OrdinalIgnoreCase)
+                && referenceId.HasValue
+                && returns.TryGetValue(referenceId.Value, out var returnRequest)
+                && vehicles.TryGetValue(returnRequest.VehicleId, out var vehicle))
+            {
+                models.TryGetValue(vehicle.ModelId, out var model);
+                colors.TryGetValue(vehicle.ColorId, out var color);
+                return TransactionReasonHelper.Return(
+                    chassis ?? vehicle.ChassisNumber,
+                    model?.ModelName,
+                    color?.ColorName);
+            }
+
             if (string.IsNullOrWhiteSpace(chassis))
                 return reason ?? "";
 
             return referenceType switch
             {
                 "Commission" => TransactionReasonHelper.Commission(chassis),
-                "ReturnRequest" => TransactionReasonHelper.Return(chassis),
                 _ => reason ?? ""
             };
         }

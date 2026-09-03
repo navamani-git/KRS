@@ -166,7 +166,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 accessibleMenuKeys ?? defaultMenus.Select(m => m.Key),
                 StringComparer.OrdinalIgnoreCase);
 
-            foreach (var menu in defaultMenus)
+            foreach (var menu in defaultMenus.GroupBy(m => m.Key, StringComparer.OrdinalIgnoreCase).Select(g => g.First()))
             {
                 bool accessible = allowed.Contains(menu.Key);
                 await _unitOfWork.AccountPermissions.AddAsync(new AccountPermission

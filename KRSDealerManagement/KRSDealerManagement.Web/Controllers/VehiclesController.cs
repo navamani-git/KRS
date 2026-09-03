@@ -88,20 +88,14 @@ namespace KRSDealerManagement.Web.Controllers
             query.ColumnFilters = columnFilters;
             if (isSubdealer)
                 query.ExcludeRejected = true;
-            // Subdealer My Vehicles: show all unless they explicitly filter by date
-            if (isSubdealer && !fromDate.HasValue && !toDate.HasValue)
-            {
-                query.FromDate = null;
-                query.ToDate = null;
-            }
 
             var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
             var vehicles = await _mediator.Send(query);
             var (pageItems, pageInfo) = ListPagingHelper.Paginate(vehicles, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
 
-            ViewBag.FromDate = isSubdealer && !fromDate.HasValue ? "" : from.ToString("yyyy-MM-dd");
-            ViewBag.ToDate = isSubdealer && !toDate.HasValue ? "" : to.ToString("yyyy-MM-dd");
+            ViewBag.FromDate = from.ToString("yyyy-MM-dd");
+            ViewBag.ToDate = to.ToString("yyyy-MM-dd");
             ViewBag.SearchTerm = searchTerm;
             ViewBag.SelectedSubdealerId = subdealerId;
             ViewBag.SelectedDealershipLocation = dealershipLocation;
@@ -198,7 +192,13 @@ namespace KRSDealerManagement.Web.Controllers
             DateTime? toDate,
             string? dealershipLocation = null)
         {
+            var isSubdealer = SessionHelper.IsSubdealer(HttpContext.Session);
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Vehicles);
             var query = await BuildQueryAsync(subdealerId, searchTerm, fromDate, toDate, dealershipLocation);
+            query.ColumnFilters = columnFilters;
+            if (isSubdealer)
+                query.ExcludeRejected = true;
+
             var vehicles = (await _mediator.Send(query)).ToList();
 
             var vehicleEntities = (await _unitOfWork.Vehicles.GetAllAsync())

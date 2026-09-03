@@ -27,8 +27,13 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             if (vehicle == null)
                 throw new InvalidOperationException("Vehicle not found.");
 
-            if (!UnifiedVehicleStatus.CanRequestReturn(vehicle.Status))
-                throw new InvalidOperationException("Return can only be requested after dealer approval and before booking.");
+            var booking = (await _unitOfWork.VehicleBookings.GetAllAsync())
+                .FirstOrDefault(b => b.VehicleId == request.VehicleId);
+            if (!UnifiedVehicleStatus.CanBookOrReturnPreInvoice(
+                    vehicle.Status, booking != null, booking?.InvoiceDate)
+                || !UnifiedVehicleStatus.CanRequestReturn(vehicle.Status))
+                throw new InvalidOperationException(
+                    "Return can only be requested after dealer approval and before customer booking or invoice.");
 
             var order = await _unitOfWork.PurchaseOrders.GetByIdAsync(request.OrderId);
             if (order?.CreatedByDealer == true)
@@ -97,7 +102,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 await _unitOfWork.BeginTransactionAsync();
 
                 var returnRequest = await _unitOfWork.ReturnRequests.GetByIdAsync(request.ReturnRequestId);
-                if (returnRequest == null || returnRequest.Status == 2)
+                if (returnRequest == null || returnRequest.Status != 0)
                     return false;
 
                 var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(returnRequest.VehicleId);
@@ -111,16 +116,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                     && t.AccountId == returnRequest.AccountId);
 
                 returnRequest.RefundAmount = request.RefundAmount;
-
-                if (returnRequest.Status == 0)
-                {
-                    returnRequest.Approve(request.ApprovedBy, request.Remarks);
-                }
-                else
-                {
-                    returnRequest.AdminRemarks = request.Remarks;
-                    returnRequest.ModifiedDate = DateTime.UtcNow;
-                }
+                returnRequest.Approve(request.ApprovedBy, request.Remarks);
 
                 if (request.ReassignToSubdealerId.HasValue)
                 {

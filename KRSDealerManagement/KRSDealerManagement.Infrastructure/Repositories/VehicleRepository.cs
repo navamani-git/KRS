@@ -95,7 +95,7 @@ SELECT
     vm.ChargerNo,
     vm.ControllerNo,
     vm.ConverterNo,
-    vm.ManufacturingYear,
+    0 AS ManufacturingYear,
     ISNULL(sv.Remarks, '') AS Notes,
     sv.RegistrationNumber,
     sv.DeliveryDate,

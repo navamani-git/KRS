@@ -373,9 +373,11 @@ namespace KRSDealerManagement.Web.Helpers
 
         private static List<GridFilterColumn> DealerStock(bool showDealership)
         {
-            var cols = new List<GridFilterColumn> { GridFilterColumn.Skip() };
-            if (showDealership)
-                cols.Add(GridFilterColumn.Combo("dealer", "Dealer"));
+            var cols = new List<GridFilterColumn>
+            {
+                GridFilterColumn.Skip(),
+                GridFilterColumn.Combo("dealer", "Branch")
+            };
             cols.AddRange(new[]
             {
                 GridFilterColumn.Combo("chassis", "Chassis"),
@@ -383,9 +385,13 @@ namespace KRSDealerManagement.Web.Helpers
                 GridFilterColumn.Combo("color", "Color"),
                 GridFilterColumn.Combo("motor", "Motor"),
                 GridFilterColumn.Combo("battery", "Battery"),
+                GridFilterColumn.Combo("charger", "Charger"),
+                GridFilterColumn.Combo("controller", "Controller"),
+                GridFilterColumn.Combo("converter", "Converter"),
                 GridFilterColumn.DateCol("received", "Received"),
                 GridFilterColumn.DateCol("invoice", "Ampere Invoice"),
-                GridFilterColumn.Combo("year", "Mfg Year"),
+                GridFilterColumn.Combo("invoiceNo", "Ampere Invoice No"),
+                GridFilterColumn.Combo("allocatedTo", "Allocated To"),
                 GridFilterColumn.Select("status", "Available", "Allocated"),
                 GridFilterColumn.Actions()
             });

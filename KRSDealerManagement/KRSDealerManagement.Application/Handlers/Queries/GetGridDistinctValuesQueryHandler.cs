@@ -390,7 +390,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             ["status"] = r => r.IsAllocated ? "Allocated" : "Available",
             ["received"] = r => r.ReceivedDate.ToString("yyyy-MM-dd"),
             ["invoice"] = r => r.AmpereInvoiceDate.ToString("yyyy-MM-dd"),
-            ["year"] = r => r.ManufacturingYear.ToString()
+            ["invoiceNo"] = r => r.AmpereInvoiceNo,
+            ["allocatedTo"] = r => r.AllocatedToSubdealerName
         };
 
         private static readonly Dictionary<string, Func<CommissionDto, string?>> CommissionApprovalProjections = new(StringComparer.OrdinalIgnoreCase)

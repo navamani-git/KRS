@@ -195,12 +195,12 @@
                         <input type="text" name="otherPaymentType" class="form-control" placeholder="e.g., Cheque, IMPS" />
                     </div>
 
-                    <div class="mb-3">
-                        <label class="fw-bold">Customer Name (CAPS) <span class="text-danger">*</span></label>
+                    <div class="mb-3" id="customerNameDiv">
+                        <label class="fw-bold">Customer Name (CAPS) <span class="text-danger customer-req">*</span></label>
                         <input type="text" name="customerName" id="customerName" class="form-control text-uppercase"
                                style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"
                                placeholder="CUSTOMER NAME" required />
-                        <small class="text-muted">Required for all payment types (Finance, Cash, Others, etc.)</small>
+                        <small class="text-muted" id="customerNameHint">Required for Finance payments only.</small>
                     </div>
 
                     <div id="financeFields" class="border rounded p-3 mb-3 bg-light d-none">
@@ -303,14 +303,35 @@
         const sel = document.getElementById('paymentTypeId');
         const opt = sel.options[sel.selectedIndex];
         const code = (opt.getAttribute('data-code') || '').toUpperCase();
-        const requires = opt.getAttribute('data-requires-finance') === '1' || code === 'FINANCE';
-        document.getElementById('financeFields').classList.toggle('d-none', !requires);
+        const requiresFinance = code === 'FINANCE' || opt.getAttribute('data-requires-finance') === '1';
+        const exemptCustomer = code !== 'FINANCE';
+        document.getElementById('financeFields').classList.toggle('d-none', !requiresFinance);
         document.getElementById('otherTypeDiv').classList.toggle('d-none', code !== 'OTHERS');
+
+        const customerInput = document.getElementById('customerName');
+        if (customerInput) {
+            customerInput.required = !exemptCustomer;
+            if (exemptCustomer) customerInput.value = '';
+        }
+        document.querySelectorAll('.customer-req').forEach(el => {
+            el.classList.toggle('d-none', exemptCustomer);
+        });
 
         ['financeNameId', 'vinNumber'].forEach(id => {
             const el = document.getElementById(id);
-            if (el) el.required = requires;
+            if (el) el.required = requiresFinance;
         });
     }
+
+    document.getElementById('paymentModal')?.addEventListener('hidden.bs.modal', function () {
+        const form = document.getElementById('paymentForm');
+        if (form) {
+            form.reset();
+            onPaymentTypeChange();
+        }
+    });
+    document.getElementById('creditRequestModal')?.addEventListener('hidden.bs.modal', function () {
+        this.querySelector('form')?.reset();
+    });
 </script>
 }

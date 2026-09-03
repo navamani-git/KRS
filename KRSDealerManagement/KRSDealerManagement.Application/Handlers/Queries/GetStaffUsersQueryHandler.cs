@@ -55,8 +55,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         RoleName = role?.RoleName ?? "Staff",
                         DealershipId = a.DealershipId,
                         DealershipName = dealership?.DealershipName,
-                        IsActive = user.IsActive,
-                        PasswordHash = user.PasswordHash,
+                    IsActive = user.IsActive,
+                    CanExport = user.CanExport,
+                    PasswordHash = user.PasswordHash,
                         CreatedDate = user.CreatedDate
                     };
                 });

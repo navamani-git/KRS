@@ -106,8 +106,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                                 booking.BoothPhotoPath,
                                 booking.SubsidyUndertakingPath,
                                 v.Status),
-                        CanRequestReturn = booking == null
-                            && !(order?.CreatedByDealer ?? false)
+                        CanRequestReturn = !(order?.CreatedByDealer ?? false)
+                            && UnifiedVehicleStatus.CanBookOrReturnPreInvoice(
+                                v.Status, booking != null, booking?.InvoiceDate)
                             && UnifiedVehicleStatus.CanRequestReturn(v.Status)
                             && !pendingReturns.Contains(v.VehicleId)
                     };

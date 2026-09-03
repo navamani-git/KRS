@@ -98,7 +98,7 @@ namespace KRSDealerManagement.Shared.Helpers
         private static StageHelp BookedToCustomer() => new(
             "Customer booking is saved; paper work has not been received yet",
             "Paper Received date is saved on the Manage screen",
-            "Booked for a customer — waiting for paper work",
+            "Booked for a customer — waiting for Rto papers",
             "Shows vehicles where the customer booking is complete but the required papers have not yet been received. Open Manage and save the Paper Received date when papers arrive.");
 
         private static StageHelp PaperReceived() => new(

@@ -23,6 +23,9 @@ namespace KRSDealerManagement.Application.Queries
         public string? SubDealerName { get; set; }
         public List<string> AccessibleMenuKeys { get; set; } = new();
         public Dictionary<string, MenuAccessLevel> MenuAccess { get; set; } = new();
+        public bool CanExport { get; set; } = true;
+        public string? QuickActionKeys { get; set; }
+        public string? DashboardWidgetKeys { get; set; }
         public bool IsSystemAdmin => RoleCode.Equals(RoleCodes.SystemAdmin, StringComparison.OrdinalIgnoreCase);
         public bool IsBranchManager => RoleCode.Equals(RoleCodes.BranchManager, StringComparison.OrdinalIgnoreCase);
         public bool IsFinanceAdmin => RoleCode.Equals(RoleCodes.FinanceAdmin, StringComparison.OrdinalIgnoreCase);
@@ -68,6 +71,7 @@ namespace KRSDealerManagement.Application.Queries
 
             var menus = await MenuAccessResolver.ResolveAsync(_unitOfWork, request.UserId, role);
             var menuAccess = await MenuAccessResolver.ResolveMapAsync(_unitOfWork, request.UserId, role);
+            var user = await _unitOfWork.Users.GetByIdAsync(request.UserId);
 
             return new UserAccessContext
             {
@@ -80,7 +84,10 @@ namespace KRSDealerManagement.Application.Queries
                 SubDealerId = assignment.SubDealerId,
                 SubDealerName = subDealerName,
                 AccessibleMenuKeys = menus,
-                MenuAccess = menuAccess
+                MenuAccess = menuAccess,
+                CanExport = user?.CanExport ?? true,
+                QuickActionKeys = user?.QuickActionKeys,
+                DashboardWidgetKeys = user?.DashboardWidgetKeys
             };
         }
     }

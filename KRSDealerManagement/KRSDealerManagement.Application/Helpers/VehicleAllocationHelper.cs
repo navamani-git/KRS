@@ -41,7 +41,7 @@ namespace KRSDealerManagement.Application.Helpers
                 ChargerNo = master.ChargerNo,
                 ControllerNo = master.ControllerNo,
                 ConverterNo = master.ConverterNo,
-                ManufacturingYear = master.ManufacturingYear,
+                ManufacturingYear = 0,
                 CreatedBy = allocatedBy,
                 CreatedDate = DateTime.UtcNow,
                 ModifiedDate = DateTime.UtcNow

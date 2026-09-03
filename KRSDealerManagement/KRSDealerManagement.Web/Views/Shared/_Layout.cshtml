@@ -267,6 +267,11 @@
         </footer>
     </div>
 
+    @if (userId.HasValue)
+    {
+        @await Component.InvokeAsync("QuickActions")
+    }
+
     <div id="krsPageLoader" class="krs-page-loader" hidden aria-live="polite" aria-busy="false">
         <div class="krs-page-loader-panel">
             <div class="spinner-border krs-page-loader-spinner" role="status" aria-hidden="true"></div>
@@ -291,6 +296,10 @@
     <script src="~/js/grid-combobox.js" asp-append-version="true"></script>
     <partial name="_VehicleChassisModal" />
     <script src="~/js/vehicle-chassis-modal.js" asp-append-version="true"></script>
+    @if (userId.HasValue)
+    {
+        <script src="~/js/quick-actions-widget.js" asp-append-version="true"></script>
+    }
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

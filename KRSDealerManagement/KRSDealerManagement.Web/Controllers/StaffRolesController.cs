@@ -162,18 +162,29 @@ namespace KRSDealerManagement.Web.Controllers
                 .ToList();
         }
 
-        private static StaffRoleFormModel MapToForm(Application.DTOs.StaffRoleDto role) => new()
+        private static StaffRoleFormModel MapToForm(Application.DTOs.StaffRoleDto role)
         {
-            RoleId = role.RoleId,
-            RoleCode = role.RoleCode,
-            RoleName = role.RoleName,
-            Description = role.Description,
-            RoleTemplateCode = role.RoleTemplateCode ?? RoleTemplateCodes.Custom,
-            DealershipId = role.DealershipId ?? 0,
-            IsActive = role.IsActive,
-            MenuKeys = role.Menus.Select(m => m.MenuKey).ToList(),
-            MenuAccessLevels = role.Menus.Select(m => (int)m.AccessLevel).ToList()
-        };
+            var allMenuKeys = StaffMenuAccess.AllAdminMenus().Select(m => m.Key).ToList();
+            var enabledLevels = role.Menus.ToDictionary(
+                m => m.MenuKey,
+                m => (int)m.AccessLevel,
+                StringComparer.OrdinalIgnoreCase);
+
+            return new StaffRoleFormModel
+            {
+                RoleId = role.RoleId,
+                RoleCode = role.RoleCode,
+                RoleName = role.RoleName,
+                Description = role.Description,
+                RoleTemplateCode = role.RoleTemplateCode ?? RoleTemplateCodes.Custom,
+                DealershipId = role.DealershipId ?? 0,
+                IsActive = role.IsActive,
+                MenuKeys = allMenuKeys,
+                MenuAccessLevels = allMenuKeys
+                    .Select(key => enabledLevels.TryGetValue(key, out var level) ? level : (int)MenuAccessLevel.None)
+                    .ToList()
+            };
+        }
     }
 
     public class StaffRoleFormModel

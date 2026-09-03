@@ -122,7 +122,6 @@ D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Web\bin\Debug\net8.0\appse
 D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Web\bin\Debug\net8.0\dotnet-tools.json
 D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Web\bin\Debug\net8.0\KRSDealerManagement.Web.staticwebassets.runtime.json
 D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Web\bin\Debug\net8.0\KRSDealerManagement.Web.staticwebassets.endpoints.json
-D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Web\bin\Debug\net8.0\KRSDealerManagement.Web.exe
 D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Web\bin\Debug\net8.0\KRSDealerManagement.Web.deps.json
 D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Web\bin\Debug\net8.0\KRSDealerManagement.Web.runtimeconfig.json
 D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Web\bin\Debug\net8.0\KRSDealerManagement.Web.dll
@@ -215,3 +214,5 @@ D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Web\obj\Debug\net8.0\refin
 D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Web\obj\Debug\net8.0\KRSDealerManagement.Web.pdb
 D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Web\obj\Debug\net8.0\KRSDealerManagement.Web.genruntimeconfig.cache
 D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Web\obj\Debug\net8.0\ref\KRSDealerManagement.Web.dll
+D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Web\bin\Debug\net8.0\KRSDealerManagement.Web.exe
+D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Web\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt

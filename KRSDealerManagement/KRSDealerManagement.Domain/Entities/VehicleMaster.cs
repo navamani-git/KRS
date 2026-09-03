@@ -15,7 +15,7 @@ namespace KRSDealerManagement.Domain.Entities
         public string ChargerNo { get; set; } = "";
         public string ControllerNo { get; set; } = "";
         public string ConverterNo { get; set; } = "";
-        public int ManufacturingYear { get; set; }
+        public string AmpereInvoiceNo { get; set; } = "";
         public DateTime AmpereInvoiceDate { get; set; }
         public DateTime ReceivedDate { get; set; }
         public bool IsAllocated { get; set; }

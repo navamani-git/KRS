@@ -8,6 +8,7 @@ namespace KRSDealerManagement.Application.DTOs
         public string? PasswordHash { get; set; }
         public bool IsPrimary { get; set; }
         public bool IsActive { get; set; }
+        public bool CanExport { get; set; } = true;
         public int PermissionAccountId { get; set; }
         public DateTime CreatedDate { get; set; }
 

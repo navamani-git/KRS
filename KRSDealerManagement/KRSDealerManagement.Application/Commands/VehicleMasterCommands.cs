@@ -13,7 +13,7 @@ namespace KRSDealerManagement.Application.Commands
         public required string ChargerNo { get; set; }
         public required string ControllerNo { get; set; }
         public required string ConverterNo { get; set; }
-        public int ManufacturingYear { get; set; }
+        public string AmpereInvoiceNo { get; set; } = "";
         public DateTime AmpereInvoiceDate { get; set; }
         public DateTime ReceivedDate { get; set; }
         public string? Remarks { get; set; }
@@ -30,7 +30,7 @@ namespace KRSDealerManagement.Application.Commands
         public required string ChargerNo { get; set; }
         public required string ControllerNo { get; set; }
         public required string ConverterNo { get; set; }
-        public int ManufacturingYear { get; set; }
+        public string AmpereInvoiceNo { get; set; } = "";
         public DateTime AmpereInvoiceDate { get; set; }
         public DateTime ReceivedDate { get; set; }
         public string? Remarks { get; set; }
@@ -64,7 +64,7 @@ namespace KRSDealerManagement.Application.Commands
         public string ChargerNo { get; set; } = "";
         public string ControllerNo { get; set; } = "";
         public string ConverterNo { get; set; } = "";
-        public int ManufacturingYear { get; set; }
+        public string AmpereInvoiceNo { get; set; } = "";
         public DateTime AmpereInvoiceDate { get; set; }
         public DateTime ReceivedDate { get; set; }
         public string? Remarks { get; set; }
@@ -75,5 +75,13 @@ namespace KRSDealerManagement.Application.Commands
         public int ImportedCount { get; set; }
         public List<string> Errors { get; set; } = new();
         public bool Success => Errors.Count == 0;
+    }
+
+    public class TransferVehicleMasterCommand : IRequest<bool>
+    {
+        public int VehicleMasterId { get; set; }
+        public int TargetDealershipId { get; set; }
+        public int TransferredBy { get; set; }
+        public string? Remarks { get; set; }
     }
 }

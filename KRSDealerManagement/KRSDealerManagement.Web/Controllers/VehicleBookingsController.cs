@@ -87,6 +87,20 @@ namespace KRSDealerManagement.Web.Controllers
         public Task<IActionResult> MyRtoRequested(string? searchTerm, int? page, int? pageSize)
             => ListMyBookingsAsync(UnifiedVehicleStatus.RtoRequested, searchTerm, page, pageSize);
 
+        [AuthorizeRole(2)]
+        [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
+        public Task<IActionResult> MySubsidyIdPending(string? searchTerm, int? page, int? pageSize)
+            => ListBookingsAsync(
+                null,
+                null,
+                null,
+                searchTerm,
+                page,
+                pageSize,
+                viewOnly: true,
+                subsidyIdPendingOnly: true,
+                subdealerView: true);
+
         [AuthorizeRole(1, 4)]
         [AuthorizeMenuAny(StaffMenuAccess.VehicleBookings, StaffMenuAccess.BookedToCustomerView)]
         public Task<IActionResult> SubsidyIdPending(int? subdealerId, int? dealershipId, string? searchTerm, int? page, int? pageSize)
@@ -516,6 +530,7 @@ namespace KRSDealerManagement.Web.Controllers
                     ?? throw new InvalidOperationException("Vehicle record not found after booking.");
 
                 vehicleEntity.Status = UnifiedVehicleStatus.BookedToCustomer;
+                vehicleEntity.DeliveryDate = null;
                 vehicleEntity.ModifiedDate = DateTime.UtcNow;
                 if (!await _unitOfWork.Vehicles.UpdateAsync(vehicleEntity))
                     throw new InvalidOperationException("Failed to update vehicle status after booking.");

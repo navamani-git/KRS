@@ -24,10 +24,27 @@ namespace KRSDealerManagement.Shared.Constants
         public static bool IsTerminal(int status) =>
             status is RejectedByDealer or ReturnApproved or Delivered;
 
-        public static bool CanRequestReturn(int status) => status == ApprovedByDealer;
+        /// <summary>
+        /// Subdealer may return an allocated vehicle before customer booking and before invoice.
+        /// Includes vehicles mistakenly marked Delivered before booking.
+        /// </summary>
+        public static bool CanRequestReturn(int status) =>
+            status is ApprovedByDealer or Delivered;
 
+        /// <summary>
+        /// Subdealer may start customer booking before invoice.
+        /// Includes vehicles mistakenly marked Delivered before booking.
+        /// </summary>
         public static bool CanStartBooking(int status) =>
-            status is ApprovedByDealer or ReturnCancelled;
+            status is ApprovedByDealer or ReturnCancelled or Delivered;
+
+        /// <summary>
+        /// True when subdealer book/return actions are still allowed (no booking yet, not invoiced).
+        /// </summary>
+        public static bool CanBookOrReturnPreInvoice(int status, bool hasBooking, DateTime? invoiceDate) =>
+            !hasBooking
+            && !invoiceDate.HasValue
+            && CanStartBooking(status);
 
         public static bool IsBookingPhase(int status) => status >= BookedToCustomer && status <= Delivered;
 

@@ -212,7 +212,10 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeRole(1, 4)]
         public async Task<IActionResult> Allocate(int id)
         {
-            var orders = await _mediator.Send(new GetPurchaseOrdersQuery());
+            var orders = await _mediator.Send(new GetPurchaseOrdersQuery
+            {
+                DealershipId = SessionHelper.GetDealershipScope(HttpContext.Session)
+            });
             var order = orders.FirstOrDefault(o => o.OrderId == id);
             if (order == null)
             {
@@ -243,6 +246,16 @@ namespace KRSDealerManagement.Web.Controllers
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
+
+            var scopedOrders = await _mediator.Send(new GetPurchaseOrdersQuery
+            {
+                DealershipId = SessionHelper.GetDealershipScope(HttpContext.Session)
+            });
+            if (!scopedOrders.Any(o => o.OrderId == orderId))
+            {
+                TempData["Error"] = "Order not found or outside your branch scope.";
+                return RedirectToAction(nameof(Index));
+            }
 
             if (orderItemIds == null || !orderItemIds.Any())
             {
@@ -345,6 +358,7 @@ namespace KRSDealerManagement.Web.Controllers
         {
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Orders);
             var orders = (await _mediator.Send(new GetPurchaseOrdersQuery
             {
                 Status = status,
@@ -352,7 +366,8 @@ namespace KRSDealerManagement.Web.Controllers
                 SearchTerm = searchTerm,
                 DealershipId = scope,
                 FromDate = from,
-                ToDate = to
+                ToDate = to,
+                ColumnFilters = columnFilters
             })).ToList();
 
             var headers = new[] { "Order #", "Subdealer", "Qty", "Amount", "Status", "Pending", "Approved", "Created", "Last Allocation" };
@@ -558,6 +573,16 @@ namespace KRSDealerManagement.Web.Controllers
 
             var subdealer = await _mediator.Send(new GetSubdealerDetailQuery { UserId = subdealerUserId });
             return subdealer?.DealershipId;
+        }
+
+        [AuthorizeRole(1, 4)]
+        public async Task<IActionResult> GetSubdealerDealership(int subdealerId)
+        {
+            var dealershipId = await ResolveOrderDealershipIdAsync(subdealerId);
+            if (!dealershipId.HasValue)
+                return Json(new { success = false, message = "Could not resolve dealership for the selected subdealer." });
+
+            return Json(new { success = true, dealershipId = dealershipId.Value });
         }
     }
 }

@@ -47,6 +47,18 @@ VALUES (@SubdealerVehicleId, @Action, @Remarks, @DetailsJson, @UserId, @CreatedD
             });
         }
 
+        public async Task DeleteBySubdealerVehicleIdAsync(int subdealerVehicleId)
+        {
+            await WithConnectionAsync(async (connection, transaction) =>
+            {
+                await connection.ExecuteAsync(
+                    "DELETE FROM SubdealerVehicleHistory WHERE SubdealerVehicleId = @SubdealerVehicleId",
+                    new { SubdealerVehicleId = subdealerVehicleId },
+                    transaction);
+                return true;
+            });
+        }
+
         public async Task<IEnumerable<SubdealerVehicleHistory>> GetBySubdealerVehicleIdAsync(int subdealerVehicleId)
         {
             return await WithConnectionAsync(async (connection, transaction) =>

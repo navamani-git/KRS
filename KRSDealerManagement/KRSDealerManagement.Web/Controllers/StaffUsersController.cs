@@ -106,7 +106,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, string fullName, string username, string? email, string? phoneNumber, int dealershipId, int roleId, bool isActive, string? password)
+        public async Task<IActionResult> Edit(int id, string fullName, string username, string? email, string? phoneNumber, int dealershipId, int roleId, bool isActive, bool canExport, string? password)
         {
             var user = await _unitOfWork.Users.GetByIdAsync(id);
             var assignment = (await _unitOfWork.UserOrgRoles.GetAllAsync()).FirstOrDefault(a => a.UserId == id && a.IsActive);
@@ -161,6 +161,7 @@ namespace KRSDealerManagement.Web.Controllers
             user.Email = string.IsNullOrWhiteSpace(email) ? user.Email : email.Trim();
             user.PhoneNumber = phoneNumber?.Trim() ?? "";
             user.IsActive = isActive;
+            user.CanExport = canExport;
             user.UserRole = Application.Services.RoleTemplateDefaults.MapTemplateToLegacyUserRole(selectedRole.RoleTemplateCode);
             if (!string.IsNullOrWhiteSpace(password))
                 user.PasswordHash = password.Trim();

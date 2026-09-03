@@ -54,6 +54,15 @@ namespace KRSDealerManagement.Domain.Entities
         /// </summary>
         public bool IsActive { get; set; } = true;
 
+        /// <summary>Whether this user may download Excel exports.</summary>
+        public bool CanExport { get; set; } = true;
+
+        /// <summary>Comma-separated dashboard quick-action keys (null = defaults).</summary>
+        public string? QuickActionKeys { get; set; }
+
+        /// <summary>Comma-separated dashboard pill order (null = defaults).</summary>
+        public string? DashboardWidgetKeys { get; set; }
+
         /// <summary>
         /// Account creation timestamp (UTC)
         /// </summary>

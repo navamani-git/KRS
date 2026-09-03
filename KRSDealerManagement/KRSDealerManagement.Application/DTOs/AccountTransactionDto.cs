@@ -25,7 +25,9 @@ namespace KRSDealerManagement.Application.DTOs
         // Payment-specific (populated when ReferenceType = Payment)
         public string? CustomerName { get; set; }
         public string? PaymentType { get; set; }
+        public int? PaymentTypeId { get; set; }
         public string? FinanceName { get; set; }
+        public int? FinanceNameId { get; set; }
         public string? VinNumber { get; set; }
         public decimal? RequestedAmount { get; set; }
         /// <summary>Approved/received amount for payment credits (may differ from requested).</summary>

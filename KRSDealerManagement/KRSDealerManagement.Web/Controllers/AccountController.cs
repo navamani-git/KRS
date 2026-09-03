@@ -66,7 +66,10 @@ namespace KRSDealerManagement.Web.Controllers
                 result.Data.DealershipName,
                 result.Data.SubDealerId,
                 result.Data.AccessibleMenuKeys,
-                result.Data.MenuAccess
+                result.Data.MenuAccess,
+                result.Data.CanExport,
+                result.Data.QuickActionKeys,
+                result.Data.DashboardWidgetKeys
             );
 
             TempData["Success"] = $"Welcome back, {result.Data.FullName}!";

@@ -25,9 +25,10 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeRole(1, 4)]
         public async Task<IActionResult> Index(int? status, int? page, int? pageSize)
         {
+            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Returns);
             var returns = GridScreenFilterHelper.ApplyReturns(
-                await _mediator.Send(new GetReturnRequestsQuery { Status = status }),
+                await _mediator.Send(new GetReturnRequestsQuery { Status = status, DealershipId = scope }),
                 columnFilters).ToList();
             var (pageItems, pageInfo) = ListPagingHelper.Paginate(returns, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
@@ -43,7 +44,11 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeRole(1, 4)]
         public async Task<IActionResult> Export(int? status)
         {
-            var returns = (await _mediator.Send(new GetReturnRequestsQuery { Status = status })).ToList();
+            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Returns);
+            var returns = GridScreenFilterHelper.ApplyReturns(
+                await _mediator.Send(new GetReturnRequestsQuery { Status = status, DealershipId = scope }),
+                columnFilters).ToList();
             var headers = new[] { "ID", "Order", "Chassis", "Subdealer Account", "Refund", "Status", "Reason", "Requested", "Processed" };
             var rows = returns.Select(r => (IReadOnlyList<object?>)new List<object?>
             {
@@ -60,14 +65,7 @@ namespace KRSDealerManagement.Web.Controllers
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
-            DateTime? from = null;
-            DateTime? to = null;
-            if (fromDate.HasValue || toDate.HasValue)
-            {
-                var resolved = ListPagingHelper.ResolveDateRange(fromDate, toDate);
-                from = resolved.FromDate;
-                to = resolved.ToDate;
-            }
+            var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
 
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.MyReturns);
             var returns = GridScreenFilterHelper.ApplyReturns(
@@ -84,8 +82,8 @@ namespace KRSDealerManagement.Web.Controllers
             var (pageItems, pageInfo) = ListPagingHelper.Paginate(returns, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
             ViewBag.SelectedStatus = status;
-            ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd") ?? "";
-            ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd") ?? "";
+            ViewBag.FromDate = from.ToString("yyyy-MM-dd");
+            ViewBag.ToDate = to.ToString("yyyy-MM-dd");
             ViewBag.PendingCount = returns.Count(r => r.Status == UnifiedVehicleStatus.ReturnRequested);
             ViewBag.Statuses = (await _statuses.GetActiveByCategoryAsync(StatusCategories.Vehicle))
                 .Where(s => UnifiedVehicleStatus.IsReturnPhase(s.StatusValue))
@@ -101,14 +99,7 @@ namespace KRSDealerManagement.Web.Controllers
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
-            DateTime? from = null;
-            DateTime? to = null;
-            if (fromDate.HasValue || toDate.HasValue)
-            {
-                var resolved = ListPagingHelper.ResolveDateRange(fromDate, toDate);
-                from = resolved.FromDate;
-                to = resolved.ToDate;
-            }
+            var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
 
             var returns = (await _mediator.Send(new GetReturnRequestsQuery
             {
@@ -304,7 +295,8 @@ namespace KRSDealerManagement.Web.Controllers
         private async Task<ReturnRequestDto?> LoadReturnRequestAsync(int id)
         {
             if (id <= 0) return null;
-            var items = await _mediator.Send(new GetReturnRequestsQuery { ReturnRequestId = id });
+            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
+            var items = await _mediator.Send(new GetReturnRequestsQuery { ReturnRequestId = id, DealershipId = scope });
             return items.FirstOrDefault();
         }
     }
