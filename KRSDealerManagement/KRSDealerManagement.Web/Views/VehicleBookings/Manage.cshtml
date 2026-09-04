@@ -1,19 +1,34 @@
+@using KRSDealerManagement.Shared.Helpers
 @model KRSDealerManagement.Domain.Entities.VehicleBooking
 @using KRSDealerManagement.Domain.Entities
 @using KRSDealerManagement.Shared.Constants
-@using KRSDealerManagement.Shared.Helpers
 @using KRSDealerManagement.Web.Helpers
 @{
     ViewData["Title"] = "Vehicle Booking";
     var isStaff = ViewBag.IsStaff ?? false;
+    var isAdmin = ViewBag.IsAdmin as bool? ?? false;
     var statuses = ViewBag.Statuses as IEnumerable<StatusLookup> ?? Enumerable.Empty<StatusLookup>();
     var vehicleStatus = (int)(ViewBag.VehicleStatus ?? Model.BookingStatus);
+    var manageDateTimeMax = ViewBag.ManageDateTimeMax as string ?? IstTime.DateTimeLocalMaxValue();
+    var staffInvoiceLocked = ViewBag.StaffInvoiceLocked as bool? ?? false;
+    var staffInsuranceLocked = ViewBag.StaffInsuranceLocked as bool? ?? false;
+    var canViewSubsidyDocs = ViewBag.CanViewSubsidyDocs as bool? ?? false;
+    var canEditSubsidyDocs = ViewBag.CanEditSubsidyDocs as bool? ?? false;
+    var canEditNumberPlate = ViewBag.CanEditNumberPlate as bool? ?? false;
+    var staffMilestoneLocked = isStaff && !isAdmin;
+    var staffPaperLocked = staffMilestoneLocked && Model.PaperReceivedDate.HasValue;
+    var staffInvoiceDateLocked = staffMilestoneLocked && Model.InvoiceDate.HasValue;
+    var staffInsuranceDateLocked = staffMilestoneLocked && Model.InsuranceDate.HasValue;
+    var staffAgentLocked = staffMilestoneLocked && Model.AgentDate.HasValue;
+    var staffRegistrationLocked = staffMilestoneLocked && Model.RegistrationDate.HasValue;
+    var staffRtoLocked = staffMilestoneLocked && !string.IsNullOrWhiteSpace(Model.RtoNumber);
+    var staffSubsidyLocked = staffMilestoneLocked && !string.IsNullOrWhiteSpace(Model.SubsidyId);
 }
 
 <div class="row mb-3">
     <div class="col-md-8">
         <h1 class="m-0"><i class="bi bi-journal-text"></i> Booking #@Model.VehicleBookingId</h1>
-        <p class="text-muted">@ViewBag.ModelName · @ViewBag.ColorName · @ViewBag.Chassis · @ViewBag.PaymentModeLabel</p>
+        <p class="text-muted">@ViewBag.ModelName · @ViewBag.ColorName · <span class="text-nowrap">@ViewBag.Chassis</span> · @ViewBag.PaymentModeLabel</p>
     </div>
     <div class="col-md-4 text-end">
         <a href="@Url.Action("Index", "Vehicles")" class="btn btn-secondary">Vehicles</a>
@@ -24,27 +39,75 @@
                 <i class="bi bi-pencil"></i> Edit Booking
             </a>
         }
-        @if (ViewBag.CanEditSubsidyDocs == true && !string.IsNullOrWhiteSpace(Model.SubsidyId))
+        @if (canEditSubsidyDocs && !string.IsNullOrWhiteSpace(Model.SubsidyId))
         {
             <a href="@Url.Action("SubsidyDocs", new { id = Model.VehicleBookingId })" class="btn btn-outline-primary">
-                <i class="bi bi-folder2-open"></i> @(ViewBag.IsStaff == true ? "Subsidy Documents" : "Subsidy Docs")
+                <i class="bi bi-folder2-open"></i> Subsidy Docs
             </a>
         }
     </div>
 </div>
 
+@if (!isStaff)
+{
+    <div class="card mb-3">
+        <div class="card-header"><h3 class="card-title mb-0">Booking Summary</h3></div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Mobile 1</th>
+                            <th>Mobile 2</th>
+                            <th>Model</th>
+                            <th>Color</th>
+                            <th>Chassis</th>
+                            <th>RTO District</th>
+                            <th>RTO Location</th>
+                            <th>Fancy</th>
+                            <th>Payment / Finance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="fw-bold">
+                            <td>@Model.CustomerName</td>
+                            <td>@Model.CustomerMobile</td>
+                            <td>@Model.AlternativeMobile</td>
+                            <td>@ViewBag.ModelName</td>
+                            <td>@ViewBag.ColorName</td>
+                            <td class="text-nowrap">@ViewBag.Chassis</td>
+                            <td>@(ViewBag.RtoDistrictName ?? "—")</td>
+                            <td>@(ViewBag.RtoLocationName ?? "—")</td>
+                            <td>@(ViewBag.FancyNumberLabel ?? "—")</td>
+                            <td>@ViewBag.PaymentModeLabel / @(ViewBag.FinanceName ?? "—")</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
 <div class="row">
     <div class="col-md-7">
-        <div class="card mb-3"><div class="card-header"><h3 class="card-title">Customer & Nominee</h3></div>
+        <div class="card mb-3"><div class="card-header"><h3 class="card-title">@(isStaff ? "Customer & Nominee" : "Documents Uploaded")</h3></div>
         <div class="card-body">
-            <table class="table table-sm">
-                <tr><td width="35%"><strong>Customer</strong></td><td>@Model.CustomerName @(Model.IsCompanyBooking ? "(Company)" : "")</td></tr>
-                <tr><td><strong>Mobile</strong></td><td>@Model.CustomerMobile / @Model.AlternativeMobile</td></tr>
-                <tr><td><strong>Email</strong></td><td>@Model.CustomerEmail</td></tr>
-                <tr><td><strong>Nominee</strong></td><td>@Model.NomineeName (@Model.NomineeRelationship) — @Model.NomineeDob.ToString("yyyy-MM-dd")</td></tr>
-                <tr><td><strong>Submitted</strong></td><td>@Model.SubmittedDate.ToString("yyyy-MM-dd HH:mm")</td></tr>
-                <tr><td><strong>Subsidy ID</strong></td><td>@(Model.SubsidyId ?? "-")</td></tr>
-            </table>
+            @if (isStaff)
+            {
+                <table class="table table-sm">
+                    <tr><td width="35%"><strong>Customer</strong></td><td>@Model.CustomerName @(Model.IsCompanyBooking ? "(Company)" : "")</td></tr>
+                    <tr><td><strong>Mobile</strong></td><td>@Model.CustomerMobile / @Model.AlternativeMobile</td></tr>
+                    <tr><td><strong>Email</strong></td><td>@Model.CustomerEmail</td></tr>
+                    <tr><td><strong>Nominee</strong></td><td>@Model.NomineeName (@Model.NomineeRelationship) — @Model.NomineeDob.ToString("yyyy-MM-dd")</td></tr>
+                    <tr><td><strong>Submitted</strong></td><td>@Model.SubmittedDate.ToString("yyyy-MM-dd HH:mm")</td></tr>
+                    <tr><td><strong>Subsidy ID</strong></td><td>@(Model.SubsidyId ?? "-")</td></tr>
+                </table>
+            }
+            else if (!string.IsNullOrWhiteSpace(Model.SubsidyId))
+            {
+                <p class="small mb-2"><strong>Subsidy ID:</strong> @Model.SubsidyId</p>
+            }
             <div class="d-flex flex-wrap gap-2">
                 <partial name="_FileAttachmentLinks" view-data='new ViewDataDictionary(ViewData) { { "FilePath", Model.EAadhaarPath }, { "FileLabel", "E-Aadhaar" } }' />
                 <partial name="_FileAttachmentLinks" view-data='new ViewDataDictionary(ViewData) { { "FilePath", Model.DocumentPath }, { "FileLabel", "ID Doc" } }' />
@@ -71,13 +134,18 @@
             </div>
         </div>
 
-        @if (ViewBag.CanSubmitSubsidyDocs == true)
+        @if (canEditSubsidyDocs && !string.IsNullOrWhiteSpace(Model.SubsidyId))
         {
             <div class="alert alert-info">
-                Subsidy ID assigned. <a href="@Url.Action("SubsidyDocs", new { id = Model.VehicleBookingId })" class="alert-link">Upload subsidy documents</a>
+                Subsidy ID assigned. <a href="@Url.Action("SubsidyDocs", new { id = Model.VehicleBookingId })" class="alert-link">Upload or update subsidy documents</a>
             </div>
         }
-        @if (Model.SubsidyDocsSubmittedDate.HasValue)
+        @if (canViewSubsidyDocs && !string.IsNullOrWhiteSpace(Model.SubsidyId)
+            && (Model.SubsidyDocsSubmittedDate.HasValue
+                || !string.IsNullOrWhiteSpace(Model.FaceVerificationPath)
+                || !string.IsNullOrWhiteSpace(Model.RcImagePath)
+                || !string.IsNullOrWhiteSpace(Model.BoothPhotoPath)
+                || !string.IsNullOrWhiteSpace(Model.SubsidyUndertakingPath)))
         {
             <div class="card mb-3"><div class="card-header">Subsidy Documents</div><div class="card-body d-flex gap-2 flex-wrap">
                 <partial name="_FileAttachmentLinks" view-data='new ViewDataDictionary(ViewData) { { "FilePath", Model.FaceVerificationPath }, { "FileLabel", "Face Verification" } }' />
@@ -86,6 +154,34 @@
                 <partial name="_FileAttachmentLinks" view-data='new ViewDataDictionary(ViewData) { { "FilePath", Model.SubsidyUndertakingPath }, { "FileLabel", "Undertaking" } }' />
                 <p class="w-100 mb-0"><small>Customer (CAPS): @Model.SubsidyCustomerNameCaps</small></p>
             </div></div>
+        }
+
+        @if (canEditNumberPlate)
+        {
+            <div class="card mb-3">
+                <div class="card-header"><h3 class="card-title mb-0">Number Plate Received</h3></div>
+                <div class="card-body">
+                    <form method="post" asp-action="NumberPlateReceived" class="row g-2 align-items-end">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.VehicleBookingId" />
+                        <div class="col-md-5">
+                            <label class="form-label">Received date *</label>
+                            <input type="datetime-local" name="numberPlateReceivedDate" class="form-control" required
+                                   max="@manageDateTimeMax"
+                                   value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.NumberPlateReceivedDate)" />
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label">Received by (name) *</label>
+                            <input type="text" name="numberPlateReceivedBy" class="form-control" maxlength="200" required
+                                   value="@Model.NumberPlateReceivedBy" placeholder="Person who received the number plate" />
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">Save</button>
+                        </div>
+                    </form>
+                    <small class="text-muted">Can be updated anytime after registration.</small>
+                </div>
+            </div>
         }
 
         @if (ViewBag.CanMarkDelivered == true)
@@ -160,55 +256,150 @@
                         <small class="text-muted">Status must match entered milestone dates — earlier statuses are disabled when later dates are set.</small>
                         }
                     </div>
-                    <div class="mb-2"><label>Paper Received</label><input type="datetime-local" name="paperReceivedDate" id="paperReceivedDate" class="form-control milestone-input" value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.PaperReceivedDate)" /></div>
-                    <div class="mb-2"><label>Invoice</label><input type="datetime-local" name="invoiceDate" id="invoiceDate" class="form-control milestone-input" value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.InvoiceDate)" /></div>
+                    <div class="mb-2">
+                        <label>Paper Received</label>
+                        @if (staffPaperLocked)
+                        {
+                            <p class="form-control-plaintext mb-0"><small>@Model.PaperReceivedDate?.ToString("yyyy-MM-dd HH:mm")</small></p>
+                            <input type="hidden" name="paperReceivedDate" value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.PaperReceivedDate)" />
+                        }
+                        else
+                        {
+                            <input type="datetime-local" name="paperReceivedDate" id="paperReceivedDate" class="form-control milestone-input" max="@manageDateTimeMax" value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.PaperReceivedDate)" />
+                        }
+                    </div>
+                    <div class="mb-2">
+                        <label>Invoice</label>
+                        @if (staffInvoiceDateLocked)
+                        {
+                            <p class="form-control-plaintext mb-0"><small>@Model.InvoiceDate?.ToString("yyyy-MM-dd HH:mm")</small></p>
+                            <input type="hidden" name="invoiceDate" id="invoiceDate" value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.InvoiceDate)" />
+                        }
+                        else
+                        {
+                            <input type="datetime-local" name="invoiceDate" id="invoiceDate" class="form-control milestone-input" max="@manageDateTimeMax" value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.InvoiceDate)" />
+                        }
+                    </div>
                     <div class="mb-2">
                         <label>Invoice Document</label>
-                        <input type="file" name="invoiceFile" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.webp" />
-                        @if (!string.IsNullOrEmpty(Model.InvoicePath))
+                        @if (staffInvoiceLocked)
                         {
-                            <small class="text-muted">Current file uploaded — choose a new file to replace.</small>
+                            <p class="form-control-plaintext mb-0">
+                                <i class="bi bi-file-earmark-pdf"></i> @(ViewBag.InvoiceFileName ?? "Uploaded")
+                                <small class="text-muted d-block">Uploaded — staff cannot replace. Contact admin to change.</small>
+                            </p>
                         }
                         else
                         {
-                            <small class="text-muted">PDF or image, max 10 MB. Stored under @BookingFileHelper.StorageFolderPrefix</small>
+                            <input type="file" name="invoiceFile" id="invoiceFile" class="form-control manage-doc-input" accept=".pdf,.jpg,.jpeg,.png,.webp" data-doc-kind="invoice" />
+                            @if (!string.IsNullOrEmpty(ViewBag.InvoiceFileName as string))
+                            {
+                                <small class="text-muted d-block"><i class="bi bi-paperclip"></i> Current: @ViewBag.InvoiceFileName</small>
+                                @if (isAdmin)
+                                {
+                                    <button type="submit" formaction="@Url.Action("DeleteManageDocument", new { id = Model.VehicleBookingId, documentKind = "invoice" })"
+                                            formnovalidate class="btn btn-sm btn-outline-danger mt-1"
+                                            onclick="return confirm('Delete the invoice document?');">
+                                        <i class="bi bi-trash"></i> Delete invoice file
+                                    </button>
+                                }
+                            }
+                            else
+                            {
+                                <small class="text-muted">PDF or image, max 10 MB.</small>
+                            }
                         }
                     </div>
-                    <div class="mb-2"><label>Insurance</label><input type="datetime-local" name="insuranceDate" id="insuranceDate" class="form-control milestone-input" value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.InsuranceDate)" /></div>
+                    <div class="mb-2">
+                        <label>Insurance</label>
+                        @if (staffInsuranceDateLocked)
+                        {
+                            <p class="form-control-plaintext mb-0"><small>@Model.InsuranceDate?.ToString("yyyy-MM-dd HH:mm")</small></p>
+                            <input type="hidden" name="insuranceDate" id="insuranceDate" value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.InsuranceDate)" />
+                        }
+                        else
+                        {
+                            <input type="datetime-local" name="insuranceDate" id="insuranceDate" class="form-control milestone-input" max="@manageDateTimeMax" value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.InsuranceDate)" />
+                        }
+                    </div>
                     <div class="mb-2">
                         <label>Insurance Document</label>
-                        <input type="file" name="insuranceFile" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.webp" />
-                        @if (!string.IsNullOrEmpty(Model.InsurancePath))
+                        @if (staffInsuranceLocked)
                         {
-                            <small class="text-muted">Current file uploaded — choose a new file to replace.</small>
+                            <p class="form-control-plaintext mb-0">
+                                <i class="bi bi-file-earmark-pdf"></i> @(ViewBag.InsuranceFileName ?? "Uploaded")
+                                <small class="text-muted d-block">Uploaded — staff cannot replace. Contact admin to change.</small>
+                            </p>
                         }
                         else
                         {
-                            <small class="text-muted">PDF or image, max 10 MB. Stored under @BookingFileHelper.StorageFolderPrefix</small>
+                            <input type="file" name="insuranceFile" id="insuranceFile" class="form-control manage-doc-input" accept=".pdf,.jpg,.jpeg,.png,.webp" data-doc-kind="insurance" />
+                            @if (!string.IsNullOrEmpty(ViewBag.InsuranceFileName as string))
+                            {
+                                <small class="text-muted d-block"><i class="bi bi-paperclip"></i> Current: @ViewBag.InsuranceFileName</small>
+                                @if (isAdmin)
+                                {
+                                    <button type="submit" formaction="@Url.Action("DeleteManageDocument", new { id = Model.VehicleBookingId, documentKind = "insurance" })"
+                                            formnovalidate class="btn btn-sm btn-outline-danger mt-1"
+                                            onclick="return confirm('Delete the insurance document?');">
+                                        <i class="bi bi-trash"></i> Delete insurance file
+                                    </button>
+                                }
+                            }
+                            else
+                            {
+                                <small class="text-muted">PDF or image, max 10 MB.</small>
+                            }
                         }
                     </div>
-                    <div class="mb-2"><label>Agent</label><input type="datetime-local" name="agentDate" id="agentDate" class="form-control milestone-input" value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.AgentDate)" /></div>
-                    <div class="mb-2"><label>Registration</label><input type="datetime-local" name="registrationDate" id="registrationDate" class="form-control milestone-input" value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.RegistrationDate)" /></div>
-                    <div class="mb-2"><label>RTO Number</label><input name="rtoNumber" class="form-control" value="@Model.RtoNumber" /></div>
-                    @if (Model.NumberPlateReceivedDate.HasValue && !string.IsNullOrWhiteSpace(Model.NumberPlateReceivedBy))
-                    {
-                        <div class="mb-2">
-                            <label class="fw-bold">Number Plate Received</label>
-                            <p class="form-control-plaintext mb-0">
-                                @Model.NumberPlateReceivedDate.Value.ToString("yyyy-MM-dd")
-                                <span class="text-muted">— received by @Model.NumberPlateReceivedBy</span>
-                            </p>
-                            <small class="text-muted">Confirmed by subdealer. Only the subdealer can record plate receipt.</small>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="mb-2">
-                            <label class="fw-bold">Number Plate Receipt</label>
-                            <p class="form-control-plaintext mb-0 text-muted">Pending — subdealer will confirm when the plate is received.</p>
-                        </div>
-                    }
-                    <div class="mb-3"><label>Subsidy ID</label><input name="subsidyId" id="subsidyId" class="form-control milestone-input" value="@Model.SubsidyId" placeholder="Enter after invoice & insurance" /></div>
+                    <div class="mb-2">
+                        <label>Agent</label>
+                        @if (staffAgentLocked)
+                        {
+                            <p class="form-control-plaintext mb-0"><small>@Model.AgentDate?.ToString("yyyy-MM-dd HH:mm")</small></p>
+                            <input type="hidden" name="agentDate" id="agentDate" value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.AgentDate)" />
+                        }
+                        else
+                        {
+                            <input type="datetime-local" name="agentDate" id="agentDate" class="form-control milestone-input" max="@manageDateTimeMax" value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.AgentDate)" />
+                        }
+                    </div>
+                    <div class="mb-2">
+                        <label>Registration</label>
+                        @if (staffRegistrationLocked)
+                        {
+                            <p class="form-control-plaintext mb-0"><small>@Model.RegistrationDate?.ToString("yyyy-MM-dd HH:mm")</small></p>
+                            <input type="hidden" name="registrationDate" id="registrationDate" value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.RegistrationDate)" />
+                        }
+                        else
+                        {
+                            <input type="datetime-local" name="registrationDate" id="registrationDate" class="form-control milestone-input" max="@manageDateTimeMax" value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.RegistrationDate)" />
+                        }
+                    </div>
+                    <div class="mb-2">
+                        <label>RTO Number</label>
+                        @if (staffRtoLocked)
+                        {
+                            <p class="form-control-plaintext mb-0">@Model.RtoNumber</p>
+                            <input type="hidden" name="rtoNumber" id="rtoNumber" value="@Model.RtoNumber" />
+                        }
+                        else
+                        {
+                            <input name="rtoNumber" id="rtoNumber" class="form-control milestone-input" value="@Model.RtoNumber" />
+                        }
+                    </div>
+                    <div class="mb-3">
+                        <label>Subsidy ID</label>
+                        @if (staffSubsidyLocked)
+                        {
+                            <p class="form-control-plaintext mb-0">@Model.SubsidyId</p>
+                            <input type="hidden" name="subsidyId" id="subsidyId" value="@Model.SubsidyId" />
+                        }
+                        else
+                        {
+                            <input name="subsidyId" id="subsidyId" class="form-control milestone-input" value="@Model.SubsidyId" placeholder="Enter after invoice & insurance" />
+                        }
+                    </div>
                     <button type="submit" class="btn btn-primary w-100">Save</button>
                 </form>
             </div></div>
@@ -285,9 +476,49 @@
         }
     }
 
-    document.querySelectorAll('.milestone-input').forEach(function (el) {
-        el.addEventListener('change', applyStatusConstraints);
-        el.addEventListener('input', applyStatusConstraints);
+    const hasInvoiceFile = @(string.IsNullOrWhiteSpace(Model.InvoicePath) ? "false" : "true");
+    const hasInsuranceFile = @(string.IsNullOrWhiteSpace(Model.InsurancePath) ? "false" : "true");
+
+    function applyConditionalRequirements() {
+        const invoiceDate = document.getElementById('invoiceDate')?.value || '';
+        const insuranceDate = document.getElementById('insuranceDate')?.value || '';
+        const registrationDate = document.getElementById('registrationDate')?.value || '';
+        const invoiceFile = document.getElementById('invoiceFile');
+        const insuranceFile = document.getElementById('insuranceFile');
+        const rtoNumber = document.getElementById('rtoNumber');
+
+        if (invoiceFile) invoiceFile.required = !!invoiceDate && !hasInvoiceFile;
+        if (insuranceFile) insuranceFile.required = !!insuranceDate && !hasInsuranceFile;
+        if (rtoNumber) rtoNumber.required = !!registrationDate;
+    }
+
+    function validateConditionalRequirements() {
+        applyConditionalRequirements();
+        const invoiceDate = document.getElementById('invoiceDate')?.value || '';
+        const insuranceDate = document.getElementById('insuranceDate')?.value || '';
+        const registrationDate = document.getElementById('registrationDate')?.value || '';
+        const invoiceFile = document.getElementById('invoiceFile');
+        const insuranceFile = document.getElementById('insuranceFile');
+        const rtoNumber = document.getElementById('rtoNumber')?.value?.trim() || '';
+
+        if (invoiceDate && !hasInvoiceFile && (!invoiceFile || !invoiceFile.files || invoiceFile.files.length === 0))
+            return 'Invoice document is required when Invoice date is set.';
+        if (insuranceDate && !hasInsuranceFile && (!insuranceFile || !insuranceFile.files || insuranceFile.files.length === 0))
+            return 'Insurance document is required when Insurance date is set.';
+        if (registrationDate && !rtoNumber)
+            return 'RTO Number is required when Registration date is set.';
+        return null;
+    }
+
+    document.querySelectorAll('.milestone-input, .manage-doc-input').forEach(function (el) {
+        el.addEventListener('change', function () {
+            applyStatusConstraints();
+            applyConditionalRequirements();
+        });
+        el.addEventListener('input', function () {
+            applyStatusConstraints();
+            applyConditionalRequirements();
+        });
     });
 
     statusSelect.addEventListener('change', function () {
@@ -300,6 +531,13 @@
     });
 
     staffForm.addEventListener('submit', async function (e) {
+        const conditionalError = validateConditionalRequirements();
+        if (conditionalError) {
+            e.preventDefault();
+            alert(conditionalError);
+            return;
+        }
+
         const m = getMilestoneInputs();
         const selected = parseInt(statusSelect.value, 10);
         if (!isStatusSelectable(selected, m)) {
@@ -341,6 +579,7 @@
     });
 
     applyStatusConstraints();
+    applyConditionalRequirements();
 })();
 </script>
 }

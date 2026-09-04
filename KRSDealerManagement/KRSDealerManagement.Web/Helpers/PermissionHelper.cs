@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using KRSDealerManagement.Shared.Constants;
 using KRSDealerManagement.Web.Helpers;
 using KRSDealerManagement.Application.Queries;
 
@@ -85,6 +86,36 @@ namespace KRSDealerManagement.Web.Filters
             }
 
             if (!_menuKeys.Any(k => SessionHelper.HasMenuAccess(session, k)))
+            {
+                context.Result = new RedirectToActionResult("AccessDenied", "Account", null);
+                return;
+            }
+
+            base.OnActionExecuting(context);
+        }
+    }
+
+    /// <summary>Staff booking milestone list (VehicleBookings/Index) — checks status-specific menu key.</summary>
+    public class AuthorizeBookingMilestoneIndexAttribute : ActionFilterAttribute
+    {
+        public override void OnActionExecuting(ActionExecutingContext context)
+        {
+            var session = context.HttpContext.Session;
+            if (!SessionHelper.IsAuthenticated(session))
+            {
+                context.Result = new RedirectToActionResult("Login", "Account", null);
+                return;
+            }
+
+            int? status = null;
+            if (context.ActionArguments.TryGetValue("status", out var raw) && raw is int statusInt)
+                status = statusInt;
+
+            var requiredKey = status.HasValue
+                ? StaffMenuAccess.GetMilestoneMenuKeyForStatus(status.Value)
+                : StaffMenuAccess.VehicleBookings;
+
+            if (requiredKey == null || !SessionHelper.HasMenuAccess(session, requiredKey))
             {
                 context.Result = new RedirectToActionResult("AccessDenied", "Account", null);
                 return;

@@ -9,6 +9,7 @@
     var financeNames = ViewBag.FinanceNames as IEnumerable<FinanceNameMaster> ?? Enumerable.Empty<FinanceNameMaster>();
     var statuses = ViewBag.Statuses as IEnumerable<StatusLookup> ?? Enumerable.Empty<StatusLookup>();
     var statusOptions = StatusViewHelper.ToSelectList(statuses, ViewBag.SelectedStatus as int?, "All");
+    var paymentDateTimeMax = IstTime.DateTimeLocalMaxValue();
 }
 
 <div class="row mb-3">
@@ -171,6 +172,7 @@
                         <div class="col-md-6 mb-3">
                             <label class="fw-bold">Payment Date &amp; Time <span class="text-danger">*</span></label>
                             <input type="datetime-local" name="paymentDate" class="form-control"
+                                   max="@paymentDateTimeMax"
                                    value="@FormDateTimeHelper.ToDateTimeLocalValue(DateTime.Now)" required />
                         </div>
                     </div>
@@ -322,6 +324,15 @@
             if (el) el.required = requiresFinance;
         });
     }
+
+    document.getElementById('paymentForm')?.addEventListener('submit', function (e) {
+        const dt = this.querySelector('[name="paymentDate"]');
+        if (dt?.value && dt.max && dt.value > dt.max) {
+            e.preventDefault();
+            alert('Payment date cannot be in the future.');
+            dt.focus();
+        }
+    });
 
     document.getElementById('paymentModal')?.addEventListener('hidden.bs.modal', function () {
         const form = document.getElementById('paymentForm');

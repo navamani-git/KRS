@@ -67,7 +67,6 @@
                             <th>Request</th>
                             <th>Order</th>
                             <th>Chassis</th>
-                            <th>Account</th>
                             <th class="text-end">Refund (₹)</th>
                             <th>Status</th>
                             <th>Reason</th>
@@ -90,7 +89,6 @@
                                     <partial name="_ChassisLink" view-data='new ViewDataDictionary(ViewData) {
                                         { "VehicleId", r.VehicleId }, { "Chassis", r.VehicleChassisNumber }, { "ChassisCodeClass", "small" } }' />
                                 </td>
-                                <td><small>@r.AccountName</small></td>
                                 <td class="text-end fw-bold">₹@r.RefundAmount.ToString("N2")</td>
                                 <td><span class="badge @r.GetBadgeClass()">@r.GetStatusDisplay()</span></td>
                                 <td><small>@r.ReturnReason</small></td>

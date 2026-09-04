@@ -1,5 +1,6 @@
 using MediatR;
 using KRSDealerManagement.Application.Commands;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Entities;
 using KRSDealerManagement.Domain.Repositories;
@@ -46,6 +47,15 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             }
 
             MapClaim(claim, request);
+
+            if (request.Submit)
+                ValidateForSubmit(request);
+
+            await ApplyPartSelectionAsync(claim, request);
+
+            if (request.ModelId.HasValue && request.ColorId.HasValue)
+                await ModelColorValidation.EnsureMappedAsync(_unitOfWork, request.ModelId.Value, request.ColorId.Value);
+
             claim.ModifiedByUserId = request.UserId;
             claim.ModifiedDate = DateTime.UtcNow;
 
@@ -85,12 +95,16 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
         private static void MapClaim(WarrantyClaim claim, SaveWarrantyClaimCommand request)
         {
-            claim.ClaimType = request.ClaimType.Trim().ToUpperInvariant();
+            claim.ClaimType = string.IsNullOrWhiteSpace(request.ClaimType)
+                ? WarrantyClaimTypes.Warranty
+                : request.ClaimType.Trim().ToUpperInvariant();
             claim.AccountId = request.AccountId;
             claim.SubdealerId = request.SubdealerId;
             claim.DealershipId = request.DealershipId;
             claim.SubdealerVehicleId = request.SubdealerVehicleId;
-            claim.ChassisNo = request.ChassisNo.Trim().ToUpperInvariant();
+            claim.ChassisNo = string.IsNullOrWhiteSpace(request.ChassisNo)
+                ? ""
+                : request.ChassisNo.Trim().ToUpperInvariant();
             claim.CustomerName = TrimUpper(request.CustomerName);
             claim.CustomerMobile = Trim(request.CustomerMobile);
             claim.ContactPerson = Trim(request.ContactPerson);
@@ -102,12 +116,60 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             claim.CurrentKms = request.CurrentKms;
             claim.SaleDate = request.SaleDate?.Date;
             claim.ComplaintDate = request.ComplaintDate?.Date;
-            claim.WarrantyPartId = request.WarrantyPartId;
             claim.PartCode = TrimUpper(request.PartCode);
             claim.FailurePartSerialNumber = TrimUpper(request.FailurePartSerialNumber);
             claim.CustomerComplaint = Trim(request.CustomerComplaint);
             claim.DealerObservation = Trim(request.DealerObservation);
             claim.Remarks = Trim(request.Remarks);
+        }
+
+        private async Task ApplyPartSelectionAsync(WarrantyClaim claim, SaveWarrantyClaimCommand request)
+        {
+            if (!request.WarrantyPartId.HasValue)
+            {
+                claim.WarrantyPartId = null;
+                claim.OtherPartName = null;
+                return;
+            }
+
+            var part = await _unitOfWork.WarrantyParts.GetByIdAsync(request.WarrantyPartId.Value);
+            if (part == null || !part.IsActive)
+                throw new InvalidOperationException("Invalid part selected.");
+
+            claim.WarrantyPartId = request.WarrantyPartId;
+            if (WarrantyPartHelper.IsOthersPart(part))
+            {
+                if (string.IsNullOrWhiteSpace(request.OtherPartName))
+                {
+                    if (request.Submit)
+                        throw new InvalidOperationException("Please specify the part name when Others is selected.");
+                    claim.OtherPartName = null;
+                }
+                else
+                {
+                    claim.OtherPartName = request.OtherPartName.Trim().ToUpperInvariant();
+                }
+            }
+            else
+            {
+                claim.OtherPartName = null;
+            }
+        }
+
+        private static void ValidateForSubmit(SaveWarrantyClaimCommand request)
+        {
+            if (string.IsNullOrWhiteSpace(request.ChassisNo))
+                throw new InvalidOperationException("Chassis number is required.");
+            if (!request.CurrentKms.HasValue)
+                throw new InvalidOperationException("Current KMs is required.");
+            if (string.IsNullOrWhiteSpace(request.ContactPerson))
+                throw new InvalidOperationException("Contact person is required.");
+            if (string.IsNullOrWhiteSpace(request.ContactMobile))
+                throw new InvalidOperationException("Contact mobile is required.");
+            if (string.IsNullOrWhiteSpace(request.CustomerComplaint))
+                throw new InvalidOperationException("Customer complaint is required.");
+            if (!request.WarrantyPartId.HasValue)
+                throw new InvalidOperationException("Part name is required.");
         }
 
         private async Task ReplaceServiceEntriesAsync(int claimId, List<WarrantyServiceEntryInput> entries)
@@ -241,20 +303,59 @@ namespace KRSDealerManagement.Application.Handlers.Commands
     public class ApplyWarrantyToAmpereCommandHandler : WarrantyClaimTransitionHandler<ApplyWarrantyToAmpereCommand>
     {
         public ApplyWarrantyToAmpereCommandHandler(IUnitOfWork u, IAuditService a) : base(u, a) { }
-        protected override bool CanTransition(WarrantyClaim c, ApplyWarrantyToAmpereCommand r) => WarrantyClaimStatus.CanApplyToAmpere(c.Status);
+        protected override bool CanTransition(WarrantyClaim c, ApplyWarrantyToAmpereCommand r)
+        {
+            var so = ResolveSoNumber(c, r.SoNumber);
+            return WarrantyClaimStatus.CanApplyToAmpere(c.Status) && !string.IsNullOrWhiteSpace(so);
+        }
         protected override void ApplyTransition(WarrantyClaim c, ApplyWarrantyToAmpereCommand r)
         {
+            c.SoNumber = ResolveSoNumber(c, r.SoNumber)!.ToUpperInvariant();
             c.Status = WarrantyClaimStatus.AppliedToAmpere;
             c.AmpereAppliedByUserId = r.UserId;
             c.AmpereAppliedDate = DateTime.UtcNow;
         }
         protected override string GetActionName() => "ApplyToAmpere";
+
+        private static string? ResolveSoNumber(WarrantyClaim claim, string? requested)
+            => !string.IsNullOrWhiteSpace(requested) ? requested.Trim() : claim.SoNumber;
+    }
+
+    public class UpdateWarrantySoNumberCommandHandler : IRequestHandler<UpdateWarrantySoNumberCommand, bool>
+    {
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IAuditService _auditService;
+
+        public UpdateWarrantySoNumberCommandHandler(IUnitOfWork unitOfWork, IAuditService auditService)
+        {
+            _unitOfWork = unitOfWork;
+            _auditService = auditService;
+        }
+
+        public async Task<bool> Handle(UpdateWarrantySoNumberCommand request, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(request.SoNumber))
+                return false;
+
+            var claim = await _unitOfWork.WarrantyClaims.GetByIdAsync(request.WarrantyClaimId);
+            if (claim == null)
+                return false;
+
+            claim.SoNumber = request.SoNumber.Trim().ToUpperInvariant();
+            claim.ModifiedByUserId = request.UserId;
+            claim.ModifiedDate = DateTime.UtcNow;
+            await _unitOfWork.WarrantyClaims.UpdateAsync(claim);
+            await _unitOfWork.SaveChangesAsync();
+            await _auditService.LogActionAsync("WarrantyClaim", claim.WarrantyClaimId, "UpdateSoNumber", request.UserId, "Staff", claim.SoNumber);
+            return true;
+        }
     }
 
     public class MarkWarrantyProductReceivedCommandHandler : WarrantyClaimTransitionHandler<MarkWarrantyProductReceivedCommand>
     {
         public MarkWarrantyProductReceivedCommandHandler(IUnitOfWork u, IAuditService a) : base(u, a) { }
-        protected override bool CanTransition(WarrantyClaim c, MarkWarrantyProductReceivedCommand r) => WarrantyClaimStatus.CanMarkProductReceived(c.Status);
+        protected override bool CanTransition(WarrantyClaim c, MarkWarrantyProductReceivedCommand r)
+            => WarrantyClaimStatus.CanMarkProductReceived(c.Status) && !string.IsNullOrWhiteSpace(c.SoNumber);
         protected override void ApplyTransition(WarrantyClaim c, MarkWarrantyProductReceivedCommand r)
         {
             c.Status = WarrantyClaimStatus.ProductReceived;

@@ -37,6 +37,7 @@ namespace KRSDealerManagement.Domain.Entities
         public DateTime? ComplaintDate { get; set; }
 
         public int? WarrantyPartId { get; set; }
+        public string? OtherPartName { get; set; }
         public string? PartCode { get; set; }
         public string? FailurePartSerialNumber { get; set; }
         public string? CustomerComplaint { get; set; }
@@ -53,6 +54,8 @@ namespace KRSDealerManagement.Domain.Entities
         public DateTime? ApprovedDate { get; set; }
         public int? RejectedByUserId { get; set; }
         public DateTime? RejectedDate { get; set; }
+
+        public string? SoNumber { get; set; }
 
         public int? AmpereAppliedByUserId { get; set; }
         public DateTime? AmpereAppliedDate { get; set; }

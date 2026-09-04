@@ -42,14 +42,16 @@ namespace KRSDealerManagement.Web.Controllers
             var canViewReturns = isSubdealer
                 || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Returns);
             var canViewCommissions = isSubdealer || isAdmin;
-            var canViewBookings = isAdmin || isBranchManager
-                || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.VehicleBookings)
+            var canViewBookings = isAdmin
+                || SessionHelper.HasAnyBookingStaffMenuAccess(HttpContext.Session)
                 || (isSubdealer && SessionHelper.HasMenuAccess(HttpContext.Session, MenuKeys.VehiclesBookingStages));
-            var canViewShowroomStock = (isAdmin || isBranchManager)
-                && SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.ShowroomStock);
-            var canViewDealerStock = (isAdmin || isBranchManager)
-                && SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.DealerStock);
-            var canViewRtoSubsidyProgress = isAdmin || isBranchManager
+            var canViewShowroomStock = SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.ShowroomStock);
+            var canViewDealerStock = SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.DealerStock);
+            var canViewRtoSubsidyProgress = isAdmin
+                || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.BookingSubsidyIdPending)
+                || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.BookingSubsidyDocsPending)
+                || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.BookingRegistered)
+                || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.VehicleBookings)
                 || (isSubdealer && SessionHelper.HasMenuAccess(HttpContext.Session, MenuKeys.VehiclesBookingStages));
 
             var query = new GetDashboardSummaryQuery
@@ -84,7 +86,7 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.CanViewRtoSubsidyProgress = canViewRtoSubsidyProgress;
             ViewBag.DealershipName = SessionHelper.GetDealershipName(HttpContext.Session);
 
-            var showBookingCounts = canViewBookings && (isAdmin || isBranchManager || isSubdealer);
+            var showBookingCounts = canViewBookings;
             var widgetContext = new DashboardWidgetsContext
             {
                 IsAdmin = isAdmin,
@@ -172,8 +174,8 @@ namespace KRSDealerManagement.Web.Controllers
             var isAdmin = SessionHelper.IsSystemAdmin(HttpContext.Session);
             var isSubdealer = SessionHelper.IsSubdealer(HttpContext.Session);
             var isBranchManager = SessionHelper.IsBranchManager(HttpContext.Session);
-            var canViewBookings = isAdmin || isBranchManager
-                || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.VehicleBookings)
+            var canViewBookings = isAdmin
+                || SessionHelper.HasAnyBookingStaffMenuAccess(HttpContext.Session)
                 || (isSubdealer && SessionHelper.HasMenuAccess(HttpContext.Session, MenuKeys.VehiclesBookingStages));
 
             var widgetContext = new DashboardWidgetsContext
@@ -185,13 +187,12 @@ namespace KRSDealerManagement.Web.Controllers
                 CanViewReturns = isSubdealer || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Returns),
                 CanViewPayments = isSubdealer || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Payments),
                 CanViewCommissions = isSubdealer || isAdmin,
-                CanViewDealerStock = (isAdmin || isBranchManager)
-                    && SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.DealerStock),
-                CanViewShowroomStock = (isAdmin || isBranchManager)
-                    && SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.ShowroomStock),
-                ShowBookingCounts = canViewBookings && (isAdmin || isBranchManager || isSubdealer),
+                CanViewDealerStock = SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.DealerStock),
+                CanViewShowroomStock = SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.ShowroomStock),
+                ShowBookingCounts = canViewBookings,
                 ShowStaffOnlyBookingStages = isAdmin || isBranchManager,
-                CanViewRtoSubsidyProgress = isAdmin || isBranchManager
+                CanViewRtoSubsidyProgress = isAdmin
+                    || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.VehicleBookings)
                     || (isSubdealer && SessionHelper.HasMenuAccess(HttpContext.Session, MenuKeys.VehiclesBookingStages))
             };
 

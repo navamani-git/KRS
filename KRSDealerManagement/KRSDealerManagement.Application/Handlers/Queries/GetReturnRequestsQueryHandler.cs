@@ -25,7 +25,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var accounts = await _unitOfWork.SubdealerAccounts.GetAllAsync();
             var orders = await _unitOfWork.PurchaseOrders.GetAllAsync();
             var vehicles = await _unitOfWork.Vehicles.GetAllAsync();
-            var users = await _unitOfWork.Users.GetAllAsync();
+            var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
             var statusMap = await _statuses.GetMapAsync(StatusCategories.Vehicle);
             var refundCredits = (await _unitOfWork.AccountTransactions.GetAllAsync())
                 .Where(t => t.ReferenceType == "ReturnRequest"
@@ -51,19 +51,23 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                          from ord in orderGroup.DefaultIfEmpty()
                          join v in vehicles on r.VehicleId equals v.VehicleId into vehicleGroup
                          from veh in vehicleGroup.DefaultIfEmpty()
-                         join u in users on r.ProcessedBy equals u.UserId into userGroup
+                         join u in users.Values on r.ProcessedBy equals u.UserId into userGroup
                          from processedUser in userGroup.DefaultIfEmpty()
+                         let subdealerUserId = veh?.SubdealerId ?? ord?.SubdealerId ?? acc?.SubdealerId
                          let displayStatus = VehicleStatusResolver.ResolveReturnDisplayStatus(r, veh)
                          select new ReturnRequestDto
                          {
                              ReturnRequestId = r.ReturnRequestId,
                              AccountId = r.AccountId,
                              AccountName = acc != null ? acc.AccountName : "Unknown",
+                             SubdealerName = subdealerUserId.HasValue && users.TryGetValue(subdealerUserId.Value, out var subdealerUser)
+                                 ? subdealerUser.GetFullName()
+                                 : "Unknown",
                              OrderId = r.OrderId,
                              OrderNumber = ord != null ? ord.OrderNumber : $"Order #{r.OrderId}",
                              VehicleId = r.VehicleId,
                              VehicleChassisNumber = veh != null ? veh.ChassisNumber : "Unknown",
-                             SubdealerUserId = veh?.SubdealerId ?? ord?.SubdealerId,
+                             SubdealerUserId = subdealerUserId,
                              RefundAmount = r.RefundAmount,
                              Status = displayStatus,
                              StatusName = statusMap.TryGetValue(displayStatus, out var st) ? st.StatusName : null,
@@ -78,11 +82,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                                  : null,
                              CreatedDate = r.CreatedDate,
                              ModifiedDate = r.ModifiedDate,
-                             CanAllocateToSubdealer = r.Status == 1
-                                 && veh != null
-                                 && veh.Status == UnifiedVehicleStatus.ApprovedByDealer
-                                 && !veh.SubdealerId.HasValue
-                                 && !bookedVehicleIds.Contains(veh.VehicleId)
+                             CanAllocateToSubdealer = false
                          };
 
             if (request.ReturnRequestId.HasValue)

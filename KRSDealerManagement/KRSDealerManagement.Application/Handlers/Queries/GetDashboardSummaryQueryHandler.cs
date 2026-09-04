@@ -263,13 +263,17 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 scopedIds = await GetScopedSubdealerIdsAsync(dealershipId);
             }
 
+            var sinceUtc = DateTime.UtcNow.AddDays(-30);
+
             var filtered = scopedIds == null
                 ? auditLogs
                 : auditLogs.Where(a => scopedIds.Contains(a.UserId));
 
+            filtered = filtered.Where(a => a.CreatedDate >= sinceUtc);
+
             summary.RecentActivities = filtered
                 .OrderByDescending(a => a.CreatedDate)
-                .Take(10)
+                .Take(50)
                 .Select(a => new RecentActivityItem
                 {
                     ActivityId = a.AuditLogId,

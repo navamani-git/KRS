@@ -49,10 +49,10 @@ namespace KRSDealerManagement.Web.Controllers
             var returns = GridScreenFilterHelper.ApplyReturns(
                 await _mediator.Send(new GetReturnRequestsQuery { Status = status, DealershipId = scope }),
                 columnFilters).ToList();
-            var headers = new[] { "ID", "Order", "Chassis", "Subdealer Account", "Refund", "Status", "Reason", "Requested", "Processed" };
+            var headers = new[] { "ID", "Order", "Chassis", "Subdealer", "Refund", "Status", "Reason", "Requested", "Processed" };
             var rows = returns.Select(r => (IReadOnlyList<object?>)new List<object?>
             {
-                r.ReturnRequestId, r.OrderNumber, r.VehicleChassisNumber, r.AccountName, r.RefundAmount,
+                r.ReturnRequestId, r.OrderNumber, r.VehicleChassisNumber, r.SubdealerName ?? r.AccountName, r.RefundAmount,
                 r.GetStatusDisplay(), r.ReturnReason, r.CreatedDate, r.ProcessedDate
             });
             return ExcelExportHelper.ToFileResult(this, $"returns_{DateTime.Now:yyyyMMdd}.xlsx", headers, rows, "Returns");

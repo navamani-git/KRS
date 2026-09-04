@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using KRSDealerManagement.Application.Commands;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Repositories;
@@ -17,17 +18,20 @@ namespace KRSDealerManagement.Web.Controllers
         private readonly IUnitOfWork _unitOfWork;
         private readonly IStatusLookupService _statuses;
         private readonly IWebHostEnvironment _env;
+        private readonly ILogger<WarrantyClaimsController> _logger;
 
         public WarrantyClaimsController(
             IMediator mediator,
             IUnitOfWork unitOfWork,
             IStatusLookupService statuses,
-            IWebHostEnvironment env)
+            IWebHostEnvironment env,
+            ILogger<WarrantyClaimsController> logger)
         {
             _mediator = mediator;
             _unitOfWork = unitOfWork;
             _statuses = statuses;
             _env = env;
+            _logger = logger;
         }
 
         [AuthorizeRole(1, 4)]
@@ -101,23 +105,30 @@ namespace KRSDealerManagement.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [RequestSizeLimit(600_000_000)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 600_000_000)]
         [AuthorizeRole(2)]
-        [AuthorizeMenu(MenuKeys.WarrantyApply)]
+        [AuthorizeMenuAny(MenuKeys.MyWarrantyClaims, MenuKeys.WarrantyApply)]
         public async Task<IActionResult> Save(WarrantyClaimFormModel model, string action)
         {
-            var userId = SessionHelper.GetUserId(HttpContext.Session)!.Value;
-            var account = await SubdealerOrgService.GetPermissionAccountAsync(_unitOfWork, userId);
-            if (account == null)
-            {
-                TempData["Error"] = "Subdealer account not found.";
-                return RedirectToAction(nameof(MyClaims));
-            }
-
-            var org = (await _unitOfWork.UserOrgRoles.GetAllAsync())
-                .FirstOrDefault(o => o.UserId == userId && o.IsActive);
+            model ??= new WarrantyClaimFormModel();
+            EnsureServiceEntries(model);
 
             try
             {
+                var userId = SessionHelper.GetUserId(HttpContext.Session);
+                if (!userId.HasValue)
+                    return RedirectToAction("Login", "Account");
+
+                var account = await SubdealerOrgService.GetPermissionAccountAsync(_unitOfWork, userId.Value);
+                if (account == null)
+                {
+                    TempData["Error"] = "Subdealer account not found.";
+                    return RedirectToAction(nameof(MyClaims));
+                }
+
+                var org = (await _unitOfWork.UserOrgRoles.GetAllAsync())
+                    .FirstOrDefault(o => o.UserId == userId.Value && o.IsActive);
+
                 await ResolveModelColorNamesAsync(model);
 
                 var attachmentPaths = await BuildAttachmentPathsAsync(model);
@@ -143,9 +154,9 @@ namespace KRSDealerManagement.Web.Controllers
                 {
                     WarrantyClaimId = model.WarrantyClaimId > 0 ? model.WarrantyClaimId : null,
                     Submit = submit,
-                    UserId = userId,
+                    UserId = userId.Value,
                     AccountId = account.AccountId,
-                    SubdealerId = userId,
+                    SubdealerId = userId.Value,
                     DealershipId = org?.DealershipId,
                     ClaimType = model.ClaimType,
                     SubdealerVehicleId = model.SubdealerVehicleId,
@@ -162,31 +173,46 @@ namespace KRSDealerManagement.Web.Controllers
                     SaleDate = model.SaleDate,
                     ComplaintDate = model.ComplaintDate,
                     WarrantyPartId = model.WarrantyPartId,
+                    OtherPartName = model.OtherPartName,
                     PartCode = model.PartCode,
                     FailurePartSerialNumber = model.FailurePartSerialNumber,
                     CustomerComplaint = model.CustomerComplaint,
                     DealerObservation = model.DealerObservation,
                     Remarks = model.Remarks,
-                    ServiceEntries = model.ServiceEntries?.Select((e, i) => new WarrantyServiceEntryInput
+                    ServiceEntries = model.ServiceEntries.Select((e, i) => new WarrantyServiceEntryInput
                     {
                         ServiceType = e.ServiceType,
                         ServiceDate = e.ServiceDate,
                         ServiceKms = e.ServiceKms,
                         SortOrder = i
-                    }).ToList() ?? new List<WarrantyServiceEntryInput>(),
+                    }).ToList(),
                     AttachmentPaths = attachmentPaths
                 });
 
                 TempData["Success"] = submit
                     ? $"Warranty claim #{claimId} submitted successfully."
                     : $"Draft saved (claim #{claimId}).";
-                return RedirectToAction(nameof(MyClaims));
+                return submit
+                    ? RedirectToAction(nameof(MyClaims))
+                    : RedirectToAction(nameof(Edit), new { id = claimId });
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Warranty claim save failed for claim {ClaimId}", model.WarrantyClaimId);
                 TempData["Error"] = ex.Message;
-                await LoadFormLookupsAsync();
-                return View("Edit", model);
+                try
+                {
+                    EnsureServiceEntries(model);
+                    await LoadFormLookupsAsync();
+                    return View("Edit", model);
+                }
+                catch (Exception viewEx)
+                {
+                    _logger.LogError(viewEx, "Failed to render warranty claim form after save error");
+                    TempData["Error"] = ex.Message;
+                    return RedirectToAction(model.WarrantyClaimId > 0 ? nameof(Edit) : nameof(Create),
+                        model.WarrantyClaimId > 0 ? new { id = model.WarrantyClaimId } : null);
+                }
             }
         }
 
@@ -228,12 +254,25 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         [AuthorizeRole(1, 2, 4)]
-        public IActionResult DownloadAttachment(int id, string path)
+        public async Task<IActionResult> ViewAttachment(int id, string path)
         {
-            if (!AppFileStorageHelper.TryResolveAbsolute(_env, path, out var absolute))
+            var access = await TryResolveClaimAttachmentAsync(id, path);
+            if (access == null)
                 return NotFound();
-            var contentType = WarrantyFileHelper.GetContentType(absolute);
-            return PhysicalFile(absolute, contentType, Path.GetFileName(absolute));
+
+            var contentType = WarrantyFileHelper.GetContentType(access);
+            return PhysicalFile(access, contentType);
+        }
+
+        [AuthorizeRole(1, 2, 4)]
+        public async Task<IActionResult> DownloadAttachment(int id, string path)
+        {
+            var access = await TryResolveClaimAttachmentAsync(id, path);
+            if (access == null)
+                return NotFound();
+
+            var contentType = WarrantyFileHelper.GetContentType(access);
+            return PhysicalFile(access, contentType, Path.GetFileName(access));
         }
 
         [HttpPost]
@@ -258,7 +297,25 @@ namespace KRSDealerManagement.Web.Controllers
         [ValidateAntiForgeryToken]
         [AuthorizeRole(1, 4)]
         [AuthorizeMenu(StaffMenuAccess.WarrantyClaims)]
-        public async Task<IActionResult> ApplyToAmpere(int id, string? notes) => await StaffAction(id, notes, new ApplyWarrantyToAmpereCommand());
+        public async Task<IActionResult> UpdateSoNumber(int id, string soNumber)
+        {
+            if (string.IsNullOrWhiteSpace(soNumber))
+            {
+                TempData["Error"] = "SO Number is required.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            return await StaffAction(id, null, new UpdateWarrantySoNumberCommand { SoNumber = soNumber.Trim() });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.WarrantyClaims)]
+        public async Task<IActionResult> ApplyToAmpere(int id, string? soNumber, string? notes)
+        {
+            return await StaffAction(id, notes, new ApplyWarrantyToAmpereCommand { SoNumber = soNumber?.Trim() ?? "" });
+        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -308,12 +365,32 @@ namespace KRSDealerManagement.Web.Controllers
             return RedirectToAction(nameof(Details), new { id });
         }
 
+        private static void EnsureServiceEntries(WarrantyClaimFormModel model)
+        {
+            if (model.ServiceEntries is { Count: > 0 })
+                return;
+
+            model.ServiceEntries = new List<WarrantyServiceEntryFormModel> { new(), new() };
+        }
+
         private async Task<IActionResult> StaffAction(int id, string? notes, WarrantyClaimActionCommand command)
         {
+            var userId = SessionHelper.GetUserId(HttpContext.Session)!.Value;
+            var isAdmin = SessionHelper.IsSystemAdmin(HttpContext.Session);
+            if (!isAdmin)
+            {
+                var user = await _unitOfWork.Users.GetByIdAsync(userId);
+                if (user?.CanEditWarrantyClaims != true)
+                {
+                    TempData["Error"] = "You do not have permission to update warranty claims.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+            }
+
             command.WarrantyClaimId = id;
-            command.UserId = SessionHelper.GetUserId(HttpContext.Session)!.Value;
+            command.UserId = userId;
             command.Notes = notes;
-            command.IsSystemAdmin = SessionHelper.IsSystemAdmin(HttpContext.Session);
+            command.IsSystemAdmin = isAdmin;
             var ok = await _mediator.Send(command);
             TempData[ok ? "Success" : "Error"] = ok ? "Claim updated." : "Unable to update claim. Check status and required notes.";
             return RedirectToAction(nameof(Details), new { id });
@@ -321,18 +398,18 @@ namespace KRSDealerManagement.Web.Controllers
 
         private async Task LoadFormLookupsAsync()
         {
+            await ModelColorViewHelper.SetModelColorMapAsync(this, _mediator);
             ViewBag.Parts = (await _unitOfWork.WarrantyParts.GetAllAsync())
                 .Where(p => p.IsActive)
                 .OrderBy(p => p.SortOrder)
                 .ThenBy(p => p.PartName)
                 .ToList();
+            ViewBag.OthersPartId = (await _unitOfWork.WarrantyParts.GetAllAsync())
+                .FirstOrDefault(p => p.IsActive && WarrantyPartHelper.IsOthersPart(p))
+                ?.WarrantyPartId;
             ViewBag.Models = (await _unitOfWork.VehicleModels.GetAllAsync())
                 .Where(m => m.IsActive)
                 .OrderBy(m => m.ModelName)
-                .ToList();
-            ViewBag.Colors = (await _unitOfWork.VehicleColors.GetAllAsync())
-                .Where(c => c.IsActive)
-                .OrderBy(c => c.ColorName)
                 .ToList();
             ViewBag.ServiceTypes = WarrantyServiceTypes.All;
             ViewBag.ClaimTypes = WarrantyClaimTypes.All;
@@ -358,6 +435,7 @@ namespace KRSDealerManagement.Web.Controllers
             SaleDate = detail.SaleDate,
             ComplaintDate = detail.ComplaintDate,
             WarrantyPartId = detail.WarrantyPartId,
+            OtherPartName = detail.OtherPartName,
             PartCode = detail.PartCode,
             FailurePartSerialNumber = detail.FailurePartSerialNumber,
             CustomerComplaint = detail.CustomerComplaint,
@@ -396,6 +474,40 @@ namespace KRSDealerManagement.Web.Controllers
                 paths[type] = await WarrantyFileHelper.SaveAsync(file, _env);
             }
             return paths;
+        }
+
+        private async Task<string?> TryResolveClaimAttachmentAsync(int claimId, string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path) || !AppFileStorageHelper.TryResolveAbsolute(_env, path, out var absolute))
+                return null;
+
+            var userId = SessionHelper.GetUserId(HttpContext.Session);
+            if (!userId.HasValue)
+                return null;
+
+            var isStaff = SessionHelper.IsStaff(HttpContext.Session);
+            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
+            int? accountId = null;
+            if (!isStaff)
+            {
+                var account = await SubdealerOrgService.GetPermissionAccountAsync(_unitOfWork, userId.Value);
+                accountId = account?.AccountId;
+            }
+
+            var detail = await _mediator.Send(new GetWarrantyClaimDetailQuery
+            {
+                WarrantyClaimId = claimId,
+                AccountId = accountId,
+                DealershipId = isStaff && !SessionHelper.IsSystemAdmin(HttpContext.Session) ? scope : null,
+                IsSystemAdmin = SessionHelper.IsSystemAdmin(HttpContext.Session)
+            });
+            if (detail == null)
+                return null;
+
+            return detail.Attachments.Any(a =>
+                string.Equals(a.FilePath, path, StringComparison.OrdinalIgnoreCase))
+                ? absolute
+                : null;
         }
     }
 }

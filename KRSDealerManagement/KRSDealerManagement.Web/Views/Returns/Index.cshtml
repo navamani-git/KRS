@@ -52,7 +52,7 @@
                     <thead class="table-dark">
                         <tr>
                             <th class="grid-col-rownum">#</th>
-                            <th>Account</th>
+                            <th>Subdealer</th>
                             <th>Order</th>
                             <th>Vehicle</th>
                             <th class="text-end">Refund (₹)</th>
@@ -70,7 +70,7 @@
                             var badgeClass = r.GetBadgeClass();
                             <tr class="@(r.Status == UnifiedVehicleStatus.ReturnRequested ? "table-warning bg-opacity-25" : "")">
                                 <td>@r.ReturnRequestId</td>
-                                <td>@r.AccountName</td>
+                                <td>@(r.SubdealerName ?? r.AccountName)</td>
                                 <td><small>@r.OrderNumber</small></td>
                                 <td>
                                     <partial name="_ChassisLink" view-data='new ViewDataDictionary(ViewData) {
@@ -111,16 +111,9 @@
                                             <i class="bi bi-x-circle"></i>
                                         </a>
                                     }
-                                    else if (r.CanAllocateToSubdealer)
-                                    {
-                                        <a href="@Url.EAction(QueryCrypto, "Allocate", new { id = r.ReturnRequestId }, "Returns")"
-                                           class="btn btn-sm btn-primary" title="Allocate to subdealer">
-                                            <i class="bi bi-box-seam"></i>
-                                        </a>
-                                    }
                                     else
                                     {
-                                        <small class="text-muted">@r.AdminRemarks</small>
+                                        <small class="text-muted">@(r.AdminRemarks ?? "—")</small>
                                     }
                                 </td>
                             </tr>

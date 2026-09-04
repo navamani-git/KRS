@@ -1,8 +1,10 @@
 using KRSDealerManagement.Application;
 using KRSDealerManagement.Infrastructure;
+using KRSDealerManagement.Web.Helpers;
 using KRSDealerManagement.Web.Middleware;
 using KRSDealerManagement.Web.Services;
 using KRSDealerManagement.Web.Services.ExcelImport;
+using Microsoft.AspNetCore.Http.Features;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +12,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add<KRSDealerManagement.Web.Filters.ReadOnlyMenuGuardFilter>();
+});
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 600_000_000;
+    options.ValueLengthLimit = int.MaxValue;
+    options.MultipartHeadersLengthLimit = int.MaxValue;
+});
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 600_000_000;
 });
 
 // Query string encryption (single service used across the app)
@@ -41,6 +53,15 @@ builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
+var migratedLegacyFiles = AppFileStorageHelper.MigrateLegacyWwwrootFiles(app.Environment);
+if (migratedLegacyFiles > 0)
+{
+    app.Logger.LogInformation(
+        "Migrated {Count} legacy upload(s) from wwwroot/Files to {Target}",
+        migratedLegacyFiles,
+        Path.Combine(app.Environment.ContentRootPath, AppFileStorageHelper.RootFolder));
+}
+
 // Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {
@@ -49,7 +70,18 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        // Uploaded files must be served through controller actions, not as public static files.
+        if (ctx.Context.Request.Path.StartsWithSegments("/Files", StringComparison.OrdinalIgnoreCase))
+        {
+            ctx.Context.Response.StatusCode = StatusCodes.Status404NotFound;
+            ctx.Context.Response.ContentLength = 0;
+        }
+    }
+});
 
 app.UseMiddleware<QueryStringEncryptionMiddleware>();
 

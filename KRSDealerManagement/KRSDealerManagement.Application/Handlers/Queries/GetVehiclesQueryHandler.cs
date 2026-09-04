@@ -99,13 +99,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         BookingStatusName = st?.StatusName,
                         BookingStatusBadge = st?.BadgeClass,
                         CanSubmitSubsidyDocs = booking != null
-                            && BookingStageFilter.IsSubsidyDocsPending(
-                                booking.SubsidyId,
-                                booking.FaceVerificationPath,
-                                booking.RcImagePath,
-                                booking.BoothPhotoPath,
-                                booking.SubsidyUndertakingPath,
-                                v.Status),
+                            && !string.IsNullOrWhiteSpace(booking.SubsidyId),
                         CanRequestReturn = !(order?.CreatedByDealer ?? false)
                             && UnifiedVehicleStatus.CanBookOrReturnPreInvoice(
                                 v.Status, booking != null, booking?.InvoiceDate)

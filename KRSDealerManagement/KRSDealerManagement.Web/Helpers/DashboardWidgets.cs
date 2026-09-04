@@ -44,14 +44,6 @@ namespace KRSDealerManagement.Web.Helpers
             if (ctx.CanViewCommissions)
                 items.Add(new(DashboardWidgetKeys.PendingCommissions, "Pending Commissions", DashboardWidgetGroups.PendingActions));
 
-            if (!ctx.IsAdmin && ctx.IsBranchManager)
-            {
-                if (ctx.CanViewDealerStock)
-                    items.Add(new(DashboardWidgetKeys.DealerStock, "Dealer Stock", DashboardWidgetGroups.Stock));
-                if (ctx.CanViewShowroomStock)
-                    items.Add(new(DashboardWidgetKeys.ShowroomStock, "Subdealer Stock", DashboardWidgetGroups.Stock));
-            }
-
             if (ctx.ShowBookingCounts)
             {
                 items.Add(new(DashboardWidgetKeys.BookedToCustomer, "Booked to Customer", DashboardWidgetGroups.ManageVehicles));
@@ -67,6 +59,11 @@ namespace KRSDealerManagement.Web.Helpers
                     items.Add(new(DashboardWidgetKeys.Registered, "Registered", DashboardWidgetGroups.ManageVehicles));
                 }
             }
+
+            if (ctx.CanViewDealerStock)
+                items.Add(new(DashboardWidgetKeys.DealerStock, "Dealer Stock", DashboardWidgetGroups.Stock));
+            if (ctx.CanViewShowroomStock)
+                items.Add(new(DashboardWidgetKeys.ShowroomStock, "Subdealer Stock", DashboardWidgetGroups.Stock));
 
             return items;
         }
@@ -142,7 +139,21 @@ namespace KRSDealerManagement.Web.Helpers
             }
 
             FlushSection();
-            return sections;
+
+            var sectionOrder = new[]
+            {
+                DashboardWidgetGroups.PendingActions,
+                DashboardWidgetGroups.ManageVehicles,
+                DashboardWidgetGroups.Stock
+            };
+
+            return sections
+                .OrderBy(s =>
+                {
+                    var idx = Array.FindIndex(sectionOrder, g => string.Equals(g, s.Group, StringComparison.OrdinalIgnoreCase));
+                    return idx < 0 ? sectionOrder.Length : idx;
+                })
+                .ToList();
         }
 
         public static string? GetSectionHelp(string group) => group switch

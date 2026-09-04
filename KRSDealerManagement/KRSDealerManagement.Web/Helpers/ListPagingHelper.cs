@@ -57,17 +57,27 @@ namespace KRSDealerManagement.Web.Helpers
         }
 
         /// <summary>
-        /// Default range: first day of current month → last day of current month (inclusive).
+        /// Default search range: first day of the month three months ago → last day of current month (inclusive).
+        /// </summary>
+        public static (DateTime FromDate, DateTime ToDate) GetDefaultSearchDateRange(DateTime? referenceDate = null)
+        {
+            var today = (referenceDate ?? DateTime.Today).Date;
+            var monthStart = new DateTime(today.Year, today.Month, 1);
+            var from = monthStart.AddMonths(-3);
+            var to = monthStart.AddMonths(1).AddDays(-1);
+            return (from, to);
+        }
+
+        /// <summary>
+        /// Applies <see cref="GetDefaultSearchDateRange"/> when from/to are omitted.
         /// </summary>
         public static (DateTime FromDate, DateTime ToDate) ResolveDateRange(
             DateTime? fromDate,
             DateTime? toDate)
         {
-            var today = DateTime.Today;
-            var monthStart = new DateTime(today.Year, today.Month, 1);
-            var monthEnd = monthStart.AddMonths(1).AddDays(-1);
-            var from = (fromDate ?? monthStart).Date;
-            var to = (toDate ?? monthEnd).Date;
+            var (defaultFrom, defaultTo) = GetDefaultSearchDateRange();
+            var from = (fromDate ?? defaultFrom).Date;
+            var to = (toDate ?? defaultTo).Date;
             if (to < from) to = from;
             return (from, to);
         }

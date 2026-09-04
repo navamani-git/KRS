@@ -4,12 +4,13 @@ namespace KRSDealerManagement.Web.Helpers
 {
     public static class GridColumnRegistry
     {
-        public static IReadOnlyList<GridFilterColumn> Get(string gridId, bool hideLogins = false, bool hideActions = false, bool isSubdealer = false, bool showDealership = false)
+        public static IReadOnlyList<GridFilterColumn> Get(string gridId, GridColumnOptions? options = null)
         {
+            options ??= new GridColumnOptions();
             return gridId switch
             {
-                GridIds.Subdealers => Subdealers(hideLogins, hideActions),
-                GridIds.Vehicles => Vehicles(isSubdealer),
+                GridIds.Subdealers => Subdealers(options.HideLogins, options.HideActions),
+                GridIds.Vehicles => Vehicles(options.IsSubdealer),
                 GridIds.Payments => Payments(includeSubdealer: true),
                 GridIds.MyPayments => MyPayments(),
                 GridIds.Orders => Orders(),
@@ -28,11 +29,11 @@ namespace KRSDealerManagement.Web.Helpers
                 GridIds.RtoLocations => RtoLocations(),
                 GridIds.StaffUsers => StaffUsers(),
                 GridIds.StatusLookups => StatusLookups(),
-                GridIds.VehicleBookings => VehicleBookings(),
+                GridIds.VehicleBookings => VehicleBookings(options.IsSubdealerView),
                 GridIds.VehicleColors => VehicleColors(),
                 GridIds.VehicleModels => VehicleModels(),
                 GridIds.ShowroomStock => ShowroomStock(),
-                GridIds.DealerStock => DealerStock(showDealership),
+                GridIds.DealerStock => DealerStock(options.ShowBranchColumn),
                 GridIds.WarrantyClaims => WarrantyClaims(),
                 GridIds.MyWarrantyClaims => MyWarrantyClaims(),
                 GridIds.WarrantyParts => WarrantyParts(),
@@ -46,6 +47,7 @@ namespace KRSDealerManagement.Web.Helpers
             {
                 GridFilterColumn.Skip(),
                 GridFilterColumn.Combo("name", "Name"),
+                GridFilterColumn.Combo("district", "District"),
                 GridFilterColumn.Combo("location", "Location")
             };
             if (!hideLogins) cols.Add(GridFilterColumn.Skip());
@@ -180,7 +182,7 @@ namespace KRSDealerManagement.Web.Helpers
         private static List<GridFilterColumn> Returns() => new()
         {
             GridFilterColumn.Skip(),
-            GridFilterColumn.Combo("account", "Account"),
+            GridFilterColumn.Combo("subdealer", "Subdealer"),
             GridFilterColumn.Combo("order", "Order"),
             GridFilterColumn.Combo("vehicle", "Vehicle"),
             GridFilterColumn.Combo("refund", "Refund"),
@@ -194,10 +196,9 @@ namespace KRSDealerManagement.Web.Helpers
         private static List<GridFilterColumn> MyReturns() => new()
         {
             GridFilterColumn.Skip(),
-            GridFilterColumn.Skip(),
+            GridFilterColumn.Combo("request", "Request"),
             GridFilterColumn.Combo("order", "Order"),
             GridFilterColumn.Combo("chassis", "Chassis"),
-            GridFilterColumn.Combo("account", "Account"),
             GridFilterColumn.Combo("refund", "Refund"),
             GridFilterColumn.Combo("status", "Status"),
             GridFilterColumn.Combo("reason", "Reason"),
@@ -321,23 +322,31 @@ namespace KRSDealerManagement.Web.Helpers
             GridFilterColumn.Skip()
         };
 
-        private static List<GridFilterColumn> VehicleBookings() => new()
+        private static List<GridFilterColumn> VehicleBookings(bool isSubdealerView)
         {
-            GridFilterColumn.Combo("id", "ID"),
-            GridFilterColumn.Combo("chassis", "Chassis"),
-            GridFilterColumn.Combo("subdealer", "Subdealer"),
-            GridFilterColumn.Combo("customer", "Customer"),
-            GridFilterColumn.Combo("mobile", "Mobile"),
-            GridFilterColumn.Combo("status", "Status"),
-            GridFilterColumn.DateCol("submitted", "Submitted"),
-            GridFilterColumn.DateCol("paperReceived", "Paper Rcvd"),
-            GridFilterColumn.DateCol("invoiceDate", "Invoice"),
-            GridFilterColumn.DateCol("insuranceDate", "Insurance"),
-            GridFilterColumn.Select("invoiceDoc", "Yes", "No"),
-            GridFilterColumn.Select("insuranceDoc", "Yes", "No"),
-            GridFilterColumn.DateCol("registration", "Registered"),
-            GridFilterColumn.Actions()
-        };
+            var cols = new List<GridFilterColumn>
+            {
+                GridFilterColumn.Combo("id", "ID"),
+                GridFilterColumn.Combo("chassis", "Chassis")
+            };
+            if (!isSubdealerView)
+                cols.Add(GridFilterColumn.Combo("subdealer", "Subdealer"));
+            cols.AddRange(new[]
+            {
+                GridFilterColumn.Combo("customer", "Customer"),
+                GridFilterColumn.Combo("mobile", "Mobile"),
+                GridFilterColumn.Combo("status", "Status"),
+                GridFilterColumn.DateCol("submitted", "Submitted"),
+                GridFilterColumn.DateCol("paperReceived", "Paper Rcvd"),
+                GridFilterColumn.DateCol("invoiceDate", "Invoice"),
+                GridFilterColumn.DateCol("insuranceDate", "Insurance"),
+                GridFilterColumn.Select("invoiceDoc", "Yes", "No"),
+                GridFilterColumn.Select("insuranceDoc", "Yes", "No"),
+                GridFilterColumn.DateCol("registration", "Registered"),
+                GridFilterColumn.Actions()
+            });
+            return cols;
+        }
 
         private static List<GridFilterColumn> VehicleColors() => new()
         {
@@ -374,13 +383,11 @@ namespace KRSDealerManagement.Web.Helpers
             GridFilterColumn.Combo("price", "Price")
         };
 
-        private static List<GridFilterColumn> DealerStock(bool showDealership)
+        private static List<GridFilterColumn> DealerStock(bool showBranchColumn)
         {
-            var cols = new List<GridFilterColumn>
-            {
-                GridFilterColumn.Skip(),
-                GridFilterColumn.Combo("dealer", "Branch")
-            };
+            var cols = new List<GridFilterColumn> { GridFilterColumn.Skip() };
+            if (showBranchColumn)
+                cols.Add(GridFilterColumn.Combo("dealer", "Branch"));
             cols.AddRange(new[]
             {
                 GridFilterColumn.Combo("chassis", "Chassis"),
@@ -388,15 +395,12 @@ namespace KRSDealerManagement.Web.Helpers
                 GridFilterColumn.Combo("color", "Color"),
                 GridFilterColumn.Combo("motor", "Motor"),
                 GridFilterColumn.Combo("battery", "Battery"),
-                GridFilterColumn.Combo("charger", "Charger"),
-                GridFilterColumn.Combo("controller", "Controller"),
-                GridFilterColumn.Combo("converter", "Converter"),
                 GridFilterColumn.DateCol("received", "Received"),
                 GridFilterColumn.DateCol("invoice", "Ampere Invoice"),
-                GridFilterColumn.Combo("invoiceNo", "Ampere Invoice No"),
+                GridFilterColumn.Combo("invoiceNo", "Invoice No"),
                 GridFilterColumn.Combo("allocatedTo", "Allocated To"),
                 GridFilterColumn.Select("status", "Available", "Allocated"),
-                GridFilterColumn.Actions()
+                GridFilterColumn.Skip()
             });
             return cols;
         }

@@ -19,4 +19,8 @@
     <ProjectReference Include="..\KRSDealerManagement.Shared\KRSDealerManagement.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Remove="wwwroot\Files\**\*" />
+  </ItemGroup>
+
 </Project>

@@ -17,19 +17,31 @@ namespace KRSDealerManagement.Application.Handlers.Queries
         public async Task<IEnumerable<UserDto>> Handle(GetSubdealersQuery request, CancellationToken cancellationToken)
         {
             var orgs = (await _unitOfWork.SubDealers.GetAllAsync()).AsEnumerable();
+            var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToDictionary(d => d.DealershipId);
             if (request.DealershipId.HasValue)
                 orgs = orgs.Where(o => o.DealershipId == request.DealershipId.Value);
 
             if (request.IsActive.HasValue)
                 orgs = orgs.Where(o => o.IsActive == request.IsActive.Value);
 
+            if (!string.IsNullOrWhiteSpace(request.District))
+            {
+                var district = request.District.Trim();
+                orgs = orgs.Where(o =>
+                    dealerships.TryGetValue(o.DealershipId, out var dealer)
+                    && string.Equals(dealer.Location?.Trim(), district, StringComparison.OrdinalIgnoreCase));
+            }
+
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
+                var term = request.SearchTerm.Trim();
                 orgs = orgs.Where(o =>
-                    (o.SubDealerName ?? "").Contains(request.SearchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    (o.Location ?? "").Contains(request.SearchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    (o.Email ?? "").Contains(request.SearchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    (o.PrimaryPhone ?? "").Contains(request.SearchTerm, StringComparison.OrdinalIgnoreCase));
+                    (o.SubDealerName ?? "").Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    (o.Location ?? "").Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    (o.Email ?? "").Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    (o.PrimaryPhone ?? "").Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    (dealerships.TryGetValue(o.DealershipId, out var dealer)
+                        && (dealer.Location ?? "").Contains(term, StringComparison.OrdinalIgnoreCase)));
             }
 
             var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
@@ -37,6 +49,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
             foreach (var org in orgs.OrderBy(o => o.SubDealerName))
             {
+                dealerships.TryGetValue(org.DealershipId, out var dealership);
                 var logins = await SubdealerOrgService.GetLoginsForOrgAsync(_unitOfWork, org.SubDealerId);
                 var activeLogins = logins.Where(l => l.IsActive).ToList();
                 var primaryAssignment = activeLogins.OrderByDescending(l => l.IsPrimary).FirstOrDefault()
@@ -56,6 +69,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     PasswordHash = primaryUser?.PasswordHash,
                     FirstName = org.SubDealerName,
                     LastName = org.Location ?? "",
+                    District = dealership?.Location?.Trim(),
                     UserRole = 2,
                     PhoneNumber = org.PrimaryPhone ?? "",
                     IsActive = org.IsActive,
@@ -69,6 +83,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 result = result.Where(s =>
                     GridFilterHelper.MatchesContains(s.GetFullName(), GridFilterHelper.GetFilter(cf, "name"))
                     && GridFilterHelper.MatchesContains(s.Email, GridFilterHelper.GetFilter(cf, "email"))
+                    && GridFilterHelper.MatchesContains(s.District, GridFilterHelper.GetFilter(cf, "district"))
                     && GridFilterHelper.MatchesContains(s.LastName, GridFilterHelper.GetFilter(cf, "location"))
                     && GridFilterHelper.MatchesContains(s.PhoneNumber, GridFilterHelper.GetFilter(cf, "phone"))
                     && GridFilterHelper.MatchesContains(s.IsActive ? "Active" : "Inactive", GridFilterHelper.GetFilter(cf, "status"))

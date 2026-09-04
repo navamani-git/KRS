@@ -59,5 +59,17 @@ namespace KRSDealerManagement.Web.Helpers
                 _ => "application/octet-stream"
             };
         }
+
+        public static string GetMediaKind(string filePath)
+        {
+            var contentType = GetContentType(filePath);
+            if (contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+                return "image";
+            if (contentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase))
+                return "video";
+            if (string.Equals(contentType, "application/pdf", StringComparison.OrdinalIgnoreCase))
+                return "pdf";
+            return "unknown";
+        }
     }
 }

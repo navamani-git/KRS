@@ -1,12 +1,15 @@
 @model KRSDealerManagement.Web.Models.WarrantyClaimFormModel
 @using KRSDealerManagement.Domain.Entities
 @using KRSDealerManagement.Shared.Constants
+@using KRSDealerManagement.Web.Models
 @{
     ViewData["Title"] = Model.WarrantyClaimId > 0 ? "Edit Warranty Claim" : "Apply Warranty / Campaign";
+    var serviceEntries = Model.ServiceEntries ?? new List<WarrantyServiceEntryFormModel> { new(), new() };
     var parts = ViewBag.Parts as IEnumerable<WarrantyPartMaster> ?? Enumerable.Empty<WarrantyPartMaster>();
+    var othersPartId = ViewBag.OthersPartId as int?;
     var models = ViewBag.Models as IEnumerable<VehicleModel> ?? Enumerable.Empty<VehicleModel>();
-    var colors = ViewBag.Colors as IEnumerable<VehicleColor> ?? Enumerable.Empty<VehicleColor>();
     var serviceTypes = ViewBag.ServiceTypes as string[] ?? Array.Empty<string>();
+    var modelColorMapJson = ViewBag.ModelColorMapJson as string ?? "{}";
     var warrantyTypes = WarrantyAttachmentTypes.RequiredForWarranty.Select(t => new { Key = t, Name = WarrantyAttachmentTypes.GetDisplayName(t) }).ToList();
     var campaignTypes = WarrantyAttachmentTypes.RequiredForCampaign.Select(t => new { Key = t, Name = WarrantyAttachmentTypes.GetDisplayName(t) }).ToList();
 }
@@ -29,9 +32,9 @@
         <div class="card-header"><strong>Claim Type</strong></div>
         <div class="card-body">
             <div class="btn-group" role="group">
-                <input type="radio" class="btn-check" name="ClaimType" id="typeWarranty" value="WARRANTY" checked="@(Model.ClaimType == WarrantyClaimTypes.Warranty)" autocomplete="off">
+                <input type="radio" class="btn-check" name="ClaimType" id="typeWarranty" value="WARRANTY" @(Model.ClaimType == WarrantyClaimTypes.Warranty ? "checked" : null) autocomplete="off">
                 <label class="btn btn-outline-primary" for="typeWarranty">Warranty</label>
-                <input type="radio" class="btn-check" name="ClaimType" id="typeCampaign" value="CAMPAIGN" checked="@(Model.ClaimType == WarrantyClaimTypes.Campaign)" autocomplete="off">
+                <input type="radio" class="btn-check" name="ClaimType" id="typeCampaign" value="CAMPAIGN" @(Model.ClaimType == WarrantyClaimTypes.Campaign ? "checked" : null) autocomplete="off">
                 <label class="btn btn-outline-primary" for="typeCampaign">Campaign</label>
             </div>
         </div>
@@ -80,10 +83,6 @@
                 <label class="form-label">Color <span id="colorRequiredMark" class="text-danger d-none">*</span></label>
                 <select asp-for="ColorId" class="form-select" id="ColorId">
                     <option value="">-- Select color --</option>
-                    @foreach (var c in colors)
-                    {
-                        <option value="@c.ColorId" selected="@(Model.ColorId == c.ColorId)">@c.ColorName</option>
-                    }
                 </select>
                 <small id="colorHint" class="form-text text-muted d-none">Select color manually for chassis not in your sold list.</small>
             </div>
@@ -103,13 +102,18 @@
         <div class="card-body row g-3">
             <div class="col-md-4">
                 <label class="form-label">Part Name *</label>
-                <select asp-for="WarrantyPartId" class="form-select" required>
+                <select asp-for="WarrantyPartId" class="form-select" id="WarrantyPartId" required>
                     <option value="">Select part</option>
                     @foreach (var p in parts)
                     {
                         <option value="@p.WarrantyPartId" selected="@(Model.WarrantyPartId == p.WarrantyPartId)">@p.PartName</option>
                     }
                 </select>
+            </div>
+            <div class="col-md-4 d-none" id="otherPartNameDiv">
+                <label class="form-label">Specify Part Name *</label>
+                <input asp-for="OtherPartName" class="form-control text-uppercase" id="OtherPartName"
+                       style="text-transform:uppercase" placeholder="ENTER PART NAME" />
             </div>
             <div class="col-md-4">
                 <label class="form-label">Part Code</label>
@@ -133,7 +137,7 @@
     <div class="card mb-3">
         <div class="card-header"><strong>Service History (optional)</strong></div>
         <div class="card-body">
-            @for (int i = 0; i < Model.ServiceEntries.Count; i++)
+            @for (int i = 0; i < serviceEntries.Count; i++)
             {
                 <div class="row g-2 mb-2">
                     <div class="col-md-4">
@@ -141,15 +145,15 @@
                             <option value="">Service type</option>
                             @foreach (var st in serviceTypes)
                             {
-                                <option value="@st" selected="@(Model.ServiceEntries[i].ServiceType == st)">@st</option>
+                                <option value="@st" selected="@(serviceEntries[i].ServiceType == st)">@st</option>
                             }
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <input name="ServiceEntries[@i].ServiceDate" type="date" class="form-control form-control-sm" value="@(Model.ServiceEntries[i].ServiceDate?.ToString("yyyy-MM-dd"))" />
+                        <input name="ServiceEntries[@i].ServiceDate" type="date" class="form-control form-control-sm" value="@(serviceEntries[i].ServiceDate?.ToString("yyyy-MM-dd"))" />
                     </div>
                     <div class="col-md-4">
-                        <input name="ServiceEntries[@i].ServiceKms" type="number" class="form-control form-control-sm" placeholder="KMs" value="@Model.ServiceEntries[i].ServiceKms" />
+                        <input name="ServiceEntries[@i].ServiceKms" type="number" class="form-control form-control-sm" placeholder="KMs" value="@serviceEntries[i].ServiceKms" />
                     </div>
                 </div>
             }
@@ -163,14 +167,14 @@
             {
                 <div class="mb-2 attachment-row" data-claim-types="WARRANTY">
                     <label class="form-label">@att.Name *</label>
-                    <input type="file" name="attachment_@att.Key" class="form-control form-control-sm" accept="image/*,video/*,.pdf" />
+                    <input type="file" name="attachment_@att.Key" class="form-control form-control-sm warranty-attachment-file" accept="@WarrantyAttachmentTypes.GetAttachmentAccept(att.Key)" data-media-kind="@(WarrantyAttachmentTypes.IsImageAttachment(att.Key) ? "image" : "video")" />
                 </div>
             }
             @foreach (var att in campaignTypes.Where(a => !warrantyTypes.Any(w => w.Key == a.Key)))
             {
                 <div class="mb-2 attachment-row" data-claim-types="CAMPAIGN">
                     <label class="form-label">@att.Name *</label>
-                    <input type="file" name="attachment_@att.Key" class="form-control form-control-sm" accept="image/*,video/*,.pdf" />
+                    <input type="file" name="attachment_@att.Key" class="form-control form-control-sm warranty-attachment-file" accept="@WarrantyAttachmentTypes.GetAttachmentAccept(att.Key)" data-media-kind="@(WarrantyAttachmentTypes.IsImageAttachment(att.Key) ? "image" : "video")" />
                 </div>
             }
             <div class="mt-2">
@@ -181,15 +185,35 @@
     </div>
 
     <div class="d-flex gap-2">
-        <button type="submit" name="action" value="draft" class="btn btn-outline-secondary">Save Draft</button>
+        <button type="submit" name="action" value="draft" class="btn btn-outline-secondary" formnovalidate>Save Draft</button>
         <button type="submit" name="action" value="submit" class="btn btn-primary">Submit Claim</button>
         <a href="@Url.Action("MyClaims")" class="btn btn-link">Cancel</a>
     </div>
 </form>
 
 @section Scripts {
+<script src="~/js/model-color-filter.js"></script>
 <script>
 (function () {
+    KrsModelColors.init(@Html.Raw(modelColorMapJson));
+
+    const othersPartId = @(othersPartId.HasValue ? othersPartId.Value.ToString() : "null");
+    const partSelect = document.getElementById('WarrantyPartId');
+    const otherPartDiv = document.getElementById('otherPartNameDiv');
+    const otherPartInput = document.getElementById('OtherPartName');
+
+    function syncOtherPartField() {
+        const isOthers = othersPartId && parseInt(partSelect.value, 10) === othersPartId;
+        otherPartDiv.classList.toggle('d-none', !isOthers);
+        if (otherPartInput) {
+            otherPartInput.required = !!isOthers;
+            if (!isOthers) otherPartInput.value = '';
+        }
+    }
+
+    partSelect?.addEventListener('change', syncOtherPartField);
+    syncOtherPartField();
+
     const chassisInput = document.getElementById('ChassisNo');
     const warning = document.getElementById('chassisWarning');
     const modelSelect = document.getElementById('ModelId');
@@ -214,7 +238,7 @@
     function applyKnownVehicle(data) {
         vehicleIdInput.value = data.vehicleId || '';
         modelSelect.value = data.modelId || '';
-        colorSelect.value = data.colorId || '';
+        KrsModelColors.populateSelect(colorSelect, data.modelId, data.colorId);
         document.getElementById('ModelName').value = data.modelName || '';
         document.getElementById('ColorName').value = data.colorName || '';
         document.getElementById('CustomerName').value = data.customerName || '';
@@ -225,6 +249,7 @@
 
     function applyUnknownChassis() {
         vehicleIdInput.value = '';
+        KrsModelColors.populateSelect(colorSelect, modelSelect.value, null);
         setModelColorManual(true);
     }
 
@@ -240,6 +265,52 @@
     document.querySelectorAll('input[name="ClaimType"]').forEach(r => r.addEventListener('change', updateAttachmentVisibility));
     updateAttachmentVisibility();
 
+    function validateWarrantyAttachment(input) {
+        if (!input.files || input.files.length === 0) {
+            input.setCustomValidity('');
+            return true;
+        }
+        const file = input.files[0];
+        const kind = input.dataset.mediaKind || 'image';
+        if (kind === 'video') {
+            if (!file.type.startsWith('video/')) {
+                input.setCustomValidity('Please upload a video file only.');
+                return false;
+            }
+        } else if (!file.type.startsWith('image/')) {
+            input.setCustomValidity('Please upload an image file only.');
+            return false;
+        }
+        input.setCustomValidity('');
+        return true;
+    }
+
+    document.querySelectorAll('.warranty-attachment-file').forEach(function (input) {
+        input.addEventListener('change', function () {
+            validateWarrantyAttachment(input);
+            input.reportValidity();
+        });
+        input.addEventListener('blur', function () {
+            validateWarrantyAttachment(input);
+            input.reportValidity();
+        });
+    });
+
+    document.getElementById('warrantyClaimForm')?.addEventListener('submit', function (e) {
+        const isDraft = e.submitter?.value === 'draft';
+        if (isDraft) {
+            this.querySelectorAll('[required]').forEach(el => el.removeAttribute('required'));
+            return;
+        }
+        for (const input of this.querySelectorAll('.warranty-attachment-file')) {
+            if (!validateWarrantyAttachment(input)) {
+                e.preventDefault();
+                input.reportValidity();
+                return;
+            }
+        }
+    });
+
     // Initial state: manual pick if no linked sold vehicle
     if (vehicleIdInput.value) {
         setModelColorManual(false);
@@ -252,11 +323,16 @@
     modelSelect.addEventListener('change', function () {
         const opt = modelSelect.selectedOptions[0];
         document.getElementById('ModelName').value = opt?.text && opt.value ? opt.text : '';
+        KrsModelColors.populateSelect(colorSelect, modelSelect.value, null);
+        document.getElementById('ColorName').value = colorSelect.selectedOptions[0]?.text && colorSelect.value
+            ? colorSelect.selectedOptions[0].text : '';
     });
     colorSelect.addEventListener('change', function () {
         const opt = colorSelect.selectedOptions[0];
         document.getElementById('ColorName').value = opt?.text && opt.value ? opt.text : '';
     });
+
+    KrsModelColors.populateSelect(colorSelect, modelSelect.value, @(Model.ColorId.HasValue ? Model.ColorId.Value.ToString() : "null"));
 
     chassisInput?.addEventListener('input', function () {
         clearTimeout(timer);

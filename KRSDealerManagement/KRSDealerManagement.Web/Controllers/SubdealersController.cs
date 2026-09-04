@@ -23,7 +23,7 @@ namespace KRSDealerManagement.Web.Controllers
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<IActionResult> Index(string searchTerm, bool? isActive, int? page, int? pageSize)
+        public async Task<IActionResult> Index(string searchTerm, bool? isActive, string? district, int? page, int? pageSize)
         {
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Subdealers);
@@ -31,6 +31,7 @@ namespace KRSDealerManagement.Web.Controllers
             {
                 SearchTerm = searchTerm,
                 IsActive = isActive,
+                District = district,
                 DealershipId = scope,
                 ColumnFilters = columnFilters
             });
@@ -38,25 +39,34 @@ namespace KRSDealerManagement.Web.Controllers
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
             ViewBag.SearchTerm = searchTerm;
             ViewBag.IsActive = isActive;
+            ViewBag.SelectedDistrict = district;
+            ViewBag.Districts = (await _unitOfWork.Dealerships.GetAllAsync())
+                .Where(d => d.IsActive && (!scope.HasValue || d.DealershipId == scope.Value))
+                .Select(d => d.Location?.Trim())
+                .Where(l => !string.IsNullOrWhiteSpace(l))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(l => l)
+                .ToList();
             ViewBag.DealershipName = SessionHelper.GetDealershipName(HttpContext.Session);
             ViewBag.IsBranchManager = SessionHelper.IsBranchManager(HttpContext.Session);
             ViewBag.HideLogins = ViewBag.IsBranchManager;
             return View(pageItems);
         }
 
-        public async Task<IActionResult> Export(string searchTerm, bool? isActive)
+        public async Task<IActionResult> Export(string searchTerm, bool? isActive, string? district)
         {
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             var subdealers = (await _mediator.Send(new GetSubdealersQuery
             {
                 SearchTerm = searchTerm,
                 IsActive = isActive,
+                District = district,
                 DealershipId = scope
             })).ToList();
-            var headers = new[] { "Name", "Email", "Location", "Logins", "Phone", "Status", "Created" };
+            var headers = new[] { "Name", "Email", "District", "Location", "Logins", "Phone", "Status", "Created" };
             var rows = subdealers.Select(s => (IReadOnlyList<object?>)new List<object?>
             {
-                s.GetFullName(), s.Email, s.LastName, s.LoginCount,
+                s.FirstName, s.Email, s.District, s.LastName, s.LoginCount,
                 s.PhoneNumber, s.IsActive ? "Active" : "Inactive", s.CreatedDate
             });
             return ExcelExportHelper.ToFileResult(this, $"subdealers_{DateTime.Now:yyyyMMdd}.xlsx", headers, rows, "Subdealers");

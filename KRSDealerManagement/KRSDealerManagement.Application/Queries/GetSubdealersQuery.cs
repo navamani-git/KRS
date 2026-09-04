@@ -10,6 +10,8 @@ namespace KRSDealerManagement.Application.Queries
     {
         public bool? IsActive { get; set; }
         public string SearchTerm { get; set; }
+        /// <summary>Dealership district filter (Karur / Namakkal / Salem).</summary>
+        public string? District { get; set; }
         /// <summary>When set, only subdealers under this dealership (via UserOrgRoles).</summary>
         public int? DealershipId { get; set; }
         public Dictionary<string, string>? ColumnFilters { get; set; }

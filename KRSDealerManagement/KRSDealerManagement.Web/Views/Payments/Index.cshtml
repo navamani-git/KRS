@@ -8,6 +8,7 @@
     var subdealers = ViewBag.Subdealers as IEnumerable<UserDto>;
     var statuses = ViewBag.Statuses as IEnumerable<StatusLookup> ?? Enumerable.Empty<StatusLookup>();
     var isAdmin = SessionHelper.IsAdmin(Context.Session);
+    var paymentDateTimeMax = IstTime.DateTimeLocalMaxValue();
 }
 
 <div class="row mb-3">
@@ -201,7 +202,8 @@
                     <div class="form-group mb-3">
                         <label class="fw-bold">Actual Received Date &amp; Time <span class="text-danger">*</span></label>
                         <input type="datetime-local" name="actualReceivedDate" id="actualReceivedDate"
-                               class="form-control" value="@FormDateTimeHelper.ToDateTimeLocalValue(DateTime.Now)" required />
+                               class="form-control" max="@paymentDateTimeMax"
+                               value="@FormDateTimeHelper.ToDateTimeLocalValue(DateTime.Now)" required />
                     </div>
                     <div class="form-group mb-3">
                         <label class="fw-bold">Remarks <span class="text-danger">*</span></label>
@@ -261,6 +263,7 @@
             document.getElementById('approveAmtDisplay').textContent = `₹${parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
             document.getElementById('actualReceivedAmount').value = parseFloat(amount).toFixed(2);
             document.getElementById('actualReceivedDate').value = toDateTimeLocalValue(new Date());
+            document.getElementById('actualReceivedDate').max = '@paymentDateTimeMax';
             const approveRemarks = document.querySelector('#approveModal textarea[name="remarks"]');
             if (approveRemarks) approveRemarks.value = '';
             new bootstrap.Modal(document.getElementById('approveModal')).show();
@@ -271,5 +274,14 @@
             if (rejectRemarks) rejectRemarks.value = '';
             new bootstrap.Modal(document.getElementById('rejectModal')).show();
         }
+
+        document.querySelector('#approveModal form')?.addEventListener('submit', function (e) {
+            const dt = document.getElementById('actualReceivedDate');
+            if (dt?.value && dt.max && dt.value > dt.max) {
+                e.preventDefault();
+                alert('Actual received date cannot be in the future.');
+                dt.focus();
+            }
+        });
     </script>
 }

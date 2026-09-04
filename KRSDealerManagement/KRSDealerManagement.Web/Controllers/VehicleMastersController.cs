@@ -35,9 +35,8 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.SearchTerm = searchTerm;
             ViewBag.IsAllocated = isAllocated;
             ViewBag.SelectedDealershipId = dealershipId;
-            ViewBag.ShowBranchColumn = true;
+            ViewBag.ShowBranchColumn = SessionHelper.IsSystemAdmin(HttpContext.Session);
             ViewBag.ShowDealershipFilter = SessionHelper.IsSystemAdmin(HttpContext.Session);
-            ViewBag.ShowDealershipColumn = true;
             if (SessionHelper.IsSystemAdmin(HttpContext.Session))
                 ViewBag.Dealerships = await _mediator.Send(new GetDealershipsQuery { IsActive = true });
             ViewBag.TransferDealerships = (await _mediator.Send(new GetDealershipsQuery { IsActive = true }))

@@ -277,6 +277,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
         private static readonly Dictionary<string, Func<UserDto, string?>> SubdealerProjections = new(StringComparer.OrdinalIgnoreCase)
         {
             ["name"] = s => s.GetFullName(),
+            ["district"] = s => s.District,
             ["location"] = s => s.LastName,
             ["phone"] = s => s.PhoneNumber,
             ["status"] = s => s.IsActive ? "Active" : "Inactive",
@@ -342,7 +343,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
         private static readonly Dictionary<string, Func<ReturnRequestDto, string?>> ReturnProjections = new(StringComparer.OrdinalIgnoreCase)
         {
-            ["account"] = r => r.AccountName,
+            ["subdealer"] = r => r.SubdealerName ?? r.AccountName,
             ["order"] = r => r.OrderNumber,
             ["vehicle"] = r => r.VehicleChassisNumber,
             ["refund"] = r => r.RefundAmount.ToString("N2"),
@@ -354,9 +355,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
         private static readonly Dictionary<string, Func<ReturnRequestDto, string?>> MyReturnProjections = new(StringComparer.OrdinalIgnoreCase)
         {
+            ["request"] = r => r.ReturnRequestId.ToString(),
             ["order"] = r => r.OrderNumber,
             ["chassis"] = r => r.VehicleChassisNumber,
-            ["account"] = r => r.AccountName,
             ["refund"] = r => r.RefundAmount.ToString("N2"),
             ["status"] = r => r.GetStatusDisplay(),
             ["reason"] = r => r.ReturnReason,

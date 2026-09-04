@@ -27,6 +27,7 @@ namespace KRSDealerManagement.Application.Commands
         public DateTime? SaleDate { get; set; }
         public DateTime? ComplaintDate { get; set; }
         public int? WarrantyPartId { get; set; }
+        public string? OtherPartName { get; set; }
         public string? PartCode { get; set; }
         public string? FailurePartSerialNumber { get; set; }
         public string? CustomerComplaint { get; set; }
@@ -55,7 +56,14 @@ namespace KRSDealerManagement.Application.Commands
     public class ApproveWarrantyClaimCommand : WarrantyClaimActionCommand { }
     public class RejectWarrantyClaimCommand : WarrantyClaimActionCommand { }
     public class RequestWarrantyInfoCommand : WarrantyClaimActionCommand { }
-    public class ApplyWarrantyToAmpereCommand : WarrantyClaimActionCommand { }
+    public class ApplyWarrantyToAmpereCommand : WarrantyClaimActionCommand
+    {
+        public string SoNumber { get; set; } = "";
+    }
+    public class UpdateWarrantySoNumberCommand : WarrantyClaimActionCommand
+    {
+        public string SoNumber { get; set; } = "";
+    }
     public class MarkWarrantyProductReceivedCommand : WarrantyClaimActionCommand { }
     public class MarkWarrantyCollectedCommand : WarrantyClaimActionCommand
     {

@@ -97,7 +97,7 @@
         <h1 class="m-0">
             <i class="bi bi-speedometer2"></i> Dashboard
         </h1>
-        <p class="text-muted">
+        <p class="text-muted mb-0">
             Welcome back, <strong>@fullName</strong>!
             @if (!string.IsNullOrWhiteSpace(dealershipName))
             {
@@ -335,6 +335,7 @@
                 <div class="card-header">
                     <h3 class="card-title">
                         <i class="bi bi-clock-history"></i> Recent Activities
+                        <small class="text-muted fw-normal">(last 30 days)</small>
                     </h3>
                 </div>
                 <div class="card-body">
@@ -373,7 +374,7 @@
                     else
                     {
                         <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i> No recent activities to display.
+                            <i class="bi bi-info-circle"></i> No activities in the last 30 days.
                         </div>
                     }
                 </div>

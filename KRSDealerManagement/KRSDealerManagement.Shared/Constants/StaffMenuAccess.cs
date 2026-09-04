@@ -34,6 +34,13 @@ namespace KRSDealerManagement.Shared.Constants
         public const string RtoLocations = "admin_rto_locations";
         public const string VehicleBookings = "admin_vehicle_bookings";
         public const string BookedToCustomerView = "admin_booked_to_customer";
+        public const string BookingPaperReceived = "admin_booking_paper_received";
+        public const string BookingInvoiced = "admin_booking_invoiced";
+        public const string BookingInsuranceCreated = "admin_booking_insurance_created";
+        public const string BookingRtoRequested = "admin_booking_rto_requested";
+        public const string BookingSubsidyIdPending = "admin_booking_subsidy_id_pending";
+        public const string BookingSubsidyDocsPending = "admin_booking_subsidy_docs_pending";
+        public const string BookingRegistered = "admin_booking_registered";
         public const string ChassisHistory = "admin_chassis_history";
         public const string ShowroomStock = "admin_showroom_stock";
         public const string DealerStock = "admin_dealer_stock";
@@ -62,6 +69,13 @@ namespace KRSDealerManagement.Shared.Constants
             (Orders, "Manage Orders"),
             (VehicleBookings, "Vehicle Booking Process"),
             (BookedToCustomerView, "Booked to Customer"),
+            (BookingPaperReceived, "Paper Received"),
+            (BookingInvoiced, "Invoiced"),
+            (BookingInsuranceCreated, "Insurance Created"),
+            (BookingRtoRequested, "RTO Requested"),
+            (BookingSubsidyIdPending, "Subsidy ID Pending"),
+            (BookingSubsidyDocsPending, "Subsidy Docs Pending"),
+            (BookingRegistered, "Registered"),
             (ChassisHistory, "Chassis History"),
             (Vehicles, "Subdealer Vehicles"),
             (DealerStock, "Dealer Stock"),
@@ -344,7 +358,7 @@ namespace KRSDealerManagement.Shared.Constants
             BookingMenuItem("RTO Requested", UnifiedVehicleStatus.RtoRequested, "bi-signpost"),
             new MenuItemDefinition
             {
-                Key = VehicleBookings,
+                Key = BookingSubsidyIdPending,
                 Name = "Subsidy ID Pending",
                 Controller = "VehicleBookings",
                 Action = "SubsidyIdPending",
@@ -353,7 +367,7 @@ namespace KRSDealerManagement.Shared.Constants
             },
             new MenuItemDefinition
             {
-                Key = VehicleBookings,
+                Key = BookingSubsidyDocsPending,
                 Name = "Subsidy Docs Pending",
                 Controller = "VehicleBookings",
                 Action = "SubsidyDocsPending",
@@ -362,7 +376,7 @@ namespace KRSDealerManagement.Shared.Constants
             },
             new MenuItemDefinition
             {
-                Key = VehicleBookings,
+                Key = BookingRegistered,
                 Name = "Registered",
                 Controller = "VehicleBookings",
                 Action = "RegisteredAwaitingPlate",
@@ -371,16 +385,59 @@ namespace KRSDealerManagement.Shared.Constants
             }
         };
 
-        private static MenuItemDefinition BookingMenuItem(string name, int status, string icon) => new()
+        public static IReadOnlyList<string> BookingMilestoneMenuKeys => new[]
         {
-            Key = VehicleBookings,
-            Name = name,
-            Controller = "VehicleBookings",
-            Action = "Index",
-            Icon = icon,
-            Actions = new[] { "Index", "Export" },
-            RouteValues = new Dictionary<string, object> { ["status"] = status }
+            BookingPaperReceived,
+            BookingInvoiced,
+            BookingInsuranceCreated,
+            BookingRtoRequested,
+            BookingSubsidyIdPending,
+            BookingSubsidyDocsPending,
+            BookingRegistered
         };
+
+        public static bool IsBookingMilestoneKey(string menuKey)
+            => BookingMilestoneMenuKeys.Contains(menuKey, StringComparer.OrdinalIgnoreCase);
+
+        public static string? GetMilestoneMenuKeyForStatus(int status) => status switch
+        {
+            UnifiedVehicleStatus.PaperReceived => BookingPaperReceived,
+            UnifiedVehicleStatus.Invoiced => BookingInvoiced,
+            UnifiedVehicleStatus.InsuranceCreated => BookingInsuranceCreated,
+            UnifiedVehicleStatus.RtoRequested => BookingRtoRequested,
+            UnifiedVehicleStatus.Registered => BookingRegistered,
+            _ => null
+        };
+
+        public static string? GetMilestoneMenuKeyForAction(string action) => action switch
+        {
+            "SubsidyIdPending" => BookingSubsidyIdPending,
+            "SubsidyDocsPending" or "SubsidyDocs" or "ExportSubsidyDocsPending" => BookingSubsidyDocsPending,
+            "RegisteredAwaitingPlate" or "NumberPlateReceived" or "ExportRegisteredAwaitingPlate" => BookingRegistered,
+            _ => null
+        };
+
+        public static IReadOnlyList<string> AllBookingStaffMenuKeys()
+        {
+            var keys = new List<string> { VehicleBookings, BookedToCustomerView };
+            keys.AddRange(BookingMilestoneMenuKeys);
+            return keys;
+        }
+
+        private static MenuItemDefinition BookingMenuItem(string name, int status, string icon)
+        {
+            var key = GetMilestoneMenuKeyForStatus(status) ?? VehicleBookings;
+            return new MenuItemDefinition
+            {
+                Key = key,
+                Name = name,
+                Controller = "VehicleBookings",
+                Action = "Index",
+                Icon = icon,
+                Actions = new[] { "Index", "Export" },
+                RouteValues = new Dictionary<string, object> { ["status"] = status }
+            };
+        }
 
         public static bool TryResolveMenuKey(string controller, string action, out string menuKey)
             => TryResolveMenuKey(controller, action, null, null, out menuKey);

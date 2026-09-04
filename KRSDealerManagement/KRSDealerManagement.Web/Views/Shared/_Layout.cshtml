@@ -79,7 +79,7 @@
                 <li class="nav-item">
                     <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="bi bi-list"></i></a>
                 </li>
-                <li class="nav-item d-none d-sm-inline-block">
+                <li class="nav-item d-none d-md-inline-block">
                     <a href="@Url.Action("Index", "Dashboard")" class="nav-link">Home</a>
                 </li>
             </ul>
@@ -87,9 +87,9 @@
             <!-- Right navbar links -->
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item">
-                    <span class="nav-link">
+                    <a class="nav-link" href="@Url.Action("Profile", "Account")" title="My login">
                         <i class="bi bi-person-circle"></i> @fullName (@roleName)
-                    </span>
+                    </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="@Url.Action("Logout", "Account")" title="Logout">
@@ -101,11 +101,6 @@
 
         <!-- Main Sidebar Container -->
         <aside class="main-sidebar sidebar-dark-primary elevation-4">
-            <!-- Brand Logo -->
-            <a href="@Url.Action("Index", "Dashboard")" class="brand-link text-center">
-                <span class="brand-text font-weight-light"><b>KRS</b> Dealer Management</span>
-            </a>
-
             <!-- Sidebar -->
             <div class="sidebar">
                 <!-- User Panel -->
@@ -114,7 +109,7 @@
                         <i class="bi bi-person-circle" style="font-size: 2rem; color: white;"></i>
                     </div>
                     <div class="info">
-                        <a href="#" class="d-block text-white">@fullName</a>
+                        <a href="@Url.Action("Profile", "Account")" class="d-block text-white">@fullName</a>
                         <small class="text-white-50">@roleName@(string.IsNullOrEmpty(dealershipName) ? "" : " · " + dealershipName)</small>
                     </div>
                 </div>
@@ -294,6 +289,7 @@
     <script src="~/js/grid-columns.js" asp-append-version="true"></script>
     <script src="~/js/grid-resize.js" asp-append-version="true"></script>
     <script src="~/js/grid-combobox.js" asp-append-version="true"></script>
+    <script src="~/js/amount-format.js" asp-append-version="true"></script>
     <partial name="_VehicleChassisModal" />
     <script src="~/js/vehicle-chassis-modal.js" asp-append-version="true"></script>
     @if (userId.HasValue)

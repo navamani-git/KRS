@@ -94,5 +94,11 @@ namespace KRSDealerManagement.Shared.Constants
             ReplacementPartWithSerialPhoto => "Replacement Part Photo With Serial Number",
             _ => type
         };
+
+        public static string GetAttachmentAccept(string type)
+            => type.Contains("VIDEO", StringComparison.OrdinalIgnoreCase) ? "video/*" : "image/*";
+
+        public static bool IsImageAttachment(string type)
+            => !type.Contains("VIDEO", StringComparison.OrdinalIgnoreCase);
     }
 }

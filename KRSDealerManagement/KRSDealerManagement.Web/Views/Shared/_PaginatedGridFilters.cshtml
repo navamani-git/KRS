@@ -7,12 +7,8 @@
         return;
     }
 
-    var columns = GridColumnRegistry.Get(
-        gridId,
-        hideLogins: ViewBag.HideLogins as bool? ?? false,
-        hideActions: ViewBag.IsBranchManager as bool? ?? SessionHelper.IsBranchManager(Context.Session),
-        isSubdealer: ViewBag.IsSubdealer as bool? ?? SessionHelper.IsSubdealer(Context.Session),
-        showDealership: ViewBag.ShowDealershipColumn as bool? ?? false);
+    var options = GridColumnOptions.FromViewBag(ViewData, Context);
+    var columns = GridColumnRegistry.Get(gridId, options);
 
     if (columns.Count == 0)
     {

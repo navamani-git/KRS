@@ -112,6 +112,12 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction(nameof(MyPayments));
             }
 
+            if (IstTime.IsFutureDateTime(paymentDate))
+            {
+                TempData["Error"] = "Payment date cannot be in the future.";
+                return RedirectToAction(nameof(MyPayments));
+            }
+
             if (paymentProof == null || paymentProof.Length == 0)
             {
                 TempData["Error"] = "Payment proof is required.";
@@ -401,6 +407,12 @@ namespace KRSDealerManagement.Web.Controllers
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
+            if (IstTime.IsFutureDateTime(actualReceivedDate))
+            {
+                TempData["Error"] = "Actual received date cannot be in the future.";
+                return RedirectToAction(nameof(Index));
+            }
+
             try
             {
                 var result = await _mediator.Send(new ApprovePaymentCommand
@@ -502,6 +514,13 @@ namespace KRSDealerManagement.Web.Controllers
             {
                 TempData["Error"] = "Payment not found.";
                 return RedirectToAction(nameof(Index));
+            }
+
+            if (IstTime.IsFutureDateTime(paymentDate)
+                || (actualReceivedDate.HasValue && IstTime.IsFutureDateTime(actualReceivedDate.Value)))
+            {
+                TempData["Error"] = "Payment date and actual received date cannot be in the future.";
+                return this.RedirectEncrypted(nameof(AdminEdit), new { id = paymentId });
             }
 
             try

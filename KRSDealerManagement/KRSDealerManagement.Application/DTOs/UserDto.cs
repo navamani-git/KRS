@@ -15,6 +15,8 @@ namespace KRSDealerManagement.Application.DTOs
         public string? PasswordHash { get; set; }
         public required string FirstName { get; set; }
         public required string LastName { get; set; }
+        /// <summary>Dealership district (Karur / Namakkal / Salem).</summary>
+        public string? District { get; set; }
         public int UserRole { get; set; }
         public required string PhoneNumber { get; set; }
         public bool IsActive { get; set; }

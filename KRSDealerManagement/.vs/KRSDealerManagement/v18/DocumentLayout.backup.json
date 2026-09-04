@@ -3,6 +3,25 @@
   "WorkspaceRootPath": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|d:\\krsgit\\krs\\krsdealermanagement\\krsdealermanagement.web\\views\\shared\\_bookingcustomerformfields.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|solutionrelative:krsdealermanagement.web\\views\\shared\\_bookingcustomerformfields.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|d:\\krsgit\\krs\\krsdealermanagement\\krsdealermanagement.web\\views\\shared\\_layout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|solutionrelative:krsdealermanagement.web\\views\\shared\\_layout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|d:\\krsgit\\krs\\krsdealermanagement\\krsdealermanagement.web\\views\\account\\login.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|solutionrelative:krsdealermanagement.web\\views\\account\\login.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\amd64\\Microsoft.Common.CurrentVersion.targets||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|d:\\krsgit\\krs\\krsdealermanagement\\krsdealermanagement.web\\views\\vehiclebookings\\manage.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|solutionrelative:krsdealermanagement.web\\views\\vehiclebookings\\manage.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|d:\\krsgit\\krs\\krsdealermanagement\\krsdealermanagement.web\\controllers\\returnscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|solutionrelative:krsdealermanagement.web\\controllers\\returnscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -18,11 +37,74 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "_BookingCustomerFormFields.cshtml",
+              "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Shared\\_BookingCustomerFormFields.cshtml",
+              "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Views\\Shared\\_BookingCustomerFormFields.cshtml",
+              "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Shared\\_BookingCustomerFormFields.cshtml",
+              "RelativeToolTip": "KRSDealerManagement.Web\\Views\\Shared\\_BookingCustomerFormFields.cshtml",
+              "ViewState": "AgIAACQAAAAAAAAAAAAUwCsAAABkAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-09-04T16:57:38.002Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
               "DocumentIndex": 1,
+              "Title": "_Layout.cshtml",
+              "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Shared\\_Layout.cshtml",
+              "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Views\\Shared\\_Layout.cshtml",
+              "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Shared\\_Layout.cshtml",
+              "RelativeToolTip": "KRSDealerManagement.Web\\Views\\Shared\\_Layout.cshtml",
+              "ViewState": "AgIAAOMAAAAAAAAAAADwv+QAAAAYAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-09-04T09:29:56.869Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Login.cshtml",
+              "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Account\\Login.cshtml",
+              "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Views\\Account\\Login.cshtml",
+              "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Account\\Login.cshtml",
+              "RelativeToolTip": "KRSDealerManagement.Web\\Views\\Account\\Login.cshtml",
+              "ViewState": "AgIAAN0AAAAAAAAAAAAIwOUAAAAsAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-09-04T08:18:05.46Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Microsoft.Common.CurrentVersion.targets",
+              "DocumentMoniker": "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\amd64\\Microsoft.Common.CurrentVersion.targets",
+              "ToolTip": "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\amd64\\Microsoft.Common.CurrentVersion.targets",
+              "ViewState": "AgIAAOETAAAAAAAAAAAowOcTAAAEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003801|",
+              "WhenOpened": "2026-09-04T08:09:22.426Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Manage.cshtml",
+              "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\VehicleBookings\\Manage.cshtml",
+              "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Views\\VehicleBookings\\Manage.cshtml",
+              "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\VehicleBookings\\Manage.cshtml",
+              "RelativeToolTip": "KRSDealerManagement.Web\\Views\\VehicleBookings\\Manage.cshtml",
+              "ViewState": "AgIAAFoAAAAAAAAAAAAAAJ4AAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-09-04T07:28:42.446Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
               "Title": "_GridColumnFilters.cshtml",
               "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Shared\\_GridColumnFilters.cshtml",
               "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Views\\Shared\\_GridColumnFilters.cshtml",
@@ -34,7 +116,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 5,
               "Title": "ReturnsController.cs",
               "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Controllers\\ReturnsController.cs",
               "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Controllers\\ReturnsController.cs",

@@ -20,6 +20,7 @@
     <link href="https://cdn.jsdelivr.net/npm/admin-lte@3/dist/css/adminlte.min.css" rel="stylesheet">
     
     <link rel="shortcut icon" href="~/images/krslogo.png" type="image/png" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     
     <style>
         body {
@@ -32,7 +33,7 @@
 
         .login-box {
             width: 100%;
-            max-width: 400px;
+            max-width: 440px;
         }
 
         .login-card {
@@ -43,35 +44,60 @@
 
         .login-header {
             text-align: center;
-            padding: 30px 20px 20px;
+            padding: 0;
             border-bottom: 1px solid #f0f0f0;
         }
 
-        .login-logo {
-            margin-bottom: 20px;
+        .login-brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .login-logo img {
-            max-width: 351px;
+        .login-brand--dealer {
+            width: 100%;
+            margin: 14px 0 0;
+            overflow: hidden;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .login-brand__logo--dealer {
+            display: block;
+            width: 100%;
+            max-width: 100%;
             height: auto;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .login-logo-text h3 {
-            margin: 0;
-            color: #333;
-            font-weight: 600;
-        }
-
-        .login-logo-text p {
-            margin: 5px 0 0 0;
-            color: #999;
-            font-size: 15px;
+            max-height: none;
+            object-fit: contain;
+            object-position: center;
         }
 
         .login-body {
-            padding: 30px;
+            padding: 30px 30px 0;
+        }
+
+        .login-brand--ampere {
+            width: calc(100% + 60px);
+            margin: 16px -30px 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #f9f9f9;
+            border-top: 1px solid #f0f0f0;
+            border-radius: 0 0 10px 10px;
+            min-height: 76px;
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+        }
+
+        .login-brand__logo--ampere {
+            display: block;
+            width: 100%;
+            height: 100%;
+            min-height: 76px;
+            max-height: none;
+            object-fit: contain;
+            object-position: center;
+            padding: 10px 16px;
         }
 
         .form-group {
@@ -144,16 +170,6 @@
             text-decoration: underline;
         }
 
-        .login-footer {
-            text-align: center;
-            padding: 20px;
-            border-top: 1px solid #f0f0f0;
-            background-color: #f9f9f9;
-            font-size: 14px;
-            color: #999;
-            border-radius: 0 0 10px 10px;
-        }
-
         .alert-error {
             border-left: 4px solid #dc3545;
             background-color: #fff5f5;
@@ -172,20 +188,19 @@
                 padding: 20px;
             }
 
-            .login-header {
-                padding: 20px 15px 15px;
-            }
-
             .login-body {
-                padding: 20px;
+                padding: 20px 20px 0;
             }
 
-            .login-logo img {
-                max-width: 100px;
+            .login-brand--ampere {
+                width: calc(100% + 40px);
+                margin: 16px -20px 0;
+                min-height: 64px;
             }
 
-            .login-logo-text h3 {
-                font-size: 20px;
+            .login-brand__logo--ampere {
+                min-height: 64px;
+                padding: 8px 12px;
             }
         }
     </style>
@@ -195,12 +210,8 @@
         <div class="card login-card">
             <!-- Login Header with Logo -->
             <div class="login-header">
-                <div class="login-logo">
-                    <img src="~/images/krslogo.png" alt="KRS Logo" />
-                </div>
-                <div class="login-logo-text">
-                    <h3>KRS Dealer Management</h3>
-                    <p>Professional Vehicle Dealership Platform</p>
+                <div class="login-brand login-brand--dealer">
+                    <img src="~/images/krslogo.png" asp-append-version="true" alt="KRS Enterprises" class="login-brand__logo--dealer" />
                 </div>
             </div>
 
@@ -263,19 +274,11 @@
                     <button type="submit" class="btn btn-login">
                         <i class="bi bi-box-arrow-in-right"></i> Sign In
                     </button>
-
-                    <!-- Forgot Password Link -->
-                    <div class="forgot-password">
-                        @* <a href="@Url.Action("ForgotPassword", "Account")">Forgot Password?</a> *@
-                    </div>
                 </form>
-            </div>
 
-            <!-- Login Footer -->
-            <div class="login-footer">
-               @*  <div class="mb-2">Demo Credentials:</div>
-                <div>Admin: <strong>admin</strong> / <strong>Admin@123</strong></div>
-                <div>Subdealer: <strong>subdealer_001</strong> / <strong>Subdealers@123</strong></div> *@
+                <div class="login-brand login-brand--ampere">
+                    <img src="~/images/amperelogo.png" asp-append-version="true" alt="Ampere" class="login-brand__logo--ampere" />
+                </div>
             </div>
         </div>
     </div>

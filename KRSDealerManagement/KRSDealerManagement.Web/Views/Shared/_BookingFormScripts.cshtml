@@ -4,12 +4,121 @@ function toggleBookingCompanyFields() {
     const block = document.getElementById('gstBlock');
     const gstInput = block?.querySelector('input[name="gstCertificateFile"]');
     const signLabelText = document.getElementById('signLabelText');
+    const customerNameLabelText = document.getElementById('customerNameLabelText');
+    const customerNameHint = document.getElementById('customerNameHint');
+    const customerCard = document.getElementById('customerDetailsCard');
+    const cardHeader = customerCard?.querySelector('.card-header');
     const isEdit = @(ViewBag.Booking != null ? "true" : "false");
     const hasGst = @(ViewBag.HasGstCertificate == true ? "true" : "false");
 
     if (block) block.style.display = show ? 'block' : 'none';
     if (gstInput) gstInput.required = show && (!isEdit || !hasGst);
     if (signLabelText) signLabelText.textContent = show ? 'Company Seal with Sign' : 'Customer Sign';
+    if (customerNameLabelText) {
+        customerNameLabelText.textContent = show
+            ? 'Company Name'
+            : 'Customer Name (Exactly Same As in E-Aadhaar)';
+    }
+    if (customerNameHint) {
+        customerNameHint.textContent = show
+            ? 'Enter the registered company name in capital letter as same in GST'
+            : 'Type Only Capital Letters';
+    }
+    if (customerCard) {
+        customerCard.classList.toggle('border-primary', show);
+        customerCard.classList.toggle('booking-company-card', show);
+    }
+    if (cardHeader) {
+        cardHeader.classList.toggle('bg-primary', show);
+        cardHeader.classList.toggle('text-white', show);
+    }
+}
+
+function validateEaadhaarPasswordField(input) {
+    const value = (input.value || '').trim();
+    if (!value) return true;
+    const ok = /^[A-Z]{4}\d{4}$/.test(value);
+    input.setCustomValidity(ok ? '' : 'Enter exactly 4 capital letters followed by 4 digits (e.g. ABCD1234).');
+    return ok;
+}
+
+function validateCustomerNameField(input) {
+    const value = (input.value || '').trim();
+    if (!value) {
+        input.setCustomValidity('Customer name is required.');
+        return false;
+    }
+    if (!/^[A-Z\s.]+$/.test(value)) {
+        input.setCustomValidity('Type only capital letters.');
+        return false;
+    }
+    input.setCustomValidity('');
+    return true;
+}
+
+function validateMobileDigits(input) {
+    const value = (input.value || '').trim();
+    if (!/^\d{10}$/.test(value)) {
+        input.setCustomValidity('Enter 10 digit valid number.');
+        return false;
+    }
+    input.setCustomValidity('');
+    return true;
+}
+
+function validateMobileFields() {
+    const primary = document.getElementById('customerMobile');
+    const alt = document.getElementById('alternativeMobile');
+    if (!primary || !alt) return true;
+
+    const primaryOk = validateMobileDigits(primary);
+    const altOk = validateMobileDigits(alt);
+    const same = primary.value && alt.value && primary.value === alt.value;
+    const sameMsg = 'Must be different from customer mobile.';
+    if (same) {
+        primary.setCustomValidity('Customer and alternative mobile must be different.');
+        alt.setCustomValidity(sameMsg);
+        return false;
+    }
+    if (primaryOk && altOk) {
+        primary.setCustomValidity('');
+        alt.setCustomValidity('');
+    }
+    return primaryOk && altOk && !same;
+}
+
+function validateBookingFile(input) {
+    if (!input.files || input.files.length === 0) {
+        input.setCustomValidity('');
+        return true;
+    }
+
+    const file = input.files[0];
+    if (input.classList.contains('booking-image')) {
+        if (!file.type.startsWith('image/')) {
+            input.setCustomValidity('Please upload an image file only.');
+            return false;
+        }
+    } else if (input.classList.contains('booking-pdf-10') || input.classList.contains('booking-pdf-1')) {
+        if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+            input.setCustomValidity('Please upload a PDF file only.');
+            return false;
+        }
+    }
+
+    const maxMb = parseInt(input.getAttribute('data-max-mb'), 10);
+    if (!Number.isNaN(maxMb) && file.size > maxMb * 1024 * 1024) {
+        input.setCustomValidity('File exceeds maximum size of ' + maxMb + ' MB.');
+        return false;
+    }
+
+    input.setCustomValidity('');
+    return true;
+}
+
+function reportFieldValidity(input) {
+    if (!input) return;
+    input.reportValidity();
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -28,24 +137,81 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.booking-mobile').forEach(function (el) {
         el.addEventListener('input', function () {
             el.value = el.value.replace(/\D/g, '').slice(0, 10);
+            validateMobileFields();
+        });
+        el.addEventListener('blur', function () {
+            validateMobileFields();
+            reportFieldValidity(el);
         });
     });
 
+    const customerName = document.getElementById('customerName');
+    if (customerName) {
+        customerName.addEventListener('blur', function () {
+            validateCustomerNameField(customerName);
+            reportFieldValidity(customerName);
+        });
+    }
+
     document.querySelectorAll('.booking-password').forEach(function (el) {
         el.addEventListener('input', function () {
-            el.value = el.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            el.value = el.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+            validateEaadhaarPasswordField(el);
+        });
+        el.addEventListener('blur', function () {
+            validateEaadhaarPasswordField(el);
+            reportFieldValidity(el);
+        });
+    });
+
+    document.querySelectorAll('input[type="file"].booking-image, input[type="file"].booking-pdf-10, input[type="file"].booking-pdf-1').forEach(function (el) {
+        el.addEventListener('change', function () {
+            validateBookingFile(el);
+            reportFieldValidity(el);
+        });
+        el.addEventListener('blur', function () {
+            validateBookingFile(el);
+            reportFieldValidity(el);
         });
     });
 
     const form = document.querySelector('form[enctype="multipart/form-data"]');
     if (form) {
+        form.querySelectorAll('input:not([type="file"]):not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), select, textarea').forEach(function (el) {
+            el.addEventListener('blur', function () {
+                if (el.id === 'customerName') {
+                    validateCustomerNameField(el);
+                } else if (el.classList.contains('booking-mobile')) {
+                    validateMobileFields();
+                } else if (el.classList.contains('booking-password')) {
+                    validateEaadhaarPasswordField(el);
+                }
+                reportFieldValidity(el);
+            });
+        });
+
         form.addEventListener('submit', function (e) {
+            const pwd = document.getElementById('eAadhaarPassword');
+            if (pwd && !validateEaadhaarPasswordField(pwd)) {
+                e.preventDefault();
+                pwd.reportValidity();
+                return;
+            }
+            if (customerName && !validateCustomerNameField(customerName)) {
+                e.preventDefault();
+                customerName.reportValidity();
+                return;
+            }
+            if (!validateMobileFields()) {
+                e.preventDefault();
+                document.getElementById('alternativeMobile')?.reportValidity();
+                return;
+            }
+
             for (const input of form.querySelectorAll('input[type="file"][data-max-mb]')) {
-                if (!input.files || input.files.length === 0) continue;
-                const maxMb = parseInt(input.getAttribute('data-max-mb'), 10);
-                if (input.files[0].size > maxMb * 1024 * 1024) {
+                if (!validateBookingFile(input)) {
                     e.preventDefault();
-                    alert('File exceeds maximum size of ' + maxMb + ' MB for ' + (input.previousElementSibling?.textContent || 'upload'));
+                    input.reportValidity();
                     return;
                 }
             }

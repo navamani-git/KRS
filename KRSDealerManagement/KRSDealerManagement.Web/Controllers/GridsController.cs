@@ -33,6 +33,7 @@ namespace KRSDealerManagement.Web.Controllers
                 return Json(Array.Empty<string>());
 
             var sessionScope = SessionHelper.GetDealershipScope(HttpContext.Session);
+            var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
 
             var values = await _mediator.Send(new GetGridDistinctValuesQuery
             {
@@ -44,8 +45,8 @@ namespace KRSDealerManagement.Web.Controllers
                 AccountId = accountId ?? id,
                 UserId = SessionHelper.GetUserId(HttpContext.Session),
                 Status = status,
-                FromDate = fromDate,
-                ToDate = toDate,
+                FromDate = from,
+                ToDate = to,
                 SearchTerm = searchTerm,
                 DealershipLocation = dealershipLocation,
                 BookingPhaseOnly = bookingPhaseOnly == true,

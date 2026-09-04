@@ -20,6 +20,7 @@ namespace KRSDealerManagement.Web.Models
         public DateTime? SaleDate { get; set; }
         public DateTime? ComplaintDate { get; set; }
         public int? WarrantyPartId { get; set; }
+        public string? OtherPartName { get; set; }
         public string? PartCode { get; set; }
         public string? FailurePartSerialNumber { get; set; }
         public string? CustomerComplaint { get; set; }

@@ -15,12 +15,17 @@
     int SelectedLevel(string menuKey)
     {
         if (levelMap.TryGetValue(menuKey, out var lv)) return lv;
+        if (StaffMenuAccess.IsBookingMilestoneKey(menuKey)
+            && levelMap.TryGetValue(StaffMenuAccess.VehicleBookings, out var inherited))
+        {
+            return inherited;
+        }
         if (form?.RoleId > 0) return (int)MenuAccessLevel.None;
         return defaults.TryGetValue(menuKey, out var dv) ? dv : 0;
     }
 
-    int CountEnabled(IEnumerable<string> menuKeys)
-        => menuKeys.Count(k => SelectedLevel(k) > 0);
+    int CountEnabled(IEnumerable<MenuItemDefinition> items)
+        => items.Count(item => SelectedLevel(item.Key) > 0);
 
     var sectionIndex = 0;
 }
@@ -53,18 +58,16 @@
         <div class="accordion role-menu-accordion" id="roleMenuAccordion">
             @foreach (var group in groups)
             {
-                var sectionKeys = group.Children
-                    .Select(c => c.Key)
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .Where(menuNames.ContainsKey)
+                var visibleChildren = group.Children
+                    .Where(item => menuNames.ContainsKey(item.Key))
                     .ToList();
-                if (sectionKeys.Count == 0) { continue; }
+                if (visibleChildren.Count == 0) { continue; }
 
                 var collapseId = $"roleMenuSection_{group.ParentKey}";
                 var headingId = $"roleMenuHeading_{group.ParentKey}";
                 var isFirst = sectionIndex == 0;
                 sectionIndex++;
-                var enabledCount = CountEnabled(sectionKeys);
+                var enabledCount = CountEnabled(visibleChildren);
 
                 <div class="accordion-item" data-role-menu-section>
                     <h2 class="accordion-header" id="@headingId">
@@ -76,30 +79,31 @@
                                 aria-controls="@collapseId">
                             <i class="bi @(group.Icon ?? "bi-folder") me-2"></i>
                             <span class="fw-semibold">@group.ParentName</span>
-                            <span class="badge bg-secondary ms-2" data-section-badge>@enabledCount / @sectionKeys.Count enabled</span>
+                            <span class="badge bg-secondary ms-2" data-section-badge>@enabledCount / @visibleChildren.Count enabled</span>
                         </button>
                     </h2>
                     <div id="@collapseId"
                          class="accordion-collapse collapse @(isFirst ? "show" : "")"
                          aria-labelledby="@headingId">
                         <div class="accordion-body p-0">
-                            @foreach (var menuKey in sectionKeys)
+                            @foreach (var item in visibleChildren)
                             {
-                                var selected = SelectedLevel(menuKey);
-                                var menuName = menuNames[menuKey];
+                                var selected = SelectedLevel(item.Key);
+                                var accessOptions =
+                                    $"<option value=\"0\"{(selected == 0 ? " selected" : "")}>No access</option>" +
+                                    $"<option value=\"1\"{(selected == 1 ? " selected" : "")}>Read-only</option>" +
+                                    $"<option value=\"2\"{(selected == 2 ? " selected" : "")}>Full access</option>";
                                 <div class="role-menu-row d-flex flex-column flex-sm-row align-items-sm-center gap-2 px-3 py-2 border-bottom">
                                     <div class="role-menu-row-label flex-grow-1">
-                                        @menuName
-                                        <input type="hidden" name="MenuKeys" value="@menuKey" />
+                                        @item.Name
+                                        <input type="hidden" name="MenuKeys" value="@item.Key" />
                                     </div>
                                     <div class="role-menu-row-access" style="min-width: 11rem; max-width: 14rem;">
                                         <select name="MenuAccessLevels"
                                                 class="form-select form-select-sm menu-access-select"
-                                                data-menu-key="@menuKey"
-                                                aria-label="Access for @menuName">
-                                            <option value="0" selected="@(selected == 0)">No access</option>
-                                            <option value="1" selected="@(selected == 1)">Read-only</option>
-                                            <option value="2" selected="@(selected == 2)">Full access</option>
+                                                data-menu-key="@item.Key"
+                                                aria-label="Access for @item.Name">
+                                            @Html.Raw(accessOptions)
                                         </select>
                                     </div>
                                 </div>

@@ -5,6 +5,8 @@
     ViewData["Title"] = "Subdealers";
     var isActiveFilter = ViewBag.IsActive as bool?;
     var isBranchManager = ViewBag.IsBranchManager as bool? ?? SessionHelper.IsBranchManager(Context.Session);
+    var districts = ViewBag.Districts as IEnumerable<string> ?? Enumerable.Empty<string>();
+    var selectedDistrict = ViewBag.SelectedDistrict as string;
 }
 
 <div class="row mb-3">
@@ -26,13 +28,25 @@
 <div class="card mb-3">
     <div class="card-body">
         <form method="get" id="gridFilterForm">
-            <div class="row">
-                <div class="col-md-4">
-                    <input type="text" name="searchTerm" class="form-control"
-                           placeholder="Search by name, phone, email..." value="@ViewBag.SearchTerm" />
-                </div>
+            <div class="row g-2 align-items-end">
                 <div class="col-md-3">
-                    <select name="isActive" class="form-select">
+                    <label class="form-label form-label-sm mb-0">Search</label>
+                    <input type="text" name="searchTerm" class="form-control form-control-sm"
+                           placeholder="Name, phone, email, town..." value="@ViewBag.SearchTerm" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label form-label-sm mb-0">District</label>
+                    <select name="district" class="form-select form-select-sm">
+                        <option value="">All districts</option>
+                        @foreach (var d in districts)
+                        {
+                            <option value="@d" selected="@(string.Equals(selectedDistrict, d, StringComparison.OrdinalIgnoreCase))">@d</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label form-label-sm mb-0">Status</label>
+                    <select name="isActive" class="form-select form-select-sm">
                         <option value="">All Status</option>
                         @if (isActiveFilter == true)
                         {
@@ -52,9 +66,9 @@
                         }
                     </select>
                 </div>
-                <div class="col-md-5">
-                    <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Search</button>
-                    <a href="@Url.Action("Index")" class="btn btn-secondary"><i class="bi bi-arrow-clockwise"></i> Reset</a>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search"></i> Search</button>
+                    <a href="@Url.Action("Index")" class="btn btn-sm btn-secondary"><i class="bi bi-arrow-clockwise"></i> Reset</a>
                 </div>
             </div>
         </form>
@@ -75,6 +89,7 @@
                         <tr>
                             <th class="grid-col-narrow">#</th>
                             <th>Subdealer Name</th>
+                            <th>District</th>
                             <th>Location</th>
                             @if (!isBranchManager)
                             {
@@ -97,10 +112,11 @@
                             <tr>
                                 <td>@(sr++)</td>
                                 <td>
-                                    <strong>@s.GetFullName()</strong>
+                                    <strong>@s.FirstName</strong>
                                     <br /><small class="text-muted">@s.Email</small>
                                 </td>
-                                <td>@s.LastName</td>
+                                <td>@(s.District ?? "—")</td>
+                                <td>@(string.IsNullOrWhiteSpace(s.LastName) ? "—" : s.LastName)</td>
                                 @if (!isBranchManager)
                                 {
                                     <td>

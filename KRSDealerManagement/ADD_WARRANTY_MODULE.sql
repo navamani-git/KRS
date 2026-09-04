@@ -58,6 +58,7 @@ BEGIN
         RejectedByUserId INT NULL,
         RejectedDate DATETIME2 NULL,
 
+        SoNumber NVARCHAR(50) NULL,
         AmpereAppliedByUserId INT NULL,
         AmpereAppliedDate DATETIME2 NULL,
         ProductReceivedByUserId INT NULL,
@@ -136,19 +137,31 @@ IF COL_LENGTH('dbo.Users', 'CanEditWarrantyClaims') IS NULL
     ALTER TABLE dbo.Users ADD CanEditWarrantyClaims BIT NOT NULL CONSTRAINT DF_Users_CanEditWarrantyClaims DEFAULT (0);
 GO
 
+IF COL_LENGTH('dbo.WarrantyClaims', 'SoNumber') IS NULL
+    ALTER TABLE dbo.WarrantyClaims ADD SoNumber NVARCHAR(50) NULL;
+GO
+
+IF COL_LENGTH('dbo.WarrantyClaims', 'OtherPartName') IS NULL
+    ALTER TABLE dbo.WarrantyClaims ADD OtherPartName NVARCHAR(200) NULL;
+GO
+
 -- Default part names from client Excel
 DECLARE @parts TABLE (PartName NVARCHAR(200), SortOrder INT);
 INSERT INTO @parts VALUES
     (N'CHARGER', 1), (N'MOTOR', 2), (N'CONTROLLER', 3), (N'CONVERTER', 4),
     (N'BATTERY', 5), (N'CLUSTER METER', 6), (N'RH SWITCH', 7), (N'LH SWITCH', 8),
     (N'BRAKE PANEL', 9), (N'LOCKSET', 10), (N'HEAD LAMP', 11),
-    (N'GEARBOX OIL SEAL-3', 12), (N'REAR WHEEL RIM', 13);
+    (N'GEARBOX OIL SEAL-3', 12), (N'REAR WHEEL RIM', 13), (N'OTHERS', 999);
 
 INSERT INTO dbo.WarrantyParts (PartName, SortOrder, IsActive, CreatedDate, ModifiedDate)
 SELECT p.PartName, p.SortOrder, 1, SYSUTCDATETIME(), SYSUTCDATETIME()
 FROM @parts p
 WHERE NOT EXISTS (
     SELECT 1 FROM dbo.WarrantyParts wp WHERE wp.PartName = p.PartName);
+
+UPDATE dbo.WarrantyParts
+SET PartCode = N'OTHERS'
+WHERE PartName = N'OTHERS' AND (PartCode IS NULL OR PartCode = N'');
 GO
 
 -- Warranty status lookups (matches StatusLookups schema: no ModifiedDate)

@@ -159,6 +159,8 @@ namespace KRSDealerManagement.Web.Controllers
                     MenuKey = key,
                     AccessLevel = (MenuAccessLevel)level
                 })
+                .GroupBy(m => m.MenuKey, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.OrderByDescending(m => (int)m.AccessLevel).First())
                 .ToList();
         }
 

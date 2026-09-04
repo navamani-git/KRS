@@ -1,8 +1,11 @@
 namespace KRSDealerManagement.Web.Helpers
 {
     /// <summary>
-    /// Single upload root: {ContentRoot}/Files/{section}/...
-    /// Legacy files under wwwroot/Files are still readable until migrated.
+    /// Upload root: {ContentRoot}/Files/{section}/...
+    /// Example: KRSDealerManagement.Web/Files/Warranty/2026_09_04/file.pdf
+    ///
+    /// Do not save uploads under wwwroot/Files. That folder is legacy-only;
+    /// files there are copied into ContentRoot/Files on startup when missing.
     /// </summary>
     public static class AppFileStorageHelper
     {
@@ -25,6 +28,40 @@ namespace KRSDealerManagement.Web.Helpers
             var dir = Path.Combine(env.ContentRootPath, RootFolder, section, dateFolder);
             Directory.CreateDirectory(dir);
             return dir;
+        }
+
+        /// <summary>
+        /// Copies legacy uploads from wwwroot/Files into ContentRoot/Files when the target file does not exist.
+        /// </summary>
+        public static int MigrateLegacyWwwrootFiles(IWebHostEnvironment env)
+        {
+            if (string.IsNullOrWhiteSpace(env.WebRootPath))
+                return 0;
+
+            var legacyRoot = Path.Combine(env.WebRootPath, RootFolder);
+            if (!Directory.Exists(legacyRoot))
+                return 0;
+
+            var targetRoot = Path.Combine(env.ContentRootPath, RootFolder);
+            Directory.CreateDirectory(targetRoot);
+
+            var migrated = 0;
+            foreach (var sourceFile in Directory.EnumerateFiles(legacyRoot, "*", SearchOption.AllDirectories))
+            {
+                var relative = Path.GetRelativePath(legacyRoot, sourceFile);
+                var targetFile = Path.Combine(targetRoot, relative);
+                if (File.Exists(targetFile))
+                    continue;
+
+                var targetDir = Path.GetDirectoryName(targetFile);
+                if (!string.IsNullOrWhiteSpace(targetDir))
+                    Directory.CreateDirectory(targetDir);
+
+                File.Copy(sourceFile, targetFile);
+                migrated++;
+            }
+
+            return migrated;
         }
 
         public static bool TryResolveAbsolute(IWebHostEnvironment env, string? relativePath, out string absolutePath)

@@ -117,13 +117,13 @@ namespace KRSDealerManagement.Shared.Helpers
             "Insurance is done; RTO agent step is not recorded yet",
             "Agent (RTO) date is saved on the Manage screen",
             "Insurance done — waiting for RTO agent",
-            "Shows vehicles with insurance completed but RTO processing has not been started in the system. Save the Agent date on Manage when RTO work begins.");
+            "Shows vehicles with insurance completed but the vehicle is not yet in agent hand. Save the Agent date on Manage when the RTO agent takes the vehicle.");
 
         private static StageHelp RtoRequested() => new(
-            "RTO agent is assigned; registration is not recorded yet",
+            "In agent hand, waiting for registration",
             "Registration date is saved on the Manage screen",
-            "RTO in progress — waiting for registration",
-            "Shows vehicles where RTO work is underway but registration is not saved yet. Save the Registration date on Manage when registration is complete.");
+            "In agent hand — waiting for registration",
+            "Shows vehicles handed to the RTO agent but registration is not saved yet. Save the Registration date and RTO number on Manage when registration is complete.");
 
         private static StageHelp Registered() => new(
             "Vehicle is registered (includes vehicles with subsidy ID entered)",

@@ -65,6 +65,13 @@ namespace KRSDealerManagement.Web.Helpers
 
         public static int? GetUserId(ISession session) => session.GetInt32(SessionKeyUserId);
         public static string? GetUsername(ISession session) => session.GetString(SessionKeyUsername);
+
+        public static void UpdateUsername(ISession session, string username)
+        {
+            if (!string.IsNullOrWhiteSpace(username))
+                session.SetString(SessionKeyUsername, username.Trim().ToLowerInvariant());
+        }
+
         public static string? GetFullName(ISession session) => session.GetString(SessionKeyFullName);
         public static int? GetUserRole(ISession session) => session.GetInt32(SessionKeyUserRole);
         public static string? GetRoleName(ISession session) => session.GetString(SessionKeyRoleName);
@@ -82,8 +89,7 @@ namespace KRSDealerManagement.Web.Helpers
         public static bool IsAdmin(ISession session) => IsSystemAdmin(session);
 
         public static bool IsBranchManager(ISession session) =>
-            string.Equals(GetRoleCode(session), RoleCodes.BranchManager, StringComparison.OrdinalIgnoreCase)
-            || GetUserRole(session) == 4;
+            string.Equals(GetRoleCode(session), RoleCodes.BranchManager, StringComparison.OrdinalIgnoreCase);
 
         public static bool IsFinanceAdmin(ISession session) =>
             string.Equals(GetRoleCode(session), RoleCodes.FinanceAdmin, StringComparison.OrdinalIgnoreCase)
@@ -112,6 +118,12 @@ namespace KRSDealerManagement.Web.Helpers
             if (map.TryGetValue(menuKey, out var level))
                 return level;
 
+            if (StaffMenuAccess.IsBookingMilestoneKey(menuKey)
+                && map.TryGetValue(StaffMenuAccess.VehicleBookings, out var inheritedBooking))
+            {
+                return inheritedBooking;
+            }
+
             if (IsSubdealer(session)
                 && string.Equals(menuKey, MenuKeys.VehiclesBookingStages, StringComparison.OrdinalIgnoreCase)
                 && map.TryGetValue(MenuKeys.VehiclesView, out var vehiclesView))
@@ -124,6 +136,10 @@ namespace KRSDealerManagement.Web.Helpers
 
         public static bool HasMenuAccess(ISession session, string menuKey)
             => GetMenuAccessLevel(session, menuKey) != MenuAccessLevel.None;
+
+        public static bool HasAnyBookingStaffMenuAccess(ISession session)
+            => StaffMenuAccess.AllBookingStaffMenuKeys()
+                .Any(key => HasMenuAccess(session, key));
 
         public static bool IsMenuReadOnly(ISession session, string menuKey)
             => GetMenuAccessLevel(session, menuKey) == MenuAccessLevel.ReadOnly;

@@ -163,19 +163,14 @@ namespace KRSDealerManagement.Web.Controllers
             var query = await BuildQueryAsync(null, searchTerm, fromDate, toDate);
             query.ColumnFilters = columnFilters;
             query.RejectedOnly = true;
-            if (!fromDate.HasValue && !toDate.HasValue)
-            {
-                query.FromDate = null;
-                query.ToDate = null;
-            }
 
             var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
             var vehicles = await _mediator.Send(query);
             var (pageItems, pageInfo) = ListPagingHelper.Paginate(vehicles, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
 
-            ViewBag.FromDate = !fromDate.HasValue ? "" : from.ToString("yyyy-MM-dd");
-            ViewBag.ToDate = !toDate.HasValue ? "" : to.ToString("yyyy-MM-dd");
+            ViewBag.FromDate = from.ToString("yyyy-MM-dd");
+            ViewBag.ToDate = to.ToString("yyyy-MM-dd");
             ViewBag.SearchTerm = searchTerm;
             ViewBag.IsSubdealer = true;
             ViewBag.IsAdmin = false;
@@ -429,7 +424,10 @@ namespace KRSDealerManagement.Web.Controllers
                 .FirstOrDefault(b => b.VehicleId == id);
 
             ViewBag.Models = await _mediator.Send(new GetVehicleModelsQuery { IsActive = true });
-            ViewBag.VehicleStatuses = await _statuses.GetActiveByCategoryAsync(StatusCategories.Vehicle);
+            ViewBag.VehicleStatuses = (await _statuses.GetActiveByCategoryAsync(StatusCategories.Vehicle))
+                .Where(s => s.StatusValue != UnifiedVehicleStatus.Submitted
+                    && s.StatusValue != UnifiedVehicleStatus.RejectedByDealer
+                    && !UnifiedVehicleStatus.IsReturnPhase(s.StatusValue));
             ViewBag.BookingStatuses = (await _statuses.GetActiveByCategoryAsync(StatusCategories.Vehicle))
                 .Where(s => s.StatusValue >= UnifiedVehicleStatus.BookedToCustomer);
             ViewBag.Booking = booking;

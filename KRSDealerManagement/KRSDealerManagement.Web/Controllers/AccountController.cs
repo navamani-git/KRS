@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
+using FluentValidation;
 using KRSDealerManagement.Application.Commands;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Web.Helpers;
@@ -93,6 +94,68 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         [HttpGet]
+        public IActionResult Profile()
+        {
+            if (!SessionHelper.IsAuthenticated(HttpContext.Session))
+                return RedirectToAction(nameof(Login));
+
+            ViewBag.Username = SessionHelper.GetUsername(HttpContext.Session);
+            ViewBag.FullName = SessionHelper.GetFullName(HttpContext.Session);
+            ViewBag.RoleName = SessionHelper.GetRoleName(HttpContext.Session);
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Profile(string username, string currentPassword, string? newPassword, string? confirmNewPassword)
+        {
+            if (!SessionHelper.IsAuthenticated(HttpContext.Session))
+                return RedirectToAction(nameof(Login));
+
+            var userId = SessionHelper.GetUserId(HttpContext.Session);
+            if (!userId.HasValue)
+                return RedirectToAction(nameof(Login));
+
+            ViewBag.Username = username;
+            ViewBag.FullName = SessionHelper.GetFullName(HttpContext.Session);
+            ViewBag.RoleName = SessionHelper.GetRoleName(HttpContext.Session);
+
+            if (!string.IsNullOrWhiteSpace(newPassword) || !string.IsNullOrWhiteSpace(confirmNewPassword))
+            {
+                if (!string.Equals(newPassword, confirmNewPassword, StringComparison.Ordinal))
+                {
+                    TempData["Error"] = "New password and confirmation do not match.";
+                    return View();
+                }
+            }
+
+            try
+            {
+                await _mediator.Send(new UpdateMyLoginCredentialsCommand
+                {
+                    UserId = userId.Value,
+                    Username = username,
+                    CurrentPassword = currentPassword,
+                    NewPassword = string.IsNullOrWhiteSpace(newPassword) ? null : newPassword
+                });
+
+                SessionHelper.UpdateUsername(HttpContext.Session, username);
+                TempData["Success"] = "Login details updated successfully.";
+                return RedirectToAction(nameof(Profile));
+            }
+            catch (ValidationException ex)
+            {
+                TempData["Error"] = ex.Errors.FirstOrDefault()?.ErrorMessage ?? "Please check the form and try again.";
+                return View();
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return View();
+            }
+        }
+
+        [HttpGet]
         public IActionResult ForgotPassword()
         {
             return View();
@@ -109,8 +172,9 @@ namespace KRSDealerManagement.Web.Controllers
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction(nameof(Login));
 
-            ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
-            ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
+            var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
+            ViewBag.FromDate = from.ToString("yyyy-MM-dd");
+            ViewBag.ToDate = to.ToString("yyyy-MM-dd");
 
             var account = await AccountHelper.GetPrimaryAccountAsync(_mediator, userId.Value);
             if (account == null)
@@ -151,11 +215,12 @@ namespace KRSDealerManagement.Web.Controllers
                 SubdealerAccountId = account.AccountId
             });
 
+            var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
             var transactions = await _mediator.Send(new GetAccountTransactionsQuery
             {
                 AccountId = account.AccountId,
-                FromDate = fromDate,
-                ToDate = toDate
+                FromDate = from,
+                ToDate = to
             });
 
             return AccountStatementExportHelper.ToFileResult(

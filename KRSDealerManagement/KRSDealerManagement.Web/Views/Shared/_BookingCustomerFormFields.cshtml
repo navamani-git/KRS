@@ -1,41 +1,66 @@
 @using KRSDealerManagement.Domain.Entities
 @using KRSDealerManagement.Shared.Constants
+@using KRSDealerManagement.Shared.Helpers
+@using KRSDealerManagement.Web.Models
 @{
     var booking = ViewBag.Booking as VehicleBooking;
+    var form = ViewBag.Form as BookingFormInput;
     var isEdit = booking != null;
     var docTypes = ViewBag.DocumentTypes as IEnumerable<DocumentTypeMaster>;
-    var isCompany = booking?.IsCompanyBooking ?? false;
+    var isCompany = form?.IsCompanyBooking ?? booking?.IsCompanyBooking ?? false;
+
+    string Val(string? fromForm, string? fromBooking) => fromForm ?? fromBooking ?? "";
+    int? IntVal(int? fromForm, int? fromBooking) => fromForm ?? fromBooking;
+    bool BoolVal(bool? fromForm, bool fromBooking) => fromForm ?? fromBooking;
+    var customerName = Val(form?.CustomerName, booking?.CustomerName);
+    var customerMobile = Val(form?.CustomerMobile, booking?.CustomerMobile);
+    var alternativeMobile = Val(form?.AlternativeMobile, booking?.AlternativeMobile);
+    var customerEmail = Val(form?.CustomerEmail, booking?.CustomerEmail);
+    var eAadhaarPassword = Val(form?.EAadhaarPassword, booking?.EAadhaarPassword);
+    var nomineeName = Val(form?.NomineeName, booking?.NomineeName);
+    var nomineeDob = form?.NomineeDob?.ToString("yyyy-MM-dd") ?? booking?.NomineeDob.ToString("yyyy-MM-dd");
+    var nomineeRelationship = Val(form?.NomineeRelationship, booking?.NomineeRelationship);
+    var fancyNumber = BoolVal(form?.FancyNumber, booking?.FancyNumber ?? false);
+    var documentTypeId = IntVal(form?.DocumentTypeId, booking?.DocumentTypeId);
+    var paymentMode = Val(form?.PaymentMode, booking?.PaymentMode);
+    var financeNameId = IntVal(form?.FinanceNameId, booking?.FinanceNameId);
+    var maxNomineeDob = IstTime.DateInputMaxValue();
 }
 
-<div class="card mb-3">
-    <div class="card-header"><h3 class="card-title mb-0">Customer Details</h3></div>
+<div class="card mb-3 @(isCompany ? "border-primary booking-company-card" : "")" id="customerDetailsCard">
+    <div class="card-header @(isCompany ? "bg-primary text-white" : "")">
+        <h3 class="card-title mb-0">Customer Details</h3>
+    </div>
     <div class="card-body row g-3">
-        <div class="col-md-6">
-            <label class="fw-bold">Customer Name (Exactly Same As in E-Aadhaar) <span class="text-danger">*</span></label>
-            <input name="customerName" id="customerName" class="form-control booking-uppercase" value="@booking?.CustomerName" required
-                   autocomplete="name" />
-            <small class="text-muted">Type Only Capital Letters</small>
-        </div>
-        <div class="col-md-6 d-flex align-items-end">
+        <div class="col-12">
             <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="isCompanyBooking" value="true" id="isCompany"
                        @(isCompany ? "checked" : "") onchange="toggleBookingCompanyFields()" />
-                <label class="form-check-label" for="isCompany">Booking in company name</label>
+                <label class="form-check-label fw-semibold" for="isCompany">Booking in company name</label>
             </div>
+        </div>
+        <div class="col-md-6">
+            <label class="fw-bold" id="customerNameLabel">
+                <span id="customerNameLabelText">@(isCompany ? "Company Name (Exactly Same As in GST)" : "Customer Name (Exactly Same As in E-Aadhaar)")</span>
+                <span class="text-danger">*</span>
+            </label>
+            <input name="customerName" id="customerName" class="form-control booking-uppercase" value="@customerName" required
+                   autocomplete="name" />
+            <small class="text-muted" id="customerNameHint">@(isCompany ? "Enter the registered company name in capital letter as same in GST" : "Type Only Capital Letters")</small>
         </div>
         <div class="col-md-4">
             <label class="fw-bold">Customer Mobile (Aadhaar Linked) <span class="text-danger">*</span></label>
-            <input name="customerMobile" class="form-control booking-mobile" value="@booking?.CustomerMobile" required maxlength="10" inputmode="numeric" pattern="\d{10}" />
+            <input name="customerMobile" id="customerMobile" class="form-control booking-mobile" value="@customerMobile" required maxlength="10" inputmode="numeric" pattern="\d{10}" />
             <small class="text-muted">Enter 10 Digit Only (Ex: 9897960000)</small>
         </div>
         <div class="col-md-4">
             <label class="fw-bold">Alternative Customer Mobile <span class="text-danger">*</span></label>
-            <input name="alternativeMobile" class="form-control booking-mobile" value="@booking?.AlternativeMobile" required maxlength="10" inputmode="numeric" pattern="\d{10}" />
-            <small class="text-muted">Enter 10 Digit Only (Ex: 9897960000)</small>
+            <input name="alternativeMobile" id="alternativeMobile" class="form-control booking-mobile" value="@alternativeMobile" required maxlength="10" inputmode="numeric" pattern="\d{10}" />
+            <small class="text-muted">Must be different from customer mobile</small>
         </div>
         <div class="col-md-4">
             <label class="fw-bold">Customer E-Mail ID <span class="text-danger">*</span></label>
-            <input name="customerEmail" type="email" class="form-control booking-lowercase" value="@booking?.CustomerEmail" required autocomplete="email" />
+            <input name="customerEmail" type="email" class="form-control booking-lowercase" value="@customerEmail" required autocomplete="email" />
             <small class="text-muted">Type Only Small Letters</small>
         </div>
         <div class="col-md-4">
@@ -46,8 +71,8 @@
         </div>
         <div class="col-md-4">
             <label class="fw-bold">E-Aadhaar Password <span class="text-danger">*</span></label>
-            <input name="eAadhaarPassword" class="form-control booking-password" value="@booking?.EAadhaarPassword" required autocomplete="off" />
-            <small class="text-muted">Type Only Capital Letters &amp; Numbers</small>
+            <input name="eAadhaarPassword" id="eAadhaarPassword" class="form-control booking-password" value="@eAadhaarPassword" required autocomplete="off" maxlength="8" />
+            <small class="text-muted">4 capital letters + 4 digits (e.g. ABCD1234)</small>
         </div>
         <div class="col-md-4">
             <label class="fw-bold">Document Type <span class="text-danger">*</span></label>
@@ -55,7 +80,7 @@
                 <option value="">-- Select --</option>
                 @foreach (var d in docTypes ?? Enumerable.Empty<DocumentTypeMaster>())
                 {
-                    if (booking?.DocumentTypeId == d.DocumentTypeId)
+                    if (documentTypeId == d.DocumentTypeId)
                     {
                         <option value="@d.DocumentTypeId" selected>@d.TypeName</option>
                     }
@@ -73,7 +98,7 @@
             @if (isEdit) { <small class="text-muted d-block">Leave empty to keep the current file.</small> }
         </div>
         <div class="col-md-6" id="gstBlock" style="@(isCompany ? "" : "display:none")">
-            <label class="fw-bold">GST Certificate <span class="text-danger" id="gstRequiredMark">@(isCompany && !isEdit ? "*" : isCompany ? "*" : "")</span></label>
+            <label class="fw-bold">GST Certificate <span class="text-danger" id="gstRequiredMark">@(isCompany ? "*" : "")</span></label>
             <input name="gstCertificateFile" type="file" accept=".pdf,application/pdf" class="form-control booking-pdf-1" data-max-mb="1" />
             <small class="text-muted">Upload 1 supported file: PDF. Max 1 MB.</small>
             @if (isEdit) { <small class="text-muted d-block">Leave empty to keep the current file.</small> }
@@ -109,7 +134,7 @@
         <div class="col-md-4">
             <label class="fw-bold">Fancy Number <span class="text-danger">*</span></label>
             <select name="fancyNumber" class="form-select" required>
-                @if (booking == null || !booking.FancyNumber)
+                @if (!fancyNumber)
                 {
                     <option value="false" selected>No</option><option value="true">Yes</option>
                 }
@@ -124,7 +149,7 @@
             <select name="paymentMode" class="form-select" required>
                 @foreach (var p in (ViewBag.PaymentModes as IEnumerable<(string Value, string Label)>) ?? VehiclePaymentModes.All)
                 {
-                    if (booking != null && string.Equals(p.Value, booking.PaymentMode, StringComparison.OrdinalIgnoreCase))
+                    if (!string.IsNullOrEmpty(paymentMode) && string.Equals(p.Value, paymentMode, StringComparison.OrdinalIgnoreCase))
                     {
                         <option value="@p.Value" selected>@p.Label</option>
                     }
@@ -140,7 +165,7 @@
             <select name="financeNameId" class="form-select" required>
                 @foreach (var f in (ViewBag.FinanceNames as IEnumerable<FinanceNameMaster>) ?? Enumerable.Empty<FinanceNameMaster>())
                 {
-                    if (booking?.FinanceNameId == f.FinanceNameId)
+                    if (financeNameId == f.FinanceNameId)
                     {
                         <option value="@f.FinanceNameId" selected>@f.FinanceName</option>
                     }
@@ -159,11 +184,12 @@
     <div class="card-body row g-3">
         <div class="col-md-4">
             <label class="fw-bold">Nominee Name <span class="text-danger">*</span></label>
-            <input name="nomineeName" class="form-control" value="@booking?.NomineeName" required />
+            <input name="nomineeName" class="form-control booking-uppercase" value="@nomineeName" required />
+            <small class="text-muted">Type only capital letters</small>
         </div>
         <div class="col-md-4">
             <label class="fw-bold">Nominee DOB <span class="text-danger">*</span></label>
-            <input name="nomineeDob" type="date" class="form-control" value="@(booking?.NomineeDob.ToString("yyyy-MM-dd"))" required />
+            <input name="nomineeDob" type="date" class="form-control" value="@nomineeDob" required max="@maxNomineeDob" />
         </div>
         <div class="col-md-4">
             <label class="fw-bold">Nominee's Relationship With Customer <span class="text-danger">*</span></label>
@@ -171,7 +197,7 @@
                 <option value="">-- Select --</option>
                 @foreach (var rel in BookingFormConstants.NomineeRelationships)
                 {
-                    if (string.Equals(booking?.NomineeRelationship, rel, StringComparison.Ordinal))
+                    if (string.Equals(nomineeRelationship, rel, StringComparison.Ordinal))
                     {
                         <option value="@rel" selected>@rel</option>
                     }
@@ -184,3 +210,17 @@
         </div>
     </div>
 </div>
+
+@if (isEdit)
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <label class="fw-bold">Reason for change (optional)</label>
+            <input name="editReason" class="form-control" value="@form?.EditReason" placeholder="e.g. Customer mobile number corrected" maxlength="500" />
+        </div>
+    </div>
+}
+
+<style>
+    .booking-company-card { box-shadow: 0 0 0 2px rgba(var(--bs-primary-rgb), 0.25); }
+</style>

@@ -1,5 +1,6 @@
 using MediatR;
 using KRSDealerManagement.Application.DTOs;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Repositories;
@@ -72,7 +73,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         DealershipName = dealer?.DealershipName,
                         ChassisNo = c.ChassisNo,
                         CustomerName = c.CustomerName,
-                        PartName = part?.PartName,
+                        PartName = WarrantyPartHelper.ResolveDisplayName(part, c.OtherPartName),
                         CurrentKms = c.CurrentKms,
                         SubmittedDate = c.SubmittedDate,
                         CreatedDate = c.CreatedDate,
@@ -149,7 +150,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 SaleDate = claim.SaleDate,
                 ComplaintDate = claim.ComplaintDate,
                 WarrantyPartId = claim.WarrantyPartId,
-                PartName = part?.PartName,
+                PartName = WarrantyPartHelper.ResolveDisplayName(part, claim.OtherPartName),
+                OtherPartName = claim.OtherPartName,
                 PartCode = claim.PartCode,
                 FailurePartSerialNumber = claim.FailurePartSerialNumber,
                 CustomerComplaint = claim.CustomerComplaint,
@@ -157,6 +159,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 Remarks = claim.Remarks,
                 RejectionReason = claim.RejectionReason,
                 MoreInfoNotes = claim.MoreInfoNotes,
+                SoNumber = claim.SoNumber,
                 SubmittedDate = claim.SubmittedDate,
                 CreatedDate = claim.CreatedDate,
                 ModifiedDate = claim.ModifiedDate,

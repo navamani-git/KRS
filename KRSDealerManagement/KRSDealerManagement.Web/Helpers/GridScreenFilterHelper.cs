@@ -52,9 +52,9 @@ namespace KRSDealerManagement.Web.Helpers
                 return GridRowFilterApplier.Apply(GridScreenIds.MyReturns, rows, filters,
                     new Dictionary<string, Func<ReturnRequestDto, string?>>(StringComparer.OrdinalIgnoreCase)
                     {
+                        ["request"] = r => r.ReturnRequestId.ToString(),
                         ["order"] = r => r.OrderNumber,
                         ["chassis"] = r => r.VehicleChassisNumber,
-                        ["account"] = r => r.AccountName,
                         ["refund"] = r => r.RefundAmount.ToString("N2"),
                         ["status"] = r => r.GetStatusDisplay(),
                         ["reason"] = r => r.ReturnReason,
@@ -71,7 +71,7 @@ namespace KRSDealerManagement.Web.Helpers
             return GridRowFilterApplier.Apply(GridScreenIds.Returns, rows, filters,
                 new Dictionary<string, Func<ReturnRequestDto, string?>>(StringComparer.OrdinalIgnoreCase)
                 {
-                    ["account"] = r => r.AccountName,
+                    ["subdealer"] = r => r.SubdealerName ?? r.AccountName,
                     ["order"] = r => r.OrderNumber,
                     ["vehicle"] = r => r.VehicleChassisNumber,
                     ["refund"] = r => r.RefundAmount.ToString("N2"),
@@ -287,9 +287,6 @@ namespace KRSDealerManagement.Web.Helpers
                     ["color"] = r => r.ColorName,
                     ["motor"] = r => r.MotorNo,
                     ["battery"] = r => r.BatteryNo,
-                    ["charger"] = r => r.ChargerNo,
-                    ["controller"] = r => r.ControllerNo,
-                    ["converter"] = r => r.ConverterNo,
                     ["status"] = r => r.IsAllocated ? "Allocated" : "Available",
                     ["invoiceNo"] = r => r.AmpereInvoiceNo,
                     ["allocatedTo"] = r => r.AllocatedToSubdealerName

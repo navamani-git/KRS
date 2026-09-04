@@ -1,6 +1,7 @@
 using MediatR;
 using KRSDealerManagement.Application.Commands;
 using KRSDealerManagement.Application.Helpers;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Domain.Entities;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Application.Services;
@@ -87,9 +88,9 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                     ?? throw new InvalidOperationException("Linked vehicle master record not found.");
 
                 var newChassis = request.ChassisNumber.Trim().ToUpperInvariant();
-                if (!string.Equals(master.ChassisNumber, newChassis, StringComparison.OrdinalIgnoreCase)
-                    && await _unitOfWork.VehicleMasters.ChassisExistsAsync(newChassis, master.VehicleMasterId))
-                    throw new InvalidOperationException($"Chassis {newChassis} already exists in dealer stock.");
+                if (!string.Equals(master.ChassisNumber, newChassis, StringComparison.OrdinalIgnoreCase))
+                    await GlobalUniqueValidation.EnsureChassisAvailableAsync(
+                        _unitOfWork, newChassis, master.VehicleMasterId, vehicle.VehicleId);
 
                 master.ModelId = request.ModelId;
                 master.ColorId = request.ColorId;

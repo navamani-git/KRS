@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using KRSDealerManagement.Shared.Constants;
+using KRSDealerManagement.Shared.Helpers;
 using Microsoft.AspNetCore.Http;
 
 namespace KRSDealerManagement.Web.Helpers
@@ -9,10 +10,12 @@ namespace KRSDealerManagement.Web.Helpers
         private static readonly Regex CapitalLettersOnly = new(@"^[A-Z\s\.]+$", RegexOptions.Compiled);
         private static readonly Regex TenDigitMobile = new(@"^\d{10}$", RegexOptions.Compiled);
         private static readonly Regex LowercaseEmail = new(@"^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$", RegexOptions.Compiled);
-        private static readonly Regex EAadhaarPassword = new(@"^[A-Z0-9]+$", RegexOptions.Compiled);
+        private static readonly Regex EAadhaarPassword = new(@"^[A-Z]{4}\d{4}$", RegexOptions.Compiled);
 
         public static string NormalizeCustomerName(string value) => value.Trim().ToUpperInvariant();
         public static string NormalizeEmail(string value) => value.Trim().ToLowerInvariant();
+
+        public static string NormalizeNomineeName(string value) => value.Trim().ToUpperInvariant();
 
         public static string? ValidateCustomerName(string? value)
         {
@@ -34,13 +37,25 @@ namespace KRSDealerManagement.Web.Helpers
             return null;
         }
 
-        public static string? ValidateAlternativeMobile(string? value)
+        public static string? ValidateAlternativeMobile(string? value, string? customerMobile = null)
         {
             if (string.IsNullOrWhiteSpace(value))
                 return "Alternative Customer Mobile is required.";
             var digits = value.Trim();
             if (!TenDigitMobile.IsMatch(digits))
                 return "Alternative Customer Mobile: Enter 10 Digit Only (Ex: 9897960000).";
+            if (!string.IsNullOrWhiteSpace(customerMobile)
+                && string.Equals(digits, customerMobile.Trim(), StringComparison.Ordinal))
+                return "Alternative Customer Mobile must be different from Customer Mobile.";
+            return null;
+        }
+
+        public static string? ValidateMobilesDifferent(string? customerMobile, string? alternativeMobile)
+        {
+            if (string.IsNullOrWhiteSpace(customerMobile) || string.IsNullOrWhiteSpace(alternativeMobile))
+                return null;
+            if (string.Equals(customerMobile.Trim(), alternativeMobile.Trim(), StringComparison.Ordinal))
+                return "Customer Mobile and Alternative Customer Mobile must be different.";
             return null;
         }
 
@@ -60,7 +75,21 @@ namespace KRSDealerManagement.Web.Helpers
                 return "E-Aadhaar Password is required.";
             var trimmed = value.Trim();
             if (!EAadhaarPassword.IsMatch(trimmed))
-                return "E-Aadhaar Password: Type Only Capital Letters & Numbers.";
+                return "E-Aadhaar Password: Enter exactly 4 capital letters followed by 4 digits (e.g. ABCD1234).";
+            return null;
+        }
+
+        public static string? ValidateNomineeName(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return "Nominee Name is required.";
+            return null;
+        }
+
+        public static string? ValidateNomineeDob(DateTime nomineeDob)
+        {
+            if (IstTime.IsFutureDate(nomineeDob))
+                return "Nominee DOB cannot be in the future.";
             return null;
         }
 
@@ -112,6 +141,8 @@ namespace KRSDealerManagement.Web.Helpers
             string? alternativeMobile,
             string? customerEmail,
             string? eAadhaarPassword,
+            string? nomineeName,
+            DateTime nomineeDob,
             string? nomineeRelationship,
             bool isCompanyBooking,
             IFormFile? eAadhaarFile,
@@ -124,9 +155,12 @@ namespace KRSDealerManagement.Web.Helpers
             return FirstError(
                 ValidateCustomerName(customerName),
                 ValidateCustomerMobile(customerMobile),
-                ValidateAlternativeMobile(alternativeMobile),
+                ValidateAlternativeMobile(alternativeMobile, customerMobile),
+                ValidateMobilesDifferent(customerMobile, alternativeMobile),
                 ValidateCustomerEmail(customerEmail),
                 ValidateEAadhaarPassword(eAadhaarPassword),
+                ValidateNomineeName(nomineeName),
+                ValidateNomineeDob(nomineeDob),
                 ValidateNomineeRelationship(nomineeRelationship),
                 ValidatePdfFile(eAadhaarFile, "E-Aadhaar (PDF)", BookingFormConstants.MaxEAadhaarPdfBytes, required: true),
                 ValidatePdfFile(documentFile, "Document (PDF)", BookingFormConstants.MaxDocumentPdfBytes, required: true),
@@ -144,6 +178,8 @@ namespace KRSDealerManagement.Web.Helpers
             string? alternativeMobile,
             string? customerEmail,
             string? eAadhaarPassword,
+            string? nomineeName,
+            DateTime nomineeDob,
             string? nomineeRelationship,
             bool isCompanyBooking,
             bool hasGstOnRecord,
@@ -158,9 +194,12 @@ namespace KRSDealerManagement.Web.Helpers
             return FirstError(
                 ValidateCustomerName(customerName),
                 ValidateCustomerMobile(customerMobile),
-                ValidateAlternativeMobile(alternativeMobile),
+                ValidateAlternativeMobile(alternativeMobile, customerMobile),
+                ValidateMobilesDifferent(customerMobile, alternativeMobile),
                 ValidateCustomerEmail(customerEmail),
                 ValidateEAadhaarPassword(eAadhaarPassword),
+                ValidateNomineeName(nomineeName),
+                ValidateNomineeDob(nomineeDob),
                 ValidateNomineeRelationship(nomineeRelationship),
                 ValidatePdfFile(eAadhaarFile, "E-Aadhaar (PDF)", BookingFormConstants.MaxEAadhaarPdfBytes, required: false),
                 ValidatePdfFile(documentFile, "Document (PDF)", BookingFormConstants.MaxDocumentPdfBytes, required: false),
@@ -170,6 +209,39 @@ namespace KRSDealerManagement.Web.Helpers
                 ValidateImageFile(customerPhoto, "Customer Photo", required: false),
                 ValidateImageFile(chassisPhoto, "Chassis Number", required: false),
                 ValidateImageFile(customerSign, isCompanyBooking ? "Company Seal with Sign" : "Customer Sign", required: false));
+        }
+
+        public static string? ValidateManageMilestones(
+            DateTime? paperReceivedDate,
+            DateTime? invoiceDate,
+            DateTime? insuranceDate,
+            DateTime? agentDate,
+            DateTime? registrationDate,
+            string? rtoNumber,
+            bool hasInvoiceFile,
+            bool hasInsuranceFile,
+            bool uploadingInvoice,
+            bool uploadingInsurance)
+        {
+            if (paperReceivedDate.HasValue && IstTime.IsFutureDateTime(paperReceivedDate.Value))
+                return "Paper Received date cannot be in the future.";
+            if (invoiceDate.HasValue && IstTime.IsFutureDateTime(invoiceDate.Value))
+                return "Invoice date cannot be in the future.";
+            if (insuranceDate.HasValue && IstTime.IsFutureDateTime(insuranceDate.Value))
+                return "Insurance date cannot be in the future.";
+            if (agentDate.HasValue && IstTime.IsFutureDateTime(agentDate.Value))
+                return "Agent date cannot be in the future.";
+            if (registrationDate.HasValue && IstTime.IsFutureDateTime(registrationDate.Value))
+                return "Registration date cannot be in the future.";
+
+            if (invoiceDate.HasValue && !hasInvoiceFile && !uploadingInvoice)
+                return "Invoice document is required when Invoice date is set.";
+            if (insuranceDate.HasValue && !hasInsuranceFile && !uploadingInsurance)
+                return "Insurance document is required when Insurance date is set.";
+            if (registrationDate.HasValue && string.IsNullOrWhiteSpace(rtoNumber))
+                return "RTO Number is required when Registration date is set.";
+
+            return null;
         }
 
         private static string? FirstError(params string?[] errors)

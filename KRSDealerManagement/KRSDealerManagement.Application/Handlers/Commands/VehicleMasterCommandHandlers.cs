@@ -17,8 +17,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             await ModelColorValidation.EnsureMappedAsync(_unitOfWork, request.ModelId, request.ColorId);
 
             var chassis = request.ChassisNumber.Trim().ToUpperInvariant();
-            if (await _unitOfWork.VehicleMasters.ChassisExistsAsync(chassis))
-                throw new InvalidOperationException($"Chassis {chassis} already exists.");
+            await GlobalUniqueValidation.EnsureChassisAvailableAsync(_unitOfWork, chassis);
 
             var master = new VehicleMaster
             {
@@ -198,9 +197,13 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                     continue;
                 }
 
-                if (await _unitOfWork.VehicleMasters.ChassisExistsAsync(chassis))
+                try
                 {
-                    result.Errors.Add($"Row {line}: chassis {chassis} already exists.");
+                    await GlobalUniqueValidation.EnsureChassisAvailableAsync(_unitOfWork, chassis);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    result.Errors.Add($"Row {line}: {ex.Message}");
                     continue;
                 }
 

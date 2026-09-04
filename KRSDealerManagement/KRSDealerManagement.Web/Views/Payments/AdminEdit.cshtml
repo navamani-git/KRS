@@ -8,6 +8,7 @@
     var statuses = ViewBag.Statuses as IEnumerable<StatusLookup> ?? Enumerable.Empty<StatusLookup>();
     var subdealerName = ViewBag.SubdealerName as string ?? $"Subdealer #{Model.SubdealerId}";
     var selectedTypeId = Model.PaymentTypeId ?? paymentTypes.FirstOrDefault(t => t.TypeName == Model.PaymentType)?.PaymentTypeId ?? 0;
+    var paymentDateTimeMax = IstTime.DateTimeLocalMaxValue();
 }
 
 <div class="row mb-3">
@@ -38,7 +39,9 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Payment Date &amp; Time <span class="text-danger">*</span></label>
-                            <input type="datetime-local" name="paymentDate" class="form-control" value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.PaymentDate)" required />
+                            <input type="datetime-local" name="paymentDate" class="form-control"
+                                   max="@paymentDateTimeMax"
+                                   value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.PaymentDate)" required />
                         </div>
                     </div>
 
@@ -55,6 +58,7 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Actual Received Date &amp; Time</label>
                             <input type="datetime-local" name="actualReceivedDate" id="actualReceivedDate" class="form-control"
+                                   max="@paymentDateTimeMax"
                                    value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.ActualReceivedDate ?? Model.PaymentDate)" />
                         </div>
                     </div>

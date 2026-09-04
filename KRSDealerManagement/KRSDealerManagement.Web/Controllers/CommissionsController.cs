@@ -383,8 +383,7 @@ namespace KRSDealerManagement.Web.Controllers
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return Unauthorized();
 
-            var from = fromDate?.Date ?? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-            var to = toDate?.Date ?? DateTime.Now.Date;
+            var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
 
             var rows = await _mediator.Send(new GetCommissionPreviewQuery
             {

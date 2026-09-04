@@ -52,6 +52,115 @@ body {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
+.page-brand-banner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    pointer-events: none;
+}
+
+.page-brand-banner__logo {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: 3.25rem;
+    max-height: 3.25rem;
+    object-fit: contain;
+    object-position: center;
+    pointer-events: none;
+}
+
+/* Admin edit booking notice */
+.admin-booking-notice {
+    color: #d35400 !important;
+    font-weight: 600;
+    background: #fff4e6;
+    border-left: 4px solid #ff6600;
+    padding: 0.4rem 0.75rem;
+    border-radius: 4px;
+}
+
+.page-title-brand-row {
+    position: relative;
+    background: #f4f6f9;
+    border: 1px solid #e9ecef;
+    border-radius: var(--border-radius);
+    margin-left: 0;
+    margin-right: 0;
+    padding: 0.5rem 1rem;
+    overflow: visible;
+}
+
+.page-title-brand-row__title {
+    position: relative;
+    z-index: 2;
+}
+
+.page-title-brand-row__title h1 {
+    font-size: inherit;
+    line-height: 1.2;
+}
+
+.page-title-brand-row__title p {
+    margin-bottom: 0;
+    line-height: 1.3;
+}
+
+.page-title-brand-row__brand-overlay {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+    width: min(440px, 46vw);
+    max-width: calc(100% - 12rem);
+    pointer-events: none;
+}
+
+.page-title-brand-row__actions {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.page-title-brand-row__actions:empty {
+    display: none;
+}
+
+@media (max-width: 991.98px) {
+    .page-title-brand-row__brand-overlay {
+        width: min(320px, 52vw);
+        max-width: calc(100% - 8rem);
+    }
+
+    .page-brand-banner__logo {
+        height: 2.75rem;
+        max-height: 2.75rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .page-title-brand-row__brand-overlay {
+        display: none;
+    }
+
+    .page-title-brand-row__actions {
+        justify-content: flex-start;
+        text-align: left !important;
+        margin-top: 0.5rem;
+    }
+
+    .page-title-brand-row__actions:empty {
+        display: none;
+        margin-top: 0;
+    }
+}
+
 .main-header .navbar-brand {
     color: white !important;
     font-weight: 600;
@@ -95,7 +204,7 @@ body {
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
     scrollbar-gutter: stable;
-    padding-bottom: 2rem;
+    padding-bottom: 6rem;
 }
 
 .sidebar {
@@ -124,6 +233,90 @@ body {
 
 .sidebar .brand-section img:hover {
     transform: scale(1.05);
+}
+
+/* KRS dealer + Greaves Ampere brand partnership banner (login) */
+.partner-brand-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 1.1rem 0.85rem;
+    margin-bottom: 0.85rem;
+    background: linear-gradient(145deg, #ffffff 0%, #f6f8fb 100%);
+    border: 1px solid rgba(102, 126, 234, 0.14);
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(44, 62, 80, 0.06);
+}
+
+.partner-brand-banner--stacked {
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.partner-brand-banner__dealer,
+.partner-brand-banner__brand {
+    flex: 1 1 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    padding: 0.15rem 0.25rem;
+}
+
+.partner-brand-banner--stacked .partner-brand-banner__dealer,
+.partner-brand-banner--stacked .partner-brand-banner__brand {
+    flex: none;
+    width: 100%;
+}
+
+.partner-brand-banner__logo {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.partner-brand-banner__logo--dealer {
+    max-height: 76px;
+}
+
+.partner-brand-banner__logo--brand {
+    max-height: 46px;
+    border-radius: 5px;
+}
+
+.login-logo-text h3 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.login-logo-text p {
+    margin: 0.35rem 0 0;
+    color: #7a869a;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.warranty-attachment-preview {
+    max-height: 320px;
+    object-fit: contain;
+    background: #f8f9fa;
+}
+
+.warranty-attachment-pdf {
+    min-height: 420px;
+    border: 1px solid #dee2e6;
+    background: #fff;
+}
+
+.warranty-attachment-item:last-child {
+    border-bottom: none !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
 }
 
 /* Navigation Menu */
@@ -1377,6 +1570,16 @@ table.grid-excel-table td.grid-sticky-col-2 {
         max-height: none !important;
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch;
+        padding-bottom: 14rem;
+        scroll-padding-bottom: 8rem;
+    }
+
+    body.sidebar-open .main-sidebar .sidebar {
+        padding-bottom: 18rem;
+    }
+
+    .main-sidebar .nav-sidebar {
+        padding-bottom: 4rem;
     }
 
     body.sidebar-open .main-sidebar {

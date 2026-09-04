@@ -1,9 +1,11 @@
 @model KRSDealerManagement.Application.DTOs.WarrantyClaimDetailDto
 @using KRSDealerManagement.Shared.Constants
+@using KRSDealerManagement.Web.Helpers
 @{
     ViewData["Title"] = $"Claim {Model.ClaimNumber}";
     var isStaff = ViewBag.IsStaff as bool? ?? false;
     var isSystemAdmin = ViewBag.IsSystemAdmin as bool? ?? false;
+    var canStaffEdit = ViewBag.CanStaffEdit as bool? ?? false;
 }
 
 <div class="row mb-3">
@@ -66,20 +68,47 @@
         {
             <div class="card mb-3">
                 <div class="card-header"><strong>Attachments</strong></div>
-                <div class="card-body p-0">
-                    <table class="table table-sm mb-0">
-                        <tbody>
-                            @foreach (var a in Model.Attachments)
+                <div class="card-body">
+                    @foreach (var a in Model.Attachments)
+                    {
+                        var mediaKind = WarrantyFileHelper.GetMediaKind(a.FilePath);
+                        var viewUrl = Url.Action("ViewAttachment", new { id = Model.WarrantyClaimId, path = a.FilePath });
+                        var downloadUrl = Url.Action("DownloadAttachment", new { id = Model.WarrantyClaimId, path = a.FilePath });
+                        <div class="warranty-attachment-item mb-4 pb-3 border-bottom">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                                <strong>@a.AttachmentTypeName</strong>
+                                <span class="d-inline-flex gap-1">
+                                    <a href="@viewUrl" class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                    <a href="@downloadUrl" class="btn btn-sm btn-outline-secondary" data-no-loader="true">
+                                        <i class="bi bi-download"></i> Download
+                                    </a>
+                                </span>
+                            </div>
+                            @if (mediaKind == "image")
                             {
-                                <tr>
-                                    <td>@a.AttachmentTypeName</td>
-                                    <td class="text-end">
-                                        <a href="@Url.Action("DownloadAttachment", new { id = Model.WarrantyClaimId, path = a.FilePath })" class="btn btn-sm btn-outline-secondary" target="_blank">Download</a>
-                                    </td>
-                                </tr>
+                                <a href="@viewUrl" target="_blank" rel="noopener">
+                                    <img src="@viewUrl" alt="@a.AttachmentTypeName" class="warranty-attachment-preview img-fluid rounded border" />
+                                </a>
                             }
-                        </tbody>
-                    </table>
+                            else if (mediaKind == "video")
+                            {
+                                <video controls class="warranty-attachment-preview w-100 rounded border" preload="metadata">
+                                    <source src="@viewUrl" />
+                                    Your browser does not support video playback.
+                                </video>
+                            }
+                            else if (mediaKind == "pdf")
+                            {
+                                <iframe src="@viewUrl" class="warranty-attachment-pdf w-100 rounded border" title="@a.AttachmentTypeName"></iframe>
+                            }
+                            else
+                            {
+                                <div class="text-muted small">Preview not available for this file type.</div>
+                            }
+                        </div>
+                    }
                 </div>
             </div>
         }
@@ -90,6 +119,7 @@
             <div class="card-header"><strong>Lifecycle</strong></div>
             <div class="card-body small">
                 <div class="mb-1">Submitted: @(Model.SubmittedDate?.ToString("dd-MMM-yyyy HH:mm") ?? "—")</div>
+                <div class="mb-1">SO Number: @(Model.SoNumber ?? "—")</div>
                 <div class="mb-1">Applied to Ampere: @(Model.AmpereAppliedDate?.ToString("dd-MMM-yyyy HH:mm") ?? "—") @Model.AmpereAppliedByName</div>
                 <div class="mb-1">Product received: @(Model.ProductReceivedDate?.ToString("dd-MMM-yyyy HH:mm") ?? "—") @Model.ProductReceivedByName</div>
                 <div class="mb-1">Collected: @(Model.CollectedDate?.ToString("dd-MMM-yyyy HH:mm") ?? "—") @Model.CollectedByName</div>
@@ -98,7 +128,7 @@
             </div>
         </div>
 
-        @if (isStaff)
+        @if (isStaff && canStaffEdit)
         {
             <div class="card mb-3">
                 <div class="card-header"><strong>Staff Actions</strong></div>
@@ -123,11 +153,31 @@
                             <button type="submit" class="btn btn-danger btn-sm w-100">Reject</button>
                         </form>
                     }
+                    @if (canStaffEdit)
+                    {
+                        <form method="post" asp-action="UpdateSoNumber" class="mb-3">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.WarrantyClaimId" />
+                            <label class="form-label small mb-1">SO Number</label>
+                            <input type="text" name="soNumber" class="form-control form-control-sm mb-1" value="@Model.SoNumber" required maxlength="50" placeholder="Enter Ampere SO number" />
+                            <button type="submit" class="btn btn-outline-primary btn-sm w-100">Save SO Number</button>
+                        </form>
+                    }
                     @if (WarrantyClaimStatus.CanApplyToAmpere(Model.Status))
                     {
                         <form method="post" asp-action="ApplyToAmpere" class="mt-2">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="id" value="@Model.WarrantyClaimId" />
+                            @if (string.IsNullOrWhiteSpace(Model.SoNumber))
+                            {
+                                <label class="form-label small mb-1">SO Number *</label>
+                                <input type="text" name="soNumber" class="form-control form-control-sm mb-1" required maxlength="50" placeholder="Enter Ampere SO number" />
+                            }
+                            else
+                            {
+                                <input type="hidden" name="soNumber" value="@Model.SoNumber" />
+                                <p class="small text-muted mb-2">SO Number: <strong>@Model.SoNumber</strong></p>
+                            }
                             <button type="submit" class="btn btn-primary btn-sm w-100">Mark Applied to Ampere</button>
                         </form>
                     }
@@ -149,6 +199,10 @@
                     }
                 </div>
             </div>
+        }
+        else if (isStaff)
+        {
+            <div class="alert alert-secondary small">You have view-only access to warranty claims.</div>
         }
         else
         {

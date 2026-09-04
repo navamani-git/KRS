@@ -38,7 +38,7 @@
         var name = (el.getAttribute('name') || '').toLowerCase();
         if (name.indexOf('cf_') === 0) return false;
         if (/date|time|type|proof|remarks|mode|status/.test(name)) return false;
-        return /amount|balance|price|commission/.test(name);
+        return /amount|balance|price|commission|refund/.test(name);
     }
 
     function attach(el) {
@@ -72,6 +72,9 @@
             var parts = cleaned.split('.');
             if (parts.length > 2) {
                 cleaned = parts[0] + '.' + parts.slice(1).join('');
+            }
+            if (parts.length === 2 && parts[1].length > 2) {
+                cleaned = parts[0] + '.' + parts[1].slice(0, 2);
             }
             if (cleaned !== v) {
                 var pos = el.selectionStart;
