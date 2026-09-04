@@ -1,0 +1,79 @@
+@model IEnumerable<KRSDealerManagement.Application.DTOs.WarrantyClaimDto>
+@using KRSDealerManagement.Domain.Entities
+@using KRSDealerManagement.Web.Models
+@{
+    ViewData["Title"] = "My Warranty Claims";
+    var statuses = ViewBag.Statuses as IEnumerable<StatusLookup> ?? Enumerable.Empty<StatusLookup>();
+}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1 class="m-0"><i class="bi bi-clipboard-check"></i> My Warranty Claims</h1>
+        <p class="text-muted">Track your warranty and campaign claim status</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="@Url.Action("Create")" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Apply Claim</a>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end" id="gridFilterForm">
+            <div class="col-md-4">
+                <label class="form-label form-label-sm mb-0">Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    @foreach (var s in statuses)
+                    {
+                        <option value="@s.StatusValue" selected="@(ViewBag.SelectedStatus as int? == s.StatusValue)">@s.StatusName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-sm btn-primary w-100">Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <partial name="_GridScrollHint" />
+        <div class="table-responsive">
+            <table class="table table-sm table-hover table-striped mb-0 grid-excel-table grid-data-table" data-grid-id="@GridIds.MyWarrantyClaims">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="grid-col-rownum">#</th>
+                        <th>Claim #</th>
+                        <th>Type</th>
+                        <th>Chassis</th>
+                        <th>Part</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                        <th></th>
+                    </tr>
+                    <partial name="_PaginatedGridFilters" />
+                </thead>
+                <tbody>
+                    @{ int i = 1; }
+                    @foreach (var c in Model)
+                    {
+                        <tr>
+                            <td>@(i++)</td>
+                            <td><strong>@c.ClaimNumber</strong></td>
+                            <td>@c.ClaimType</td>
+                            <td>@c.ChassisNo</td>
+                            <td>@c.PartName</td>
+                            <td><span class="badge @(c.StatusBadgeClass ?? "bg-secondary")">@(c.StatusName ?? c.Status.ToString())</span></td>
+                            <td>@(c.SubmittedDate?.ToString("dd-MMM-yyyy") ?? "—")</td>
+                            <td class="text-end">
+                                <a href="@Url.Action("Details", new { id = c.WarrantyClaimId })" class="btn btn-sm btn-outline-primary">View</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="p-3"><partial name="_Pagination" /></div>
+    </div>
+</div>

@@ -56,9 +56,18 @@
                 <label class="fw-bold">New Password</label>
                 <input name="password" type="text" class="form-control" placeholder="Leave blank to keep current" />
             </div>
-            <div class="form-check">
+            <div class="form-check mb-2">
                 <input class="form-check-input" type="checkbox" name="isActive" value="true" id="isActive" @(Model.IsActive ? "checked" : "") />
                 <label class="form-check-label" for="isActive">Active</label>
+            </div>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="canExport" value="true" id="canExport" @(Model.CanExport ? "checked" : "") />
+                <label class="form-check-label" for="canExport">Allow Excel export</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="canEditWarrantyClaims" value="true" id="canEditWarrantyClaims" @(Model.CanEditWarrantyClaims ? "checked" : "") />
+                <label class="form-check-label" for="canEditWarrantyClaims">Allow warranty claim editing</label>
+                <div class="form-text">For warranty manager/staff — lets them edit claim details (system admin always can).</div>
             </div>
         </div>
         <div class="card-footer"><button type="submit" class="btn btn-primary">Save</button></div>

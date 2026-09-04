@@ -1,0 +1,23 @@
+@{
+    ViewData["Title"] = "Add Warranty Part";
+}
+
+<h1 class="mb-3"><i class="bi bi-plus"></i> Add Warranty Part</h1>
+
+<form method="post">
+    @Html.AntiForgeryToken()
+    <div class="card">
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Part Name *</label>
+                <input name="partName" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Part Code</label>
+                <input name="partCode" class="form-control" />
+            </div>
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a href="@Url.Action("Index")" class="btn btn-link">Cancel</a>
+        </div>
+    </div>
+</form>

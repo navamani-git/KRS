@@ -38,6 +38,8 @@ namespace KRSDealerManagement.Shared.Constants
         public const string ShowroomStock = "admin_showroom_stock";
         public const string DealerStock = "admin_dealer_stock";
         public const string StatusLookups = "admin_status_lookups";
+        public const string WarrantyClaims = "admin_warranty_claims";
+        public const string WarrantyParts = "admin_warranty_parts";
 
         public static IReadOnlyList<(string Key, string Name)> AllAdminMenus() => new List<(string, string)>
         {
@@ -65,6 +67,8 @@ namespace KRSDealerManagement.Shared.Constants
             (DealerStock, "Dealer Stock"),
             (ShowroomStock, "Subdealer Stock"),
             (Returns, "Return Requests"),
+            (WarrantyClaims, "Warranty Claims"),
+            (WarrantyParts, "Warranty Parts"),
             (Payments, "Payment Approvals"),
             (Reports, "Reports"),
             (StaffUsers, "Staff Users"),
@@ -86,7 +90,7 @@ namespace KRSDealerManagement.Shared.Constants
                 },
                 UserRoleEnum.DealerBranchManager => new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 {
-                    Subdealers, Orders, Vehicles, DealerStock, ShowroomStock, VehicleBookings, BookedToCustomerView, Returns, Balances
+                    Subdealers, Orders, Vehicles, DealerStock, ShowroomStock, VehicleBookings, BookedToCustomerView, Returns, WarrantyClaims, Balances
                 },
                 _ => new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             };
@@ -283,6 +287,27 @@ namespace KRSDealerManagement.Shared.Constants
                     ParentName = "Manage Vehicles",
                     Icon = "bi-journal-check",
                     Children = GetManageVehiclesMenuItems()
+                },
+                new()
+                {
+                    ParentKey = "warranty",
+                    ParentName = "Warranty",
+                    Icon = "bi-shield-check",
+                    Children = new[]
+                    {
+                        new MenuItemDefinition
+                        {
+                            Key = WarrantyClaims, Name = "Warranty Claims",
+                            Controller = "WarrantyClaims", Action = "Index", Icon = "bi-clipboard-check",
+                            Actions = new[] { "Index", "Details", "Approve", "Reject", "RequestInfo", "Export" }
+                        },
+                        new MenuItemDefinition
+                        {
+                            Key = WarrantyParts, Name = "Warranty Parts",
+                            Controller = "WarrantyParts", Action = "Index", Icon = "bi-tools",
+                            Actions = new[] { "Index", "Create", "Edit" }
+                        }
+                    }
                 },
                 new()
                 {

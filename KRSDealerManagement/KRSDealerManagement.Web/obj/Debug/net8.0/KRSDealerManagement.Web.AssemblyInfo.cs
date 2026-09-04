@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("KRSDealerManagement.Web")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+56aede467ac674f403df490209b69dfea285357d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ebc8a219ec3b8f1b37340331aca2b0b5d4d3e9d2")]
 [assembly: System.Reflection.AssemblyProductAttribute("KRSDealerManagement.Web")]
 [assembly: System.Reflection.AssemblyTitleAttribute("KRSDealerManagement.Web")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

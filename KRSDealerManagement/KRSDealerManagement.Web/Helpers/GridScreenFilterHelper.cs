@@ -312,5 +312,53 @@ namespace KRSDealerManagement.Web.Helpers
                     ["sort"] = s => s.SortOrder.ToString(),
                     ["status"] = s => s.IsActive ? "Active" : "Inactive"
                 });
+
+        public static IEnumerable<Application.DTOs.WarrantyClaimDto> ApplyWarrantyClaims(
+            IEnumerable<Application.DTOs.WarrantyClaimDto> rows,
+            IReadOnlyDictionary<string, string>? filters)
+            => GridRowFilterApplier.Apply(GridScreenIds.WarrantyClaims, rows, filters,
+                new Dictionary<string, Func<Application.DTOs.WarrantyClaimDto, string?>>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["claimNo"] = c => c.ClaimNumber,
+                    ["type"] = c => c.ClaimType,
+                    ["chassis"] = c => c.ChassisNo,
+                    ["customer"] = c => c.CustomerName,
+                    ["part"] = c => c.PartName,
+                    ["subdealer"] = c => c.AccountName,
+                    ["location"] = c => c.DealershipName,
+                    ["status"] = c => c.StatusName
+                },
+                new Dictionary<string, Func<Application.DTOs.WarrantyClaimDto, DateTime?>>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["submitted"] = c => c.SubmittedDate
+                });
+
+        public static IEnumerable<Application.DTOs.WarrantyClaimDto> ApplyMyWarrantyClaims(
+            IEnumerable<Application.DTOs.WarrantyClaimDto> rows,
+            IReadOnlyDictionary<string, string>? filters)
+            => GridRowFilterApplier.Apply(GridScreenIds.MyWarrantyClaims, rows, filters,
+                new Dictionary<string, Func<Application.DTOs.WarrantyClaimDto, string?>>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["claimNo"] = c => c.ClaimNumber,
+                    ["type"] = c => c.ClaimType,
+                    ["chassis"] = c => c.ChassisNo,
+                    ["part"] = c => c.PartName,
+                    ["status"] = c => c.StatusName
+                },
+                new Dictionary<string, Func<Application.DTOs.WarrantyClaimDto, DateTime?>>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["submitted"] = c => c.SubmittedDate
+                });
+
+        public static IEnumerable<Domain.Entities.WarrantyPartMaster> ApplyWarrantyParts(
+            IEnumerable<Domain.Entities.WarrantyPartMaster> rows,
+            IReadOnlyDictionary<string, string>? filters)
+            => GridRowFilterApplier.Apply(GridScreenIds.WarrantyParts, rows, filters,
+                new Dictionary<string, Func<Domain.Entities.WarrantyPartMaster, string?>>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["name"] = p => p.PartName,
+                    ["code"] = p => p.PartCode,
+                    ["status"] = p => p.IsActive ? "Active" : "Inactive"
+                });
     }
 }

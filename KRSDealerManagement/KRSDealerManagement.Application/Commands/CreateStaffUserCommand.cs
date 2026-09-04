@@ -12,5 +12,7 @@ namespace KRSDealerManagement.Application.Commands
         public int RoleId { get; set; }
         public int DealershipId { get; set; }
         public int CreatedBy { get; set; }
+        public bool CanExport { get; set; } = true;
+        public bool CanEditWarrantyClaims { get; set; }
     }
 }

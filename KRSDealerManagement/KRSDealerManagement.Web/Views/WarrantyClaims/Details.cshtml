@@ -1,0 +1,197 @@
+@model KRSDealerManagement.Application.DTOs.WarrantyClaimDetailDto
+@using KRSDealerManagement.Shared.Constants
+@{
+    ViewData["Title"] = $"Claim {Model.ClaimNumber}";
+    var isStaff = ViewBag.IsStaff as bool? ?? false;
+    var isSystemAdmin = ViewBag.IsSystemAdmin as bool? ?? false;
+}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1 class="m-0"><i class="bi bi-shield-check"></i> @Model.ClaimNumber</h1>
+        <p class="text-muted">@Model.ClaimType claim · <span class="badge @(Model.StatusBadgeClass ?? "bg-secondary")">@(Model.StatusName ?? Model.Status.ToString())</span></p>
+    </div>
+    <div class="col-md-4 text-end">
+        @if (!isStaff && WarrantyClaimStatus.IsSubdealerEditable(Model.Status))
+        {
+            <a href="@Url.Action("Edit", new { id = Model.WarrantyClaimId })" class="btn btn-primary">Edit Claim</a>
+        }
+        <a href="@(isStaff ? Url.Action("Index") : Url.Action("MyClaims"))" class="btn btn-outline-secondary">Back</a>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.MoreInfoNotes))
+{
+    <div class="alert alert-info"><strong>More info requested:</strong> @Model.MoreInfoNotes</div>
+}
+@if (!string.IsNullOrWhiteSpace(Model.RejectionReason))
+{
+    <div class="alert alert-danger"><strong>Rejected:</strong> @Model.RejectionReason</div>
+}
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-3">
+            <div class="card-header"><strong>Vehicle & Customer</strong></div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-md-6"><small class="text-muted">Chassis</small><div>@Model.ChassisNo</div></div>
+                    <div class="col-md-3"><small class="text-muted">Model</small><div>@Model.ModelName</div></div>
+                    <div class="col-md-3"><small class="text-muted">Color</small><div>@Model.ColorName</div></div>
+                    <div class="col-md-4"><small class="text-muted">Customer</small><div>@Model.CustomerName</div></div>
+                    <div class="col-md-4"><small class="text-muted">Customer Mobile</small><div>@Model.CustomerMobile</div></div>
+                    <div class="col-md-4"><small class="text-muted">KMs</small><div>@Model.CurrentKms</div></div>
+                    <div class="col-md-4"><small class="text-muted">Contact Person</small><div>@Model.ContactPerson</div></div>
+                    <div class="col-md-4"><small class="text-muted">Contact Mobile</small><div>@Model.ContactMobile</div></div>
+                    <div class="col-md-4"><small class="text-muted">Sale Date</small><div>@(Model.SaleDate?.ToString("dd-MMM-yyyy") ?? "—")</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header"><strong>Failure Details</strong></div>
+            <div class="card-body">
+                <div class="row g-2 mb-2">
+                    <div class="col-md-4"><small class="text-muted">Part</small><div>@Model.PartName</div></div>
+                    <div class="col-md-4"><small class="text-muted">Part Code</small><div>@Model.PartCode</div></div>
+                    <div class="col-md-4"><small class="text-muted">Serial #</small><div>@Model.FailurePartSerialNumber</div></div>
+                </div>
+                <div class="mb-2"><small class="text-muted">Customer Complaint</small><div>@Model.CustomerComplaint</div></div>
+                <div class="mb-2"><small class="text-muted">Dealer Observation</small><div>@Model.DealerObservation</div></div>
+                <div><small class="text-muted">Remarks</small><div>@Model.Remarks</div></div>
+            </div>
+        </div>
+
+        @if (Model.Attachments.Any())
+        {
+            <div class="card mb-3">
+                <div class="card-header"><strong>Attachments</strong></div>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <tbody>
+                            @foreach (var a in Model.Attachments)
+                            {
+                                <tr>
+                                    <td>@a.AttachmentTypeName</td>
+                                    <td class="text-end">
+                                        <a href="@Url.Action("DownloadAttachment", new { id = Model.WarrantyClaimId, path = a.FilePath })" class="btn btn-sm btn-outline-secondary" target="_blank">Download</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card mb-3">
+            <div class="card-header"><strong>Lifecycle</strong></div>
+            <div class="card-body small">
+                <div class="mb-1">Submitted: @(Model.SubmittedDate?.ToString("dd-MMM-yyyy HH:mm") ?? "—")</div>
+                <div class="mb-1">Applied to Ampere: @(Model.AmpereAppliedDate?.ToString("dd-MMM-yyyy HH:mm") ?? "—") @Model.AmpereAppliedByName</div>
+                <div class="mb-1">Product received: @(Model.ProductReceivedDate?.ToString("dd-MMM-yyyy HH:mm") ?? "—") @Model.ProductReceivedByName</div>
+                <div class="mb-1">Collected: @(Model.CollectedDate?.ToString("dd-MMM-yyyy HH:mm") ?? "—") @Model.CollectedByName</div>
+                <div class="mb-1">Defective submitted: @(Model.DefectiveSubmittedDate?.ToString("dd-MMM-yyyy HH:mm") ?? "—") @Model.DefectiveSubmittedByName</div>
+                <div>Sent to Ampere: @(Model.DefectiveSentToAmpereDate?.ToString("dd-MMM-yyyy HH:mm") ?? "—") @Model.DefectiveSentToAmpereByName</div>
+            </div>
+        </div>
+
+        @if (isStaff)
+        {
+            <div class="card mb-3">
+                <div class="card-header"><strong>Staff Actions</strong></div>
+                <div class="card-body">
+                    @if (WarrantyClaimStatus.CanStaffReview(Model.Status))
+                    {
+                        <form method="post" asp-action="Approve" class="mb-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.WarrantyClaimId" />
+                            <button type="submit" class="btn btn-success btn-sm w-100">Approve</button>
+                        </form>
+                        <form method="post" asp-action="RequestInfo" class="mb-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.WarrantyClaimId" />
+                            <textarea name="notes" class="form-control form-control-sm mb-1" placeholder="What info is needed?" required></textarea>
+                            <button type="submit" class="btn btn-info btn-sm w-100">Request More Info</button>
+                        </form>
+                        <form method="post" asp-action="Reject">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.WarrantyClaimId" />
+                            <textarea name="notes" class="form-control form-control-sm mb-1" placeholder="Rejection reason" required></textarea>
+                            <button type="submit" class="btn btn-danger btn-sm w-100">Reject</button>
+                        </form>
+                    }
+                    @if (WarrantyClaimStatus.CanApplyToAmpere(Model.Status))
+                    {
+                        <form method="post" asp-action="ApplyToAmpere" class="mt-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.WarrantyClaimId" />
+                            <button type="submit" class="btn btn-primary btn-sm w-100">Mark Applied to Ampere</button>
+                        </form>
+                    }
+                    @if (WarrantyClaimStatus.CanMarkProductReceived(Model.Status))
+                    {
+                        <form method="post" asp-action="MarkProductReceived" class="mt-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.WarrantyClaimId" />
+                            <button type="submit" class="btn btn-primary btn-sm w-100">Mark Product Received</button>
+                        </form>
+                    }
+                    @if (WarrantyClaimStatus.CanMarkDefectiveSentToAmpere(Model.Status))
+                    {
+                        <form method="post" asp-action="MarkDefectiveSentToAmpere" class="mt-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.WarrantyClaimId" />
+                            <button type="submit" class="btn btn-dark btn-sm w-100">Mark Defective Sent to Ampere</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card mb-3">
+                <div class="card-header"><strong>Your Actions</strong></div>
+                <div class="card-body">
+                    @if (WarrantyClaimStatus.CanSubdealerCollect(Model.Status))
+                    {
+                        <form method="post" asp-action="MarkCollected">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.WarrantyClaimId" />
+                            <button type="submit" class="btn btn-primary btn-sm w-100">Confirm Product Collected</button>
+                        </form>
+                    }
+                    @if (WarrantyClaimStatus.CanSubdealerSubmitDefective(Model.Status))
+                    {
+                        <form method="post" asp-action="MarkDefectiveSubmitted" class="mt-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.WarrantyClaimId" />
+                            <button type="submit" class="btn btn-warning btn-sm w-100">Submit Defective Product</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (Model.History.Any())
+        {
+            <div class="card">
+                <div class="card-header"><strong>History</strong></div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush small">
+                        @foreach (var h in Model.History)
+                        {
+                            <li class="list-group-item">
+                                <div><strong>@(h.ToStatusName ?? h.ToStatus.ToString())</strong> · @h.ChangedDate.ToString("dd-MMM-yyyy HH:mm")</div>
+                                <div class="text-muted">@h.ChangedByName</div>
+                                @if (!string.IsNullOrWhiteSpace(h.Notes)) { <div>@h.Notes</div> }
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        }
+    </div>
+</div>

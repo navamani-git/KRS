@@ -35,7 +35,9 @@ namespace KRSDealerManagement.Application.Services
             RoleTemplateCodes.Subdealer,
             RoleTemplateCodes.Manager,
             RoleTemplateCodes.FinanceManager,
-            RoleTemplateCodes.InsuranceRtoManager
+            RoleTemplateCodes.InsuranceRtoManager,
+            RoleTemplateCodes.WarrantyManager,
+            RoleTemplateCodes.WarrantyStaff
         };
 
         private readonly IUnitOfWork _unitOfWork;
@@ -137,7 +139,8 @@ namespace KRSDealerManagement.Application.Services
         {
             var code = templateCode.Trim().ToUpperInvariant();
             if (code is RoleTemplateCodes.Manager or RoleTemplateCodes.FinanceManager
-                or RoleTemplateCodes.InsuranceRtoManager or RoleTemplateCodes.Custom)
+                or RoleTemplateCodes.InsuranceRtoManager or RoleTemplateCodes.WarrantyManager
+                or RoleTemplateCodes.WarrantyStaff or RoleTemplateCodes.Custom)
             {
                 return RoleTemplateDefaults.BuildSuggestedRoleCode(dealershipCode, code);
             }

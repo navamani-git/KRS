@@ -22,6 +22,7 @@ namespace KRSDealerManagement.Application.Services
                     [StaffMenuAccess.VehicleBookings] = MenuAccessLevel.Full,
                     [StaffMenuAccess.BookedToCustomerView] = MenuAccessLevel.Full,
                     [StaffMenuAccess.Returns] = MenuAccessLevel.Full,
+                    [StaffMenuAccess.WarrantyClaims] = MenuAccessLevel.Full,
                     [StaffMenuAccess.Balances] = MenuAccessLevel.ReadOnly,
                     [StaffMenuAccess.ChassisHistory] = MenuAccessLevel.ReadOnly,
                 },
@@ -41,6 +42,16 @@ namespace KRSDealerManagement.Application.Services
                     [StaffMenuAccess.RtoLocations] = MenuAccessLevel.ReadOnly,
                     [StaffMenuAccess.ChassisHistory] = MenuAccessLevel.ReadOnly,
                     [StaffMenuAccess.Vehicles] = MenuAccessLevel.ReadOnly,
+                },
+                RoleTemplateCodes.WarrantyManager => new Dictionary<string, MenuAccessLevel>(StringComparer.OrdinalIgnoreCase)
+                {
+                    [StaffMenuAccess.WarrantyClaims] = MenuAccessLevel.Full,
+                    [StaffMenuAccess.WarrantyParts] = MenuAccessLevel.Full,
+                },
+                RoleTemplateCodes.WarrantyStaff => new Dictionary<string, MenuAccessLevel>(StringComparer.OrdinalIgnoreCase)
+                {
+                    [StaffMenuAccess.WarrantyClaims] = MenuAccessLevel.Full,
+                    [StaffMenuAccess.WarrantyParts] = MenuAccessLevel.ReadOnly,
                 },
                 _ => new Dictionary<string, MenuAccessLevel>(StringComparer.OrdinalIgnoreCase)
             };
@@ -64,6 +75,8 @@ namespace KRSDealerManagement.Application.Services
             {
                 RoleTemplateCodes.FinanceManager => "FINANCE_MANAGER",
                 RoleTemplateCodes.InsuranceRtoManager => "INSURANCE_RTO_MANAGER",
+                RoleTemplateCodes.WarrantyManager => "WARRANTY_MANAGER",
+                RoleTemplateCodes.WarrantyStaff => "WARRANTY_STAFF",
                 RoleTemplateCodes.Manager => "MANAGER",
                 _ => "STAFF"
             };

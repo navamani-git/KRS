@@ -57,6 +57,9 @@ namespace KRSDealerManagement.Domain.Entities
         /// <summary>Whether this user may download Excel exports.</summary>
         public bool CanExport { get; set; } = true;
 
+        /// <summary>Warranty manager/staff may edit claim details when granted by admin.</summary>
+        public bool CanEditWarrantyClaims { get; set; }
+
         /// <summary>Comma-separated dashboard quick-action keys (null = defaults).</summary>
         public string? QuickActionKeys { get; set; }
 

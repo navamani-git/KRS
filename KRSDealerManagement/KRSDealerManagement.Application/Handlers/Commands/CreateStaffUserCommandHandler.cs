@@ -62,6 +62,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 UserRole = legacyRole,
                 PhoneNumber = request.PhoneNumber?.Trim() ?? "",
                 IsActive = true,
+                CanExport = request.CanExport,
+                CanEditWarrantyClaims = request.CanEditWarrantyClaims,
                 CreatedDate = DateTime.UtcNow,
                 ModifiedDate = DateTime.UtcNow
             });

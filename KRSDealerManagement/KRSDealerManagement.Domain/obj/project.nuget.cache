@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "YnY71TD4Fk8=",
+  "dgSpecHash": "goxErm1x4YY=",
   "success": true,
-  "projectFilePath": "d:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Domain\\KRSDealerManagement.Domain.csproj",
+  "projectFilePath": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Domain\\KRSDealerManagement.Domain.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\USER\\.nuget\\packages\\automapper\\16.2.0\\automapper.16.2.0.nupkg.sha512",
     "C:\\Users\\USER\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\10.0.0\\microsoft.extensions.dependencyinjection.abstractions.10.0.0.nupkg.sha512",

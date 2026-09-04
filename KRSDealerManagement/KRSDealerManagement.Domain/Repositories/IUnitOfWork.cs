@@ -118,6 +118,11 @@ namespace KRSDealerManagement.Domain.Repositories
         IRepository<RtoDistrictMaster> RtoDistricts { get; }
         IRepository<RtoLocationMaster> RtoLocations { get; }
         IRepository<VehicleBooking> VehicleBookings { get; }
+        IRepository<WarrantyPartMaster> WarrantyParts { get; }
+        IRepository<WarrantyClaim> WarrantyClaims { get; }
+        IRepository<WarrantyClaimServiceEntry> WarrantyClaimServiceEntries { get; }
+        IRepository<WarrantyClaimAttachment> WarrantyClaimAttachments { get; }
+        IRepository<WarrantyClaimStatusHistory> WarrantyClaimStatusHistories { get; }
 
         Task UpdateVehicleBookingStatusAsync(int bookingId, int bookingStatus, int? modifiedBy);
 

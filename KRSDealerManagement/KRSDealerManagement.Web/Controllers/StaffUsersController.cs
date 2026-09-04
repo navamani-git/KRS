@@ -61,7 +61,8 @@ namespace KRSDealerManagement.Web.Controllers
         public async Task<IActionResult> Create(
             string fullName, string username, string password,
             int roleId, int dealershipId,
-            string? email, string? phoneNumber)
+            string? email, string? phoneNumber,
+            bool canExport = true, bool canEditWarrantyClaims = false)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
@@ -77,7 +78,9 @@ namespace KRSDealerManagement.Web.Controllers
                     DealershipId = dealershipId,
                     Email = email,
                     PhoneNumber = phoneNumber,
-                    CreatedBy = userId.Value
+                    CreatedBy = userId.Value,
+                    CanExport = canExport,
+                    CanEditWarrantyClaims = canEditWarrantyClaims
                 });
 
                 TempData["Success"] = $"Staff user created successfully (login: {username.Trim().ToLowerInvariant()}).";
@@ -106,7 +109,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, string fullName, string username, string? email, string? phoneNumber, int dealershipId, int roleId, bool isActive, bool canExport, string? password)
+        public async Task<IActionResult> Edit(int id, string fullName, string username, string? email, string? phoneNumber, int dealershipId, int roleId, bool isActive, bool canExport, bool canEditWarrantyClaims, string? password)
         {
             var user = await _unitOfWork.Users.GetByIdAsync(id);
             var assignment = (await _unitOfWork.UserOrgRoles.GetAllAsync()).FirstOrDefault(a => a.UserId == id && a.IsActive);
@@ -162,6 +165,7 @@ namespace KRSDealerManagement.Web.Controllers
             user.PhoneNumber = phoneNumber?.Trim() ?? "";
             user.IsActive = isActive;
             user.CanExport = canExport;
+            user.CanEditWarrantyClaims = canEditWarrantyClaims;
             user.UserRole = Application.Services.RoleTemplateDefaults.MapTemplateToLegacyUserRole(selectedRole.RoleTemplateCode);
             if (!string.IsNullOrWhiteSpace(password))
                 user.PasswordHash = password.Trim();

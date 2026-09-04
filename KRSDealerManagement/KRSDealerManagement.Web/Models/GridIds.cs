@@ -27,5 +27,8 @@ namespace KRSDealerManagement.Web.Models
         public const string Vehicles = KRSDealerManagement.Shared.Constants.GridScreenIds.Vehicles;
         public const string ShowroomStock = KRSDealerManagement.Shared.Constants.GridScreenIds.ShowroomStock;
         public const string DealerStock = KRSDealerManagement.Shared.Constants.GridScreenIds.DealerStock;
+        public const string WarrantyClaims = KRSDealerManagement.Shared.Constants.GridScreenIds.WarrantyClaims;
+        public const string MyWarrantyClaims = KRSDealerManagement.Shared.Constants.GridScreenIds.MyWarrantyClaims;
+        public const string WarrantyParts = KRSDealerManagement.Shared.Constants.GridScreenIds.WarrantyParts;
     }
 }

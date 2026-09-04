@@ -83,6 +83,16 @@
                             <input type="tel" name="phoneNumber" class="form-control" placeholder="Optional" />
                         </div>
                     </div>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="canExport" value="true" id="canExport" checked />
+                        <label class="form-check-label" for="canExport">Allow Excel export</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="canEditWarrantyClaims" value="true" id="canEditWarrantyClaims" />
+                        <label class="form-check-label" for="canEditWarrantyClaims">Allow warranty claim editing</label>
+                        <div class="form-text">Grant for warranty manager/staff who should edit claim details.</div>
+                    </div>
                 </div>
                 <div class="card-footer">
                     <button type="submit" class="btn btn-primary"><i class="bi bi-person-plus"></i> Create Staff User</button>

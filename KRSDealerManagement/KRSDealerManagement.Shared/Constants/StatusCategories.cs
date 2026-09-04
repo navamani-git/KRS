@@ -11,6 +11,7 @@ namespace KRSDealerManagement.Shared.Constants
         public const string Commission = "COMMISSION";
 
         public const string Vehicle = "VEHICLE";
+        public const string Warranty = "WARRANTY";
 
 
 
@@ -31,10 +32,9 @@ namespace KRSDealerManagement.Shared.Constants
         {
 
             (Vehicle, "Vehicle Lifecycle"),
-
             (Payment, "Payments"),
-
-            (Commission, "Commissions")
+            (Commission, "Commissions"),
+            (Warranty, "Warranty Claims")
 
         };
 

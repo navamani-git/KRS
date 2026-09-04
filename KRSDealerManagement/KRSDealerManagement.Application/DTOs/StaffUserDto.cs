@@ -14,6 +14,7 @@ namespace KRSDealerManagement.Application.DTOs
         public string? DealershipName { get; set; }
         public bool IsActive { get; set; }
         public bool CanExport { get; set; } = true;
+        public bool CanEditWarrantyClaims { get; set; }
         public string? PasswordHash { get; set; }
         public DateTime CreatedDate { get; set; }
 

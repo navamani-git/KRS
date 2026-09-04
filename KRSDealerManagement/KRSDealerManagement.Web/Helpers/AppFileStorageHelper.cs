@@ -14,6 +14,7 @@ namespace KRSDealerManagement.Web.Helpers
             public const string VehicleBooking = "vehicle_booking";
             public const string InsuranceInvoice = "Insurance_Invoice";
             public const string Import = "Import";
+            public const string Warranty = "Warranty";
         }
 
         public static string ToRelativePath(string section, string dateFolder, string fileName)

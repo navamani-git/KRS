@@ -33,6 +33,9 @@ namespace KRSDealerManagement.Web.Helpers
                 GridIds.VehicleModels => VehicleModels(),
                 GridIds.ShowroomStock => ShowroomStock(),
                 GridIds.DealerStock => DealerStock(showDealership),
+                GridIds.WarrantyClaims => WarrantyClaims(),
+                GridIds.MyWarrantyClaims => MyWarrantyClaims(),
+                GridIds.WarrantyParts => WarrantyParts(),
                 _ => Array.Empty<GridFilterColumn>()
             };
         }
@@ -397,5 +400,41 @@ namespace KRSDealerManagement.Web.Helpers
             });
             return cols;
         }
+
+        private static List<GridFilterColumn> WarrantyClaims() => new()
+        {
+            GridFilterColumn.Skip(),
+            GridFilterColumn.Combo("claimNo", "Claim #"),
+            GridFilterColumn.Select("type", "WARRANTY", "CAMPAIGN"),
+            GridFilterColumn.Combo("chassis", "Chassis"),
+            GridFilterColumn.Combo("customer", "Customer"),
+            GridFilterColumn.Combo("part", "Part"),
+            GridFilterColumn.Combo("subdealer", "Subdealer"),
+            GridFilterColumn.Combo("location", "Location"),
+            GridFilterColumn.Combo("status", "Status"),
+            GridFilterColumn.DateCol("submitted", "Submitted"),
+            GridFilterColumn.Actions()
+        };
+
+        private static List<GridFilterColumn> MyWarrantyClaims() => new()
+        {
+            GridFilterColumn.Skip(),
+            GridFilterColumn.Combo("claimNo", "Claim #"),
+            GridFilterColumn.Select("type", "WARRANTY", "CAMPAIGN"),
+            GridFilterColumn.Combo("chassis", "Chassis"),
+            GridFilterColumn.Combo("part", "Part"),
+            GridFilterColumn.Combo("status", "Status"),
+            GridFilterColumn.DateCol("submitted", "Submitted"),
+            GridFilterColumn.Actions()
+        };
+
+        private static List<GridFilterColumn> WarrantyParts() => new()
+        {
+            GridFilterColumn.Skip(),
+            GridFilterColumn.Combo("name", "Part Name"),
+            GridFilterColumn.Combo("code", "Part Code"),
+            GridFilterColumn.Select("status", "Active", "Inactive"),
+            GridFilterColumn.Actions()
+        };
     }
 }

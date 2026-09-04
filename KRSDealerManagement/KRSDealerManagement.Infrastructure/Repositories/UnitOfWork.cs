@@ -48,6 +48,11 @@ namespace KRSDealerManagement.Infrastructure.Repositories
         private IRepository<RtoDistrictMaster> _rtoDistricts;
         private IRepository<RtoLocationMaster> _rtoLocations;
         private IRepository<VehicleBooking> _vehicleBookings;
+        private IRepository<WarrantyPartMaster> _warrantyParts;
+        private IRepository<WarrantyClaim> _warrantyClaims;
+        private IRepository<WarrantyClaimServiceEntry> _warrantyClaimServiceEntries;
+        private IRepository<WarrantyClaimAttachment> _warrantyClaimAttachments;
+        private IRepository<WarrantyClaimStatusHistory> _warrantyClaimStatusHistories;
 
         public UnitOfWork(ApplicationDbContext context)
         {
@@ -88,6 +93,11 @@ namespace KRSDealerManagement.Infrastructure.Repositories
         public IRepository<RtoDistrictMaster> RtoDistricts => _rtoDistricts ??= new Repository<RtoDistrictMaster>(_context, "RtoDistrictMasters", "RtoDistrictId");
         public IRepository<RtoLocationMaster> RtoLocations => _rtoLocations ??= new Repository<RtoLocationMaster>(_context, "RtoLocationMasters", "RtoLocationId");
         public IRepository<VehicleBooking> VehicleBookings => _vehicleBookings ??= new VehicleBookingRepository(_context);
+        public IRepository<WarrantyPartMaster> WarrantyParts => _warrantyParts ??= new Repository<WarrantyPartMaster>(_context, "WarrantyParts", "WarrantyPartId");
+        public IRepository<WarrantyClaim> WarrantyClaims => _warrantyClaims ??= new WarrantyClaimRepository(_context);
+        public IRepository<WarrantyClaimServiceEntry> WarrantyClaimServiceEntries => _warrantyClaimServiceEntries ??= new Repository<WarrantyClaimServiceEntry>(_context, "WarrantyClaimServiceEntries", "ServiceEntryId");
+        public IRepository<WarrantyClaimAttachment> WarrantyClaimAttachments => _warrantyClaimAttachments ??= new Repository<WarrantyClaimAttachment>(_context, "WarrantyClaimAttachments", "AttachmentId");
+        public IRepository<WarrantyClaimStatusHistory> WarrantyClaimStatusHistories => _warrantyClaimStatusHistories ??= new Repository<WarrantyClaimStatusHistory>(_context, "WarrantyClaimStatusHistory", "HistoryId");
 
         public async Task UpdateVehicleBookingStatusAsync(int bookingId, int vehicleStatus, int? modifiedBy)
         {
