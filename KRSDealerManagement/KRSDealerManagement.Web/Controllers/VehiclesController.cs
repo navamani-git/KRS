@@ -427,6 +427,7 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.VehicleStatuses = (await _statuses.GetActiveByCategoryAsync(StatusCategories.Vehicle))
                 .Where(s => s.StatusValue != UnifiedVehicleStatus.Submitted
                     && s.StatusValue != UnifiedVehicleStatus.RejectedByDealer
+                    && s.StatusValue != UnifiedVehicleStatus.BookedToCustomer
                     && !UnifiedVehicleStatus.IsReturnPhase(s.StatusValue));
             ViewBag.BookingStatuses = (await _statuses.GetActiveByCategoryAsync(StatusCategories.Vehicle))
                 .Where(s => s.StatusValue >= UnifiedVehicleStatus.BookedToCustomer);

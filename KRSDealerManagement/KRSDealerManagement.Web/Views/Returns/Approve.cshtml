@@ -42,7 +42,7 @@
 
         <div class="card-body">
 
-            <p>Approving will <strong class="text-success">credit</strong> @Model.AccountName and return the vehicle to the <strong>dealer showroom</strong>.</p>
+            <p>Approving will <strong class="text-success">credit</strong> @Model.AccountName and return the vehicle to <strong>@Model.DealershipLocation</strong> showroom stock.</p>
 
 
 
@@ -70,7 +70,7 @@
 
                 <label class="fw-bold">Vehicle destination</label>
 
-                <p class="mb-0 text-muted">Dealer showroom stock</p>
+                <p class="mb-0 text-muted">@Model.DealershipLocation showroom stock</p>
 
             </div>
 

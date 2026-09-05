@@ -4,15 +4,13 @@
     ViewData["Title"] = "Add Staff Role";
     var dealerships = ViewBag.Dealerships as IEnumerable<KRSDealerManagement.Application.Queries.DealershipDto>
         ?? Enumerable.Empty<KRSDealerManagement.Application.Queries.DealershipDto>();
-    var templates = ViewBag.Templates as IEnumerable<(string Code, string Name, string Description)>
-        ?? RoleTemplateCodes.All;
     ViewData["RoleForm"] = Model;
 }
 
 <div class="row mb-3">
     <div class="col-md-8">
         <h1 class="m-0"><i class="bi bi-plus-circle"></i> Add Staff Role</h1>
-        <p class="text-muted mb-0">Create a regional role and choose which menu sections staff can access.</p>
+        <p class="text-muted mb-0">Create a regional role and choose which menus staff can access.</p>
     </div>
     <div class="col-md-4 text-end">
         <a href="@Url.Action("Index")" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
@@ -21,6 +19,7 @@
 
 <form method="post">
     @Html.AntiForgeryToken()
+    <input type="hidden" name="RoleTemplateCode" value="@RoleTemplateCodes.Custom" />
 
     <div class="card card-primary mb-3">
         <div class="card-header"><h3 class="card-title mb-0">Role Details</h3></div>
@@ -37,25 +36,15 @@
                     </select>
                 </div>
                 <div class="col-md-6 col-lg-4">
-                    <label class="form-label fw-bold">Role Template <span class="text-danger">*</span></label>
-                    <select name="RoleTemplateCode" id="roleTemplate" class="form-select" required>
-                        @foreach (var t in templates)
-                        {
-                            <option value="@t.Code" selected="@(Model.RoleTemplateCode == t.Code)">@t.Name</option>
-                        }
-                    </select>
-                    <small class="text-muted" id="templateHint"></small>
-                </div>
-                <div class="col-md-6 col-lg-4">
                     <label class="form-label fw-bold">Display Name <span class="text-danger">*</span></label>
                     <input type="text" name="RoleName" id="roleName" class="form-control" value="@Model.RoleName" required placeholder="e.g., Salem Manager" />
                 </div>
                 <div class="col-md-6 col-lg-4">
                     <label class="form-label fw-bold">Role Code <span class="text-danger">*</span></label>
                     <input type="text" name="RoleCode" id="roleCode" class="form-control" value="@Model.RoleCode" required placeholder="Auto-suggested" />
-                    <small class="text-muted">Auto-filled from dealership + template; edit only if needed.</small>
+                    <small class="text-muted">Auto-filled from dealership; edit only if needed.</small>
                 </div>
-                <div class="col-md-6 col-lg-8">
+                <div class="col-md-12">
                     <label class="form-label fw-bold">Description</label>
                     <input type="text" name="Description" class="form-control" value="@Model.Description" placeholder="Optional note about this role" />
                 </div>
@@ -73,38 +62,15 @@
 
 @section Scripts {
 <script>
-    const templateDescriptions = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-        templates.ToDictionary(t => t.Code, t => t.Description, StringComparer.OrdinalIgnoreCase)));
-
-    function updateTemplateHint() {
-        const code = document.getElementById('roleTemplate').value;
-        document.getElementById('templateHint').textContent = templateDescriptions[code] || '';
-    }
-
     async function refreshSuggestedCode() {
         const dealershipId = document.getElementById('dealershipId').value;
-        const templateCode = document.getElementById('roleTemplate').value;
-        if (!dealershipId || !templateCode) return;
-        const res = await fetch('@Url.Action("SuggestCode")?dealershipId=' + encodeURIComponent(dealershipId) + '&templateCode=' + encodeURIComponent(templateCode));
+        if (!dealershipId) return;
+        const res = await fetch('@Url.Action("SuggestCode")?dealershipId=' + encodeURIComponent(dealershipId));
         const data = await res.json();
         if (data.code) document.getElementById('roleCode').value = data.code;
     }
 
-    async function reloadTemplateDefaults() {
-        const templateCode = document.getElementById('roleTemplate').value;
-        const res = await fetch('@Url.Action("TemplateDefaults")?templateCode=' + encodeURIComponent(templateCode));
-        const defaults = await res.json();
-        KrsStaffRoleMenu.applyDefaults(defaults);
-    }
-
-    document.getElementById('roleTemplate').addEventListener('change', async function () {
-        updateTemplateHint();
-        await reloadTemplateDefaults();
-        await refreshSuggestedCode();
-    });
     document.getElementById('dealershipId').addEventListener('change', refreshSuggestedCode);
-
-    updateTemplateHint();
     refreshSuggestedCode();
 </script>
 }

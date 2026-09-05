@@ -22,7 +22,8 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.DistrictNames = districts;
             var list = GridScreenFilterHelper.ApplyRtoLocations(
                 (await _unitOfWork.RtoLocations.GetAllAsync()).OrderByDescending(r => r.IsActive).ThenBy(r => r.LocationName),
-                columnFilters).ToList();
+                columnFilters,
+                districts).ToList();
             var (pageItems, pageInfo) = ListPagingHelper.Paginate(list, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
             return View(pageItems);

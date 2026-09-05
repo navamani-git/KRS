@@ -5,6 +5,33 @@ namespace KRSDealerManagement.Shared.Constants
         public required string ParentKey { get; init; }
         public required string ParentName { get; init; }
         public string? Icon { get; init; }
+        public IReadOnlyList<MenuItemDefinition> Children { get; init; } = Array.Empty<MenuItemDefinition>();
+        public IReadOnlyList<MenuSectionDefinition>? Sections { get; init; }
+
+        public bool HasSections => Sections is { Count: > 0 };
+
+        public IEnumerable<MenuItemDefinition> EnumerateChildren()
+        {
+            if (HasSections)
+            {
+                foreach (var section in Sections!)
+                {
+                    foreach (var child in section.Children)
+                        yield return child;
+                }
+                yield break;
+            }
+
+            foreach (var child in Children)
+                yield return child;
+        }
+    }
+
+    public class MenuSectionDefinition
+    {
+        public required string SectionKey { get; init; }
+        public required string SectionName { get; init; }
+        public string? Icon { get; init; }
         public required IReadOnlyList<MenuItemDefinition> Children { get; init; }
     }
 

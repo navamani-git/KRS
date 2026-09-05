@@ -87,11 +87,12 @@
                     <div class="form-check mb-2">
                         <input class="form-check-input" type="checkbox" name="canExport" value="true" id="canExport" checked />
                         <label class="form-check-label" for="canExport">Allow Excel export</label>
+                        <div class="form-text">When off, user cannot download Excel files from list screens.</div>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="canEditWarrantyClaims" value="true" id="canEditWarrantyClaims" />
-                        <label class="form-check-label" for="canEditWarrantyClaims">Allow warranty claim editing</label>
-                        <div class="form-text">Grant for warranty manager/staff who should edit claim details.</div>
+                        <label class="form-check-label" for="canEditWarrantyClaims">Warranty claim staff actions</label>
+                        <div class="form-text">For warranty manager/staff — approve, reject, save SO number, etc. Role must include Warranty Claims menu.</div>
                     </div>
                 </div>
                 <div class="card-footer">
@@ -108,9 +109,9 @@
             <div class="card-body">
                 <p class="fw-bold mb-1">How it works</p>
                 <ul class="small mb-0">
-                    <li>Create roles under <strong>Staff Roles</strong> first (template + menus).</li>
-                    <li>Pick the dealership, then choose a role for that region.</li>
-                    <li>Multiple users can share the same role.</li>
+                    <li>Create <strong>Staff Roles</strong> per dealership and set menus on the role.</li>
+                    <li>Pick the dealership, then choose a role for that location.</li>
+                    <li>Menu access is controlled by the role — options below are extra per-user settings only.</li>
                 </ul>
             </div>
         </div>

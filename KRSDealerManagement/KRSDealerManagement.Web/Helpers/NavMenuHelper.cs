@@ -13,11 +13,26 @@ namespace KRSDealerManagement.Web.Helpers
             {
                 foreach (var group in StaffMenuAccess.GetStaffMenuGroups())
                 {
-                    foreach (var item in group.Children
-                                 .Where(c => SessionHelper.HasMenuAccess(session, c.Key))
-                                 .OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase))
+                    if (group.HasSections)
                     {
-                        yield return (group.ParentName, item);
+                        foreach (var menuSection in group.Sections!)
+                        {
+                            foreach (var item in menuSection.Children
+                                         .Where(c => SessionHelper.HasMenuAccess(session, c.Key))
+                                         .OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase))
+                            {
+                                yield return ($"{group.ParentName} — {menuSection.SectionName}", item);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        foreach (var item in group.Children
+                                     .Where(c => SessionHelper.HasMenuAccess(session, c.Key))
+                                     .OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase))
+                        {
+                            yield return (group.ParentName, item);
+                        }
                     }
                 }
             }
@@ -119,6 +134,13 @@ namespace KRSDealerManagement.Web.Helpers
 
             return false;
         }
+
+        public static bool IsMenuSectionOpen(
+            string? currentController,
+            string? currentAction,
+            Microsoft.AspNetCore.Http.HttpRequest request,
+            IEnumerable<KRSDealerManagement.Shared.Constants.MenuItemDefinition> visibleItems)
+            => visibleItems.Any(c => IsMenuItemActive(currentController, currentAction, c, request));
 
         public static bool MenuItemRouteMatches(
             Microsoft.AspNetCore.Http.HttpRequest request,

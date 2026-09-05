@@ -1,6 +1,7 @@
 @model KRSDealerManagement.Domain.Entities.Vehicle
 @using KRSDealerManagement.Application.DTOs
 @using KRSDealerManagement.Domain.Entities
+@using KRSDealerManagement.Shared.Constants
 @using KRSDealerManagement.Web.Helpers
 @{
     ViewData["Title"] = "Admin Vehicle Correction";
@@ -10,6 +11,10 @@
     var subdealers = ViewBag.Subdealers as IEnumerable<UserDto> ?? Enumerable.Empty<UserDto>();
     var booking = ViewBag.Booking as VehicleBooking;
     var modelColorMapJson = ViewBag.ModelColorMapJson as string ?? "{}";
+    var inBookingPhase = booking != null && Model.Status >= UnifiedVehicleStatus.BookedToCustomer;
+    var currentStatusName = vehicleStatuses.FirstOrDefault(s => s.StatusValue == Model.Status)?.StatusName
+        ?? bookingStatuses.FirstOrDefault(s => s.StatusValue == Model.Status)?.StatusName
+        ?? $"Status #{Model.Status}";
 }
 
 <div class="row mb-3">
@@ -57,12 +62,23 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Vehicle Status <span class="text-danger">*</span></label>
-                            <select name="status" class="form-select" required>
-                                @foreach (var s in vehicleStatuses.OrderBy(x => x.SortOrder))
-                                {
-                                    <option value="@s.StatusValue" selected="@(s.StatusValue == Model.Status)">@s.StatusName</option>
-                                }
-                            </select>
+                            @if (inBookingPhase)
+                            {
+                                <input type="hidden" name="status" value="@Model.Status" />
+                                <p class="form-control-plaintext mb-0">
+                                    <span class="badge bg-secondary">@currentStatusName</span>
+                                    <small class="d-block text-muted">Use Booking Phase Status below to change booking milestones.</small>
+                                </p>
+                            }
+                            else
+                            {
+                                <select name="status" class="form-select" required>
+                                    @foreach (var s in vehicleStatuses.OrderBy(x => x.SortOrder))
+                                    {
+                                        <option value="@s.StatusValue" selected="@(s.StatusValue == Model.Status)">@s.StatusName</option>
+                                    }
+                                </select>
+                            }
                         </div>
                     </div>
 

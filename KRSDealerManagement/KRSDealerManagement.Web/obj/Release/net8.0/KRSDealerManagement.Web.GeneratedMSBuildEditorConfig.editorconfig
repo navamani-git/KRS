@@ -227,18 +227,6 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUmV0dXJuc1xSZWplY3QuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/RoleTemplates/Create.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUm9sZVRlbXBsYXRlc1xDcmVhdGUuY3NodG1s
-build_metadata.AdditionalFiles.CssScope = 
-
-[D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/RoleTemplates/Edit.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUm9sZVRlbXBsYXRlc1xFZGl0LmNzaHRtbA==
-build_metadata.AdditionalFiles.CssScope = 
-
-[D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/RoleTemplates/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUm9sZVRlbXBsYXRlc1xJbmRleC5jc2h0bWw=
-build_metadata.AdditionalFiles.CssScope = 
-
 [D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/RtoDistricts/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUnRvRGlzdHJpY3RzXENyZWF0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
@@ -349,6 +337,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Shared/_RtoDistrictLocationSelect.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9SdG9EaXN0cmljdExvY2F0aW9uU2VsZWN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Shared/_StaffAccessWorkflowHelp.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9TdGFmZkFjY2Vzc1dvcmtmbG93SGVscC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Shared/_VehicleChassisModal.cshtml]

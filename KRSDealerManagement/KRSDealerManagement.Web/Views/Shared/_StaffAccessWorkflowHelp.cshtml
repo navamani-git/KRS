@@ -1,0 +1,19 @@
+@{
+    var page = ViewData["WorkflowPage"] as string ?? "";
+}
+
+<div class="alert alert-light border mb-3">
+    <p class="fw-semibold mb-2"><i class="bi bi-signpost-split"></i> How staff access works</p>
+    <ol class="small mb-0 ps-3">
+        <li><strong>Staff Roles</strong> — create a role per dealership and set which menus that role can use.</li>
+        <li><strong>Staff Users</strong> — create logins and assign a dealership role. Optional per-user flags control Excel export and warranty editing.</li>
+    </ol>
+    @if (page == "roles")
+    {
+        <p class="small text-muted mb-0 mt-2">Use <strong>Edit</strong> anytime to change name, status, and menu access. Existing roles keep their current access.</p>
+    }
+    else if (page == "users")
+    {
+        <p class="small text-muted mb-0 mt-2">Menu access comes from the assigned role. User-level options below only control Excel export and warranty claim editing.</p>
+    }
+</div>

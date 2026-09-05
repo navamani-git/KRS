@@ -58,7 +58,7 @@
         <div class="accordion role-menu-accordion" id="roleMenuAccordion">
             @foreach (var group in groups)
             {
-                var visibleChildren = group.Children
+                var visibleChildren = group.EnumerateChildren()
                     .Where(item => menuNames.ContainsKey(item.Key))
                     .ToList();
                 if (visibleChildren.Count == 0) { continue; }
@@ -86,27 +86,68 @@
                          class="accordion-collapse collapse @(isFirst ? "show" : "")"
                          aria-labelledby="@headingId">
                         <div class="accordion-body p-0">
-                            @foreach (var item in visibleChildren)
+                            @if (group.HasSections)
                             {
-                                var selected = SelectedLevel(item.Key);
-                                var accessOptions =
-                                    $"<option value=\"0\"{(selected == 0 ? " selected" : "")}>No access</option>" +
-                                    $"<option value=\"1\"{(selected == 1 ? " selected" : "")}>Read-only</option>" +
-                                    $"<option value=\"2\"{(selected == 2 ? " selected" : "")}>Full access</option>";
-                                <div class="role-menu-row d-flex flex-column flex-sm-row align-items-sm-center gap-2 px-3 py-2 border-bottom">
-                                    <div class="role-menu-row-label flex-grow-1">
-                                        @item.Name
-                                        <input type="hidden" name="MenuKeys" value="@item.Key" />
+                                @foreach (var menuSection in group.Sections!)
+                                {
+                                    var sectionItems = menuSection.Children
+                                        .Where(item => menuNames.ContainsKey(item.Key))
+                                        .ToList();
+                                    if (sectionItems.Count == 0) { continue; }
+
+                                    <div class="role-menu-subsection border-bottom">
+                                        <div class="px-3 py-2 bg-light fw-semibold small text-uppercase text-muted">
+                                            <i class="bi @(menuSection.Icon ?? "bi-folder2-open") me-1"></i>@menuSection.SectionName
+                                        </div>
+                                        @foreach (var item in sectionItems)
+                                        {
+                                            var selected = SelectedLevel(item.Key);
+                                            var accessOptions =
+                                                $"<option value=\"0\"{(selected == 0 ? " selected" : "")}>No access</option>" +
+                                                $"<option value=\"1\"{(selected == 1 ? " selected" : "")}>Read-only</option>" +
+                                                $"<option value=\"2\"{(selected == 2 ? " selected" : "")}>Full access</option>";
+                                            <div class="role-menu-row d-flex flex-column flex-sm-row align-items-sm-center gap-2 px-3 py-2 border-bottom">
+                                                <div class="role-menu-row-label flex-grow-1">
+                                                    @item.Name
+                                                    <input type="hidden" name="MenuKeys" value="@item.Key" />
+                                                </div>
+                                                <div class="role-menu-row-access" style="min-width: 11rem; max-width: 14rem;">
+                                                    <select name="MenuAccessLevels"
+                                                            class="form-select form-select-sm menu-access-select"
+                                                            data-menu-key="@item.Key"
+                                                            aria-label="Access for @item.Name">
+                                                        @Html.Raw(accessOptions)
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        }
                                     </div>
-                                    <div class="role-menu-row-access" style="min-width: 11rem; max-width: 14rem;">
-                                        <select name="MenuAccessLevels"
-                                                class="form-select form-select-sm menu-access-select"
-                                                data-menu-key="@item.Key"
-                                                aria-label="Access for @item.Name">
-                                            @Html.Raw(accessOptions)
-                                        </select>
+                                }
+                            }
+                            else
+                            {
+                                @foreach (var item in visibleChildren)
+                                {
+                                    var selected = SelectedLevel(item.Key);
+                                    var accessOptions =
+                                        $"<option value=\"0\"{(selected == 0 ? " selected" : "")}>No access</option>" +
+                                        $"<option value=\"1\"{(selected == 1 ? " selected" : "")}>Read-only</option>" +
+                                        $"<option value=\"2\"{(selected == 2 ? " selected" : "")}>Full access</option>";
+                                    <div class="role-menu-row d-flex flex-column flex-sm-row align-items-sm-center gap-2 px-3 py-2 border-bottom">
+                                        <div class="role-menu-row-label flex-grow-1">
+                                            @item.Name
+                                            <input type="hidden" name="MenuKeys" value="@item.Key" />
+                                        </div>
+                                        <div class="role-menu-row-access" style="min-width: 11rem; max-width: 14rem;">
+                                            <select name="MenuAccessLevels"
+                                                    class="form-select form-select-sm menu-access-select"
+                                                    data-menu-key="@item.Key"
+                                                    aria-label="Access for @item.Name">
+                                                @Html.Raw(accessOptions)
+                                            </select>
+                                        </div>
                                     </div>
-                                </div>
+                                }
                             }
                         </div>
                     </div>

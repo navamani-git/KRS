@@ -152,6 +152,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             try
             {
+                var item = await LoadReturnRequestAsync(id);
                 var result = await _mediator.Send(new ApproveReturnRequestCommand
                 {
                     ReturnRequestId = id,
@@ -161,10 +162,10 @@ namespace KRSDealerManagement.Web.Controllers
                     ReassignToSubdealerId = null
                 });
 
-                var destination = "returned to dealer showroom";
+                var destination = item?.DealershipLocation ?? "dealer showroom";
 
                 TempData[result ? "Success" : "Error"] = result
-                    ? $"Return #{id} approved. ₹{refundAmount:N2} credited to returning subdealer; vehicle {destination}."
+                    ? $"Return #{id} approved. ₹{refundAmount:N2} credited to returning subdealer; vehicle returned to {destination}."
                     : "Return request not found or cannot be approved.";
             }
             catch (Exception ex)
@@ -231,7 +232,7 @@ namespace KRSDealerManagement.Web.Controllers
             var item = await LoadReturnRequestAsync(id);
             if (item == null || !item.CanAllocateToSubdealer)
             {
-                TempData["Error"] = "Return not found or vehicle is not available in dealer showroom for allocation.";
+                TempData["Error"] = "Return not found or vehicle is not available in showroom stock for allocation.";
                 return RedirectToAction(nameof(Index));
             }
 

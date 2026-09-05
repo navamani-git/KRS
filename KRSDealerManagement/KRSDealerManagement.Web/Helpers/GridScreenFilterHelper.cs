@@ -144,6 +144,7 @@ namespace KRSDealerManagement.Web.Helpers
                 new Dictionary<string, Func<VehiclePriceHistoryDto, DateTime?>>(StringComparer.OrdinalIgnoreCase)
                 {
                     ["from"] = p => p.EffectiveFrom,
+                    ["to"] = p => p.EffectiveTo,
                     ["updated"] = p => p.ModifiedDate
                 });
 
@@ -225,13 +226,22 @@ namespace KRSDealerManagement.Web.Helpers
                     ["created"] = p => p.CreatedDate
                 });
 
-        public static IEnumerable<RtoLocationMaster> ApplyRtoLocations(IEnumerable<RtoLocationMaster> rows, IReadOnlyDictionary<string, string>? filters)
-            => GridRowFilterApplier.Apply(GridScreenIds.RtoLocations, rows, filters,
+        public static IEnumerable<RtoLocationMaster> ApplyRtoLocations(
+            IEnumerable<RtoLocationMaster> rows,
+            IReadOnlyDictionary<string, string>? filters,
+            IReadOnlyDictionary<int, string>? districtNames = null)
+        {
+            districtNames ??= new Dictionary<int, string>();
+            return GridRowFilterApplier.Apply(GridScreenIds.RtoLocations, rows, filters,
                 new Dictionary<string, Func<RtoLocationMaster, string?>>(StringComparer.OrdinalIgnoreCase)
                 {
+                    ["district"] = r => districtNames.TryGetValue(r.RtoDistrictId, out var name)
+                        ? name
+                        : $"#{r.RtoDistrictId}",
                     ["location"] = r => r.LocationName,
                     ["status"] = r => r.IsActive ? "Active" : "Inactive"
                 });
+        }
 
         public static IEnumerable<VehicleBookingGridRowDto> ApplyVehicleBookings(IEnumerable<VehicleBookingGridRowDto> rows, IReadOnlyDictionary<string, string>? filters)
             => GridRowFilterApplier.Apply(GridScreenIds.VehicleBookings, rows, filters,

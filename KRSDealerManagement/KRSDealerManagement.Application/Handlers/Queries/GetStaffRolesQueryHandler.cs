@@ -28,8 +28,11 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var catalog = await _roleTemplateService.GetCatalogAsync(includeInactive: true);
 
             roles = roles.Where(r =>
-                !r.RoleCode.Equals(RoleCodes.SystemAdmin, StringComparison.OrdinalIgnoreCase)
-                && !r.RoleCode.Equals(RoleCodes.Subdealer, StringComparison.OrdinalIgnoreCase));
+                !r.IsSystemRole
+                && !r.RoleCode.Equals(RoleCodes.SystemAdmin, StringComparison.OrdinalIgnoreCase)
+                && !r.RoleCode.Equals(RoleCodes.Subdealer, StringComparison.OrdinalIgnoreCase)
+                && !r.RoleCode.Equals(RoleCodes.BranchManager, StringComparison.OrdinalIgnoreCase)
+                && !r.RoleCode.Equals(RoleCodes.FinanceAdmin, StringComparison.OrdinalIgnoreCase));
 
             if (request.AssignableOnly)
                 roles = roles.Where(r => r.IsActive && !r.IsSystemRole);

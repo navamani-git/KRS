@@ -1,6 +1,7 @@
 using MediatR;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Application.DTOs;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
@@ -36,6 +37,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var bookedVehicleIds = (await _unitOfWork.VehicleBookings.GetAllAsync())
                 .Select(b => b.VehicleId)
                 .ToHashSet();
+            var masters = (await _unitOfWork.VehicleMasters.GetAllAsync()).ToDictionary(m => m.VehicleMasterId);
+            var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToDictionary(d => d.DealershipId);
+            var orgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync()).ToList();
 
             var scopedUserIds = request.DealershipId.HasValue
                 ? (await _unitOfWork.UserOrgRoles.GetAllAsync())
@@ -63,6 +67,13 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                              SubdealerName = subdealerUserId.HasValue && users.TryGetValue(subdealerUserId.Value, out var subdealerUser)
                                  ? subdealerUser.GetFullName()
                                  : "Unknown",
+                             DealershipLocation = DealershipLocationHelper.ResolveShowroomLabel(
+                                 veh,
+                                 ord?.SubdealerId,
+                                 acc?.SubdealerId,
+                                 masters,
+                                 dealerships,
+                                 orgRoles),
                              OrderId = r.OrderId,
                              OrderNumber = ord != null ? ord.OrderNumber : $"Order #{r.OrderId}",
                              VehicleId = r.VehicleId,

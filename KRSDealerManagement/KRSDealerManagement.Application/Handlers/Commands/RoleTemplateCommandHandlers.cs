@@ -138,4 +138,61 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 JsonSerializer.Serialize(new { template.TemplateCode, template.TemplateName, MenuCount = menus.Count }));
         }
     }
+
+    public class UpsertBuiltInRoleTemplateOverrideCommandHandler : IRequestHandler<UpsertBuiltInRoleTemplateOverrideCommand, int>
+    {
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IAuditService _auditService;
+
+        public UpsertBuiltInRoleTemplateOverrideCommandHandler(IUnitOfWork unitOfWork, IAuditService auditService)
+        {
+            _unitOfWork = unitOfWork;
+            _auditService = auditService;
+        }
+
+        public async Task<int> Handle(UpsertBuiltInRoleTemplateOverrideCommand request, CancellationToken cancellationToken)
+        {
+            var code = request.TemplateCode.Trim().ToUpperInvariant();
+            if (!RoleTemplateCodes.All.Any(t => t.Code.Equals(code, StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException("Only built-in template codes can be configured here.");
+
+            var menus = CreateRoleTemplateCommandHandler.NormalizeMenus(request.Menus);
+            if (!menus.Any())
+                throw new InvalidOperationException("Select at least one menu for this template.");
+
+            var legacyRole = RoleTemplateDefaults.MapTemplateToLegacyUserRole(code);
+            var existing = await _unitOfWork.RoleTemplates.GetByCodeAsync(code);
+            if (existing == null)
+            {
+                var id = await _unitOfWork.RoleTemplates.AddAsync(new RoleTemplate
+                {
+                    TemplateCode = code,
+                    TemplateName = request.TemplateName.Trim(),
+                    Description = request.Description?.Trim(),
+                    LegacyUserRole = legacyRole,
+                    IsActive = request.IsActive,
+                    CreatedBy = request.ModifiedBy,
+                    CreatedDate = DateTime.UtcNow,
+                    ModifiedDate = DateTime.UtcNow
+                });
+                await CreateRoleTemplateCommandHandler.SaveTemplateMenusAsync(_unitOfWork, id, menus);
+                await _auditService.LogActionAsync(
+                    "RoleTemplate", id, "ConfigureBuiltIn", request.ModifiedBy, RoleCodes.SystemAdmin,
+                    JsonSerializer.Serialize(new { code, request.TemplateName, MenuCount = menus.Count }));
+                return id;
+            }
+
+            existing.TemplateName = request.TemplateName.Trim();
+            existing.Description = request.Description?.Trim();
+            existing.LegacyUserRole = legacyRole;
+            existing.IsActive = request.IsActive;
+            existing.ModifiedDate = DateTime.UtcNow;
+            await _unitOfWork.RoleTemplates.UpdateAsync(existing);
+            await CreateRoleTemplateCommandHandler.SaveTemplateMenusAsync(_unitOfWork, existing.RoleTemplateId, menus);
+            await _auditService.LogActionAsync(
+                "RoleTemplate", existing.RoleTemplateId, "ConfigureBuiltIn", request.ModifiedBy, RoleCodes.SystemAdmin,
+                JsonSerializer.Serialize(new { code, request.TemplateName, MenuCount = menus.Count }));
+            return existing.RoleTemplateId;
+        }
+    }
 }

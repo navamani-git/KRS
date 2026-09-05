@@ -61,8 +61,7 @@ namespace KRSDealerManagement.Web.Controllers
         public async Task<IActionResult> Create(
             string fullName, string username, string password,
             int roleId, int dealershipId,
-            string? email, string? phoneNumber,
-            bool canExport = true, bool canEditWarrantyClaims = false)
+            string? email, string? phoneNumber)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
@@ -79,8 +78,8 @@ namespace KRSDealerManagement.Web.Controllers
                     Email = email,
                     PhoneNumber = phoneNumber,
                     CreatedBy = userId.Value,
-                    CanExport = canExport,
-                    CanEditWarrantyClaims = canEditWarrantyClaims
+                    CanExport = IsFormChecked("canExport"),
+                    CanEditWarrantyClaims = IsFormChecked("canEditWarrantyClaims")
                 });
 
                 TempData["Success"] = $"Staff user created successfully (login: {username.Trim().ToLowerInvariant()}).";
@@ -99,8 +98,12 @@ namespace KRSDealerManagement.Web.Controllers
             var staff = (await _mediator.Send(new GetStaffUsersQuery())).FirstOrDefault(u => u.UserId == id);
             if (staff == null)
             {
-                TempData["Error"] = "Staff user not found.";
-                return RedirectToAction(nameof(Index));
+                staff = await BuildStaffUserDtoFromUserAsync(id);
+                if (staff == null)
+                {
+                    TempData["Error"] = "Staff user not found.";
+                    return RedirectToAction(nameof(Index));
+                }
             }
 
             await LoadFormViewBags(staff.DealershipId);
@@ -109,10 +112,18 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, string fullName, string username, string? email, string? phoneNumber, int dealershipId, int roleId, bool isActive, bool canExport, bool canEditWarrantyClaims, string? password)
+        public async Task<IActionResult> Edit(int id, string fullName, string username, string? email, string? phoneNumber, int dealershipId, int roleId, string? password)
         {
+            var isActive = IsFormChecked("isActive");
+            var canExport = IsFormChecked("canExport");
+            var canEditWarrantyClaims = IsFormChecked("canEditWarrantyClaims");
+
             var user = await _unitOfWork.Users.GetByIdAsync(id);
-            var assignment = (await _unitOfWork.UserOrgRoles.GetAllAsync()).FirstOrDefault(a => a.UserId == id && a.IsActive);
+            var assignment = (await _unitOfWork.UserOrgRoles.GetAllAsync())
+                .Where(a => a.UserId == id)
+                .OrderByDescending(a => a.IsActive)
+                .ThenByDescending(a => a.UserOrgRoleId)
+                .FirstOrDefault();
             var role = assignment != null ? await _unitOfWork.Roles.GetByIdAsync(assignment.RoleId) : null;
 
             if (user == null || role == null || role.IsSystemRole
@@ -159,7 +170,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             var nameParts = fullName.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
             user.FirstName = nameParts[0];
-            user.LastName = nameParts.Length > 1 ? nameParts[1] : user.LastName;
+            user.LastName = nameParts.Length > 1 ? nameParts[1] : string.Empty;
             user.Username = normalizedUsername;
             user.Email = string.IsNullOrWhiteSpace(email) ? user.Email : email.Trim();
             user.PhoneNumber = phoneNumber?.Trim() ?? "";
@@ -217,6 +228,53 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.Dealerships = await _mediator.Send(new GetDealershipsQuery { IsActive = true });
             ViewBag.Roles = await _mediator.Send(new GetStaffRolesQuery { AssignableOnly = true, IsActive = true, DealershipId = dealershipId });
             ViewBag.SelectedDealershipId = dealershipId;
+        }
+
+        private bool IsFormChecked(string name)
+            => Request.Form[name].ToString().Equals("true", StringComparison.OrdinalIgnoreCase);
+
+        private async Task<Application.DTOs.StaffUserDto?> BuildStaffUserDtoFromUserAsync(int userId)
+        {
+            var user = await _unitOfWork.Users.GetByIdAsync(userId);
+            if (user == null) return null;
+
+            var assignment = (await _unitOfWork.UserOrgRoles.GetAllAsync())
+                .Where(a => a.UserId == userId)
+                .OrderByDescending(a => a.IsActive)
+                .ThenByDescending(a => a.UserOrgRoleId)
+                .FirstOrDefault();
+            if (assignment == null) return null;
+
+            var role = await _unitOfWork.Roles.GetByIdAsync(assignment.RoleId);
+            if (role == null || role.IsSystemRole
+                || role.RoleCode.Equals(RoleCodes.SystemAdmin, StringComparison.OrdinalIgnoreCase)
+                || role.RoleCode.Equals(RoleCodes.Subdealer, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            var dealership = assignment.DealershipId.HasValue
+                ? await _unitOfWork.Dealerships.GetByIdAsync(assignment.DealershipId.Value)
+                : null;
+
+            return new Application.DTOs.StaffUserDto
+            {
+                UserId = user.UserId,
+                Username = user.Username,
+                FullName = user.GetFullName(),
+                Email = user.Email,
+                PhoneNumber = user.PhoneNumber,
+                UserRole = user.UserRole,
+                RoleId = role.RoleId,
+                RoleName = role.RoleName,
+                DealershipId = assignment.DealershipId,
+                DealershipName = dealership?.DealershipName,
+                IsActive = user.IsActive,
+                CanExport = user.CanExport,
+                CanEditWarrantyClaims = user.CanEditWarrantyClaims,
+                PasswordHash = user.PasswordHash,
+                CreatedDate = user.CreatedDate
+            };
         }
     }
 }

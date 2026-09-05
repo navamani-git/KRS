@@ -37,7 +37,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 .Where(r => r.Status == 0)
                 .Select(r => r.VehicleId)
                 .ToHashSet();
-            var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToList();
+            var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToDictionary(d => d.DealershipId);
+            var masters = (await _unitOfWork.VehicleMasters.GetAllAsync()).ToDictionary(m => m.VehicleMasterId);
             var userOrgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync()).ToList();
 
             // Vehicles assigned to subdealers, plus dealer-showroom stock (no subdealer after return)
@@ -69,7 +70,13 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         SubdealerId = v.SubdealerId,
                         SubdealerName = v.SubdealerId.HasValue
                             ? (user?.GetFullName() ?? "Unknown")
-                            : "Dealer Showroom",
+                            : DealershipLocationHelper.ResolveShowroomLabel(
+                                v,
+                                order?.SubdealerId,
+                                null,
+                                masters,
+                                dealerships,
+                                userOrgRoles),
                         PurchaseOrderId = v.PurchaseOrderId,
                         OrderNumber = order?.OrderNumber,
                         OrderDate = order?.CreatedDate,
@@ -128,7 +135,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             if (!string.IsNullOrWhiteSpace(request.DealershipLocation))
             {
                 var location = request.DealershipLocation.Trim();
-                var dealershipIds = dealerships
+                var dealershipIds = dealerships.Values
                     .Where(d => d.IsActive
                         && string.Equals(d.Location?.Trim(), location, StringComparison.OrdinalIgnoreCase))
                     .Select(d => d.DealershipId)

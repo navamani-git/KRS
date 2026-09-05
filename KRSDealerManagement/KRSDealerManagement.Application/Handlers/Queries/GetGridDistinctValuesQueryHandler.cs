@@ -109,7 +109,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
                 GridScreenIds.PaymentTypes => DistinctSync((await _unitOfWork.PaymentTypes.GetAllAsync()).Cast<object>(), column, request, PaymentTypeProjections),
 
-                GridScreenIds.RtoLocations => DistinctSync((await _unitOfWork.RtoLocations.GetAllAsync()).Cast<object>(), column, request, RtoLocationProjections),
+                GridScreenIds.RtoLocations => await DistinctRtoLocations(column, request),
 
                 GridScreenIds.StatusLookups => await DistinctStatusLookups(column, request),
 
@@ -231,6 +231,20 @@ namespace KRSDealerManagement.Application.Handlers.Queries
         {
             var all = await _statuses.GetAllByCategoryAsync();
             return DistinctSync(all.Cast<object>(), column, request, StatusLookupProjections);
+        }
+
+        private async Task<IReadOnlyList<string>> DistinctRtoLocations(string column, GetGridDistinctValuesQuery request)
+        {
+            var locations = await _unitOfWork.RtoLocations.GetAllAsync();
+            var districts = (await _unitOfWork.RtoDistricts.GetAllAsync())
+                .ToDictionary(d => d.RtoDistrictId, d => d.DistrictName);
+            var map = new Dictionary<string, Func<RtoLocationMaster, string?>>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["district"] = r => districts.TryGetValue(r.RtoDistrictId, out var name) ? name : $"#{r.RtoDistrictId}",
+                ["location"] = r => r.LocationName,
+                ["status"] = r => r.IsActive ? "Active" : "Inactive"
+            };
+            return await DistinctFrom(locations, column, request, map);
         }
 
         private static Task<IReadOnlyList<string>> DistinctFrom<T>(
@@ -433,6 +447,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             ["color"] = p => p.ColorName,
             ["period"] = p => $"{p.Month}/{p.Year}",
             ["from"] = p => p.EffectiveFrom.ToString("yyyy-MM-dd"),
+            ["to"] = p => p.EffectiveTo.ToString("yyyy-MM-dd"),
             ["price"] = p => p.Price.ToString("N2"),
             ["notes"] = p => p.Notes
         };
@@ -516,12 +531,6 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             ["code"] = p => p.TypeCode,
             ["name"] = p => p.TypeName,
             ["status"] = p => p.IsActive ? "Active" : "Inactive"
-        };
-
-        private static readonly Dictionary<string, Func<RtoLocationMaster, string?>> RtoLocationProjections = new(StringComparer.OrdinalIgnoreCase)
-        {
-            ["location"] = r => r.LocationName,
-            ["status"] = r => r.IsActive ? "Active" : "Inactive"
         };
 
         private static readonly Dictionary<string, Func<StatusLookup, string?>> StatusLookupProjections = new(StringComparer.OrdinalIgnoreCase)

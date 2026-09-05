@@ -281,6 +281,7 @@ namespace KRSDealerManagement.Web.Helpers
             GridFilterColumn.Combo("color", "Color"),
             GridFilterColumn.Combo("period", "Period"),
             GridFilterColumn.DateCol("from", "Effective From"),
+            GridFilterColumn.DateCol("to", "Effective To"),
             GridFilterColumn.Combo("price", "Price"),
             GridFilterColumn.Combo("notes", "Notes"),
             GridFilterColumn.DateCol("updated", "Updated"),
@@ -290,6 +291,7 @@ namespace KRSDealerManagement.Web.Helpers
         private static List<GridFilterColumn> RtoLocations() => new()
         {
             GridFilterColumn.Skip(),
+            GridFilterColumn.Combo("district", "District"),
             GridFilterColumn.Combo("location", "Location"),
             GridFilterColumn.Select("status", "Active", "Inactive"),
             GridFilterColumn.Actions()

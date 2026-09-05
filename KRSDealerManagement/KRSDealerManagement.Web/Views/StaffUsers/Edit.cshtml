@@ -63,11 +63,12 @@
             <div class="form-check mb-2">
                 <input class="form-check-input" type="checkbox" name="canExport" value="true" id="canExport" @(Model.CanExport ? "checked" : "") />
                 <label class="form-check-label" for="canExport">Allow Excel export</label>
+                <div class="form-text">When off, Export Excel buttons are hidden and downloads are blocked. User must sign out and back in for this to apply.</div>
             </div>
             <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="canEditWarrantyClaims" value="true" id="canEditWarrantyClaims" @(Model.CanEditWarrantyClaims ? "checked" : "") />
-                <label class="form-check-label" for="canEditWarrantyClaims">Allow warranty claim editing</label>
-                <div class="form-text">For warranty manager/staff — lets them edit claim details (system admin always can).</div>
+                <label class="form-check-label" for="canEditWarrantyClaims">Warranty claim staff actions</label>
+                <div class="form-text">Allows approve/reject, SO number, and other warranty staff actions. Menu access to Warranty Claims still comes from the role. System admin always has full access.</div>
             </div>
         </div>
         <div class="card-footer"><button type="submit" class="btn btn-primary">Save</button></div>

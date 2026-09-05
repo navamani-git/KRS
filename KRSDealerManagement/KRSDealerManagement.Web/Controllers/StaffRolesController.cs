@@ -59,7 +59,9 @@ namespace KRSDealerManagement.Web.Controllers
                     RoleCode = model.RoleCode,
                     RoleName = model.RoleName,
                     Description = model.Description,
-                    RoleTemplateCode = model.RoleTemplateCode,
+                    RoleTemplateCode = string.IsNullOrWhiteSpace(model.RoleTemplateCode)
+                        ? RoleTemplateCodes.Custom
+                        : model.RoleTemplateCode,
                     DealershipId = model.DealershipId,
                     Menus = ParseMenus(model),
                     CreatedBy = userId.Value
@@ -71,7 +73,7 @@ namespace KRSDealerManagement.Web.Controllers
             catch (Exception ex)
             {
                 TempData["Error"] = ex.Message;
-                await LoadFormViewBags(model.DealershipId, model.RoleTemplateCode);
+                await LoadFormViewBags(model.DealershipId);
                 return View(model);
             }
         }
@@ -85,7 +87,7 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            await LoadFormViewBags(role.DealershipId, role.RoleTemplateCode);
+            await LoadFormViewBags(role.DealershipId);
             return View(MapToForm(role));
         }
 
@@ -115,39 +117,26 @@ namespace KRSDealerManagement.Web.Controllers
             {
                 TempData["Error"] = ex.Message;
                 model.RoleId = id;
-                await LoadFormViewBags(model.DealershipId, model.RoleTemplateCode);
+                await LoadFormViewBags(model.DealershipId);
                 return View(model);
             }
         }
 
         [HttpGet]
-        public async Task<IActionResult> TemplateDefaults(string templateCode)
-        {
-            var defaults = await _roleTemplateService.GetDefaultMenusAsync(templateCode);
-            return Json(defaults.ToDictionary(kv => kv.Key, kv => (int)kv.Value));
-        }
-
-        [HttpGet]
-        public IActionResult SuggestCode(int dealershipId, string templateCode)
+        public IActionResult SuggestCode(int dealershipId)
         {
             var dealerships = _mediator.Send(new GetDealershipsQuery { IsActive = true }).GetAwaiter().GetResult();
             var dealer = dealerships.FirstOrDefault(d => d.DealershipId == dealershipId);
             if (dealer == null) return Json(new { code = "" });
-            var code = _roleTemplateService.BuildSuggestedRoleCode(dealer.DealershipCode, templateCode);
+            var code = _roleTemplateService.BuildSuggestedRoleCode(dealer.DealershipCode, RoleTemplateCodes.Custom);
             return Json(new { code });
         }
 
-        private async Task LoadFormViewBags(int? dealershipId = null, string? templateCode = null)
+        private async Task LoadFormViewBags(int? dealershipId = null)
         {
             ViewBag.Dealerships = await _mediator.Send(new GetDealershipsQuery { IsActive = true });
-            var catalog = await _roleTemplateService.GetCatalogAsync();
-            ViewBag.Templates = catalog
-                .Where(t => t.IsActive)
-                .Select(t => (t.Code, t.Name, t.Description ?? ""))
-                .ToList();
             ViewBag.AllMenus = StaffMenuAccess.AllAdminMenus();
-            var defaults = await _roleTemplateService.GetDefaultMenusAsync(templateCode ?? RoleTemplateCodes.Manager);
-            ViewBag.DefaultMenus = defaults.ToDictionary(kv => kv.Key, kv => (int)kv.Value);
+            ViewBag.DefaultMenus = new Dictionary<string, int>();
             ViewBag.SelectedDealershipId = dealershipId;
         }
 
@@ -195,7 +184,7 @@ namespace KRSDealerManagement.Web.Controllers
         public string RoleCode { get; set; } = "";
         public string RoleName { get; set; } = "";
         public string? Description { get; set; }
-        public string RoleTemplateCode { get; set; } = RoleTemplateCodes.Manager;
+        public string RoleTemplateCode { get; set; } = RoleTemplateCodes.Custom;
         public int DealershipId { get; set; }
         public bool IsActive { get; set; } = true;
         public List<string> MenuKeys { get; set; } = new();

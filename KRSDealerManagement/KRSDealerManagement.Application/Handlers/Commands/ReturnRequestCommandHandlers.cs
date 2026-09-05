@@ -213,9 +213,32 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
-                var destinationLabel = request.ReassignToSubdealerId.HasValue
-                    ? $"subdealer #{request.ReassignToSubdealerId.Value}"
-                    : "dealer showroom";
+                string destinationLabel;
+                if (request.ReassignToSubdealerId.HasValue)
+                {
+                    destinationLabel = $"subdealer #{request.ReassignToSubdealerId.Value}";
+                }
+                else
+                {
+                    var master = vehicle.VehicleMasterId > 0
+                        ? await _unitOfWork.VehicleMasters.GetByIdAsync(vehicle.VehicleMasterId)
+                        : null;
+                    var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToDictionary(d => d.DealershipId);
+                    var orgRoles = await _unitOfWork.UserOrgRoles.GetAllAsync();
+                    var order = vehicle.PurchaseOrderId.HasValue
+                        ? await _unitOfWork.PurchaseOrders.GetByIdAsync(vehicle.PurchaseOrderId.Value)
+                        : null;
+                    var account = await _unitOfWork.SubdealerAccounts.GetByIdAsync(returnRequest.AccountId);
+                    destinationLabel = DealershipLocationHelper.ResolveShowroomLabel(
+                        vehicle,
+                        order?.SubdealerId,
+                        account?.SubdealerId,
+                        master != null
+                            ? new Dictionary<int, VehicleMaster> { [master.VehicleMasterId] = master }
+                            : new Dictionary<int, VehicleMaster>(),
+                        dealerships,
+                        orgRoles);
+                }
 
                 await _auditService.LogActionAsync(
                     entityType: "Vehicle",

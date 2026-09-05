@@ -130,12 +130,12 @@
                         {
                             @foreach (var group in StaffMenuAccess.GetStaffMenuGroups())
                             {
-                                var visible = group.Children
+                                var visible = group.EnumerateChildren()
                                     .Where(c => SessionHelper.HasMenuAccess(session, c.Key))
                                     .ToList();
                                 if (!visible.Any()) { continue; }
 
-                                if (visible.Count == 1 && group.Children.Count == 1)
+                                if (!group.HasSections && visible.Count == 1 && group.Children.Count == 1)
                                 {
                                     var item = visible[0];
                                     <li class="nav-item">
@@ -157,14 +157,49 @@
                                             </p>
                                         </a>
                                         <ul class="nav nav-treeview">
-                                            @foreach (var item in visible)
+                                            @if (group.HasSections)
                                             {
-                                                <li class="nav-item">
-                                                    <a href="@(item.RouteValues is { Count: > 0 } ? Url.Action(item.Action, item.Controller, item.RouteValues) : Url.Action(item.Action, item.Controller))" class="nav-link @NavMenuHelper.ActiveClassForMenuItem(navController, navAction, item, Context.Request)">
-                                                        <i class="nav-icon bi @(item.Icon ?? "bi-circle")"></i>
-                                                        <p>@item.Name</p>
-                                                    </a>
-                                                </li>
+                                                @foreach (var menuSection in group.Sections!)
+                                                {
+                                                    var sectionVisible = menuSection.Children
+                                                        .Where(c => SessionHelper.HasMenuAccess(session, c.Key))
+                                                        .ToList();
+                                                    if (!sectionVisible.Any()) { continue; }
+
+                                                    var sectionOpen = NavMenuHelper.IsMenuSectionOpen(navController, navAction, Context.Request, sectionVisible);
+                                                    <li class="nav-item has-treeview @(sectionOpen ? "menu-open" : "")">
+                                                        <a href="#" class="nav-link @(sectionOpen ? "active" : "")">
+                                                            <i class="nav-icon bi @(menuSection.Icon ?? "bi-folder2-open")"></i>
+                                                            <p>
+                                                                @menuSection.SectionName
+                                                                <i class="right bi bi-chevron-left"></i>
+                                                            </p>
+                                                        </a>
+                                                        <ul class="nav nav-treeview">
+                                                            @foreach (var item in sectionVisible)
+                                                            {
+                                                                <li class="nav-item">
+                                                                    <a href="@(item.RouteValues is { Count: > 0 } ? Url.Action(item.Action, item.Controller, item.RouteValues) : Url.Action(item.Action, item.Controller))" class="nav-link @NavMenuHelper.ActiveClassForMenuItem(navController, navAction, item, Context.Request)">
+                                                                        <i class="nav-icon bi @(item.Icon ?? "bi-circle")"></i>
+                                                                        <p>@item.Name</p>
+                                                                    </a>
+                                                                </li>
+                                                            }
+                                                        </ul>
+                                                    </li>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                @foreach (var item in visible)
+                                                {
+                                                    <li class="nav-item">
+                                                        <a href="@(item.RouteValues is { Count: > 0 } ? Url.Action(item.Action, item.Controller, item.RouteValues) : Url.Action(item.Action, item.Controller))" class="nav-link @NavMenuHelper.ActiveClassForMenuItem(navController, navAction, item, Context.Request)">
+                                                            <i class="nav-icon bi @(item.Icon ?? "bi-circle")"></i>
+                                                            <p>@item.Name</p>
+                                                        </a>
+                                                    </li>
+                                                }
                                             }
                                         </ul>
                                     </li>

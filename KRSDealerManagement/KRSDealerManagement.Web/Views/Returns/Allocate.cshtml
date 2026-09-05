@@ -10,7 +10,7 @@
     <div class="col-md-8">
         <h1 class="m-0"><i class="bi bi-box-seam text-primary"></i> Allocate to Subdealer</h1>
         <p class="text-muted mb-0">Return #@Model.ReturnRequestId · @Model.VehicleChassisNumber · @Model.OrderNumber</p>
-        <p class="text-muted mb-0"><small>Vehicle is in dealer showroom after approved return (refund ₹@Model.RefundAmount.ToString("N2")).</small></p>
+        <p class="text-muted mb-0"><small>Vehicle is in @Model.DealershipLocation showroom stock after approved return (refund ₹@Model.RefundAmount.ToString("N2")).</small></p>
     </div>
     <div class="col-md-4 text-end">
         <a href="@Url.Action("Index")" class="btn btn-secondary">Back to list</a>

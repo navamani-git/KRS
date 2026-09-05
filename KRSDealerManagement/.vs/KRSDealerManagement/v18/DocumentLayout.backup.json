@@ -3,6 +3,14 @@
   "WorkspaceRootPath": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{11111111-1111-1111-1111-111111111111}|KRSDealerManagement.Shared\\KRSDealerManagement.Shared.csproj|d:\\krsgit\\krs\\krsdealermanagement\\krsdealermanagement.shared\\constants\\staffmenuaccess.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{11111111-1111-1111-1111-111111111111}|KRSDealerManagement.Shared\\KRSDealerManagement.Shared.csproj|solutionrelative:krsdealermanagement.shared\\constants\\staffmenuaccess.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|d:\\krsgit\\krs\\krsdealermanagement\\krsdealermanagement.web\\views\\orders\\createforsubdealer.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|solutionrelative:krsdealermanagement.web\\views\\orders\\createforsubdealer.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|d:\\krsgit\\krs\\krsdealermanagement\\krsdealermanagement.web\\views\\shared\\_bookingcustomerformfields.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|solutionrelative:krsdealermanagement.web\\views\\shared\\_bookingcustomerformfields.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
@@ -42,32 +50,57 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "StaffMenuAccess.cs",
+              "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Shared\\Constants\\StaffMenuAccess.cs",
+              "RelativeDocumentMoniker": "KRSDealerManagement.Shared\\Constants\\StaffMenuAccess.cs",
+              "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Shared\\Constants\\StaffMenuAccess.cs",
+              "RelativeToolTip": "KRSDealerManagement.Shared\\Constants\\StaffMenuAccess.cs",
+              "ViewState": "AgIAAJcAAAAAAAAAAAAgwKQAAAAaAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-04T19:08:56.139Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "CreateForSubdealer.cshtml",
+              "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Orders\\CreateForSubdealer.cshtml",
+              "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Views\\Orders\\CreateForSubdealer.cshtml",
+              "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Orders\\CreateForSubdealer.cshtml",
+              "RelativeToolTip": "KRSDealerManagement.Web\\Views\\Orders\\CreateForSubdealer.cshtml",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAgwBMAAAAtAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-09-04T19:08:37.008Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
               "Title": "_BookingCustomerFormFields.cshtml",
               "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Shared\\_BookingCustomerFormFields.cshtml",
               "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Views\\Shared\\_BookingCustomerFormFields.cshtml",
               "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Shared\\_BookingCustomerFormFields.cshtml",
               "RelativeToolTip": "KRSDealerManagement.Web\\Views\\Shared\\_BookingCustomerFormFields.cshtml",
-              "ViewState": "AgIAACQAAAAAAAAAAAAUwCsAAABkAAAAAAAAAA==",
+              "ViewState": "AgIAACQAAAAAAAAAAAAgwDgAAABhAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
               "WhenOpened": "2026-09-04T16:57:38.002Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 3,
               "Title": "_Layout.cshtml",
               "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Shared\\_Layout.cshtml",
               "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Views\\Shared\\_Layout.cshtml",
               "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Shared\\_Layout.cshtml",
               "RelativeToolTip": "KRSDealerManagement.Web\\Views\\Shared\\_Layout.cshtml",
-              "ViewState": "AgIAAOMAAAAAAAAAAADwv+QAAAAYAAAAAAAAAA==",
+              "ViewState": "AgIAAAYBAAAAAAAAAADwvwcBAAAYAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-09-04T09:29:56.869Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-09-04T09:29:56.869Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 4,
               "Title": "Login.cshtml",
               "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Account\\Login.cshtml",
               "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Views\\Account\\Login.cshtml",
@@ -75,36 +108,33 @@
               "RelativeToolTip": "KRSDealerManagement.Web\\Views\\Account\\Login.cshtml",
               "ViewState": "AgIAAN0AAAAAAAAAAAAIwOUAAAAsAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-09-04T08:18:05.46Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-09-04T08:18:05.46Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 5,
               "Title": "Microsoft.Common.CurrentVersion.targets",
               "DocumentMoniker": "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\amd64\\Microsoft.Common.CurrentVersion.targets",
               "ToolTip": "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\amd64\\Microsoft.Common.CurrentVersion.targets",
               "ViewState": "AgIAAOETAAAAAAAAAAAowOcTAAAEAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003801|",
-              "WhenOpened": "2026-09-04T08:09:22.426Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-09-04T08:09:22.426Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 6,
               "Title": "Manage.cshtml",
               "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\VehicleBookings\\Manage.cshtml",
               "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Views\\VehicleBookings\\Manage.cshtml",
               "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\VehicleBookings\\Manage.cshtml",
               "RelativeToolTip": "KRSDealerManagement.Web\\Views\\VehicleBookings\\Manage.cshtml",
-              "ViewState": "AgIAAFoAAAAAAAAAAAAAAJ4AAAANAAAAAAAAAA==",
+              "ViewState": "AgIAAFsAAAAAAAAAAAAAAJ8AAAANAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-09-04T07:28:42.446Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-09-04T07:28:42.446Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 8,
               "Title": "_GridColumnFilters.cshtml",
               "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Shared\\_GridColumnFilters.cshtml",
               "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Views\\Shared\\_GridColumnFilters.cshtml",
@@ -116,7 +146,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 7,
               "Title": "ReturnsController.cs",
               "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Controllers\\ReturnsController.cs",
               "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Controllers\\ReturnsController.cs",
@@ -124,8 +154,7 @@
               "RelativeToolTip": "KRSDealerManagement.Web\\Controllers\\ReturnsController.cs",
               "ViewState": "AgIAAD8AAAAAAAAAAAAAAEQAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-08-22T03:31:20.87Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-08-22T03:31:20.87Z"
             }
           ]
         }

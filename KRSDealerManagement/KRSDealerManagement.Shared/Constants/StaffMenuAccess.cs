@@ -86,8 +86,7 @@ namespace KRSDealerManagement.Shared.Constants
             (Payments, "Payment Approvals"),
             (Reports, "Reports"),
             (StaffUsers, "Staff Users"),
-            (StaffRoles, "Staff Roles"),
-            (RoleTemplates, "Role Templates")
+            (StaffRoles, "Staff Roles")
         };
 
         public static bool CanAccess(int userRole, string menuKey)
@@ -144,12 +143,6 @@ namespace KRSDealerManagement.Shared.Constants
                         {
                             Key = StaffRoles, Name = "Staff Roles",
                             Controller = "StaffRoles", Action = "Index", Icon = "bi-shield-lock",
-                            Actions = new[] { "Index", "Create", "Edit" }
-                        },
-                        new MenuItemDefinition
-                        {
-                            Key = RoleTemplates, Name = "Role Templates",
-                            Controller = "RoleTemplates", Action = "Index", Icon = "bi-diagram-3",
                             Actions = new[] { "Index", "Create", "Edit" }
                         },
                         new MenuItemDefinition
@@ -223,75 +216,94 @@ namespace KRSDealerManagement.Shared.Constants
                     ParentKey = "operations",
                     ParentName = "Orders & Operations",
                     Icon = "bi-briefcase",
-                    Children = new[]
+                    Sections = new[]
                     {
-                        new MenuItemDefinition
+                        new MenuSectionDefinition
                         {
-                            Key = Balances, Name = "Balances",
-                            Controller = "Accounts", Action = "Index", Icon = "bi-person-badge",
-                            Actions = new[] { "Index", "Statement" }
+                            SectionKey = "operations_finance",
+                            SectionName = "Finance",
+                            Icon = "bi-currency-rupee",
+                            Children = new[]
+                            {
+                                new MenuItemDefinition
+                                {
+                                    Key = Balances, Name = "Balances",
+                                    Controller = "Accounts", Action = "Index", Icon = "bi-person-badge",
+                                    Actions = new[] { "Index", "Statement" }
+                                },
+                                new MenuItemDefinition
+                                {
+                                    Key = AccountAdjustments, Name = "Credit / Debit",
+                                    Controller = "Accounts", Action = "Adjust", Icon = "bi-sliders"
+                                },
+                                new MenuItemDefinition
+                                {
+                                    Key = AccountTransactions, Name = "Transaction Corrections",
+                                    Controller = "Accounts", Action = "Transactions", Icon = "bi-journal-text",
+                                    Actions = new[] { "Transactions", "AdminEditTransaction", "AdminDeleteTransaction", "TransactionCorrections" }
+                                },
+                                new MenuItemDefinition
+                                {
+                                    Key = CommissionApprovals, Name = "Commission Approvals",
+                                    Controller = "Commissions", Action = "Approvals", Icon = "bi-check2-square"
+                                },
+                                new MenuItemDefinition
+                                {
+                                    Key = Payments, Name = "Payment Approvals",
+                                    Controller = "Payments", Action = "Index", Icon = "bi-credit-card",
+                                    Actions = new[] { "Index", "AdminEdit" }
+                                }
+                            }
                         },
-                        new MenuItemDefinition
+                        new MenuSectionDefinition
                         {
-                            Key = AccountAdjustments, Name = "Credit / Debit",
-                            Controller = "Accounts", Action = "Adjust", Icon = "bi-sliders"
-                        },
-                        new MenuItemDefinition
-                        {
-                            Key = AccountTransactions, Name = "Transaction Corrections",
-                            Controller = "Accounts", Action = "Transactions", Icon = "bi-journal-text",
-                            Actions = new[] { "Transactions", "AdminEditTransaction", "AdminDeleteTransaction", "TransactionCorrections" }
-                        },
-                        new MenuItemDefinition
-                        {
-                            Key = CommissionApprovals, Name = "Commission Approvals",
-                            Controller = "Commissions", Action = "Approvals", Icon = "bi-check2-square"
-                        },
-                        new MenuItemDefinition
-                        {
-                            Key = DealerStock, Name = "Dealer Stock",
-                            Controller = "VehicleMasters", Action = "Index", Icon = "bi-boxes",
-                            Actions = new[] { "Index", "Create", "Edit" }
-                        },
-                        new MenuItemDefinition
-                        {
-                            Key = Orders, Name = "Manage Orders",
-                            Controller = "Orders", Action = "Index", Icon = "bi-cart-check",
-                            Actions = new[] { "Index", "Details", "Allocate" }
-                        },
-                        new MenuItemDefinition
-                        {
-                            Key = Vehicles, Name = "Subdealer Vehicles",
-                            Controller = "Vehicles", Action = "Index", Icon = "bi-ev-front",
-                            Actions = new[] { "Index", "AdminEdit", "AdminDelete" }
-                        },
-                        new MenuItemDefinition
-                        {
-                            Key = ShowroomStock, Name = "Subdealer Stock",
-                            Controller = "Stock", Action = "Index", Icon = "bi-box-seam",
-                            Actions = new[] { "Index" }
-                        },
-                        new MenuItemDefinition
-                        {
-                            Key = VehicleBookings, Name = "Vehicle Booking Process",
-                            Controller = "VehicleBookings", Action = "Process", Icon = "bi-pencil-square",
-                            Actions = new[] { "Process", "Manage", "Export" }
-                        },
-                        new MenuItemDefinition
-                        {
-                            Key = Returns, Name = "Return Requests",
-                            Controller = "Returns", Action = "Index", Icon = "bi-arrow-return-left"
-                        },
-                        new MenuItemDefinition
-                        {
-                            Key = ChassisHistory, Name = "Chassis History",
-                            Controller = "VehicleHistory", Action = "ChassisHistory", Icon = "bi-clock-history"
-                        },
-                        new MenuItemDefinition
-                        {
-                            Key = Payments, Name = "Payment Approvals",
-                            Controller = "Payments", Action = "Index", Icon = "bi-credit-card",
-                            Actions = new[] { "Index", "AdminEdit" }
+                            SectionKey = "operations_sales",
+                            SectionName = "Sales",
+                            Icon = "bi-cart-check",
+                            Children = new[]
+                            {
+                                new MenuItemDefinition
+                                {
+                                    Key = DealerStock, Name = "Dealer Stock",
+                                    Controller = "VehicleMasters", Action = "Index", Icon = "bi-boxes",
+                                    Actions = new[] { "Index", "Create", "Edit" }
+                                },
+                                new MenuItemDefinition
+                                {
+                                    Key = ShowroomStock, Name = "Subdealer Stock",
+                                    Controller = "Stock", Action = "Index", Icon = "bi-box-seam",
+                                    Actions = new[] { "Index" }
+                                },
+                                new MenuItemDefinition
+                                {
+                                    Key = Vehicles, Name = "Subdealer Vehicles",
+                                    Controller = "Vehicles", Action = "Index", Icon = "bi-ev-front",
+                                    Actions = new[] { "Index", "AdminEdit", "AdminDelete" }
+                                },
+                                new MenuItemDefinition
+                                {
+                                    Key = VehicleBookings, Name = "Vehicle Booking Process",
+                                    Controller = "VehicleBookings", Action = "Process", Icon = "bi-pencil-square",
+                                    Actions = new[] { "Process", "Manage", "Export" }
+                                },
+                                new MenuItemDefinition
+                                {
+                                    Key = Orders, Name = "Manage Orders",
+                                    Controller = "Orders", Action = "Index", Icon = "bi-cart-check",
+                                    Actions = new[] { "Index", "Details", "Allocate" }
+                                }
+                                ,
+                                new MenuItemDefinition
+                                {
+                                    Key = Returns, Name = "Return Requests",
+                                    Controller = "Returns", Action = "Index", Icon = "bi-arrow-return-left"
+                                },
+                                new MenuItemDefinition
+                                {
+                                    Key = ChassisHistory, Name = "Chassis History",
+                                    Controller = "VehicleHistory", Action = "ChassisHistory", Icon = "bi-clock-history"
+                                }
+                            }
                         }
                     }
                 },
@@ -466,7 +478,7 @@ namespace KRSDealerManagement.Shared.Constants
 
             foreach (var group in GetStaffMenuGroups())
             {
-                foreach (var item in group.Children)
+                foreach (var item in group.EnumerateChildren())
                 {
                     if (!string.Equals(item.Controller, controller, StringComparison.OrdinalIgnoreCase))
                         continue;
@@ -495,7 +507,7 @@ namespace KRSDealerManagement.Shared.Constants
             menuKey = "";
             foreach (var group in GetStaffMenuGroups())
             {
-                foreach (var item in group.Children)
+                foreach (var item in group.EnumerateChildren())
                 {
                     if (!string.Equals(item.Controller, controller, StringComparison.OrdinalIgnoreCase))
                         continue;

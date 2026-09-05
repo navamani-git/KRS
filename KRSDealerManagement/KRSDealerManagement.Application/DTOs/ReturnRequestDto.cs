@@ -16,6 +16,7 @@ namespace KRSDealerManagement.Application.DTOs
         public required string VehicleChassisNumber { get; set; }
         public int? SubdealerUserId { get; set; }
         public string? SubdealerName { get; set; }
+        public string? DealershipLocation { get; set; }
         public decimal RefundAmount { get; set; }
         public int Status { get; set; }
         public string? StatusName { get; set; }

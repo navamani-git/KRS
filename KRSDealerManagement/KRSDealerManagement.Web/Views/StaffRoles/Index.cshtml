@@ -1,6 +1,7 @@
 @model IEnumerable<KRSDealerManagement.Application.DTOs.StaffRoleDto>
 @{
     ViewData["Title"] = "Staff Roles";
+    ViewData["WorkflowPage"] = "roles";
     var dealerships = ViewBag.Dealerships as IEnumerable<KRSDealerManagement.Application.Queries.DealershipDto>
         ?? Enumerable.Empty<KRSDealerManagement.Application.Queries.DealershipDto>();
 }
@@ -8,14 +9,15 @@
 <div class="row mb-3">
     <div class="col-md-7">
         <h1 class="m-0"><i class="bi bi-shield-lock"></i> Staff Roles</h1>
-        <p class="text-muted">Create regional roles, configure menu access, and read-only screens.</p>
+        <p class="text-muted">Create a role per dealership, then edit name and menu access anytime.</p>
     </div>
     <div class="col-md-5 text-end">
         <a href="@Url.Action("Create")" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Add Role</a>
-        <a href="@Url.Action("Index", "RoleTemplates")" class="btn btn-outline-primary"><i class="bi bi-diagram-3"></i> Role Templates</a>
         <a href="@Url.Action("Index", "StaffUsers")" class="btn btn-outline-secondary"><i class="bi bi-person-badge"></i> Staff Users</a>
     </div>
 </div>
+
+<partial name="_StaffAccessWorkflowHelp" />
 
 <div class="card mb-3">
     <div class="card-body py-2">
@@ -58,7 +60,6 @@
                 <thead class="table-dark">
                     <tr>
                         <th>Role</th>
-                        <th>Template</th>
                         <th>Dealership</th>
                         <th>Menus</th>
                         <th>Users</th>
@@ -74,7 +75,6 @@
                                 <strong>@r.RoleName</strong><br />
                                 <code class="small">@r.RoleCode</code>
                             </td>
-                            <td>@r.RoleTemplateName</td>
                             <td>@r.DealershipName</td>
                             <td>@r.MenuCount</td>
                             <td>@r.UserCount</td>
@@ -89,7 +89,7 @@
                                 }
                             </td>
                             <td class="text-end">
-                                <a href="@Url.Action("Edit", new { id = r.RoleId })" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i> Configure</a>
+                                <a href="@Url.Action("Edit", new { id = r.RoleId })" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i> Edit</a>
                             </td>
                         </tr>
                     }

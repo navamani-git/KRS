@@ -12,6 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add<KRSDealerManagement.Web.Filters.ReadOnlyMenuGuardFilter>();
+    options.Filters.Add<KRSDealerManagement.Web.Filters.ExportPermissionFilter>();
 });
 builder.Services.Configure<FormOptions>(options =>
 {

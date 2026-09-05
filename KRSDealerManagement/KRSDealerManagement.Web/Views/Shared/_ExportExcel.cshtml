@@ -1,3 +1,8 @@
+@using KRSDealerManagement.Web.Helpers
+@if (!SessionHelper.CanExport(Context.Session))
+{
+    return;
+}
 @{
     var qs = Context.Request.QueryString.Value ?? "";
     if (qs.StartsWith("?")) qs = qs[1..];

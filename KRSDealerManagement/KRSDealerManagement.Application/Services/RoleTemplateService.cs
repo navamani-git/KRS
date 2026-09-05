@@ -46,18 +46,30 @@ namespace KRSDealerManagement.Application.Services
 
         public async Task<IReadOnlyList<RoleTemplateCatalogItem>> GetCatalogAsync(bool includeInactive = false)
         {
+            var dbTemplates = (await _unitOfWork.RoleTemplates.GetAllAsync()).ToList();
+            var builtInCodes = RoleTemplateCodes.All
+                .Select(t => t.Code)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
             var builtIn = RoleTemplateCodes.All
-                .Select(t => new RoleTemplateCatalogItem
+                .Select(t =>
                 {
-                    Code = t.Code,
-                    Name = t.Name,
-                    Description = t.Description,
-                    IsBuiltIn = true,
-                    IsActive = true
+                    var db = dbTemplates.FirstOrDefault(x =>
+                        x.TemplateCode.Equals(t.Code, StringComparison.OrdinalIgnoreCase));
+                    return new RoleTemplateCatalogItem
+                    {
+                        Code = t.Code,
+                        Name = db?.TemplateName ?? t.Name,
+                        Description = db?.Description ?? t.Description,
+                        IsBuiltIn = true,
+                        IsActive = db?.IsActive ?? true,
+                        RoleTemplateId = db?.RoleTemplateId
+                    };
                 })
                 .ToList();
 
-            var custom = (await _unitOfWork.RoleTemplates.GetAllAsync())
+            var custom = dbTemplates
+                .Where(t => !builtInCodes.Contains(t.TemplateCode))
                 .Where(t => includeInactive || t.IsActive)
                 .OrderBy(t => t.TemplateName)
                 .Select(t => new RoleTemplateCatalogItem
@@ -72,7 +84,7 @@ namespace KRSDealerManagement.Application.Services
 
             var roles = (await _unitOfWork.Roles.GetAllAsync()).ToList();
             var menuCounts = new Dictionary<int, int>();
-            foreach (var template in await _unitOfWork.RoleTemplates.GetAllAsync())
+            foreach (var template in dbTemplates)
             {
                 var menus = await _unitOfWork.RoleTemplates.GetMenusAsync(template.RoleTemplateId);
                 menuCounts[template.RoleTemplateId] = menus.Count();

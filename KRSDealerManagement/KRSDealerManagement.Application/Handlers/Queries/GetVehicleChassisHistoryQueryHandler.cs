@@ -83,9 +83,20 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var raw = new List<RawEvent>();
             var subdealerHistoryActions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+            string ResolveShowroomLabel(int? orderSubdealerUserId = null, int? accountSubdealerUserId = null)
+                => DealershipLocationHelper.ResolveShowroomLabel(
+                    vehicle,
+                    orderSubdealerUserId,
+                    accountSubdealerUserId,
+                    master != null
+                        ? new Dictionary<int, VehicleMaster> { [master.VehicleMasterId] = master }
+                        : new Dictionary<int, VehicleMaster>(),
+                    dealerships,
+                    userOrgRoles);
+
             string ResolveSubdealerName(int? userId)
             {
-                if (!userId.HasValue || userId.Value <= 0) return "Dealer Showroom";
+                if (!userId.HasValue || userId.Value <= 0) return ResolveShowroomLabel();
                 var assignment = userOrgRoles
                     .Where(a => a.UserId == userId.Value && a.IsActive)
                     .OrderByDescending(a => a.IsPrimary)
@@ -103,7 +114,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
             string ResolveDealershipName(int? userId)
             {
-                if (!userId.HasValue) return "Dealer Showroom";
+                if (!userId.HasValue) return ResolveShowroomLabel();
                 var assignment = userOrgRoles.FirstOrDefault(a => a.UserId == userId.Value && a.IsActive);
                 if (assignment?.DealershipId is int dealerId && dealerships.TryGetValue(dealerId, out var dealer))
                     return dealer.DealershipName;
@@ -222,14 +233,15 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
                 if (ret.Status == 1 && !subdealerHistoryActions.Contains("ReturnApproved"))
                 {
+                    var showroomLabel = ResolveShowroomLabel(retOrder?.SubdealerId, account?.SubdealerId);
                     Add(
                         ret.ProcessedDate.Value,
                         UnifiedVehicleStatus.ReturnApproved,
-                        $"Refund ₹{ret.RefundAmount:N2} to {accountLabel}. Moved to dealer showroom.",
+                        $"Refund ₹{ret.RefundAmount:N2} to {accountLabel}. Moved to {showroomLabel}.",
                         ret.ProcessedBy.HasValue && users.TryGetValue(ret.ProcessedBy.Value, out var admin)
                             ? admin.GetFullName()
                             : "Dealer",
-                        "Dealer Showroom",
+                        showroomLabel,
                         orderNumber);
                 }
                 else if (ret.Status == 2 && !subdealerHistoryActions.Contains("ReturnRejected"))

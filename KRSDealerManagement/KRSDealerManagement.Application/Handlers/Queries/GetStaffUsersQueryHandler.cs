@@ -24,7 +24,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 .ToHashSet();
 
             var assignments = (await _unitOfWork.UserOrgRoles.GetAllAsync())
-                .Where(a => a.IsActive && staffRoleIds.Contains(a.RoleId))
+                .Where(a => staffRoleIds.Contains(a.RoleId))
                 .ToList();
 
             if (request.DealershipId.HasValue)
