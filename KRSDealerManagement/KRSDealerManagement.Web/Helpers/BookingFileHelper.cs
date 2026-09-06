@@ -109,6 +109,17 @@ namespace KRSDealerManagement.Web.Helpers
         public static string ResolvePath(IWebHostEnvironment env, string? relativePath)
             => AppFileStorageHelper.TryResolveAbsolute(env, relativePath, out var full) ? full : "";
 
+        public static void TryDeleteStoredFile(IWebHostEnvironment env, string? relativePath)
+        {
+            if (string.IsNullOrWhiteSpace(relativePath) || !IsStoredBookingFilePath(relativePath))
+                return;
+            var absolute = ResolvePath(env, relativePath);
+            if (string.IsNullOrEmpty(absolute) || !File.Exists(absolute))
+                return;
+            try { File.Delete(absolute); }
+            catch (IOException) { }
+        }
+
         public static bool IsFileAvailable(IWebHostEnvironment env, string? relativePath)
             => AppFileStorageHelper.FileExists(env, relativePath);
 

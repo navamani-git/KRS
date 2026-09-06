@@ -28,6 +28,7 @@ namespace KRSDealerManagement.Shared.Constants
         public const string Vehicles = "vehicles";
         public const string ShowroomStock = "showroom_stock";
         public const string DealerStock = "dealer_stock";
+        public const string VehicleAging = "vehicle_aging";
         public const string WarrantyClaims = "warranty_claims";
         public const string MyWarrantyClaims = "my_warranty_claims";
         public const string WarrantyParts = "warranty_parts";

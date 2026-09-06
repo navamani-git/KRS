@@ -11,7 +11,9 @@
         'accountId',
         'id',
         'isActive',
-        'searchTerm'
+        'searchTerm',
+        'sort',
+        'dir'
     ];
     var activeInput = null;
     var suggestEl = null;
@@ -128,8 +130,26 @@
             params.set(key, cf[key]);
         });
 
+        params.delete('page');
+        navigateGridParams(params);
+    }
+
+    function navigateGridParams(params) {
+        var path = window.location.pathname;
         var qs = params.toString();
-        window.location.assign(window.location.pathname + (qs ? '?' + qs : ''));
+        if (window.KrsQueryString && typeof window.KrsQueryString.pack === 'function' && typeof window.krsNavigate === 'function') {
+            var values = {};
+            params.forEach(function (value, key) {
+                values[key] = value;
+            });
+            window.KrsQueryString.pack(values).then(function (q) {
+                window.krsNavigate(path + '?q=' + encodeURIComponent(q), 'Loading...');
+            }).catch(function () {
+                window.location.assign(path + (qs ? '?' + qs : ''));
+            });
+            return;
+        }
+        window.location.assign(path + (qs ? '?' + qs : ''));
     }
 
     function clearGridColumnFilters(formId) {
@@ -145,7 +165,7 @@
         appendFormFields(params, form);
 
         var qs = params.toString();
-        window.location.assign(window.location.pathname + (qs ? '?' + qs : ''));
+        navigateGridParams(params);
     }
 
     function hasActiveColumnFilters() {
@@ -605,4 +625,6 @@
     }
 
     window.addEventListener('load', initAll);
+    window.krsApplyGridFilters = applyGridFilters;
+    window.krsNavigateGridParams = navigateGridParams;
 })();

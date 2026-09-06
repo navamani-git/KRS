@@ -69,6 +69,10 @@ namespace KRSDealerManagement.Domain.Entities
         public DateTime? NumberPlateReceivedDate { get; set; }
         public string? NumberPlateReceivedBy { get; set; }
         public string? SubsidyId { get; set; }
+        public DateTime? SubsidyIdDate { get; set; }
+        public bool SubsidyCompletedApproved { get; set; }
+        public DateTime? SubsidyCompletedApprovedDate { get; set; }
+        public int? SubsidyCompletedApprovedBy { get; set; }
         public string? SubsidyCustomerNameCaps { get; set; }
         public string? FaceVerificationPath { get; set; }
         public string? RcImagePath { get; set; }

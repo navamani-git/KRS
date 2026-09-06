@@ -1,0 +1,30 @@
+@using System.IO
+@using KRSDealerManagement.Web.Helpers
+@{
+    var path = ViewData["FilePath"] as string;
+    var label = ViewData["FileLabel"] as string ?? "File";
+    var preview = ViewData["Preview"] as bool? ?? false;
+    var fileName = string.IsNullOrWhiteSpace(path) ? null : System.IO.Path.GetFileName(path);
+}
+
+@if (!string.IsNullOrWhiteSpace(path) && !string.IsNullOrWhiteSpace(fileName))
+{
+    <div class="mt-1">
+        <small class="text-success d-block">
+            <i class="bi bi-check-circle"></i> Last uploaded: <strong>@fileName</strong>
+        </small>
+        <div class="d-flex flex-wrap align-items-center gap-2 mt-1">
+            <partial name="_FileAttachmentLinks" view-data='new ViewDataDictionary(ViewData) {
+                { "FilePath", path }, { "FileLabel", label }, { "FileCompact", true } }' />
+            @if (preview)
+            {
+                <a href="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "ViewFile", new { path }, "VehicleBookings")"
+                   target="_blank" rel="noopener">
+                    <img src="@QueryStringUrlHelper.EncryptedAction(Url, QueryCrypto, "ViewFile", new { path }, "VehicleBookings")"
+                         alt="@label" class="img-thumbnail" style="max-height:72px;max-width:120px;object-fit:cover" />
+                </a>
+            }
+        </div>
+        <small class="text-muted">Leave empty to keep this file. Choose a new file only to replace it.</small>
+    </div>
+}

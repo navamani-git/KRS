@@ -259,6 +259,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9BY2NvdW50U3RhdGVtZW50TGVkZ2VyLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Shared/_BookingCurrentFile.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9Cb29raW5nQ3VycmVudEZpbGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Shared/_BookingCustomerFormFields.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9Cb29raW5nQ3VzdG9tZXJGb3JtRmllbGRzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
@@ -409,6 +413,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Subdealers/_MenuPermissionGroups.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3ViZGVhbGVyc1xfTWVudVBlcm1pc3Npb25Hcm91cHMuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/VehicleAging/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVmVoaWNsZUFnaW5nXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/VehicleBookings/Book.cshtml]

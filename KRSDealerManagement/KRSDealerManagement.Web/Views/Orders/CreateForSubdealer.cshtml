@@ -10,6 +10,21 @@
     ViewData["ExcelImportReturnAction"] = "CreateForSubdealer";
 }
 
+<style>
+    #itemsTable th.chassis-col,
+    #itemsTable td.chassis-col {
+        min-width: 300px;
+        width: 300px;
+    }
+    #itemsTable select.chassis-select {
+        min-width: 300px;
+        width: 100%;
+        font-family: ui-monospace, Consolas, "Courier New", monospace;
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
+</style>
+
 <div class="row mb-3">
     <div class="col-md-6">
         <h1 class="m-0"><i class="bi bi-cart-plus"></i> Create Order for Subdealer</h1>
@@ -33,13 +48,13 @@
                 <div class="card-body">
                     <div class="form-group mb-3">
                         <label class="fw-bold">Subdealer <span class="text-danger">*</span></label>
-                        <select name="subdealerId" id="subdealerId" class="form-select" required @(canViewBalances ? "onchange=\"loadAccount()\"" : "")>
+                        <select name="subdealerId" id="subdealerId" class="form-select" required onchange="onSubdealerChanged()">
                             <option value="">-- Select Subdealer --</option>
                             @if (subdealers != null)
                             {
                                 @foreach (var s in subdealers)
                                 {
-                                    <option value="@s.UserId">@s.GetFullName()</option>
+                                    <option value="@s.UserId" data-dealership-id="@s.DealershipId">@s.GetFullName()</option>
                                 }
                             }
                         </select>
@@ -92,7 +107,7 @@
                                     <th>Model</th>
                                     <th>Color</th>
                                     <th>Price (₹)</th>
-                                    <th>Chassis (Dealer Stock) <span class="text-danger">*</span></th>
+                                    <th class="chassis-col">Chassis (Dealer Stock) <span class="text-danger">*</span></th>
                                     <th>Motor No</th>
                                     <th>Battery No</th>
                                     <th>Charger No</th>
@@ -130,7 +145,7 @@
     <script>
         (function () {
             const canViewBalances = @(canViewBalances ? "true" : "false");
-            const dealershipId = @(SessionHelper.GetDealershipScope(Context.Session)?.ToString() ?? "null");
+            const sessionDealershipId = @(SessionHelper.GetDealershipScope(Context.Session)?.ToString() ?? "null");
             const models = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
                 (models ?? new List<VehicleModelDto>())
                 .Select(m => new { id = m.ModelId, name = m.ModelName })));
@@ -139,6 +154,79 @@
 
             let availableBalance = 0;
             let nextRowId = 0;
+            const chassisCache = {};
+
+            function chassisSelectEls() {
+                return document.querySelectorAll('#itemsBody select[name="vehicleMasterIds"]');
+            }
+
+            function selectedMasterIds(exceptId) {
+                const taken = new Set();
+                chassisSelectEls().forEach(el => {
+                    const rid = el.id.replace('master_', '');
+                    if (String(rid) === String(exceptId)) return;
+                    if (el.value) taken.add(String(el.value));
+                });
+                return taken;
+            }
+
+            function cacheKey(dealershipId, modelId, colorId) {
+                return `${dealershipId}_${modelId}_${colorId}`;
+            }
+
+            function fillChassisSelect(id, options) {
+                const select = document.getElementById(`master_${id}`);
+                if (!select) return;
+                const taken = selectedMasterIds(id);
+                const current = select.value;
+                select.innerHTML = '<option value="">Select chassis</option>';
+                let shown = 0;
+                (options || []).forEach(m => {
+                    const vid = String(m.vehicleMasterId || m.VehicleMasterId || '');
+                    if (!vid) return;
+                    if (taken.has(vid) && vid !== String(current)) return;
+                    const opt = document.createElement('option');
+                    opt.value = vid;
+                    opt.textContent = m.chassisNumber || m.ChassisNumber || '';
+                    opt.dataset.motor = m.motorNo || m.MotorNo || '';
+                    opt.dataset.battery = m.batteryNo || m.BatteryNo || '';
+                    opt.dataset.charger = m.chargerNo || m.ChargerNo || '';
+                    opt.dataset.controller = m.controllerNo || m.ControllerNo || '';
+                    opt.dataset.converter = m.converterNo || m.ConverterNo || '';
+                    select.appendChild(opt);
+                    shown += 1;
+                });
+                if (current) select.value = current;
+                if (shown === 0) {
+                    const empty = document.createElement('option');
+                    empty.value = '';
+                    empty.textContent = 'No chassis in dealer stock for this model/color';
+                    select.appendChild(empty);
+                }
+            }
+
+            function refreshOtherChassisDropdowns(exceptId) {
+                const dealershipId = resolveDealershipId();
+                chassisSelectEls().forEach(el => {
+                    const id = el.id.replace('master_', '');
+                    if (!id || String(id) === String(exceptId)) return;
+                    const modelId = document.getElementById(`model_${id}`)?.value;
+                    const colorId = document.getElementById(`color_${id}`)?.value;
+                    if (!dealershipId || !modelId || !colorId) return;
+                    const cached = chassisCache[cacheKey(dealershipId, modelId, colorId)];
+                    if (cached) fillChassisSelect(id, cached);
+                });
+            }
+
+            function fillSerials(id) {
+                const select = document.getElementById(`master_${id}`);
+                const opt = select?.selectedOptions?.[0];
+                document.getElementById(`motor_${id}`).value = opt?.dataset.motor || '';
+                document.getElementById(`battery_${id}`).value = opt?.dataset.battery || '';
+                document.getElementById(`charger_${id}`).value = opt?.dataset.charger || '';
+                document.getElementById(`controller_${id}`).value = opt?.dataset.controller || '';
+                document.getElementById(`converter_${id}`).value = opt?.dataset.converter || '';
+            }
 
             function buildModelSelect(id, onChange) {
                 let opts = `<option value="">-- Select --</option>`;
@@ -152,7 +240,7 @@
             }
 
             function chassisSelect(id) {
-                return `<select name="vehicleMasterIds" id="master_${id}" class="form-select form-select-sm" required onchange="onChassisChanged(${id})">
+                return `<select name="vehicleMasterIds" id="master_${id}" class="form-select form-select-sm chassis-select" required onchange="onChassisChanged(${id})">
                     <option value="">Select chassis</option></select>`;
             }
 
@@ -161,38 +249,54 @@
             }
 
             window.onChassisChanged = function (id) {
-                const select = document.getElementById(`master_${id}`);
-                const opt = select.selectedOptions[0];
-                document.getElementById(`motor_${id}`).value = opt?.dataset.motor || '';
-                document.getElementById(`battery_${id}`).value = opt?.dataset.battery || '';
-                document.getElementById(`charger_${id}`).value = opt?.dataset.charger || '';
-                document.getElementById(`controller_${id}`).value = opt?.dataset.controller || '';
-                document.getElementById(`converter_${id}`).value = opt?.dataset.converter || '';
+                fillSerials(id);
+                refreshOtherChassisDropdowns(id);
             };
+
+            function resolveDealershipId() {
+                if (sessionDealershipId)
+                    return sessionDealershipId;
+                const opt = document.getElementById('subdealerId')?.selectedOptions?.[0];
+                const id = parseInt(opt?.dataset.dealershipId || '0', 10);
+                return id > 0 ? id : null;
+            }
 
             async function loadChassisOptions(id) {
                 const modelId = document.getElementById(`model_${id}`).value;
                 const colorId = document.getElementById(`color_${id}`).value;
                 const select = document.getElementById(`master_${id}`);
-                if (!dealershipId || !modelId || !colorId) return;
-                const res = await fetch(`/VehicleMasters/Available?dealershipId=${dealershipId}&modelId=${modelId}&colorId=${colorId}`);
-                const options = await res.json();
-                const current = select.value;
+                const dealershipId = resolveDealershipId();
+                if (!select) return;
                 select.innerHTML = '<option value="">Select chassis</option>';
-                options.forEach(m => {
-                    const opt = document.createElement('option');
-                    opt.value = m.vehicleMasterId;
-                    opt.textContent = m.chassisNumber;
-                    opt.dataset.motor = m.motorNo || '';
-                    opt.dataset.battery = m.batteryNo || '';
-                    opt.dataset.charger = m.chargerNo || '';
-                    opt.dataset.controller = m.controllerNo || '';
-                    opt.dataset.converter = m.converterNo || '';
-                    select.appendChild(opt);
-                });
-                if (current) select.value = current;
-                onChassisChanged(id);
+                fillSerials(id);
+                if (!dealershipId || !modelId || !colorId) return;
+                const key = cacheKey(dealershipId, modelId, colorId);
+                try {
+                    if (!chassisCache[key]) {
+                        const res = await KrsQueryString.fetchGet('/VehicleMasters/Available', {
+                            dealershipId: String(dealershipId),
+                            modelId: String(modelId),
+                            colorId: String(colorId)
+                        });
+                        if (!res.ok) return;
+                        chassisCache[key] = await res.json();
+                    }
+                    fillChassisSelect(id, chassisCache[key]);
+                    fillSerials(id);
+                    refreshOtherChassisDropdowns(id);
+                } catch (e) {
+                    console.error(e);
+                }
             }
+
+            window.onSubdealerChanged = function () {
+                if (canViewBalances) loadAccount();
+                Object.keys(chassisCache).forEach(k => delete chassisCache[k]);
+                chassisSelectEls().forEach(el => {
+                    const id = el.id.replace('master_', '');
+                    if (id) loadChassisOptions(id);
+                });
+            };
 
             window.loadAccount = function () {
                 if (!canViewBalances) return;
@@ -234,13 +338,13 @@
                 row.id = `row_${id}`;
                 row.innerHTML = `
                     <td>${buildModelSelect(`model_${id}`, `onModelChanged(${id})`)}</td>
-                    <td>${buildColorSelect(`color_${id}`, `loadPrice(${id})`)}</td>
+                    <td>${buildColorSelect(`color_${id}`, `onColorChanged(${id})`)}</td>
                     <td>
                         <input type="number" name="unitPrices" id="price_${id}" class="form-control form-control-sm"
                             value="0" min="0" step="0.01" readonly style="width:100px"/>
                         <span id="total_${id}" class="d-none">0</span>
                     </td>
-                    <td>${chassisSelect(id)}</td>
+                    <td class="chassis-col">${chassisSelect(id)}</td>
                     <td>${readonlySerial('motorNos', `motor_${id}`)}</td>
                     <td>${readonlySerial('batteryNos', `battery_${id}`)}</td>
                     <td>${readonlySerial('chargerNos', `charger_${id}`)}</td>
@@ -258,7 +362,13 @@
                 if (document.getElementById('itemsBody').rows.length === 0) {
                     document.getElementById('noItemsMsg').classList.remove('d-none');
                 }
+                refreshOtherChassisDropdowns(null);
                 updateTotals();
+            };
+
+            window.onColorChanged = function (id) {
+                loadChassisOptions(id);
+                loadPrice(id);
             };
 
             window.onModelChanged = function (id) {
@@ -267,6 +377,7 @@
                 KrsModelColors.populateSelect(colorSelect, modelSelect.value, null);
                 document.getElementById(`price_${id}`).value = 0;
                 document.getElementById(`total_${id}`).textContent = 0;
+                loadChassisOptions(id);
                 updateTotals();
             };
 
@@ -282,7 +393,11 @@
                         document.getElementById(`total_${id}`).textContent = data.success ? data.price : 0;
                         updateTotals();
                         if (!data.success) alert(data.message);
-                        loadChassisOptions(id);
+                    })
+                    .catch(() => {
+                        document.getElementById(`price_${id}`).value = 0;
+                        document.getElementById(`total_${id}`).textContent = 0;
+                        updateTotals();
                     });
             };
 

@@ -1,0 +1,147 @@
+@model IEnumerable<KRSDealerManagement.Application.DTOs.VehicleAgingRowDto>
+@using KRSDealerManagement.Application.DTOs
+@using KRSDealerManagement.Shared.Helpers
+@using KRSDealerManagement.Web.Models
+@{
+    ViewData["Title"] = "Vehicle Aging";
+    var isSubdealerView = ViewBag.IsSubdealerView as bool? ?? false;
+    var locations = ViewBag.DealershipLocations as IEnumerable<string> ?? Enumerable.Empty<string>();
+    var subdealers = ViewBag.Subdealers as IEnumerable<UserDto> ?? Enumerable.Empty<UserDto>();
+    var selectedLocation = ViewBag.SelectedDealershipLocation as string;
+    string Fmt(DateTime? value) => value.HasValue ? IstTime.ToIst(value)!.Value.ToString("yyyy-MM-dd") : "—";
+    string Days(int? value) => value.HasValue ? value.Value.ToString() : "—";
+}
+
+<div class="row mb-3">
+    <div class="col-lg-8">
+        <h1 class="m-0"><i class="bi bi-hourglass-split"></i> Vehicle Aging</h1>
+        <p class="text-muted mb-0">
+            Allocated vehicles stay here until subsidy documents (Face, RC, Booth, Undertaking) are uploaded
+            and staff/admin clicks <strong>All subsidy completed – Approve</strong> on Manage.
+            Return requested / returned vehicles are excluded.
+        </p>
+    </div>
+    <div class="col-lg-4 text-lg-end mt-2 mt-lg-0">
+        <partial name="_ExportExcel" />
+        <div class="mt-2">
+            <span class="badge bg-primary fs-6">On this page: @Model.Count() of @(ViewBag.TotalItems ?? Model.Count())</span>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end" id="gridFilterForm">
+            @if (!isSubdealerView)
+            {
+                <div class="col-md-3">
+                    <label class="form-label form-label-sm mb-0">Location</label>
+                    <select name="dealershipLocation" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="">All locations</option>
+                        @foreach (var loc in locations)
+                        {
+                            <option value="@loc" selected="@(string.Equals(selectedLocation, loc, StringComparison.OrdinalIgnoreCase))">@loc</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label form-label-sm mb-0">Subdealer</label>
+                    <select name="subdealerId" class="form-select form-select-sm">
+                        <option value="">All subdealers</option>
+                        @foreach (var s in subdealers)
+                        {
+                            <option value="@s.UserId" selected="@(ViewBag.SelectedSubdealerId?.ToString() == s.UserId.ToString())">@s.GetFullName()</option>
+                        }
+                    </select>
+                </div>
+            }
+            <div class="col-md-4">
+                <label class="form-label form-label-sm mb-0">Search</label>
+                <input type="text" name="searchTerm" class="form-control form-control-sm"
+                       placeholder="ID, chassis, model..." value="@ViewBag.SearchTerm" />
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-funnel"></i> Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title mb-0">Aging list (@(ViewBag.TotalItems ?? Model.Count()))</h3>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Any())
+        {
+            <partial name="_GridScrollHint" />
+            <div class="table-responsive">
+                <table class="table table-sm table-hover table-striped mb-0 grid-excel-table grid-data-table" data-grid-id="@GridIds.VehicleAging">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Chassis</th>
+                            <th>Model</th>
+                            <th>Color</th>
+                            @if (!isSubdealerView)
+                            {
+                                <th>Subdealer</th>
+                            }
+                            <th>Purchase Date</th>
+                            <th>Booked Date</th>
+                            <th>Booked Aging</th>
+                            <th>Paper Received Date</th>
+                            <th>Paper Received Aging</th>
+                            <th>Invoice Date</th>
+                            <th>Invoice Aging</th>
+                            <th>Insurance Date</th>
+                            <th>Insurance Aging</th>
+                            <th>Agent Date</th>
+                            <th>Agent Aging</th>
+                            <th>Registration Date</th>
+                            <th>Registration Aging</th>
+                            <th>Subsidy Aging</th>
+                            <th>Subsidy Documents Aging</th>
+                        </tr>
+                        <partial name="_PaginatedGridFilters" />
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model)
+                        {
+                            <tr>
+                                <td>@r.VehicleId</td>
+                                <td class="text-nowrap">@r.ChassisNumber</td>
+                                <td>@r.ModelName</td>
+                                <td>@r.ColorName</td>
+                                @if (!isSubdealerView)
+                                {
+                                    <td>@r.SubdealerName</td>
+                                }
+                                <td class="text-nowrap">@Fmt(r.PurchaseDate)</td>
+                                <td class="text-nowrap">@Fmt(r.BookedDate)</td>
+                                <td>@Days(r.BookedAging)</td>
+                                <td class="text-nowrap">@Fmt(r.PaperReceivedDate)</td>
+                                <td>@Days(r.PaperReceivedAging)</td>
+                                <td class="text-nowrap">@Fmt(r.InvoiceDate)</td>
+                                <td>@Days(r.InvoiceAging)</td>
+                                <td class="text-nowrap">@Fmt(r.InsuranceDate)</td>
+                                <td>@Days(r.InsuranceAging)</td>
+                                <td class="text-nowrap">@Fmt(r.AgentDate)</td>
+                                <td>@Days(r.AgentAging)</td>
+                                <td class="text-nowrap">@Fmt(r.RegistrationDate)</td>
+                                <td>@Days(r.RegistrationAging)</td>
+                                <td>@Days(r.SubsidyAging)</td>
+                                <td>@Days(r.SubsidyDocumentsAging)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <partial name="_Pagination" />
+        }
+        else
+        {
+            <p class="text-muted p-3 mb-0">No vehicles on aging.</p>
+        }
+    </div>
+</div>

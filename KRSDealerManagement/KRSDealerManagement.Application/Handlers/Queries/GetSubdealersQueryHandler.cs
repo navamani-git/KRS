@@ -70,6 +70,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     FirstName = org.SubDealerName,
                     LastName = org.Location ?? "",
                     District = dealership?.Location?.Trim(),
+                    DealershipId = org.DealershipId,
                     UserRole = 2,
                     PhoneNumber = org.PrimaryPhone ?? "",
                     IsActive = org.IsActive,
@@ -89,9 +90,26 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     && GridFilterHelper.MatchesContains(s.IsActive ? "Active" : "Inactive", GridFilterHelper.GetFilter(cf, "status"))
                     && GridFilterHelper.MatchesDate(s.CreatedDate, GridFilterHelper.GetDateFilter(cf, "created"), GridFilterHelper.GetDateFilter(cf, "created")))
                     .ToList();
+
+                if (GridFilterHelper.TryGetSort(cf, out _, out _))
+                    return GridFilterHelper.ApplySort(result, cf, SubdealerSortText, SubdealerSortDates).ToList();
             }
 
             return result;
         }
+
+        private static readonly Dictionary<string, Func<UserDto, string?>> SubdealerSortText = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["name"] = s => s.GetFullName(),
+            ["district"] = s => s.District,
+            ["location"] = s => s.LastName,
+            ["phone"] = s => s.PhoneNumber,
+            ["status"] = s => s.IsActive ? "Active" : "Inactive"
+        };
+
+        private static readonly Dictionary<string, Func<UserDto, DateTime?>> SubdealerSortDates = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["created"] = s => s.CreatedDate
+        };
     }
 }

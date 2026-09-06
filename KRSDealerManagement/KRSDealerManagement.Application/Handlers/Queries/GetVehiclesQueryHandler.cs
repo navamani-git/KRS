@@ -190,9 +190,33 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     && GridFilterHelper.MatchesContains(v.GetStatusDisplay(), GridFilterHelper.GetFilter(cf, "status"))
                     && GridFilterHelper.MatchesContains(v.GetDeliveryStatusDisplay(), GridFilterHelper.GetFilter(cf, "delivery"))
                     && GridFilterHelper.MatchesContains(v.CurrentPrice.ToString("N2"), GridFilterHelper.GetFilter(cf, "price")));
+
+                if (GridFilterHelper.TryGetSort(cf, out _, out _))
+                    return GridFilterHelper.ApplySort(result, cf, VehicleSortText, VehicleSortDates).ToList();
             }
 
             return result.OrderByDescending(v => v.CreatedDate).ToList();
         }
+
+        private static readonly Dictionary<string, Func<VehicleDto, string?>> VehicleSortText = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["subdealer"] = v => v.SubdealerName,
+            ["orderNumber"] = v => v.OrderNumber,
+            ["chassis"] = v => v.ChassisNumber,
+            ["model"] = v => v.ModelName,
+            ["color"] = v => v.ColorName,
+            ["source"] = v => v.GetSourceDisplay(),
+            ["price"] = v => v.CurrentPrice.ToString("N2"),
+            ["delivery"] = v => v.GetDeliveryStatusDisplay(),
+            ["status"] = v => v.GetStatusDisplay(),
+            ["motor"] = v => v.MotorNo,
+            ["battery"] = v => v.BatteryNo
+        };
+
+        private static readonly Dictionary<string, Func<VehicleDto, DateTime?>> VehicleSortDates = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["orderDate"] = v => v.OrderDate,
+            ["allocated"] = v => v.AllocatedDate
+        };
     }
 }

@@ -28,6 +28,7 @@ namespace KRSDealerManagement.Shared.Constants
         public const string Vehicles = "vehicles";
         public const string VehiclesView = "vehicles_view";
         public const string VehiclesBookingStages = "vehicles_booking_stages";
+        public const string VehicleAging = "vehicle_aging";
         public const string VehiclesCreate = "vehicles_create";
         public const string VehiclesEdit = "vehicles_edit";
         public const string MyReturns = "my_returns";
@@ -61,7 +62,7 @@ namespace KRSDealerManagement.Shared.Constants
                 Dashboard, Home,
                 PurchaseOrders, PurchaseOrderCreate, PurchaseOrderView, PurchaseOrderEdit, PurchaseOrderApprove,
                 Commissions, CommissionSubmit, CommissionView, CommissionInvoiced, CommissionApprove,
-                Vehicles, VehiclesView, VehiclesBookingStages, VehiclesCreate, VehiclesEdit, MyReturns,
+                Vehicles, VehiclesView, VehiclesBookingStages, VehicleAging, VehiclesCreate, VehiclesEdit, MyReturns,
                 MyWarrantyClaims, WarrantyApply,
                 Account, AccountBalance, AccountTransactions, AccountStatements, MyPayments, Reports,
                 AdminPanel, SubdealerManagement, AccountManagement, PermissionManagement,
@@ -267,6 +268,16 @@ namespace KRSDealerManagement.Shared.Constants
                 Action = "MyRegisteredAwaitingPlate",
                 Icon = "bi-card-checklist",
                 Actions = new[] { "MyRegisteredAwaitingPlate", "NumberPlateReceived" }
+            },
+            new MenuItemDefinition
+            {
+                Key = VehicleAging,
+                Name = "Vehicle Aging",
+                DefaultAccessible = true,
+                Controller = "VehicleAging",
+                Action = "Index",
+                Icon = "bi-hourglass-split",
+                Actions = new[] { "Index", "Export" }
             }
         };
 
@@ -303,6 +314,7 @@ namespace KRSDealerManagement.Shared.Constants
                 Vehicles => "Vehicles",
                 VehiclesView => "View Vehicles",
                 VehiclesBookingStages => "Vehicle Booking Stages",
+                VehicleAging => "Vehicle Aging",
                 MyReturns => "My Returns",
                 MyWarrantyClaims => "My Warranty Claims",
                 WarrantyApply => "Apply Warranty / Campaign",

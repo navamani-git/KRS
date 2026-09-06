@@ -12,6 +12,7 @@ wwwroot\js\grid-columns.js
 wwwroot\js\grid-combobox.js
 wwwroot\js\grid-resize.js
 wwwroot\js\grid-scroll.js
+wwwroot\js\grid-sort.js
 wwwroot\js\model-color-filter.js
 wwwroot\js\price-color-picker.js
 wwwroot\js\query-string.js

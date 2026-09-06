@@ -551,7 +551,9 @@
         Array.from(th.childNodes).forEach(function (node) {
             if (node.nodeType === 1) {
                 var el = node;
-                if (el.classList.contains('grid-col-resize-handle') || el.classList.contains('grid-col-expand-btn')) {
+                if (el.classList.contains('grid-col-resize-handle')
+                    || el.classList.contains('grid-col-expand-btn')
+                    || el.classList.contains('grid-col-sort')) {
                     return;
                 }
             }

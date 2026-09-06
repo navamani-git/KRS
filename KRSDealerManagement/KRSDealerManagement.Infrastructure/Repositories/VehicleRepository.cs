@@ -99,6 +99,7 @@ SELECT
     ISNULL(sv.Remarks, '') AS Notes,
     sv.RegistrationNumber,
     sv.DeliveryDate,
+    sv.AllocatedDate,
     sv.CreatedBy,
     sv.CreatedDate,
     sv.ModifiedBy,

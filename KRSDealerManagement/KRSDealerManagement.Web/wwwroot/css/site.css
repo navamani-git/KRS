@@ -867,6 +867,31 @@ table.grid-excel-table thead tr:not(.grid-column-filters) th .grid-col-header-te
     padding-right: 18px;
 }
 
+table.grid-excel-table th.grid-th-sortable,
+.grid-scroll-panel table.grid-excel-table th.grid-th-sortable {
+    padding-right: 28px !important;
+}
+
+table.grid-excel-table .grid-col-sort,
+.grid-scroll-panel table.grid-excel-table .grid-col-sort {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 0;
+    background: transparent;
+    color: inherit;
+    padding: 0 2px;
+    line-height: 1;
+    opacity: 0.75;
+    z-index: 3;
+}
+
+table.grid-excel-table .grid-col-sort:hover,
+.grid-scroll-panel table.grid-excel-table .grid-col-sort:hover {
+    opacity: 1;
+}
+
 table.grid-excel-table th[aria-hidden="true"],
 table.grid-excel-table td[aria-hidden="true"],
 .grid-scroll-panel table.grid-excel-table th[aria-hidden="true"],

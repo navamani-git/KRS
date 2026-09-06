@@ -285,6 +285,37 @@ namespace KRSDealerManagement.Web.Helpers
                     ["allocated"] = r => r.AllocatedDate
                 });
 
+        public static IEnumerable<VehicleAgingRowDto> ApplyVehicleAging(
+            IEnumerable<VehicleAgingRowDto> rows,
+            IReadOnlyDictionary<string, string>? filters)
+            => GridRowFilterApplier.Apply(GridScreenIds.VehicleAging, rows, filters,
+                new Dictionary<string, Func<VehicleAgingRowDto, string?>>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["id"] = r => r.VehicleId.ToString(),
+                    ["chassis"] = r => r.ChassisNumber,
+                    ["model"] = r => r.ModelName,
+                    ["color"] = r => r.ColorName,
+                    ["subdealer"] = r => r.SubdealerName,
+                    ["bookedAging"] = r => r.BookedAging?.ToString(),
+                    ["paperAging"] = r => r.PaperReceivedAging?.ToString(),
+                    ["invoiceAging"] = r => r.InvoiceAging?.ToString(),
+                    ["insuranceAging"] = r => r.InsuranceAging?.ToString(),
+                    ["agentAging"] = r => r.AgentAging?.ToString(),
+                    ["registrationAging"] = r => r.RegistrationAging?.ToString(),
+                    ["subsidyAging"] = r => r.SubsidyAging?.ToString(),
+                    ["subsidyDocsAging"] = r => r.SubsidyDocumentsAging?.ToString()
+                },
+                new Dictionary<string, Func<VehicleAgingRowDto, DateTime?>>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["purchase"] = r => r.PurchaseDate,
+                    ["booked"] = r => r.BookedDate,
+                    ["paper"] = r => r.PaperReceivedDate,
+                    ["invoice"] = r => r.InvoiceDate,
+                    ["insurance"] = r => r.InsuranceDate,
+                    ["agent"] = r => r.AgentDate,
+                    ["registration"] = r => r.RegistrationDate
+                });
+
         public static IEnumerable<VehicleMasterDto> ApplyDealerStock(
             IEnumerable<VehicleMasterDto> rows,
             IReadOnlyDictionary<string, string>? filters)

@@ -131,6 +131,26 @@ namespace KRSDealerManagement.Web.Helpers
                 return vehiclesView;
             }
 
+            if (IsSubdealer(session)
+                && (string.Equals(menuKey, MenuKeys.VehicleAging, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(menuKey, StaffMenuAccess.VehicleAging, StringComparison.OrdinalIgnoreCase)))
+            {
+                if (map.TryGetValue(MenuKeys.VehicleAging, out var explicitAging))
+                    return explicitAging;
+                if (map.TryGetValue(MenuKeys.VehiclesView, out var subVehicles))
+                    return subVehicles;
+                if (map.TryGetValue(MenuKeys.VehiclesBookingStages, out var subStages))
+                    return subStages;
+            }
+
+            if (string.Equals(menuKey, StaffMenuAccess.VehicleAging, StringComparison.OrdinalIgnoreCase))
+            {
+                if (map.TryGetValue(StaffMenuAccess.VehicleBookings, out var bookingAging))
+                    return bookingAging;
+                if (map.TryGetValue(StaffMenuAccess.Vehicles, out var vehiclesAging))
+                    return vehiclesAging;
+            }
+
             return MenuAccessLevel.None;
         }
 

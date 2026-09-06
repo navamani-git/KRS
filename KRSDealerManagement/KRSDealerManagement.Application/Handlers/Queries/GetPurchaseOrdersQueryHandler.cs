@@ -108,10 +108,31 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     && GridFilterHelper.MatchesDate(o.CreatedDate, GridFilterHelper.GetDateFilter(cf, "created"), GridFilterHelper.GetDateFilter(cf, "created"))
                     && GridFilterHelper.MatchesDate(o.LastAllocatedDate, GridFilterHelper.GetDateFilter(cf, "allocated"), GridFilterHelper.GetDateFilter(cf, "allocated"))
                     && GridFilterHelper.MatchesDate(o.ApprovedDate, GridFilterHelper.GetDateFilter(cf, "approved"), GridFilterHelper.GetDateFilter(cf, "approved")));
+
+                if (GridFilterHelper.TryGetSort(cf, out _, out _))
+                    return GridFilterHelper.ApplySort(result, cf, OrderSortText, OrderSortDates).ToList();
             }
 
             return result.OrderByDescending(o => o.CreatedDate).ToList();
         }
+
+        private static readonly Dictionary<string, Func<PurchaseOrderDto, string?>> OrderSortText = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["orderNumber"] = o => o.OrderNumber,
+            ["subdealer"] = o => o.SubdealerName,
+            ["qty"] = o => o.TotalQuantity.ToString(),
+            ["pending"] = o => o.PendingItemCount.ToString(),
+            ["amount"] = o => o.TotalAmount.ToString("N2"),
+            ["status"] = o => o.GetStatusDisplay(),
+            ["notes"] = o => o.AdminNotes ?? o.SubdealerNotes
+        };
+
+        private static readonly Dictionary<string, Func<PurchaseOrderDto, DateTime?>> OrderSortDates = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["created"] = o => o.CreatedDate,
+            ["allocated"] = o => o.LastAllocatedDate,
+            ["approved"] = o => o.ApprovedDate
+        };
 
         private static DateTime? ResolveLastAllocatedDate(IEnumerable<Domain.Entities.PurchaseOrderItem> items, DateTime? orderApprovedDate)
         {

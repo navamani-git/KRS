@@ -1,5 +1,22 @@
-I wanted a new screen say vehicle aging that screen business logic will business
+1) Error creating login: Violation of UNIQUE KEY constraint 'UQ_Users_A9D10534F17034FA'. Cannot insert duplicate key in object 'dbo.Users'. The duplicate key value is (rm_motors@krs.local). The statement has been terminated.
 
-1) This screen will show for dealers and sub dealers
-2) The each vehcile rows will show in this screen untill the subdealers have uploaded faceverification, 
-All subdealers vehicle untill the su 
+2) In Approve payment Screen -Acual amount received - Comma is not comming
+
+3) In add vehicle screen (Subdealer ) Option to inclease quantity in the text box
+
+4) sub dealer user also have a restriction/allow export to excel allow not allow while creatig user editing user
+
+5) In add vehicle screen price not showing as comma seperate
+
+6) In booking the dropdowns Fancy num, Payment mode, Financier name dropdown is showing some 1st value as default insted select should come
+
+7) VehicleBookings/Manage screen we login as admin it shows booking detals as tablur column but if i logged in as staff users that is again showed as old formate for staff also it should show like the same like tabular column
+
+8) Status cannot be earlier than the latest milestone date entered. Clear later dates or pick a matching status. - I logged in as a staff user
+
+9) I logged in as staff user and entered Agent date say 2026-09-06 10:05 and Registration date as 2026-09-06 10:06 then say i cleared both and change 2026-09-06 10:04 it says choose prior date , I believe its cleared in cache and not allow if i cleared
+
+10 ) I believe the user role (staff role is not working properly) Say i have created a staff user named as aravind and  i have not given access to see Paper Received, Invoiced, Insurance Created ect... but he still can able to see the menus. for the smae user i have given read only access to "Vehicle Booking Process" but he can able to edit
+
+11) In finance i have created a user role called "KARUR_ACCOUNTS_STAFF" and created a user called suresh and gave full access to "Payment Approvals" but when i clicked payment approval screen it shows access denied
+

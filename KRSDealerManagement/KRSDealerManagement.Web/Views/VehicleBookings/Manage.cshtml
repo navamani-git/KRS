@@ -157,6 +157,58 @@
             </div></div>
         }
 
+        @{
+            var allSubsidyDocsUploaded = ViewBag.AllSubsidyDocsUploaded as bool? ?? false;
+            var subsidyCompletedApproved = ViewBag.SubsidyCompletedApproved as bool? ?? false;
+            var subsidyApprovedOn = ViewBag.SubsidyCompletedApprovedDate as string;
+        }
+        @if (isStaff)
+        {
+            <div class="card mb-3 @(allSubsidyDocsUploaded ? "border-success" : "")">
+                <div class="card-header"><h3 class="card-title mb-0">All subsidy completed – Approve</h3></div>
+                <div class="card-body">
+                    @if (subsidyCompletedApproved)
+                    {
+                        <p class="mb-2">Approved@(string.IsNullOrWhiteSpace(subsidyApprovedOn) ? "" : $" on {subsidyApprovedOn}"). Vehicle is off Vehicle Aging.</p>
+                    }
+                    else if (!allSubsidyDocsUploaded)
+                    {
+                        <p class="text-muted mb-0">Enabled after Face Verification, RC Image, Booth Photo and Subsidy Undertaking are all uploaded.</p>
+                    }
+                    @if (isAdmin && allSubsidyDocsUploaded)
+                    {
+                        <form method="post" asp-action="ApproveSubsidyCompleted">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.VehicleBookingId" />
+                            <button type="submit" class="btn btn-success"
+                                    onclick="return confirm('@(subsidyCompletedApproved ? "Already approved. Do you want to approve again? The approval date will be updated." : "Mark all subsidy documents as complete and remove this vehicle from Vehicle Aging?")');">
+                                <i class="bi bi-check2-all"></i> All subsidy completed – Approve
+                            </button>
+                        </form>
+                    }
+                    else if (!isAdmin && allSubsidyDocsUploaded && !subsidyCompletedApproved)
+                    {
+                        <form method="post" asp-action="ApproveSubsidyCompleted">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.VehicleBookingId" />
+                            <button type="submit" class="btn btn-success"
+                                    onclick="return confirm('Mark all subsidy documents as complete and remove this vehicle from Vehicle Aging?');">
+                                <i class="bi bi-check2-all"></i> All subsidy completed – Approve
+                            </button>
+                        </form>
+                    }
+                    else if (!isAdmin && subsidyCompletedApproved)
+                    {
+                        <button type="button" class="btn btn-success" disabled>All subsidy completed – Approve</button>
+                    }
+                    else if (!allSubsidyDocsUploaded)
+                    {
+                        <button type="button" class="btn btn-outline-secondary" disabled>All subsidy completed – Approve</button>
+                    }
+                </div>
+            </div>
+        }
+
         @if (canEditNumberPlate)
         {
             <div class="card mb-3">
@@ -223,6 +275,7 @@
                 <form method="post" enctype="multipart/form-data" id="staffBookingForm">@Html.AntiForgeryToken()
                     <input type="hidden" name="id" value="@Model.VehicleBookingId" />
                     <input type="hidden" name="confirmPriceAdjustment" id="confirmPriceAdjustment" value="false" />
+                    <input type="hidden" name="replaceInvoice" id="replaceInvoice" value="false" />
                     <div class="mb-2"><label class="fw-bold">Status</label>
                         @if (vehicleStatus == UnifiedVehicleStatus.Delivered)
                         {
@@ -295,14 +348,21 @@
                             <input type="file" name="invoiceFile" id="invoiceFile" class="form-control manage-doc-input" accept=".pdf,.jpg,.jpeg,.png,.webp" data-doc-kind="invoice" />
                             @if (!string.IsNullOrEmpty(ViewBag.InvoiceFileName as string))
                             {
-                                <small class="text-muted d-block"><i class="bi bi-paperclip"></i> Current: @ViewBag.InvoiceFileName</small>
+                                <div id="currentInvoiceWrap">
+                                    <small class="text-muted d-block"><i class="bi bi-paperclip"></i> Current: @ViewBag.InvoiceFileName</small>
+                                    @if (isAdmin)
+                                    {
+                                        <button type="button" id="btnMarkReplaceInvoice" class="btn btn-sm btn-outline-danger mt-1">
+                                            <i class="bi bi-trash"></i> Delete invoice file
+                                        </button>
+                                    }
+                                </div>
+                                <p id="replaceInvoiceHint" class="small text-warning d-none mb-0 mt-1">
+                                    Upload a new invoice, then click Save. The current invoice is removed only after Save.
+                                </p>
                                 @if (isAdmin)
                                 {
-                                    <button type="submit" formaction="@Url.Action("DeleteManageDocument", new { id = Model.VehicleBookingId, documentKind = "invoice" })"
-                                            formnovalidate class="btn btn-sm btn-outline-danger mt-1"
-                                            onclick="return confirm('Delete the invoice document?');">
-                                        <i class="bi bi-trash"></i> Delete invoice file
-                                    </button>
+                                    <button type="button" id="btnCancelReplaceInvoice" class="btn btn-sm btn-outline-secondary mt-1 d-none">Cancel</button>
                                 }
                             }
                             else
@@ -407,6 +467,39 @@
         </div>
     }
 </div>
+@if (isStaff)
+{
+<script>
+(function () {
+    const flag = document.getElementById('replaceInvoice');
+    const btn = document.getElementById('btnMarkReplaceInvoice');
+    const cancel = document.getElementById('btnCancelReplaceInvoice');
+    const wrap = document.getElementById('currentInvoiceWrap');
+    const hint = document.getElementById('replaceInvoiceHint');
+    const file = document.getElementById('invoiceFile');
+    if (!flag || !btn) return;
+
+    function setPending(pending) {
+        flag.value = pending ? 'true' : 'false';
+        if (wrap) wrap.classList.toggle('d-none', pending);
+        if (hint) hint.classList.toggle('d-none', !pending);
+        if (cancel) cancel.classList.toggle('d-none', !pending);
+        if (file) {
+            if (!pending) file.value = '';
+            file.required = pending;
+        }
+    }
+
+    btn.addEventListener('click', function () {
+        if (!confirm('The current invoice stays on file until you upload a new invoice and click Save. Continue?'))
+            return;
+        setPending(true);
+        file?.focus();
+    });
+    cancel?.addEventListener('click', function () { setPending(false); });
+})();
+</script>
+}
 @if (isStaff && vehicleStatus != UnifiedVehicleStatus.Delivered)
 {
 <script>
@@ -480,6 +573,14 @@
     const hasInvoiceFile = @(string.IsNullOrWhiteSpace(Model.InvoicePath) ? "false" : "true");
     const hasInsuranceFile = @(string.IsNullOrWhiteSpace(Model.InsurancePath) ? "false" : "true");
 
+    function isReplacingInvoice() {
+        return document.getElementById('replaceInvoice')?.value === 'true';
+    }
+
+    function invoiceFileOnRecord() {
+        return hasInvoiceFile && !isReplacingInvoice();
+    }
+
     function applyConditionalRequirements() {
         const invoiceDate = document.getElementById('invoiceDate')?.value || '';
         const insuranceDate = document.getElementById('insuranceDate')?.value || '';
@@ -488,7 +589,7 @@
         const insuranceFile = document.getElementById('insuranceFile');
         const rtoNumber = document.getElementById('rtoNumber');
 
-        if (invoiceFile) invoiceFile.required = !!invoiceDate && !hasInvoiceFile;
+        if (invoiceFile) invoiceFile.required = isReplacingInvoice() || (!!invoiceDate && !invoiceFileOnRecord());
         if (insuranceFile) insuranceFile.required = !!insuranceDate && !hasInsuranceFile;
         if (rtoNumber) rtoNumber.required = !!registrationDate;
     }
@@ -501,8 +602,11 @@
         const invoiceFile = document.getElementById('invoiceFile');
         const insuranceFile = document.getElementById('insuranceFile');
         const rtoNumber = document.getElementById('rtoNumber')?.value?.trim() || '';
+        const hasNewInvoice = invoiceFile && invoiceFile.files && invoiceFile.files.length > 0;
 
-        if (invoiceDate && !hasInvoiceFile && (!invoiceFile || !invoiceFile.files || invoiceFile.files.length === 0))
+        if (isReplacingInvoice() && !hasNewInvoice)
+            return 'Upload a new invoice and click Save. The current invoice is removed only after Save.';
+        if (invoiceDate && !invoiceFileOnRecord() && !hasNewInvoice)
             return 'Invoice document is required when Invoice date is set.';
         if (insuranceDate && !hasInsuranceFile && (!insuranceFile || !insuranceFile.files || insuranceFile.files.length === 0))
             return 'Insurance document is required when Insurance date is set.';

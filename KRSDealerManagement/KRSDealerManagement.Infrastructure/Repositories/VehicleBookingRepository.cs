@@ -87,8 +87,9 @@ SELECT
     CustomerSignPath, RtoLocationId, FancyNumber, PaymentMode, FinanceNameId,
     NomineeName, NomineeDob, NomineeRelationship, SubmittedDate, PaperReceivedDate,
     InvoiceDate, InvoicePath, InsuranceDate, InsurancePath, AgentDate, RegistrationDate,
-    RtoNumber, NumberPlateReceivedDate, NumberPlateReceivedBy, SubsidyId, SubsidyCustomerNameCaps,
+    RtoNumber, NumberPlateReceivedDate, NumberPlateReceivedBy, SubsidyId, SubsidyIdDate, SubsidyCustomerNameCaps,
     FaceVerificationPath, RcImagePath, BoothPhotoPath, SubsidyUndertakingPath, SubsidyDocsSubmittedDate,
+    SubsidyCompletedApproved, SubsidyCompletedApprovedDate, SubsidyCompletedApprovedBy,
     CreatedBy, CreatedDate, ModifiedBy, ModifiedDate
 FROM VehicleBookings";
 

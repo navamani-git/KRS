@@ -121,6 +121,14 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     SearchTerm = request.SearchTerm
                 }), column, request, ShowroomStockProjections),
 
+                GridScreenIds.VehicleAging => await DistinctFrom(await _mediator.Send(new GetVehicleAgingQuery
+                {
+                    DealershipId = request.DealershipId,
+                    DealershipLocation = request.DealershipLocation,
+                    SubdealerId = request.SubdealerId,
+                    SearchTerm = request.SearchTerm
+                }), column, request, VehicleAgingProjections),
+
                 GridScreenIds.DealerStock => await DistinctFrom(await _mediator.Send(new GetVehicleMastersQuery
                 {
                     DealershipId = request.DealershipId,
@@ -392,6 +400,30 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             ["allocated"] = r => r.AllocatedDate?.ToString("yyyy-MM-dd"),
             ["days"] = r => r.DaysInStock.ToString(),
             ["price"] = r => r.CurrentPrice.ToString("N2")
+        };
+
+        private static readonly Dictionary<string, Func<VehicleAgingRowDto, string?>> VehicleAgingProjections = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["id"] = r => r.VehicleId.ToString(),
+            ["chassis"] = r => r.ChassisNumber,
+            ["model"] = r => r.ModelName,
+            ["color"] = r => r.ColorName,
+            ["subdealer"] = r => r.SubdealerName,
+            ["purchase"] = r => r.PurchaseDate?.ToString("yyyy-MM-dd"),
+            ["booked"] = r => r.BookedDate?.ToString("yyyy-MM-dd"),
+            ["bookedAging"] = r => r.BookedAging?.ToString(),
+            ["paper"] = r => r.PaperReceivedDate?.ToString("yyyy-MM-dd"),
+            ["paperAging"] = r => r.PaperReceivedAging?.ToString(),
+            ["invoice"] = r => r.InvoiceDate?.ToString("yyyy-MM-dd"),
+            ["invoiceAging"] = r => r.InvoiceAging?.ToString(),
+            ["insurance"] = r => r.InsuranceDate?.ToString("yyyy-MM-dd"),
+            ["insuranceAging"] = r => r.InsuranceAging?.ToString(),
+            ["agent"] = r => r.AgentDate?.ToString("yyyy-MM-dd"),
+            ["agentAging"] = r => r.AgentAging?.ToString(),
+            ["registration"] = r => r.RegistrationDate?.ToString("yyyy-MM-dd"),
+            ["registrationAging"] = r => r.RegistrationAging?.ToString(),
+            ["subsidyAging"] = r => r.SubsidyAging?.ToString(),
+            ["subsidyDocsAging"] = r => r.SubsidyDocumentsAging?.ToString()
         };
 
         private static readonly Dictionary<string, Func<VehicleMasterDto, string?>> DealerStockProjections = new(StringComparer.OrdinalIgnoreCase)

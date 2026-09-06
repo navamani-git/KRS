@@ -44,6 +44,7 @@ namespace KRSDealerManagement.Shared.Constants
         public const string ChassisHistory = "admin_chassis_history";
         public const string ShowroomStock = "admin_showroom_stock";
         public const string DealerStock = "admin_dealer_stock";
+        public const string VehicleAging = "admin_vehicle_aging";
         public const string StatusLookups = "admin_status_lookups";
         public const string WarrantyClaims = "admin_warranty_claims";
         public const string WarrantyParts = "admin_warranty_parts";
@@ -76,6 +77,7 @@ namespace KRSDealerManagement.Shared.Constants
             (BookingSubsidyIdPending, "Subsidy ID Pending"),
             (BookingSubsidyDocsPending, "Subsidy Docs Pending"),
             (BookingRegistered, "Registered"),
+            (VehicleAging, "Vehicle Aging"),
             (ChassisHistory, "Chassis History"),
             (Vehicles, "Subdealer Vehicles"),
             (DealerStock, "Dealer Stock"),
@@ -103,7 +105,7 @@ namespace KRSDealerManagement.Shared.Constants
                 },
                 UserRoleEnum.DealerBranchManager => new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 {
-                    Subdealers, Orders, Vehicles, DealerStock, ShowroomStock, VehicleBookings, BookedToCustomerView, Returns, WarrantyClaims, Balances
+                    Subdealers, Orders, Vehicles, DealerStock, ShowroomStock, VehicleAging, VehicleBookings, BookedToCustomerView, Returns, WarrantyClaims, Balances
                 },
                 _ => new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             };
@@ -394,6 +396,15 @@ namespace KRSDealerManagement.Shared.Constants
                 Action = "RegisteredAwaitingPlate",
                 Icon = "bi-card-checklist",
                 Actions = new[] { "RegisteredAwaitingPlate", "NumberPlateReceived", "ExportRegisteredAwaitingPlate" }
+            },
+            new MenuItemDefinition
+            {
+                Key = VehicleAging,
+                Name = "Vehicle Aging",
+                Controller = "VehicleAging",
+                Action = "Index",
+                Icon = "bi-hourglass-split",
+                Actions = new[] { "Index", "Export" }
             }
         };
 

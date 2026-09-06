@@ -1,3 +1,6 @@
+using KRSDealerManagement.Application.Helpers;
+using Microsoft.AspNetCore.Http;
+
 namespace KRSDealerManagement.Web.Helpers
 {
     public static class GridFilterRequestHelper
@@ -15,6 +18,14 @@ namespace KRSDealerManagement.Web.Helpers
                 if (!string.IsNullOrWhiteSpace(val))
                     dict[kv.Key[Prefix.Length..]] = val.Trim();
             }
+
+            var sort = request.Query["sort"].ToString();
+            if (!string.IsNullOrWhiteSpace(sort))
+                dict[GridFilterHelper.SortColumnKey] = sort.Trim();
+            var dir = request.Query["dir"].ToString();
+            if (!string.IsNullOrWhiteSpace(dir))
+                dict[GridFilterHelper.SortDirKey] = dir.Trim();
+
             return dict;
         }
 

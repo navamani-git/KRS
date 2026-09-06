@@ -111,9 +111,34 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     && GridFilterHelper.MatchesContains(p.ActualReceivedAmount?.ToString("N2"), GridFilterHelper.GetFilter(cf, "receivedAmt"))
                     && GridFilterHelper.MatchesContains(p.SubdealerRemarks, GridFilterHelper.GetFilter(cf, "remarks"))
                     && GridFilterHelper.MatchesContains(p.DealerRemarks, GridFilterHelper.GetFilter(cf, "corrections")));
+
+                if (GridFilterHelper.TryGetSort(cf, out _, out _))
+                    return GridFilterHelper.ApplySort(result, cf, PaymentSortText, PaymentSortDates).ToList();
             }
 
             return result.OrderByDescending(p => p.CreatedDate).ToList();
         }
+
+        private static readonly Dictionary<string, Func<PaymentDto, string?>> PaymentSortText = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["subdealer"] = p => p.SubdealerName,
+            ["type"] = p => p.GetPaymentTypeDisplay(),
+            ["amount"] = p => p.Amount.ToString("N2"),
+            ["customer"] = p => p.CustomerName,
+            ["finance"] = p => p.FinanceName,
+            ["vin"] = p => p.VinNumber,
+            ["status"] = p => p.GetStatusDisplay(),
+            ["receivedAmt"] = p => p.ActualReceivedAmount?.ToString("N2"),
+            ["remarks"] = p => p.SubdealerRemarks,
+            ["corrections"] = p => p.DealerRemarks
+        };
+
+        private static readonly Dictionary<string, Func<PaymentDto, DateTime?>> PaymentSortDates = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["paymentDate"] = p => p.PaymentDate,
+            ["submitted"] = p => p.CreatedDate,
+            ["approved"] = p => p.ProcessedDate,
+            ["received"] = p => p.ActualReceivedDate
+        };
     }
 }

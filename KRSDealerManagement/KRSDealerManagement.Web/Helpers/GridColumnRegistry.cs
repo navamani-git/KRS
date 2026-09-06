@@ -34,6 +34,7 @@ namespace KRSDealerManagement.Web.Helpers
                 GridIds.VehicleModels => VehicleModels(),
                 GridIds.ShowroomStock => ShowroomStock(),
                 GridIds.DealerStock => DealerStock(options.ShowBranchColumn),
+                GridIds.VehicleAging => VehicleAging(options.IsSubdealerView),
                 GridIds.WarrantyClaims => WarrantyClaims(),
                 GridIds.MyWarrantyClaims => MyWarrantyClaims(),
                 GridIds.WarrantyParts => WarrantyParts(),
@@ -403,6 +404,38 @@ namespace KRSDealerManagement.Web.Helpers
                 GridFilterColumn.Combo("allocatedTo", "Allocated To"),
                 GridFilterColumn.Select("status", "Available", "Allocated"),
                 GridFilterColumn.Skip()
+            });
+            return cols;
+        }
+
+        private static List<GridFilterColumn> VehicleAging(bool isSubdealerView)
+        {
+            var cols = new List<GridFilterColumn>
+            {
+                GridFilterColumn.Combo("id", "ID"),
+                GridFilterColumn.Combo("chassis", "Chassis"),
+                GridFilterColumn.Combo("model", "Model"),
+                GridFilterColumn.Combo("color", "Color")
+            };
+            if (!isSubdealerView)
+                cols.Add(GridFilterColumn.Combo("subdealer", "Subdealer"));
+            cols.AddRange(new[]
+            {
+                GridFilterColumn.DateCol("purchase", "Purchase Date"),
+                GridFilterColumn.DateCol("booked", "Booked Date"),
+                GridFilterColumn.Combo("bookedAging", "Booked Aging"),
+                GridFilterColumn.DateCol("paper", "Paper Received Date"),
+                GridFilterColumn.Combo("paperAging", "Paper Received Aging"),
+                GridFilterColumn.DateCol("invoice", "Invoice Date"),
+                GridFilterColumn.Combo("invoiceAging", "Invoice Aging"),
+                GridFilterColumn.DateCol("insurance", "Insurance Date"),
+                GridFilterColumn.Combo("insuranceAging", "Insurance Aging"),
+                GridFilterColumn.DateCol("agent", "Agent Date"),
+                GridFilterColumn.Combo("agentAging", "Agent Aging"),
+                GridFilterColumn.DateCol("registration", "Registration Date"),
+                GridFilterColumn.Combo("registrationAging", "Registration Aging"),
+                GridFilterColumn.Combo("subsidyAging", "Subsidy Aging"),
+                GridFilterColumn.Combo("subsidyDocsAging", "Subsidy Documents Aging")
             });
             return cols;
         }

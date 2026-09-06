@@ -103,6 +103,9 @@ namespace KRSDealerManagement.Domain.Entities
         /// </summary>
         public DateTime? DeliveryDate { get; set; }
 
+        /// <summary>When this chassis was allocated to the subdealer.</summary>
+        public DateTime? AllocatedDate { get; set; }
+
         /// <summary>
         /// Check if vehicle is available for purchase
         /// </summary>

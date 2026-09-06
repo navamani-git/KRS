@@ -67,7 +67,7 @@
             <label class="fw-bold">E-Aadhaar (PDF) <span class="text-danger">@(isEdit ? "" : "*")</span></label>
             <input name="eAadhaarFile" type="file" accept=".pdf,application/pdf" class="form-control booking-pdf-10" @(isEdit ? "" : "required") data-max-mb="10" />
             <small class="text-muted">MUST UPLOAD ONLY E-AADHAAR WITH PASSWORD. Upload 1 supported file: PDF. Max 10 MB.</small>
-            @if (isEdit) { <small class="text-muted d-block">Leave empty to keep the current file.</small> }
+            <partial name="_BookingCurrentFile" view-data='new ViewDataDictionary(ViewData) { { "FilePath", booking?.EAadhaarPath }, { "FileLabel", "E-Aadhaar" } }' />
         </div>
         <div class="col-md-4">
             <label class="fw-bold">E-Aadhaar Password <span class="text-danger">*</span></label>
@@ -95,13 +95,13 @@
             <label class="fw-bold">Document (PDF) <span class="text-danger">@(isEdit ? "" : "*")</span></label>
             <input name="documentFile" type="file" accept=".pdf,application/pdf" class="form-control booking-pdf-1" @(isEdit ? "" : "required") data-max-mb="1" />
             <small class="text-muted">MUST UPLOAD ORIGINAL COLOUR DOCUMENT. Upload 1 supported file: PDF. Max 1 MB.</small>
-            @if (isEdit) { <small class="text-muted d-block">Leave empty to keep the current file.</small> }
+            <partial name="_BookingCurrentFile" view-data='new ViewDataDictionary(ViewData) { { "FilePath", booking?.DocumentPath }, { "FileLabel", "Document" } }' />
         </div>
         <div class="col-md-6" id="gstBlock" style="@(isCompany ? "" : "display:none")">
             <label class="fw-bold">GST Certificate <span class="text-danger" id="gstRequiredMark">@(isCompany ? "*" : "")</span></label>
             <input name="gstCertificateFile" type="file" accept=".pdf,application/pdf" class="form-control booking-pdf-1" data-max-mb="1" />
             <small class="text-muted">Upload 1 supported file: PDF. Max 1 MB.</small>
-            @if (isEdit) { <small class="text-muted d-block">Leave empty to keep the current file.</small> }
+            <partial name="_BookingCurrentFile" view-data='new ViewDataDictionary(ViewData) { { "FilePath", booking?.GstCertificatePath }, { "FileLabel", "GST" } }' />
         </div>
     </div>
 </div>
@@ -113,13 +113,13 @@
             <label class="fw-bold">Customer Photo <span class="text-danger">@(isEdit ? "" : "*")</span></label>
             <input name="customerPhoto" type="file" accept="image/*" class="form-control booking-image" @(isEdit ? "" : "required") data-max-mb="10" />
             <small class="text-muted">Upload 1 supported file: image. Max 10 MB.</small>
-            @if (isEdit) { <small class="text-muted d-block">Leave empty to keep the current file.</small> }
+            <partial name="_BookingCurrentFile" view-data='new ViewDataDictionary(ViewData) { { "FilePath", booking?.CustomerPhotoPath }, { "FileLabel", "Photo" }, { "Preview", true } }' />
         </div>
         <div class="col-md-4">
             <label class="fw-bold">Chassis Number <span class="text-danger">@(isEdit ? "" : "*")</span></label>
             <input name="chassisPhoto" type="file" accept="image/*" class="form-control booking-image" @(isEdit ? "" : "required") data-max-mb="10" />
             <small class="text-muted">Upload 1 supported file: image. Max 10 MB.</small>
-            @if (isEdit) { <small class="text-muted d-block">Leave empty to keep the current file.</small> }
+            <partial name="_BookingCurrentFile" view-data='new ViewDataDictionary(ViewData) { { "FilePath", booking?.ChassisPhotoPath }, { "FileLabel", "Chassis" }, { "Preview", true } }' />
         </div>
         <div class="col-md-4">
             <label class="fw-bold" id="signLabel">
@@ -128,7 +128,7 @@
             </label>
             <input name="customerSign" type="file" accept="image/*" class="form-control booking-image" @(isEdit ? "" : "required") data-max-mb="10" />
             <small class="text-muted">Upload 1 supported file: image. Max 10 MB.</small>
-            @if (isEdit) { <small class="text-muted d-block">Leave empty to keep the current file.</small> }
+            <partial name="_BookingCurrentFile" view-data='new ViewDataDictionary(ViewData) { { "FilePath", booking?.CustomerSignPath }, { "FileLabel", "Sign/Seal" }, { "Preview", true } }' />
         </div>
         <partial name="_RtoDistrictLocationSelect" />
         <div class="col-md-4">

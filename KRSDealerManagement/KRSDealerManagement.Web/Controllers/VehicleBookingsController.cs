@@ -746,7 +746,8 @@ namespace KRSDealerManagement.Web.Controllers
         public async Task<IActionResult> Manage(int id, int bookingStatus, string? subsidyId,
             DateTime? paperReceivedDate, DateTime? invoiceDate, DateTime? insuranceDate, DateTime? agentDate,
             DateTime? registrationDate, string? rtoNumber,
-            IFormFile? invoiceFile, IFormFile? insuranceFile, bool confirmPriceAdjustment = false)
+            IFormFile? invoiceFile, IFormFile? insuranceFile, bool confirmPriceAdjustment = false,
+            bool replaceInvoice = false)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             var booking = await _unitOfWork.VehicleBookings.GetByIdAsync(id);
@@ -781,6 +782,12 @@ namespace KRSDealerManagement.Web.Controllers
 
             var uploadedInvoice = invoiceFile != null && invoiceFile.Length > 0;
             var uploadedInsurance = insuranceFile != null && insuranceFile.Length > 0;
+
+            if (replaceInvoice && !uploadedInvoice)
+            {
+                TempData["Error"] = "Upload a new invoice and click Save. The current invoice is removed only after Save.";
+                return this.RedirectEncrypted(nameof(Manage), new { id });
+            }
 
             if (isStaff && hadInvoiceFile && uploadedInvoice)
             {
@@ -833,7 +840,12 @@ namespace KRSDealerManagement.Web.Controllers
             {
                 var root = _env;
                 if (uploadedInvoice)
+                {
+                    var previousInvoicePath = booking.InvoicePath;
                     booking.InvoicePath = await BookingFileHelper.SaveInvoiceDocumentAsync(invoiceFile, root);
+                    if (!string.Equals(previousInvoicePath, booking.InvoicePath, StringComparison.OrdinalIgnoreCase))
+                        BookingFileHelper.TryDeleteStoredFile(root, previousInvoicePath);
+                }
                 if (uploadedInsurance)
                     booking.InsurancePath = await BookingFileHelper.SaveInsuranceDocumentAsync(insuranceFile, root);
 
@@ -855,11 +867,14 @@ namespace KRSDealerManagement.Web.Controllers
                         await GlobalUniqueValidation.EnsureSubsidyIdAvailableAsync(_unitOfWork, trimmedSubsidy, booking.VehicleBookingId);
                     booking.SubsidyId = trimmedSubsidy;
                     booking.SubsidyCustomerNameCaps = booking.CustomerName.Trim().ToUpperInvariant();
+                    if (!booking.SubsidyIdDate.HasValue)
+                        booking.SubsidyIdDate = IstTime.Now;
                 }
                 else
                 {
                     booking.SubsidyId = null;
                     booking.SubsidyCustomerNameCaps = null;
+                    booking.SubsidyIdDate = null;
                 }
 
                 var statusError = BookingStageFilter.ValidateBookingStatusSelection(
@@ -1231,9 +1246,14 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction("AccessDenied", "Account");
 
             var kind = documentKind?.Trim().ToLowerInvariant();
+            if (kind == "invoice")
+            {
+                TempData["Error"] = "Invoice is not deleted immediately. Upload a new invoice and click Save.";
+                return this.RedirectEncrypted(nameof(Manage), new { id });
+            }
+
             string? path = kind switch
             {
-                "invoice" => booking.InvoicePath,
                 "insurance" => booking.InsurancePath,
                 _ => null
             };
@@ -1248,10 +1268,7 @@ namespace KRSDealerManagement.Web.Controllers
             if (!string.IsNullOrEmpty(absolute) && System.IO.File.Exists(absolute))
                 System.IO.File.Delete(absolute);
 
-            if (kind == "invoice")
-                booking.InvoicePath = null;
-            else
-                booking.InsurancePath = null;
+            booking.InsurancePath = null;
 
             booking.ModifiedBy = SessionHelper.GetUserId(HttpContext.Session);
             booking.ModifiedDate = DateTime.UtcNow;
@@ -1260,9 +1277,61 @@ namespace KRSDealerManagement.Web.Controllers
                 _unitOfWork,
                 booking.VehicleId,
                 booking.ModifiedBy,
-                new[] { $"{(kind == "invoice" ? "Invoice" : "Insurance")} document deleted by admin" });
+                new[] { "Insurance document deleted by admin" });
 
             TempData["Success"] = "Document removed.";
+            return this.RedirectEncrypted(nameof(Manage), new { id });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AuthorizeRole(1, 4)]
+        public async Task<IActionResult> ApproveSubsidyCompleted(int id)
+        {
+            var booking = await _unitOfWork.VehicleBookings.GetByIdAsync(id);
+            if (booking == null)
+            {
+                TempData["Error"] = "Booking not found.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (!await CanAccessBooking(booking))
+                return RedirectToAction("AccessDenied", "Account");
+
+            var isAdmin = SessionHelper.IsSystemAdmin(HttpContext.Session);
+            if (!isAdmin && booking.SubsidyCompletedApproved)
+            {
+                TempData["Error"] = "Subsidy completion is already approved. Contact admin to change it.";
+                return this.RedirectEncrypted(nameof(Manage), new { id });
+            }
+
+            if (!BookingStageFilter.HasAllSubsidyDocs(
+                    booking.FaceVerificationPath,
+                    booking.RcImagePath,
+                    booking.BoothPhotoPath,
+                    booking.SubsidyUndertakingPath))
+            {
+                TempData["Error"] = "Upload Face Verification, RC Image, Booth Photo and Subsidy Undertaking before approving.";
+                return this.RedirectEncrypted(nameof(Manage), new { id });
+            }
+
+            var userId = SessionHelper.GetUserId(HttpContext.Session);
+            var wasApproved = booking.SubsidyCompletedApproved;
+            booking.SubsidyCompletedApproved = true;
+            booking.SubsidyCompletedApprovedDate = IstTime.Now;
+            booking.SubsidyCompletedApprovedBy = userId;
+            booking.ModifiedBy = userId;
+            booking.ModifiedDate = DateTime.UtcNow;
+            await _unitOfWork.VehicleBookings.UpdateAsync(booking);
+            await VehicleBookingHistoryHelper.LogChangesAsync(
+                _unitOfWork,
+                booking.VehicleId,
+                userId,
+                new[] { wasApproved ? "All subsidy completed – approved again" : "All subsidy completed – approved" });
+
+            TempData["Success"] = wasApproved
+                ? "Subsidy completion approval date updated."
+                : "All subsidy documents marked complete. Vehicle will leave Vehicle Aging.";
             return this.RedirectEncrypted(nameof(Manage), new { id });
         }
 
@@ -1408,6 +1477,15 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.CanEditSubsidyDocs = SessionHelper.IsSystemAdmin(HttpContext.Session)
                 || (SessionHelper.IsSubdealer(HttpContext.Session)
                     && !string.IsNullOrWhiteSpace(booking.SubsidyId));
+            ViewBag.AllSubsidyDocsUploaded = BookingStageFilter.HasAllSubsidyDocs(
+                booking.FaceVerificationPath,
+                booking.RcImagePath,
+                booking.BoothPhotoPath,
+                booking.SubsidyUndertakingPath);
+            ViewBag.SubsidyCompletedApproved = booking.SubsidyCompletedApproved;
+            ViewBag.SubsidyCompletedApprovedDate = booking.SubsidyCompletedApprovedDate.HasValue
+                ? FormDateTimeHelper.FormatDisplay(booking.SubsidyCompletedApprovedDate)
+                : null;
             ViewBag.VehicleStatus = vehicle == null
                 ? booking.BookingStatus
                 : BookingStageFilter.ResolveEffectiveStage(
