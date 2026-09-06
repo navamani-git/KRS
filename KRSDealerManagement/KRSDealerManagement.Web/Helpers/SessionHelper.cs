@@ -118,12 +118,6 @@ namespace KRSDealerManagement.Web.Helpers
             if (map.TryGetValue(menuKey, out var level))
                 return level;
 
-            if (StaffMenuAccess.IsBookingMilestoneKey(menuKey)
-                && map.TryGetValue(StaffMenuAccess.VehicleBookings, out var inheritedBooking))
-            {
-                return inheritedBooking;
-            }
-
             if (IsSubdealer(session)
                 && string.Equals(menuKey, MenuKeys.VehiclesBookingStages, StringComparison.OrdinalIgnoreCase)
                 && map.TryGetValue(MenuKeys.VehiclesView, out var vehiclesView))

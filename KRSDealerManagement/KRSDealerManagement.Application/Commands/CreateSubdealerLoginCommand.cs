@@ -12,6 +12,7 @@ namespace KRSDealerManagement.Application.Commands
         /// <summary>Applied only when this is the first login (creates org wallet).</summary>
         public decimal InitialBalance { get; set; }
         public List<string>? AccessibleMenuKeys { get; set; }
+        public bool CanExport { get; set; } = true;
         public int CreatedBy { get; set; }
     }
 }

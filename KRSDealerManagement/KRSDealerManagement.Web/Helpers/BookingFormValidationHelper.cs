@@ -172,6 +172,17 @@ namespace KRSDealerManagement.Web.Helpers
                 ValidateImageFile(customerSign, isCompanyBooking ? "Company Seal with Sign" : "Customer Sign", required: true));
         }
 
+        public static string? ValidateBookingChoiceFields(bool? fancyNumber, string? paymentMode, int? financeNameId)
+        {
+            if (!fancyNumber.HasValue)
+                return "Fancy Number is required.";
+            if (string.IsNullOrWhiteSpace(paymentMode))
+                return "Payment Mode is required.";
+            if (!financeNameId.HasValue || financeNameId.Value <= 0)
+                return "Financier Name is required.";
+            return null;
+        }
+
         public static string? ValidateEditBooking(
             string? customerName,
             string? customerMobile,

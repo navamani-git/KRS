@@ -253,7 +253,7 @@ namespace KRSDealerManagement.Shared.Constants
                                 {
                                     Key = Payments, Name = "Payment Approvals",
                                     Controller = "Payments", Action = "Index", Icon = "bi-credit-card",
-                                    Actions = new[] { "Index", "AdminEdit" }
+                                    Actions = new[] { "Index", "Approve", "Reject", "Export", "AdminEdit" }
                                 }
                             }
                         },

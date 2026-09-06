@@ -15,11 +15,6 @@
     int SelectedLevel(string menuKey)
     {
         if (levelMap.TryGetValue(menuKey, out var lv)) return lv;
-        if (StaffMenuAccess.IsBookingMilestoneKey(menuKey)
-            && levelMap.TryGetValue(StaffMenuAccess.VehicleBookings, out var inherited))
-        {
-            return inherited;
-        }
         if (form?.RoleId > 0) return (int)MenuAccessLevel.None;
         return defaults.TryGetValue(menuKey, out var dv) ? dv : 0;
     }

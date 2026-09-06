@@ -209,6 +209,7 @@
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="id" value="@Model.SubDealerId" />
                                                 <input type="hidden" name="accountId" value="@login.PermissionAccountId" />
+                                                <input type="hidden" name="loginUserId" value="@login.UserId" />
                                                 <partial name="_LoginPermissionForm" model="login" />
                                             </form>
                                         </td>
@@ -302,6 +303,10 @@
                         <input type="hidden" name="initialBalance" value="0" />
                     }
 
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="canExport" value="true" id="newLoginCanExport" checked />
+                        <label class="form-check-label" for="newLoginCanExport">Allow Excel export</label>
+                    </div>
                     <div class="form-group mb-0">
                         <label class="form-label fw-bold">Menu Access</label>
                         <partial name="_MenuPermissionGroups" />

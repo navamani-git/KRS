@@ -456,8 +456,8 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public async Task<IActionResult> Book(int vehicleId, string customerName, bool isCompanyBooking,
             string customerMobile, string alternativeMobile, string customerEmail,
-            string eAadhaarPassword, int documentTypeId, int rtoLocationId, bool fancyNumber,
-            string paymentMode, int financeNameId, string nomineeName, DateTime nomineeDob, string nomineeRelationship,
+            string eAadhaarPassword, int documentTypeId, int rtoLocationId, bool? fancyNumber,
+            string paymentMode, int? financeNameId, string nomineeName, DateTime nomineeDob, string nomineeRelationship,
             IFormFile eAadhaarFile, IFormFile documentFile, IFormFile? gstCertificateFile,
             IFormFile customerPhoto, IFormFile chassisPhoto, IFormFile customerSign)
         {
@@ -485,7 +485,8 @@ namespace KRSDealerManagement.Web.Controllers
             var validationError = BookingFormValidationHelper.ValidateCreateBooking(
                 customerName, customerMobile, alternativeMobile, customerEmail, eAadhaarPassword,
                 nomineeName, nomineeDob, nomineeRelationship, isCompanyBooking, eAadhaarFile, documentFile, gstCertificateFile,
-                customerPhoto, chassisPhoto, customerSign);
+                customerPhoto, chassisPhoto, customerSign)
+                ?? BookingFormValidationHelper.ValidateBookingChoiceFields(fancyNumber, paymentMode, financeNameId);
             if (validationError != null)
             {
                 TempData["Error"] = validationError;
@@ -519,9 +520,9 @@ namespace KRSDealerManagement.Web.Controllers
                     EAadhaarPassword = eAadhaarPassword,
                     DocumentTypeId = documentTypeId,
                     RtoLocationId = rtoLocationId,
-                    FancyNumber = fancyNumber,
+                    FancyNumber = fancyNumber!.Value,
                     PaymentMode = paymentMode,
-                    FinanceNameId = financeNameId,
+                    FinanceNameId = financeNameId!.Value,
                     NomineeName = nomineeName,
                     NomineeDob = nomineeDob.Date,
                     NomineeRelationship = nomineeRelationship,
@@ -616,8 +617,8 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public async Task<IActionResult> Edit(int id, string customerName, bool isCompanyBooking,
             string customerMobile, string alternativeMobile, string customerEmail,
-            string eAadhaarPassword, int documentTypeId, int rtoLocationId, bool fancyNumber,
-            string paymentMode, int financeNameId, string nomineeName, DateTime nomineeDob, string nomineeRelationship,
+            string eAadhaarPassword, int documentTypeId, int rtoLocationId, bool? fancyNumber,
+            string paymentMode, int? financeNameId, string nomineeName, DateTime nomineeDob, string nomineeRelationship,
             string? editReason,
             IFormFile? eAadhaarFile, IFormFile? documentFile, IFormFile? gstCertificateFile,
             IFormFile? customerPhoto, IFormFile? chassisPhoto, IFormFile? customerSign)
@@ -650,7 +651,8 @@ namespace KRSDealerManagement.Web.Controllers
             var validationError = BookingFormValidationHelper.ValidateEditBooking(
                 customerName, customerMobile, alternativeMobile, customerEmail, eAadhaarPassword,
                 nomineeName, nomineeDob, nomineeRelationship, isCompanyBooking, !string.IsNullOrWhiteSpace(booking.GstCertificatePath),
-                eAadhaarFile, documentFile, gstCertificateFile, customerPhoto, chassisPhoto, customerSign);
+                eAadhaarFile, documentFile, gstCertificateFile, customerPhoto, chassisPhoto, customerSign)
+                ?? BookingFormValidationHelper.ValidateBookingChoiceFields(fancyNumber, paymentMode, financeNameId);
             if (validationError != null)
             {
                 TempData["Error"] = validationError;
@@ -684,9 +686,9 @@ namespace KRSDealerManagement.Web.Controllers
                     EAadhaarPassword = eAadhaarPassword,
                     DocumentTypeId = documentTypeId,
                     RtoLocationId = rtoLocationId,
-                    FancyNumber = fancyNumber,
+                    FancyNumber = fancyNumber!.Value,
                     PaymentMode = paymentMode,
-                    FinanceNameId = financeNameId,
+                    FinanceNameId = financeNameId!.Value,
                     NomineeName = nomineeName,
                     NomineeDob = nomineeDob,
                     NomineeRelationship = nomineeRelationship,
@@ -742,7 +744,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.VehicleBookings, StaffOnly = true)]
         public async Task<IActionResult> Manage(int id, int bookingStatus, string? subsidyId,
             DateTime? paperReceivedDate, DateTime? invoiceDate, DateTime? insuranceDate, DateTime? agentDate,
             DateTime? registrationDate, string? rtoNumber,
@@ -825,6 +827,10 @@ namespace KRSDealerManagement.Web.Controllers
                 registrationDate = milestoneInput.RegistrationDate;
                 rtoNumber = milestoneInput.RtoNumber;
                 subsidyId = milestoneInput.SubsidyId;
+                var minFromLockedDates = BookingStageFilter.ResolveFromMilestones(
+                    paperReceivedDate, newInvoiceDate, insuranceDate, agentDate, registrationDate, subsidyId);
+                if (bookingStatus < minFromLockedDates)
+                    bookingStatus = minFromLockedDates;
             }
 
             var milestoneError = BookingFormValidationHelper.ValidateManageMilestones(
@@ -1285,7 +1291,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.VehicleBookings, StaffOnly = true)]
         public async Task<IActionResult> ApproveSubsidyCompleted(int id)
         {
             var booking = await _unitOfWork.VehicleBookings.GetByIdAsync(id);
@@ -1472,6 +1478,8 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.DeliveryDate = vehicle?.DeliveryDate.HasValue == true
                 ? FormDateTimeHelper.FormatDisplay(vehicle.DeliveryDate)
                 : null;
+            ViewBag.CanWriteManage = SessionHelper.IsSystemAdmin(HttpContext.Session)
+                || SessionHelper.CanWriteMenu(HttpContext.Session, StaffMenuAccess.VehicleBookings);
             ViewBag.CanEditBooking = SessionHelper.IsSystemAdmin(HttpContext.Session)
                 || (SessionHelper.IsSubdealer(HttpContext.Session) && !booking.InvoiceDate.HasValue);
             ViewBag.CanEditSubsidyDocs = SessionHelper.IsSystemAdmin(HttpContext.Session)
@@ -1586,8 +1594,8 @@ namespace KRSDealerManagement.Web.Controllers
 
         private static BookingFormInput BuildFormInput(
             string customerName, bool isCompanyBooking, string customerMobile, string alternativeMobile,
-            string customerEmail, string eAadhaarPassword, int documentTypeId, int rtoLocationId, bool fancyNumber,
-            string paymentMode, int financeNameId, string nomineeName, DateTime nomineeDob, string nomineeRelationship,
+            string customerEmail, string eAadhaarPassword, int documentTypeId, int rtoLocationId, bool? fancyNumber,
+            string paymentMode, int? financeNameId, string nomineeName, DateTime nomineeDob, string nomineeRelationship,
             string? editReason = null)
             => new()
             {

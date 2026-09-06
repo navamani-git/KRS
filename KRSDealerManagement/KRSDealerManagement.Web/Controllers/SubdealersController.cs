@@ -246,7 +246,7 @@ namespace KRSDealerManagement.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateLogin(
             int id, string username, string password, string? displayName,
-            decimal initialBalance, string[]? accessibleMenus)
+            decimal initialBalance, string[]? accessibleMenus, bool canExport)
         {
             var adminId = SessionHelper.GetUserId(HttpContext.Session);
             if (!adminId.HasValue) return RedirectToAction("Login", "Account");
@@ -273,6 +273,7 @@ namespace KRSDealerManagement.Web.Controllers
                     DisplayName = displayName?.Trim(),
                     InitialBalance = initialBalance,
                     AccessibleMenuKeys = menuKeys,
+                    CanExport = canExport,
                     CreatedBy = adminId.Value
                 });
                 TempData["Success"] = $"Login '{username}' created.";

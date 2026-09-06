@@ -29,10 +29,13 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             if (string.IsNullOrWhiteSpace(username))
                 throw new InvalidOperationException("Username is required.");
 
-            var duplicate = (await _unitOfWork.Users.GetAllAsync())
-                .Any(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
-            if (duplicate)
+            var existingUsers = (await _unitOfWork.Users.GetAllAsync()).ToList();
+            if (existingUsers.Any(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase)))
                 throw new InvalidOperationException("Username is already taken.");
+
+            var loginEmail = $"{username}@krs.local";
+            if (existingUsers.Any(u => string.Equals(u.Email, loginEmail, StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException("A user with this login email already exists. Choose a different username.");
 
             var subRole = (await _unitOfWork.Roles.GetAllAsync())
                 .FirstOrDefault(r => r.RoleCode.Equals(RoleCodes.Subdealer, StringComparison.OrdinalIgnoreCase))
@@ -52,13 +55,14 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 var userId = await _unitOfWork.Users.AddAsync(new User
                 {
                     Username = username,
-                    Email = org.Email ?? $"{username}@krs.com",
+                    Email = loginEmail,
                     PasswordHash = request.Password.Trim(),
                     FirstName = displayName,
                     LastName = org.Location ?? "",
                     UserRole = 2,
                     PhoneNumber = org.PrimaryPhone,
                     IsActive = true,
+                    CanExport = request.CanExport,
                     CreatedDate = DateTime.UtcNow,
                     ModifiedDate = DateTime.UtcNow
                 });

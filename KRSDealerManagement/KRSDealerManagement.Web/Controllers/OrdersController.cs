@@ -479,8 +479,7 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         // GET: Orders/GetSubdealerAccount (AJAX — finance/admin balance lookup for staff PO form)
-        [AuthorizeRole(1, 3)]
-        [AuthorizeMenu(StaffMenuAccess.Balances)]
+        [AuthorizeMenu(StaffMenuAccess.Balances, StaffOnly = true)]
         public async Task<IActionResult> GetSubdealerAccount(int subdealerId)
         {
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);

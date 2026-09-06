@@ -11,7 +11,7 @@ namespace KRSDealerManagement.Web.Models
         public int? DocumentTypeId { get; set; }
         public int? RtoLocationId { get; set; }
         public int? RtoDistrictId { get; set; }
-        public bool FancyNumber { get; set; }
+        public bool? FancyNumber { get; set; }
         public string? PaymentMode { get; set; }
         public int? FinanceNameId { get; set; }
         public string? NomineeName { get; set; }

@@ -2,6 +2,7 @@
 @using KRSDealerManagement.Application.DTOs
 @using KRSDealerManagement.Web.Helpers
 @using KRSDealerManagement.Web.Models
+@using System.Text.Json
 
 @{
     var totals = ViewBag.StatementTotals as AccountStatementTotalsViewModel;
@@ -9,6 +10,7 @@
     var currentPage = (int)(ViewBag.Page ?? 1);
     var pageSize = (int)(ViewBag.PageSize ?? ListPagingHelper.DefaultPageSize);
     var rowOffset = (currentPage - 1) * pageSize;
+    var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 }
 
 @if (Model.Any())
@@ -19,7 +21,7 @@
             <thead class="table-dark">
                 <tr>
                     <th class="grid-col-rownum">#</th>
-                    <th>Txn Date</th>
+                    <th>Credit/Debit Date</th>
                     <th>Type</th>
                     <th>Description</th>
                     <th>Customer</th>
@@ -40,11 +42,20 @@
                 @foreach (var t in Model)
                 {
                     var rowClass = t.IsDebit() ? "table-danger" : "table-success";
+                    var detailDatesJson = JsonSerializer.Serialize(
+                        t.DetailDates.Select(d => new
+                        {
+                            label = d.Label,
+                            value = d.DateOnly
+                                ? d.Value.ToString("yyyy-MM-dd")
+                                : d.Value.ToString("yyyy-MM-dd HH:mm")
+                        }),
+                        jsonOptions);
                     <tr class="@rowClass bg-opacity-25">
                         <td class="grid-col-rownum">@(sr++)</td>
                         <td>
-                            <small>@t.CreatedDate.ToString("yyyy-MM-dd")</small><br />
-                            <small class="text-muted">@t.CreatedDate.ToString("HH:mm")</small>
+                            <small>@t.StatementDate.ToString("yyyy-MM-dd")</small><br />
+                            <small class="text-muted">@t.StatementDate.ToString("HH:mm")</small>
                         </td>
                         <td><span class="badge bg-secondary">@t.CategoryLabel</span></td>
                         <td>
@@ -79,10 +90,8 @@
                                     class="btn btn-sm btn-outline-info statement-detail-btn"
                                     data-bs-toggle="modal"
                                     data-bs-target="#statementDetailModal"
-                                    data-txn-label="@t.CreatedDate.ToString("yyyy-MM-dd HH:mm") · @t.CategoryLabel"
-                                    data-submitted="@(t.PaymentSubmittedDate?.ToString("yyyy-MM-dd HH:mm") ?? "-")"
-                                    data-approved="@(t.PaymentApprovedDate?.ToString("yyyy-MM-dd HH:mm") ?? "-")"
-                                    data-received="@(t.PaymentReceivedDate?.ToString("yyyy-MM-dd") ?? "-")"
+                                    data-txn-label="@t.StatementDate.ToString("yyyy-MM-dd HH:mm") · @t.CategoryLabel"
+                                    data-detail-dates="@System.Net.WebUtility.HtmlEncode(detailDatesJson)"
                                     data-remarks="@(t.Remarks ?? "-")"
                                     title="View full transaction details">
                                 <i class="bi bi-eye"></i> View
@@ -120,11 +129,12 @@
                 <div class="modal-body">
                     <p class="text-muted small mb-3" id="statementDetailSubtitle"></p>
                     <table class="table table-sm table-borderless mb-0">
-                        <tr><td class="text-muted" width="40%">Submitted Date</td><td id="statementDetailSubmitted">-</td></tr>
-                        <tr><td class="text-muted">Approved Date</td><td id="statementDetailApproved">-</td></tr>
-                        <tr><td class="text-muted">Received Date</td><td id="statementDetailReceived">-</td></tr>
-                        <tr><td class="text-muted align-top">Remarks</td><td id="statementDetailRemarks" class="text-break">-</td></tr>
+                        <tbody id="statementDetailDates"></tbody>
                     </table>
+                    <div class="mt-2">
+                        <span class="text-muted">Remarks</span>
+                        <div id="statementDetailRemarks" class="text-break">-</div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -136,10 +146,30 @@
         document.querySelectorAll('.statement-detail-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 document.getElementById('statementDetailSubtitle').textContent = btn.dataset.txnLabel || '';
-                document.getElementById('statementDetailSubmitted').textContent = btn.dataset.submitted || '-';
-                document.getElementById('statementDetailApproved').textContent = btn.dataset.approved || '-';
-                document.getElementById('statementDetailReceived').textContent = btn.dataset.received || '-';
                 document.getElementById('statementDetailRemarks').textContent = btn.dataset.remarks || '-';
+
+                var tbody = document.getElementById('statementDetailDates');
+                tbody.innerHTML = '';
+                var raw = btn.dataset.detailDates || '[]';
+                try {
+                    var dates = JSON.parse(raw);
+                    dates.forEach(function (d) {
+                        var tr = document.createElement('tr');
+                        var label = document.createElement('td');
+                        label.className = 'text-muted';
+                        label.style.width = '40%';
+                        label.textContent = d.label || '-';
+                        var value = document.createElement('td');
+                        value.textContent = d.value || '-';
+                        tr.appendChild(label);
+                        tr.appendChild(value);
+                        tbody.appendChild(tr);
+                    });
+                } catch (e) {
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<td class="text-muted" colspan="2">No date details available.</td>';
+                    tbody.appendChild(tr);
+                }
             });
         });
     </script>

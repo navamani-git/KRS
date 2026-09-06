@@ -24,6 +24,7 @@
     var staffRegistrationLocked = staffMilestoneLocked && Model.RegistrationDate.HasValue;
     var staffRtoLocked = staffMilestoneLocked && !string.IsNullOrWhiteSpace(Model.RtoNumber);
     var staffSubsidyLocked = staffMilestoneLocked && !string.IsNullOrWhiteSpace(Model.SubsidyId);
+    var canWriteManage = ViewBag.CanWriteManage as bool? ?? !isStaffNonAdmin;
 }
 
 <div class="row mb-3">
@@ -49,8 +50,6 @@
     </div>
 </div>
 
-@if (!isStaffNonAdmin)
-{
     <div class="card mb-3">
         <div class="card-header"><h3 class="card-title mb-0">Booking Summary</h3></div>
         <div class="card-body p-0">
@@ -88,24 +87,12 @@
             </div>
         </div>
     </div>
-}
 
 <div class="row">
     <div class="col-md-7">
-        <div class="card mb-3"><div class="card-header"><h3 class="card-title">@(isStaffNonAdmin ? "Customer & Nominee" : "Documents Uploaded")</h3></div>
+        <div class="card mb-3"><div class="card-header"><h3 class="card-title">Documents Uploaded</h3></div>
         <div class="card-body">
-            @if (isStaffNonAdmin)
-            {
-                <table class="table table-sm">
-                    <tr><td width="35%"><strong>Customer</strong></td><td>@Model.CustomerName @(Model.IsCompanyBooking ? "(Company)" : "")</td></tr>
-                    <tr><td><strong>Mobile</strong></td><td>@Model.CustomerMobile / @Model.AlternativeMobile</td></tr>
-                    <tr><td><strong>Email</strong></td><td>@Model.CustomerEmail</td></tr>
-                    <tr><td><strong>Nominee</strong></td><td>@Model.NomineeName (@Model.NomineeRelationship) — @Model.NomineeDob.ToString("yyyy-MM-dd")</td></tr>
-                    <tr><td><strong>Submitted</strong></td><td>@Model.SubmittedDate.ToString("yyyy-MM-dd HH:mm")</td></tr>
-                    <tr><td><strong>Subsidy ID</strong></td><td>@(Model.SubsidyId ?? "-")</td></tr>
-                </table>
-            }
-            else if (!string.IsNullOrWhiteSpace(Model.SubsidyId))
+            @if (!string.IsNullOrWhiteSpace(Model.SubsidyId))
             {
                 <p class="small mb-2"><strong>Subsidy ID:</strong> @Model.SubsidyId</p>
             }
@@ -186,7 +173,7 @@
                             </button>
                         </form>
                     }
-                    else if (!isAdmin && allSubsidyDocsUploaded && !subsidyCompletedApproved)
+                    else if (!isAdmin && allSubsidyDocsUploaded && !subsidyCompletedApproved && canWriteManage)
                     {
                         <form method="post" asp-action="ApproveSubsidyCompleted">
                             @Html.AntiForgeryToken()
@@ -272,6 +259,11 @@
         <div class="col-md-5">
             <div class="card card-primary"><div class="card-header"><h3 class="card-title">Staff Processing</h3></div>
             <div class="card-body">
+                @if (!canWriteManage)
+                {
+                    <div class="alert alert-warning">This screen is read-only for your role. Export is still allowed from list screens.</div>
+                }
+                <fieldset @(canWriteManage ? null : "disabled")>
                 <form method="post" enctype="multipart/form-data" id="staffBookingForm">@Html.AntiForgeryToken()
                     <input type="hidden" name="id" value="@Model.VehicleBookingId" />
                     <input type="hidden" name="confirmPriceAdjustment" id="confirmPriceAdjustment" value="false" />
@@ -315,7 +307,7 @@
                         @if (staffPaperLocked)
                         {
                             <p class="form-control-plaintext mb-0"><small>@Model.PaperReceivedDate?.ToString("yyyy-MM-dd HH:mm")</small></p>
-                            <input type="hidden" name="paperReceivedDate" value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.PaperReceivedDate)" />
+                            <input type="hidden" name="paperReceivedDate" id="paperReceivedDate" value="@FormDateTimeHelper.ToDateTimeLocalValue(Model.PaperReceivedDate)" />
                         }
                         else
                         {
@@ -461,8 +453,9 @@
                             <input name="subsidyId" id="subsidyId" class="form-control milestone-input" value="@Model.SubsidyId" placeholder="Enter after invoice & insurance" />
                         }
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">Save</button>
+                    <button type="submit" class="btn btn-primary w-100" @(canWriteManage ? null : "disabled")>Save</button>
                 </form>
+                </fieldset>
             </div></div>
         </div>
     }
@@ -507,6 +500,20 @@
     const statusSelect = document.getElementById('bookingStatus');
     const staffForm = statusSelect?.closest('form');
     if (!statusSelect || !staffForm) return;
+
+    function toDateTimeLocalMax(d) {
+        const pad = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+    function refreshMilestoneMax() {
+        const max = toDateTimeLocalMax(new Date());
+        staffForm.querySelectorAll('input[type="datetime-local"]').forEach(function (el) { el.max = max; });
+    }
+    staffForm.querySelectorAll('input[type="datetime-local"]').forEach(function (el) {
+        el.addEventListener('focus', refreshMilestoneMax);
+        el.addEventListener('click', refreshMilestoneMax);
+    });
+    refreshMilestoneMax();
 
     const Booked = @UnifiedVehicleStatus.BookedToCustomer;
     const Paper = @UnifiedVehicleStatus.PaperReceived;
@@ -636,6 +643,7 @@
     });
 
     staffForm.addEventListener('submit', async function (e) {
+        refreshMilestoneMax();
         const conditionalError = validateConditionalRequirements();
         if (conditionalError) {
             e.preventDefault();

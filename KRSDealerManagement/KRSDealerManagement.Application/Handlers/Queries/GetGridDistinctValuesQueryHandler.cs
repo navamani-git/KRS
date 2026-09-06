@@ -531,7 +531,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             ["debit"] = t => t.IsDebit() ? t.Amount.ToString("N2") : null,
             ["credit"] = t => t.IsCredit() ? t.Amount.ToString("N2") : null,
             ["balance"] = t => t.BalanceAfterTransaction.ToString("N2"),
-            ["txnDate"] = t => t.CreatedDate.ToString("yyyy-MM-dd")
+            ["txnDate"] = t => t.StatementDate.ToString("yyyy-MM-dd")
         };
 
         private static readonly Dictionary<string, Func<VehicleBookingGridRowDto, string?>> VehicleBookingProjections = new(StringComparer.OrdinalIgnoreCase)

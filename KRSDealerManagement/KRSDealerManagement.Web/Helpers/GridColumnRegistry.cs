@@ -165,7 +165,7 @@ namespace KRSDealerManagement.Web.Helpers
         private static List<GridFilterColumn> AccountStatement() => new()
         {
             GridFilterColumn.Skip(),
-            GridFilterColumn.DateCol("txnDate", "Txn Date"),
+            GridFilterColumn.DateCol("txnDate", "Credit/Debit Date"),
             GridFilterColumn.Combo("type", "Type"),
             GridFilterColumn.Combo("description", "Description"),
             GridFilterColumn.Combo("customer", "Customer"),

@@ -43,12 +43,18 @@ namespace KRSDealerManagement.Web.Helpers
 
 namespace KRSDealerManagement.Web.Filters
 {
-    /// <summary>Requires a RoleMenus MenuKey (or System Admin).</summary>
+    /// <summary>Requires a RoleMenus MenuKey (or System Admin). Does not use numeric UserRole ids.</summary>
     public class AuthorizeMenuAttribute : ActionFilterAttribute
     {
         private readonly string _menuKey;
 
         public AuthorizeMenuAttribute(string menuKey) => _menuKey = menuKey;
+
+        /// <summary>When true, subdealer logins are denied even if a menu key overlaps.</summary>
+        public bool StaffOnly { get; set; }
+
+        /// <summary>When true, only subdealer logins are allowed.</summary>
+        public bool SubdealerOnly { get; set; }
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
@@ -56,6 +62,18 @@ namespace KRSDealerManagement.Web.Filters
             if (!SessionHelper.IsAuthenticated(session))
             {
                 context.Result = new RedirectToActionResult("Login", "Account", null);
+                return;
+            }
+
+            if (StaffOnly && SessionHelper.IsSubdealer(session))
+            {
+                context.Result = new RedirectToActionResult("AccessDenied", "Account", null);
+                return;
+            }
+
+            if (SubdealerOnly && !SessionHelper.IsSubdealer(session) && !SessionHelper.IsSystemAdmin(session))
+            {
+                context.Result = new RedirectToActionResult("AccessDenied", "Account", null);
                 return;
             }
 

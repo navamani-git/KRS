@@ -3,6 +3,7 @@ using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Application.DTOs;
 using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Application.Helpers;
+using KRSDealerManagement.Domain.Entities;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Helpers;
 
@@ -28,18 +29,6 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             if (!string.IsNullOrWhiteSpace(request.ReferenceType))
                 filtered = filtered.Where(t => t.ReferenceType == request.ReferenceType);
 
-            if (request.FromDate.HasValue)
-            {
-                var from = request.FromDate.Value.Date;
-                filtered = filtered.Where(t => t.CreatedDate >= from);
-            }
-
-            if (request.ToDate.HasValue)
-            {
-                var toExclusive = request.ToDate.Value.Date.AddDays(1);
-                filtered = filtered.Where(t => t.CreatedDate < toExclusive);
-            }
-
             if (request.ExcludeBalanceHolds)
                 filtered = filtered.Where(t => !AccountTransactionTypeHelper.IsBalanceHold(t.TransactionType));
 
@@ -48,6 +37,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
             var commissions = (await _unitOfWork.Commissions.GetAllAsync()).ToDictionary(c => c.CommissionId);
             var returns = (await _unitOfWork.ReturnRequests.GetAllAsync()).ToDictionary(r => r.ReturnRequestId);
+            var purchaseOrders = (await _unitOfWork.PurchaseOrders.GetAllAsync()).ToDictionary(o => o.OrderId);
             var vehicles = (await _unitOfWork.Vehicles.GetAllAsync()).ToDictionary(v => v.VehicleId);
             var models = (await _unitOfWork.VehicleModels.GetAllAsync()).ToDictionary(m => m.ModelId);
             var colors = (await _unitOfWork.VehicleColors.GetAllAsync()).ToDictionary(c => c.ColorId);
@@ -60,8 +50,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var paymentTypes = (await _unitOfWork.PaymentTypes.GetAllAsync()).ToDictionary(pt => pt.PaymentTypeId);
             var financeNames = (await _unitOfWork.FinanceNames.GetAllAsync()).ToDictionary(f => f.FinanceNameId);
 
-            return filtered.OrderByDescending(t => t.CreatedDate)
-                .Select(t =>
+            var mapped = filtered.Select(t =>
                 {
                     var chassis = ResolveChassis(t.ReferenceType, t.ReferenceId, commissions, returns, vehicles);
                     string reason;
@@ -127,6 +116,39 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     var category = AccountStatementCategoryHelper.Resolve(
                         t.TransactionType, referenceType, referenceId, t.Reason, payments, paymentTypes);
 
+                    ReturnRequest? returnRequest = null;
+                    if (string.Equals(referenceType, "ReturnRequest", StringComparison.OrdinalIgnoreCase)
+                        && referenceId.HasValue)
+                        returns.TryGetValue(referenceId.Value, out returnRequest);
+
+                    Commission? commission = null;
+                    if (string.Equals(referenceType, "Commission", StringComparison.OrdinalIgnoreCase)
+                        && referenceId.HasValue)
+                        commissions.TryGetValue(referenceId.Value, out commission);
+
+                    PurchaseOrder? purchaseOrder = null;
+                    if (string.Equals(referenceType, "PurchaseOrder", StringComparison.OrdinalIgnoreCase)
+                        && referenceId.HasValue)
+                        purchaseOrders.TryGetValue(referenceId.Value, out purchaseOrder);
+
+                    Vehicle? linkedVehicle = null;
+                    if (string.Equals(referenceType, "Vehicle", StringComparison.OrdinalIgnoreCase)
+                        && referenceId.HasValue)
+                        vehicles.TryGetValue(referenceId.Value, out linkedVehicle);
+
+                    if (linkedVehicle?.PurchaseOrderId is int poId && purchaseOrder == null)
+                        purchaseOrders.TryGetValue(poId, out purchaseOrder);
+
+                    var (statementDate, detailDates) = AccountStatementDateResolver.Resolve(
+                        t,
+                        referenceType,
+                        referenceId,
+                        pay,
+                        returnRequest,
+                        commission,
+                        purchaseOrder,
+                        linkedVehicle);
+
                     return new AccountTransactionDto
                     {
                         TransactionId = t.TransactionId,
@@ -143,6 +165,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         InitiatedBy = t.InitiatedBy,
                         InitiatedByName = $"User #{t.InitiatedBy}",
                         CreatedDate = t.CreatedDate,
+                        StatementDate = statementDate,
+                        DetailDates = detailDates,
                         CustomerName = customerName,
                         PaymentType = paymentType,
                         PaymentTypeId = paymentTypeId,
@@ -157,6 +181,20 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         PaymentReceivedDate = receivedDate
                     };
                 }).ToList();
+
+            if (request.FromDate.HasValue)
+            {
+                var from = request.FromDate.Value.Date;
+                mapped = mapped.Where(t => t.StatementDate >= from).ToList();
+            }
+
+            if (request.ToDate.HasValue)
+            {
+                var toExclusive = request.ToDate.Value.Date.AddDays(1);
+                mapped = mapped.Where(t => t.StatementDate < toExclusive).ToList();
+            }
+
+            return mapped.OrderByDescending(t => t.StatementDate).ToList();
         }
 
         private static string? ResolveChassis(

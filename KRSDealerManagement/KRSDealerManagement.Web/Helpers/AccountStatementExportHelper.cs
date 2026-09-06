@@ -8,7 +8,7 @@ namespace KRSDealerManagement.Web.Helpers
     {
         public static readonly string[] Headers =
         {
-            "#", "Txn Date", "Type", "Description", "Customer", "Pay Type", "Finance", "VIN",
+            "#", "Credit/Debit Date", "Type", "Description", "Customer", "Pay Type", "Finance", "VIN",
             "Requested Amt", "Approved Amt", "Debit", "Credit", "Balance",
             "Submitted Date", "Approved Date", "Received Date", "Remarks"
         };
@@ -21,7 +21,7 @@ namespace KRSDealerManagement.Web.Helpers
                 yield return new List<object?>
                 {
                     sr++,
-                    t.CreatedDate.ToString("yyyy-MM-dd HH:mm"),
+                    t.StatementDate.ToString("yyyy-MM-dd HH:mm"),
                     t.CategoryLabel,
                     t.Reason,
                     t.CustomerName ?? "",

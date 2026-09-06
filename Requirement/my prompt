@@ -1,22 +1,26 @@
-1) Error creating login: Violation of UNIQUE KEY constraint 'UQ_Users_A9D10534F17034FA'. Cannot insert duplicate key in object 'dbo.Users'. The duplicate key value is (rm_motors@krs.local). The statement has been terminated.
+1) Say im in booking screen and during some validation issues while I clicked logout button its scrolls to the validation part only after I relad and clicked logout only working
+2) In dashboard screen based on the menu access only the pill box should show - Say for the user aravind it shows lot of bill box that they dont have acces
+3) In statement summary The order wise should be received date 
+4) Return 
 
-2) In Approve payment Screen -Acual amount received - Comma is not comming
+    while return subdealer should select a date when they have returned and in admin approving return they should select a date when they have receiving returned - In transaction it soulould order wise in the date that admin selected return received date
 
-3) In add vehicle screen (Subdealer ) Option to inclease quantity in the text box
+5) While allocate
+            - > Allocate date , based on alloate date only the transaction should order by
 
-4) sub dealer user also have a restriction/allow export to excel allow not allow while creatig user editing user
+6) Transaction Statement 
+        - > If the descriptin now showing as "Commission - MCPL51500CHK37266" but I need "Commission <br> MCPL51500CHK37266 <br> model <br>
 
-5) In add vehicle screen price not showing as comma seperate
+7) Commission approval - Date selection - Commission approval date
+        - > In statement this should reflect order by as Commission approval date
 
-6) In booking the dropdowns Fancy num, Payment mode, Financier name dropdown is showing some 1st value as default insted select should come
+8) In Credit / Debit - Both admin and subdealer should have a date selection when the credit debit made
+         - > If admin directly giving credit / debit then in transaction order wise would be that date
+         -> If subdealer made credit request and admin/finance admin approve by selecting received date then the statement scrrrn should reflect order by as received date
 
-7) VehicleBookings/Manage screen we login as admin it shows booking detals as tablur column but if i logged in as staff users that is again showed as old formate for staff also it should show like the same like tabular column
+9) Should have an option to restrict to view statement for staff users
 
-8) Status cannot be earlier than the latest milestone date entered. Clear later dates or pick a matching status. - I logged in as a staff user
+10) Spelling correction its ageing
 
-9) I logged in as staff user and entered Agent date say 2026-09-06 10:05 and Registration date as 2026-09-06 10:06 then say i cleared both and change 2026-09-06 10:04 it says choose prior date , I believe its cleared in cache and not allow if i cleared
-
-10 ) I believe the user role (staff role is not working properly) Say i have created a staff user named as aravind and  i have not given access to see Paper Received, Invoiced, Insurance Created ect... but he still can able to see the menus. for the smae user i have given read only access to "Vehicle Booking Process" but he can able to edit
-
-11) In finance i have created a user role called "KARUR_ACCOUNTS_STAFF" and created a user called suresh and gave full access to "Payment Approvals" but when i clicked payment approval screen it shows access denied
-
+11) In agin screen - Remove the column from showing Purchase Date,Paper Received Date,Invoice Date,	
+Insurance Date,Agent Date,Registration Date

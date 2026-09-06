@@ -28,7 +28,7 @@
     }
 
     function isAmountField(el) {
-        if (!el || el.tagName !== 'INPUT' || el.readOnly || el.disabled) return false;
+        if (!el || el.tagName !== 'INPUT' || el.disabled) return false;
         if (el.classList.contains('grid-combobox')) return false;
         var type = (el.type || '').toLowerCase();
         if (type === 'date' || type === 'datetime-local' || type === 'time' || type === 'month' || type === 'week') return false;
@@ -49,6 +49,14 @@
             el.inputMode = 'decimal';
         }
         el.autocomplete = 'off';
+
+        if (el.readOnly) {
+            if (el.value) {
+                var ro = parseIndianAmount(el.value);
+                if (!isNaN(ro)) el.value = formatIndianAmount(ro);
+            }
+            return;
+        }
 
         el.addEventListener('focus', function () {
             if (!el.value) return;
@@ -114,4 +122,10 @@
 
     window.krsFormatIndianAmount = formatIndianAmount;
     window.krsParseIndianAmount = parseIndianAmount;
+    window.krsSetIndianAmount = function (el, value) {
+        if (!el) return;
+        attach(el);
+        var num = typeof value === 'number' ? value : parseIndianAmount(value);
+        el.value = isNaN(num) ? '' : formatIndianAmount(num);
+    };
 })();

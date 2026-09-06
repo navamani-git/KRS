@@ -22,6 +22,12 @@ namespace KRSDealerManagement.Application.DTOs
         public required string InitiatedByName { get; set; }
         public DateTime CreatedDate { get; set; }
 
+        /// <summary>Business date shown on statement (payment received, credit/debit, approval, etc.).</summary>
+        public DateTime StatementDate { get; set; }
+
+        /// <summary>All applicable dates for the View details modal.</summary>
+        public List<StatementDateDetail> DetailDates { get; set; } = new();
+
         // Payment-specific (populated when ReferenceType = Payment)
         public string? CustomerName { get; set; }
         public string? PaymentType { get; set; }

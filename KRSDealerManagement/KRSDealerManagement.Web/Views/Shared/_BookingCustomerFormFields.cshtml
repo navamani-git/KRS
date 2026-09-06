@@ -11,7 +11,6 @@
 
     string Val(string? fromForm, string? fromBooking) => fromForm ?? fromBooking ?? "";
     int? IntVal(int? fromForm, int? fromBooking) => fromForm ?? fromBooking;
-    bool BoolVal(bool? fromForm, bool fromBooking) => fromForm ?? fromBooking;
     var customerName = Val(form?.CustomerName, booking?.CustomerName);
     var customerMobile = Val(form?.CustomerMobile, booking?.CustomerMobile);
     var alternativeMobile = Val(form?.AlternativeMobile, booking?.AlternativeMobile);
@@ -20,7 +19,7 @@
     var nomineeName = Val(form?.NomineeName, booking?.NomineeName);
     var nomineeDob = form?.NomineeDob?.ToString("yyyy-MM-dd") ?? booking?.NomineeDob.ToString("yyyy-MM-dd");
     var nomineeRelationship = Val(form?.NomineeRelationship, booking?.NomineeRelationship);
-    var fancyNumber = BoolVal(form?.FancyNumber, booking?.FancyNumber ?? false);
+    var fancyNumber = form?.FancyNumber ?? booking?.FancyNumber;
     var documentTypeId = IntVal(form?.DocumentTypeId, booking?.DocumentTypeId);
     var paymentMode = Val(form?.PaymentMode, booking?.PaymentMode);
     var financeNameId = IntVal(form?.FinanceNameId, booking?.FinanceNameId);
@@ -134,19 +133,25 @@
         <div class="col-md-4">
             <label class="fw-bold">Fancy Number <span class="text-danger">*</span></label>
             <select name="fancyNumber" class="form-select" required>
-                @if (!fancyNumber)
+                <option value="">-- Select --</option>
+                @if (fancyNumber == false)
                 {
                     <option value="false" selected>No</option><option value="true">Yes</option>
                 }
-                else
+                else if (fancyNumber == true)
                 {
                     <option value="false">No</option><option value="true" selected>Yes</option>
+                }
+                else
+                {
+                    <option value="false">No</option><option value="true">Yes</option>
                 }
             </select>
         </div>
         <div class="col-md-4">
             <label class="fw-bold">Payment Mode <span class="text-danger">*</span></label>
             <select name="paymentMode" class="form-select" required>
+                <option value="">-- Select --</option>
                 @foreach (var p in (ViewBag.PaymentModes as IEnumerable<(string Value, string Label)>) ?? VehiclePaymentModes.All)
                 {
                     if (!string.IsNullOrEmpty(paymentMode) && string.Equals(p.Value, paymentMode, StringComparison.OrdinalIgnoreCase))
@@ -163,6 +168,7 @@
         <div class="col-md-6">
             <label class="fw-bold">Financier Name <span class="text-danger">*</span></label>
             <select name="financeNameId" class="form-select" required>
+                <option value="">-- Select --</option>
                 @foreach (var f in (ViewBag.FinanceNames as IEnumerable<FinanceNameMaster>) ?? Enumerable.Empty<FinanceNameMaster>())
                 {
                     if (financeNameId == f.FinanceNameId)

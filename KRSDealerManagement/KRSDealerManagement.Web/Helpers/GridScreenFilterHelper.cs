@@ -39,7 +39,7 @@ namespace KRSDealerManagement.Web.Helpers
                 },
                 new Dictionary<string, Func<AccountTransactionDto, DateTime?>>(StringComparer.OrdinalIgnoreCase)
                 {
-                    ["txnDate"] = t => t.CreatedDate
+                    ["txnDate"] = t => t.StatementDate
                 });
 
         private static string? FormatDescription(AccountTransactionDto t)

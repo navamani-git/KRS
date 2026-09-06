@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("KRSDealerManagement.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+29d139f5b06c676f4a8885d80b68489a0085fe33")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+88b502e9292d7605e142b82f7e75e94b8c5bc5a4")]
 [assembly: System.Reflection.AssemblyProductAttribute("KRSDealerManagement.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("KRSDealerManagement.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

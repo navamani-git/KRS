@@ -26,8 +26,7 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         // GET: Accounts — finance/admin/branch manager balances (scoped by dealership)
-        [AuthorizeRole(1, 3, 4)]
-        [AuthorizeMenu(StaffMenuAccess.Balances)]
+        [AuthorizeMenu(StaffMenuAccess.Balances, StaffOnly = true)]
         public async Task<IActionResult> Index(int? subdealerId, int? page, int? pageSize)
         {
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
@@ -70,8 +69,7 @@ namespace KRSDealerManagement.Web.Controllers
             return View(pageItems);
         }
 
-        [AuthorizeRole(1, 3, 4)]
-        [AuthorizeMenu(StaffMenuAccess.Balances)]
+        [AuthorizeMenu(StaffMenuAccess.Balances, StaffOnly = true)]
         public async Task<IActionResult> Export(int? subdealerId)
         {
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
@@ -107,8 +105,7 @@ namespace KRSDealerManagement.Web.Controllers
             return ExcelExportHelper.ToFileResult(this, $"accounts_{DateTime.Now:yyyyMMdd}.xlsx", headers, rows, "Accounts");
         }
 
-        [AuthorizeRole(1, 3)]
-        [AuthorizeMenu(StaffMenuAccess.Balances)]
+        [AuthorizeMenu(StaffMenuAccess.Balances, StaffOnly = true)]
         public IActionResult Create(int? subdealerId)
         {
             TempData["Info"] = "Each subdealer has a single balance created automatically. Extra accounts are not used.";
@@ -117,8 +114,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1, 3)]
-        [AuthorizeMenu(StaffMenuAccess.Balances)]
+        [AuthorizeMenu(StaffMenuAccess.Balances, StaffOnly = true)]
         public IActionResult Create(int subdealerId, string accountName, string accountType, string description, decimal initialBalance)
         {
             TempData["Error"] = "Creating extra accounts is disabled. Each subdealer uses one balance.";
@@ -129,7 +125,7 @@ namespace KRSDealerManagement.Web.Controllers
         /// Account statement — read-only for branch managers (their subdealers only).
         /// Finance admin / system admin can open from Balances or subdealer details.
         /// </summary>
-        [AuthorizeRole(1, 3, 4)]
+        [AuthorizeMenu(StaffMenuAccess.Balances, StaffOnly = true)]
         public async Task<IActionResult> Statement(int id, DateTime? fromDate, DateTime? toDate, int? page, int? pageSize)
         {
             var balance = await _mediator.Send(new GetAccountBalanceQuery { SubdealerAccountId = id });
@@ -173,7 +169,7 @@ namespace KRSDealerManagement.Web.Controllers
             return View(pageItems);
         }
 
-        [AuthorizeRole(1, 3, 4)]
+        [AuthorizeMenu(StaffMenuAccess.Balances, StaffOnly = true)]
         public async Task<IActionResult> ExportStatement(int id, DateTime? fromDate, DateTime? toDate)
         {
             var balance = await _mediator.Send(new GetAccountBalanceQuery { SubdealerAccountId = id });

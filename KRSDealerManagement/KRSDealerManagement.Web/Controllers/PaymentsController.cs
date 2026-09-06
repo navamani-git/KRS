@@ -323,8 +323,7 @@ namespace KRSDealerManagement.Web.Controllers
             return PhysicalFile(absolute, contentType, Path.GetFileName(absolute));
         }
 
-        [AuthorizeRole(1, 3)]
-        [AuthorizeMenu(StaffMenuAccess.Payments)]
+        [AuthorizeMenu(StaffMenuAccess.Payments, StaffOnly = true)]
         public async Task<IActionResult> Index(int? status, int? subdealerId, DateTime? fromDate, DateTime? toDate, int? page, int? pageSize)
         {
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
@@ -361,8 +360,7 @@ namespace KRSDealerManagement.Web.Controllers
             return View(pageItems);
         }
 
-        [AuthorizeRole(1, 3)]
-        [AuthorizeMenu(StaffMenuAccess.Payments)]
+        [AuthorizeMenu(StaffMenuAccess.Payments, StaffOnly = true)]
         public async Task<IActionResult> Export(int? status, int? subdealerId, DateTime? fromDate, DateTime? toDate)
         {
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
@@ -398,8 +396,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1, 3)]
-        [AuthorizeMenu(StaffMenuAccess.Payments)]
+        [AuthorizeMenu(StaffMenuAccess.Payments, StaffOnly = true)]
         public async Task<IActionResult> Approve(
             int id, string remarks, bool applyToBalance,
             decimal? actualReceivedAmount, DateTime actualReceivedDate)
@@ -439,8 +436,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1, 3)]
-        [AuthorizeMenu(StaffMenuAccess.Payments)]
+        [AuthorizeMenu(StaffMenuAccess.Payments, StaffOnly = true)]
         public async Task<IActionResult> Reject(int id, string remarks)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);

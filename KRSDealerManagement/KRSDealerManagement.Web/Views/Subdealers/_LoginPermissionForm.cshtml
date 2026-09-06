@@ -12,6 +12,10 @@
 
 <div class="p-2">
     <div class="fw-bold mb-2">Menu access for <code>@Model.Username</code></div>
+    <div class="form-check mb-2">
+        <input class="form-check-input" type="checkbox" name="canExport" value="true" id="canExport_@Model.UserId" @(Model.CanExport ? "checked" : "") />
+        <label class="form-check-label" for="canExport_@Model.UserId">Allow Excel export</label>
+    </div>
     <partial name="_MenuPermissionGroups" />
     <button type="submit" class="btn btn-sm btn-primary mt-2">
         <i class="bi bi-shield-check"></i> Save Permissions
