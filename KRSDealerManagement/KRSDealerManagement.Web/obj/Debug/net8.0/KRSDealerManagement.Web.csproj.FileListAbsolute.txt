@@ -215,3 +215,4 @@ D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Web\obj\Debug\net8.0\KRSDe
 D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Web\obj\Debug\net8.0\KRSDealerManagement.Web.genruntimeconfig.cache
 D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Web\obj\Debug\net8.0\ref\KRSDealerManagement.Web.dll
 D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Web\bin\Debug\net8.0\KRSDealerManagement.Web.exe
+D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Web\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt

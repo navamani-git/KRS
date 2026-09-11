@@ -141,6 +141,12 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction("AccessDenied", "Account");
             }
 
+            if (!SessionHelper.CanViewStatement(HttpContext.Session))
+            {
+                TempData["Error"] = "You do not have permission to view account statements.";
+                return RedirectToAction("AccessDenied", "Account");
+            }
+
             var isBranchManager = SessionHelper.IsBranchManager(HttpContext.Session);
             var isFinanceOrAdmin = SessionHelper.IsSystemAdmin(HttpContext.Session)
                 || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Balances);
@@ -177,6 +183,9 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction("AccessDenied", "Account");
 
             if (!await IsSubdealerInScopeAsync(balance.SubdealerId))
+                return RedirectToAction("AccessDenied", "Account");
+
+            if (!SessionHelper.CanViewStatement(HttpContext.Session))
                 return RedirectToAction("AccessDenied", "Account");
 
             var isBranchManager = SessionHelper.IsBranchManager(HttpContext.Session);
@@ -230,7 +239,8 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeRole(1)]
         [AuthorizeMenu(StaffMenuAccess.AccountAdjustments)]
         public async Task<IActionResult> Adjust(
-            int subdealerId, string adjustmentType, decimal amount, string description, string? remarks)
+            int subdealerId, string adjustmentType, decimal amount, string description, string? remarks,
+            DateTime transactionDate)
         {
             var adminId = SessionHelper.GetUserId(HttpContext.Session);
             if (!adminId.HasValue) return RedirectToAction("Login", "Account");
@@ -250,7 +260,8 @@ namespace KRSDealerManagement.Web.Controllers
                     Amount = amount,
                     Description = description.Trim(),
                     Remarks = remarks?.Trim(),
-                    AdjustedBy = adminId.Value
+                    AdjustedBy = adminId.Value,
+                    TransactionDate = transactionDate.Date
                 });
 
                 TempData["Success"] = $"{adjustmentType} of ₹{amount:N2} applied successfully.";

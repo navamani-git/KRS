@@ -1,5 +1,6 @@
 using FluentValidation;
 using KRSDealerManagement.Application.Commands;
+using KRSDealerManagement.Shared.Helpers;
 
 namespace KRSDealerManagement.Application.Validators
 {
@@ -12,6 +13,10 @@ namespace KRSDealerManagement.Application.Validators
 
             RuleFor(x => x.ApprovedBy)
                 .GreaterThan(0).WithMessage("Valid user ID is required");
+
+            RuleFor(x => x.ApprovalDate)
+                .Must(d => !d.HasValue || !BusinessDateValidation.IsFutureDate(d.Value))
+                .WithMessage("Commission approval date cannot be in the future.");
         }
     }
 }

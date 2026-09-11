@@ -10,6 +10,7 @@ namespace KRSDealerManagement.Application.Commands
         public int OrderId { get; set; }
         public int ApprovedBy { get; set; }
         public string? Remarks { get; set; }
+        public DateTime? AllocateDate { get; set; }
         public required List<AllocateOrderItemDto> Items { get; set; }
     }
 

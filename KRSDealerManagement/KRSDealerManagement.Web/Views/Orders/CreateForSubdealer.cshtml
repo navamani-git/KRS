@@ -203,6 +203,7 @@
                     empty.textContent = 'No chassis in dealer stock for this model/color';
                     select.appendChild(empty);
                 }
+                if (window.KrsSearchableSelect) window.KrsSearchableSelect.refresh(select);
             }
 
             function refreshOtherChassisDropdowns(exceptId) {

@@ -1,4 +1,5 @@
 using KRSDealerManagement.Application.DTOs;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Web.Models;
 using MediatR;
@@ -27,8 +28,21 @@ namespace KRSDealerManagement.Web.Helpers
                 ToDate = to
             })).ToList();
 
+            var allTransactions = (await mediator.Send(new GetAccountTransactionsQuery
+            {
+                AccountId = accountId
+            })).ToList();
+
+            var balance = await mediator.Send(new GetAccountBalanceQuery { SubdealerAccountId = accountId });
+
             transactions = GridScreenFilterHelper.ApplyAccountStatement(transactions, columnFilters).ToList();
-            ApplyTotals(controller.ViewBag, transactions);
+            transactions = AccountStatementOpeningHelper.AppendLedgerOpeningRows(
+                transactions,
+                balance,
+                balance?.CreatedDate,
+                from,
+                allTransactions).ToList();
+            ApplyTotals(controller.ViewBag, transactions.Where(t => t.TransactionId > 0).ToList());
 
             var (pageItems, pageInfo) = ListPagingHelper.Paginate(transactions, page, pageSize);
             ListPagingHelper.ApplyToViewBag(controller.ViewBag, pageInfo);

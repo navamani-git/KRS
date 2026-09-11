@@ -34,6 +34,10 @@ window.KrsModelColors = {
         if (current && !colors.some(c => String(c.id) === String(current))) {
             selectEl.value = '';
         }
+
+        if (window.KrsSearchableSelect) {
+            window.KrsSearchableSelect.refresh(selectEl);
+        }
     },
 
     bind(modelSelectEl, colorSelectEl, onModelChange) {

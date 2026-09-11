@@ -1,5 +1,6 @@
 using FluentValidation;
 using KRSDealerManagement.Application.Commands;
+using KRSDealerManagement.Shared.Helpers;
 
 namespace KRSDealerManagement.Application.Validators
 {
@@ -18,6 +19,11 @@ namespace KRSDealerManagement.Application.Validators
 
             RuleFor(x => x.ReturnReason)
                 .NotEmpty().WithMessage("Return reason is required");
+
+            RuleFor(x => x.ReturnDate)
+                .NotEmpty().WithMessage("Return date is required")
+                .Must(d => !BusinessDateValidation.IsFutureDate(d))
+                .WithMessage("Return date cannot be in the future.");
 
             RuleFor(x => x.CreatedBy)
                 .GreaterThan(0).WithMessage("Valid user ID is required");

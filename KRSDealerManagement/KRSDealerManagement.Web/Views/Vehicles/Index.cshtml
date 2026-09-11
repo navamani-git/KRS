@@ -1,5 +1,6 @@
 @model IEnumerable<KRSDealerManagement.Application.DTOs.VehicleDto>
 @using KRSDealerManagement.Application.DTOs
+@using KRSDealerManagement.Shared.Helpers
 @using KRSDealerManagement.Web.Models
 @{
     ViewData["Title"] = "My Vehicles";
@@ -349,6 +350,13 @@
                             <label class="form-label fw-bold">Vehicle price (₹)</label>
                             <input type="text" class="form-control" id="returnVehiclePrice" readonly />
                             <small class="text-muted">Refund amount will be set by admin when your return is approved.</small>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label fw-bold">Return date <span class="text-danger">*</span></label>
+                            <input type="date" name="returnDate" class="form-control" required
+                                   max="@IstTime.DateInputMaxValue()"
+                                   value="@IstTime.Today.ToString("yyyy-MM-dd")" />
+                            <small class="text-muted">When you returned this vehicle to the dealer.</small>
                         </div>
                         <div class="mb-2">
                             <label class="form-label fw-bold">Reason for return</label>

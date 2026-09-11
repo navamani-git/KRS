@@ -42,7 +42,7 @@ SELECT CAST(SCOPE_IDENTITY() AS int);";
                     entity.OriginalPrice,
                     RegistrationNumber = entity.RegistrationNumber ?? "",
                     entity.DeliveryDate,
-                    AllocatedDate = entity.ModifiedDate == default ? DateTime.UtcNow : entity.ModifiedDate,
+                    AllocatedDate = entity.AllocatedDate ?? DateTime.UtcNow,
                     AllocatedBy = entity.CreatedBy,
                     Remarks = entity.Notes ?? "",
                     entity.CreatedBy,

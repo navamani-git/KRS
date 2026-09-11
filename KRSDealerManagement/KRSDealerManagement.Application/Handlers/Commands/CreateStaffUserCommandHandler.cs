@@ -63,6 +63,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 PhoneNumber = request.PhoneNumber?.Trim() ?? "",
                 IsActive = true,
                 CanExport = request.CanExport,
+                CanViewStatement = request.CanViewStatement,
                 CanEditWarrantyClaims = request.CanEditWarrantyClaims,
                 CreatedDate = DateTime.UtcNow,
                 ModifiedDate = DateTime.UtcNow

@@ -100,7 +100,6 @@
                                 </td>
                                 <td class="text-center">@order.TotalQuantity</td>
                                 <td class="text-end fw-bold">₹@order.TotalAmount.ToString("N2")</td>
-                                <td><span class="badge @badgeClass">@order.GetStatusDisplay()</span></td>
                                 <td>
                                     @if (lineItems.Any())
                                     {
@@ -108,8 +107,24 @@
                                             @foreach (var li in lineItems)
                                             {
                                                 <li>
-                                                    @li.ModelName / @li.ColorName —
                                                     <span class="badge @li.GetBadgeClass()">@li.GetStatusDisplay()</span>
+                                                </li>
+                                            }
+                                        </ul>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge @badgeClass">@order.GetStatusDisplay()</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (lineItems.Any())
+                                    {
+                                        <ul class="list-unstyled mb-0 small">
+                                            @foreach (var li in lineItems)
+                                            {
+                                                <li>
+                                                    @li.ModelName / @li.ColorName
                                                     @if (!string.IsNullOrWhiteSpace(li.ChassisNumber) && !li.ChassisNumber.StartsWith("PENDING-", StringComparison.OrdinalIgnoreCase))
                                                     {
                                                         <code class="ms-1">@li.ChassisNumber</code>

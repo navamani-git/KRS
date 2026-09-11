@@ -44,7 +44,7 @@ namespace KRSDealerManagement.Application.Services
         public async Task LogTransactionAsync(
             int accountId, int transactionType, decimal amount, decimal balanceAfter,
             string reason, int? referenceId = null, string referenceType = null,
-            string remarks = null, int initiatedBy = 0)
+            string remarks = null, int initiatedBy = 0, DateTime? transactionDate = null)
         {
             var transaction = new AccountTransaction
             {
@@ -57,7 +57,7 @@ namespace KRSDealerManagement.Application.Services
                 ReferenceType = referenceType,
                 Remarks = remarks,
                 InitiatedBy = initiatedBy,
-                CreatedDate = DateTime.UtcNow
+                CreatedDate = (transactionDate ?? DateTime.UtcNow).Date,
             };
 
             await _unitOfWork.AccountTransactions.AddAsync(transaction);

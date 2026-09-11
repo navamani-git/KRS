@@ -56,6 +56,10 @@
                     }
                     locationSelect.appendChild(opt);
                 });
+
+            if (window.KrsSearchableSelect) {
+                window.KrsSearchableSelect.refresh(locationSelect);
+            }
         }
 
         districtSelect.addEventListener('change', renderLocations);

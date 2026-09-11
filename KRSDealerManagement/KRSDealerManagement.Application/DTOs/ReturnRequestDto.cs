@@ -26,6 +26,8 @@ namespace KRSDealerManagement.Application.DTOs
         public int? ProcessedBy { get; set; }
         public string? ProcessedByName { get; set; }
         public DateTime? ProcessedDate { get; set; }
+        public DateTime? ReturnDate { get; set; }
+        public DateTime? ReturnReceivedDate { get; set; }
         public DateTime? RefundCreditedDate { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime ModifiedDate { get; set; }

@@ -88,6 +88,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                              ProcessedBy = r.ProcessedBy,
                              ProcessedByName = processedUser != null ? processedUser.GetFullName() : null,
                              ProcessedDate = r.ProcessedDate,
+                             ReturnDate = r.ReturnDate,
+                             ReturnReceivedDate = r.ReturnReceivedDate,
                              RefundCreditedDate = refundCredits.TryGetValue(r.ReturnRequestId, out var creditTx)
                                  ? creditTx.CreatedDate
                                  : null,

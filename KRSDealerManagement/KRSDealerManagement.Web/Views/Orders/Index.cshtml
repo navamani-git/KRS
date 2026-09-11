@@ -8,6 +8,8 @@
     ViewData["Title"] = "Manage Orders";
     var subdealers = ViewBag.Subdealers as IEnumerable<UserDto>;
     var statuses = ViewBag.Statuses as IEnumerable<StatusLookup> ?? Enumerable.Empty<StatusLookup>();
+    var itemsByOrder = ViewBag.ItemsByOrder as IDictionary<int, List<PurchaseOrderItemDto>>
+        ?? new Dictionary<int, List<PurchaseOrderItemDto>>();
 }
 
 <div class="row mb-3">
@@ -90,6 +92,7 @@
                             <th class="text-center">Pending</th>
                             <th class="text-end">Amount (₹)</th>
                             <th>Status</th>
+                            <th>Vehicles</th>
                             <th>Notes</th>
                             <th>Actions</th>
                         </tr>
@@ -99,7 +102,9 @@
                         @foreach (var order in Model)
                         {
                             var badgeClass = order.GetBadgeClass();
-                            <tr class="@(order.Status == UnifiedVehicleStatus.Submitted ? "table-warning bg-opacity-25" : "")">
+                            itemsByOrder.TryGetValue(order.OrderId, out var lineItems);
+                            lineItems ??= new List<PurchaseOrderItemDto>();
+                            <tr class="@(order.PendingItemCount > 0 ? "table-warning bg-opacity-25" : "")">
                                 <td>
                                     <a href="@Url.EAction(QueryCrypto, "Details", new { id = order.OrderId })">
                                         <strong>@order.OrderNumber</strong>
@@ -134,6 +139,28 @@
                                 </td>
                                 <td class="text-end fw-bold">₹@order.TotalAmount.ToString("N2")</td>
                                 <td><span class="badge @badgeClass">@order.GetStatusDisplay()</span></td>
+                                <td>
+                                    @if (lineItems.Any())
+                                    {
+                                        <ul class="list-unstyled mb-0 small">
+                                            @foreach (var li in lineItems)
+                                            {
+                                                <li>
+                                                    @li.ModelName / @li.ColorName —
+                                                    <span class="badge @li.GetBadgeClass()">@li.GetStatusDisplay()</span>
+                                                    @if (!string.IsNullOrWhiteSpace(li.ChassisNumber) && !li.ChassisNumber.StartsWith("PENDING-", StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        <code class="ms-1">@li.ChassisNumber</code>
+                                                    }
+                                                </li>
+                                            }
+                                        </ul>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
                                 <td><small class="text-muted">@(order.AdminNotes ?? order.SubdealerNotes ?? "-")</small></td>
                                 <td>
                                     @if (order.PendingItemCount > 0)

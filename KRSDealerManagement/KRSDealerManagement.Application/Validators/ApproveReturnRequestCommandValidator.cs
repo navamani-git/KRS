@@ -1,5 +1,6 @@
 using FluentValidation;
 using KRSDealerManagement.Application.Commands;
+using KRSDealerManagement.Shared.Helpers;
 
 namespace KRSDealerManagement.Application.Validators
 {
@@ -18,6 +19,11 @@ namespace KRSDealerManagement.Application.Validators
 
             RuleFor(x => x.Remarks)
                 .NotEmpty().WithMessage("Remarks are required");
+
+            RuleFor(x => x.ReturnReceivedDate)
+                .NotEmpty().WithMessage("Return received date is required")
+                .Must(d => !BusinessDateValidation.IsFutureDate(d))
+                .WithMessage("Return received date cannot be in the future.");
 
             RuleFor(x => x.ReassignToSubdealerId)
                 .GreaterThan(0).When(x => x.ReassignToSubdealerId.HasValue)

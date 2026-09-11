@@ -33,6 +33,9 @@ namespace KRSDealerManagement.Application.DTOs
 
         public string GetStatusDisplay()
         {
+            if (PendingItemCount > 0 && ApprovedItemCount > 0)
+                return $"Partial ({PendingItemCount} pending)";
+
             if (!string.IsNullOrWhiteSpace(StatusName))
                 return StatusName;
             return Status switch

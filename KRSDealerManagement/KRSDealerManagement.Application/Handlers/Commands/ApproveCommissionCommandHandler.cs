@@ -50,8 +50,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 if (account == null)
                     throw new InvalidOperationException("No active account found for the subdealer.");
 
-                commission.Approve(request.ApprovedBy);
-                commission.MarkAsPaid();
+                commission.Approve(request.ApprovedBy, request.ApprovalDate);
+                commission.MarkAsPaid(request.ApprovalDate);
                 commission.ApprovedAmount = commission.CommissionAmount;
                 if (!string.IsNullOrWhiteSpace(request.Remarks))
                 {
@@ -80,17 +80,21 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
                 var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(commission.VehicleId);
                 var chassis = TransactionReasonHelper.FormatChassis(vehicle?.ChassisNumber);
+                var modelName = vehicle != null
+                    ? (await _unitOfWork.VehicleModels.GetByIdAsync(vehicle.ModelId))?.ModelName
+                    : null;
 
                 await _auditService.LogTransactionAsync(
                     accountId: account.AccountId,
                     transactionType: (int)TransactionTypeEnum.CommissionApproved,
                     amount: commission.CommissionAmount,
                     balanceAfter: balance.CurrentBalance,
-                    reason: TransactionReasonHelper.Commission(chassis),
+                    reason: TransactionReasonHelper.Commission(chassis, modelName),
                     referenceType: "Commission",
                     referenceId: commission.CommissionId,
                     remarks: request.Remarks,
-                    initiatedBy: request.ApprovedBy);
+                    initiatedBy: request.ApprovedBy,
+                    transactionDate: request.ApprovalDate);
 
                 await _unitOfWork.CommitTransactionAsync();
 

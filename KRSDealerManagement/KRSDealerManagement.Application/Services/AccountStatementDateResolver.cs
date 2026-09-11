@@ -25,9 +25,15 @@ namespace KRSDealerManagement.Application.Services
                 AddDate(details, "Received Date", payment.ActualReceivedDate);
                 AddDateTime(details, "Payment Date", payment.PaymentDate);
 
-                var statementDate = payment.ActualReceivedDate?.Date
-                    ?? payment.ProcessedDate
-                    ?? transaction.CreatedDate;
+                DateTime statementDate;
+                if (payment.ActualReceivedDate.HasValue)
+                    statementDate = payment.ActualReceivedDate.Value.Date;
+                else if (payment.ProcessedDate.HasValue)
+                    statementDate = payment.ProcessedDate.Value.Date;
+                else
+                    statementDate = payment.PaymentDate.Date;
+                if (statementDate == default)
+                    statementDate = transaction.CreatedDate.Date;
                 AddDate(details, "Credit/Debit Date", statementDate);
                 return (statementDate, details);
             }
@@ -35,9 +41,14 @@ namespace KRSDealerManagement.Application.Services
             if (string.Equals(referenceType, "ReturnRequest", StringComparison.OrdinalIgnoreCase)
                 && returnRequest != null)
             {
+                AddDate(details, "Return Date", returnRequest.ReturnDate);
                 AddDateTime(details, "Return Request Date", returnRequest.CreatedDate);
                 AddDateTime(details, "Return Approved Date", returnRequest.ProcessedDate);
-                var statementDate = returnRequest.ProcessedDate ?? transaction.CreatedDate;
+                AddDate(details, "Return Received Date", returnRequest.ReturnReceivedDate);
+                var statementDate = (returnRequest.ReturnReceivedDate
+                    ?? returnRequest.ReturnDate
+                    ?? returnRequest.ProcessedDate
+                    ?? transaction.CreatedDate).Date;
                 AddDate(details, "Credit/Debit Date", statementDate);
                 return (statementDate, details);
             }
@@ -50,10 +61,10 @@ namespace KRSDealerManagement.Application.Services
                 AddDateTime(details, "Paid Date", commission.PaidDate);
                 AddDateTime(details, "Rejected Date", commission.RejectedDate);
 
-                var statementDate = commission.PaidDate
-                    ?? commission.ApprovedDate
+                var statementDate = (commission.ApprovedDate
+                    ?? commission.PaidDate
                     ?? commission.RejectedDate
-                    ?? transaction.CreatedDate;
+                    ?? transaction.CreatedDate).Date;
                 AddDate(details, "Credit/Debit Date", statementDate);
                 return (statementDate, details);
             }
@@ -63,7 +74,7 @@ namespace KRSDealerManagement.Application.Services
             {
                 AddDateTime(details, "Order Submitted Date", purchaseOrder.CreatedDate);
                 AddDateTime(details, "Order Approved Date", purchaseOrder.ApprovedDate);
-                var statementDate = purchaseOrder.ApprovedDate ?? transaction.CreatedDate;
+                var statementDate = (purchaseOrder.ApprovedDate ?? transaction.CreatedDate).Date;
                 AddDate(details, "Credit/Debit Date", statementDate);
                 return (statementDate, details);
             }
@@ -78,21 +89,21 @@ namespace KRSDealerManagement.Application.Services
                     AddDateTime(details, "Order Approved Date", purchaseOrder.ApprovedDate);
                 }
 
-                var statementDate = vehicle.AllocatedDate
+                var statementDate = (vehicle.AllocatedDate
                     ?? purchaseOrder?.ApprovedDate
-                    ?? transaction.CreatedDate;
+                    ?? transaction.CreatedDate).Date;
                 AddDate(details, "Credit/Debit Date", statementDate);
                 return (statementDate, details);
             }
 
             if (string.Equals(referenceType, "ManualAdjustment", StringComparison.OrdinalIgnoreCase))
             {
-                AddDate(details, "Credit/Debit Date", transaction.CreatedDate);
-                return (transaction.CreatedDate, details);
+                AddDate(details, "Credit/Debit Date", transaction.CreatedDate.Date);
+                return (transaction.CreatedDate.Date, details);
             }
 
-            AddDate(details, "Credit/Debit Date", transaction.CreatedDate);
-            return (transaction.CreatedDate, details);
+            AddDate(details, "Credit/Debit Date", transaction.CreatedDate.Date);
+            return (transaction.CreatedDate.Date, details);
         }
 
         private static void AddDateTime(List<StatementDateDetail> details, string label, DateTime? value)

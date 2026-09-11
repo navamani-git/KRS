@@ -32,11 +32,42 @@ namespace KRSDealerManagement.Application.Queries
 
             return items.Select(i =>
             {
-                var vehicleStatus = i.VehicleId.HasValue && vehicles.TryGetValue(i.VehicleId.Value, out var v)
-                    ? v.Status
-                    : (i.Status == 2 ? UnifiedVehicleStatus.RejectedByDealer : UnifiedVehicleStatus.Submitted);
+                string? statusName;
+                string? statusBadgeClass;
+                int vehicleStatus;
 
-                statusMap.TryGetValue(vehicleStatus, out var st);
+                if (i.VehicleId.HasValue && vehicles.TryGetValue(i.VehicleId.Value, out var v))
+                {
+                    vehicleStatus = v.Status;
+                    statusMap.TryGetValue(vehicleStatus, out var st);
+                    statusName = st?.StatusName;
+                    statusBadgeClass = st?.BadgeClass;
+                }
+                else
+                {
+                    vehicleStatus = i.Status switch
+                    {
+                        1 => UnifiedVehicleStatus.ApprovedByDealer,
+                        2 => UnifiedVehicleStatus.RejectedByDealer,
+                        _ => UnifiedVehicleStatus.Submitted
+                    };
+
+                    statusName = i.Status switch
+                    {
+                        0 => "Pending",
+                        1 => "Approved",
+                        2 => "Rejected",
+                        _ => "Pending"
+                    };
+
+                    statusBadgeClass = i.Status switch
+                    {
+                        0 => "bg-warning text-dark",
+                        1 => "bg-success",
+                        2 => "bg-danger",
+                        _ => "bg-secondary"
+                    };
+                }
 
                 return new PurchaseOrderItemDto
                 {
@@ -49,8 +80,8 @@ namespace KRSDealerManagement.Application.Queries
                     UnitPrice = i.UnitPrice,
                     Status = i.Status,
                     VehicleStatus = vehicleStatus,
-                    StatusName = st?.StatusName,
-                    StatusBadgeClass = st?.BadgeClass,
+                    StatusName = statusName,
+                    StatusBadgeClass = statusBadgeClass,
                     MotorNo = i.MotorNo,
                     BatteryNo = i.BatteryNo,
                     ChargerNo = i.ChargerNo,

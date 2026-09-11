@@ -139,7 +139,8 @@ namespace KRSDealerManagement.Web.Controllers
         public async Task<IActionResult> Approve(
             int id,
             decimal refundAmount,
-            string remarks)
+            string remarks,
+            DateTime returnReceivedDate)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
@@ -159,6 +160,7 @@ namespace KRSDealerManagement.Web.Controllers
                     ApprovedBy = userId.Value,
                     RefundAmount = refundAmount,
                     Remarks = remarks?.Trim() ?? "",
+                    ReturnReceivedDate = returnReceivedDate.Date,
                     ReassignToSubdealerId = null
                 });
 

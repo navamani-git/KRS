@@ -32,6 +32,7 @@ namespace KRSDealerManagement.Application.Commands
         public Dictionary<string, MenuAccessLevel> MenuAccess { get; set; } = new();
         public bool IsActive { get; set; }
         public bool CanExport { get; set; } = true;
+        public bool CanViewStatement { get; set; } = true;
         public string? QuickActionKeys { get; set; }
         public string? DashboardWidgetKeys { get; set; }
     }

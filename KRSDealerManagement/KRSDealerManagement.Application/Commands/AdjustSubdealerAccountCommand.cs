@@ -10,5 +10,6 @@ namespace KRSDealerManagement.Application.Commands
         public required string Description { get; set; }
         public string? Remarks { get; set; }
         public int AdjustedBy { get; set; }
+        public DateTime? TransactionDate { get; set; }
     }
 }

@@ -81,7 +81,16 @@
         </div>
     }
     <div class="row mb-3">
-        <div class="col-md-4">
+        <div class="col-md-3">
+            <div class="small-box bg-secondary">
+                <div class="inner">
+                    <h3>₹@((balance.InitialBalance ?? 0m).ToString("N2"))</h3>
+                    <p>Initial Balance</p>
+                </div>
+                <div class="icon"><i class="bi bi-bank"></i></div>
+            </div>
+        </div>
+        <div class="col-md-3">
             <div class="small-box bg-success">
                 <div class="inner">
                     <h3>₹@balance.CurrentBalance.ToString("N2")</h3>
@@ -90,7 +99,7 @@
                 <div class="icon"><i class="bi bi-wallet2"></i></div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="small-box bg-warning">
                 <div class="inner">
                     <h3>₹@balance.ReservedAmount.ToString("N2")</h3>
@@ -99,7 +108,7 @@
                 <div class="icon"><i class="bi bi-lock"></i></div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="small-box bg-info">
                 <div class="inner">
                     <h3>₹@balance.AvailableBalance.ToString("N2")</h3>

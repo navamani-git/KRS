@@ -38,7 +38,8 @@ namespace KRSDealerManagement.Application.Services
             int? referenceId = null,
             string referenceType = null,
             string remarks = null,
-            int initiatedBy = 0);
+            int initiatedBy = 0,
+            DateTime? transactionDate = null);
 
         /// <summary>
         /// Get audit logs with filtering

@@ -62,6 +62,16 @@ namespace KRSDealerManagement.Domain.Entities
         public DateTime? ProcessedDate { get; set; }
 
         /// <summary>
+        /// Date subdealer returned the vehicle (business date).
+        /// </summary>
+        public DateTime? ReturnDate { get; set; }
+
+        /// <summary>
+        /// Date admin received the returned vehicle (business date; used on account statement).
+        /// </summary>
+        public DateTime? ReturnReceivedDate { get; set; }
+
+        /// <summary>
         /// When return request was created (UTC)
         /// </summary>
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
@@ -82,7 +92,7 @@ namespace KRSDealerManagement.Domain.Entities
         /// <summary>
         /// Approve the return request
         /// </summary>
-        public void Approve(int approverUserId, string remarks = null)
+        public void Approve(int approverUserId, string remarks = null, DateTime? returnReceivedDate = null)
         {
             if (IsFinal())
                 throw new InvalidOperationException($"Cannot approve return in {GetStatusDisplay()} status");
@@ -90,6 +100,7 @@ namespace KRSDealerManagement.Domain.Entities
             Status = 1; // Approved
             ProcessedBy = approverUserId;
             ProcessedDate = DateTime.UtcNow;
+            ReturnReceivedDate = returnReceivedDate?.Date ?? DateTime.UtcNow.Date;
             AdminRemarks = remarks;
             ModifiedDate = DateTime.UtcNow;
         }

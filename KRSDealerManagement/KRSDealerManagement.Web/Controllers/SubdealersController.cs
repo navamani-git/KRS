@@ -188,9 +188,10 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.LoginPermMaps = permMaps;
             ViewBag.CanViewBalances = SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Balances)
                 || SessionHelper.IsBranchManager(HttpContext.Session);
-            ViewBag.CanViewStatement = SessionHelper.IsSystemAdmin(HttpContext.Session)
+            ViewBag.CanViewStatement = SessionHelper.CanViewStatement(HttpContext.Session)
+                && (SessionHelper.IsSystemAdmin(HttpContext.Session)
                 || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Balances)
-                || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Subdealers);
+                || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Subdealers));
             await LoadDealershipOptionsAsync();
             return View(subdealer);
         }

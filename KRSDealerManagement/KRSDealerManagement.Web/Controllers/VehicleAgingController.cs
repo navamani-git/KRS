@@ -64,13 +64,14 @@ namespace KRSDealerManagement.Web.Controllers
                 headers.Add("Subdealer");
             headers.AddRange(new[]
             {
-                "Purchase Date", "Booked Date", "Booked Aging",
-                "Paper Received Date", "Paper Received Aging",
-                "Invoice Date", "Invoice Aging",
-                "Insurance Date", "Insurance Aging",
-                "Agent Date", "Agent Aging",
-                "Registration Date", "Registration Aging",
-                "Subsidy Aging", "Subsidy Documents Aging"
+                "Booked Ageing",
+                "Paper Received Ageing",
+                "Invoice Ageing",
+                "Insurance Ageing",
+                "Agent Ageing",
+                "Registration Ageing",
+                "Subsidy Ageing",
+                "Subsidy Documents Ageing"
             });
 
             IReadOnlyList<object?> Map(VehicleAgingRowDto r)
@@ -83,23 +84,24 @@ namespace KRSDealerManagement.Web.Controllers
                     cells.Add(r.SubdealerName);
                 cells.AddRange(new object?[]
                 {
-                    Fmt(r.PurchaseDate), Fmt(r.BookedDate), r.BookedAging,
-                    Fmt(r.PaperReceivedDate), r.PaperReceivedAging,
-                    Fmt(r.InvoiceDate), r.InvoiceAging,
-                    Fmt(r.InsuranceDate), r.InsuranceAging,
-                    Fmt(r.AgentDate), r.AgentAging,
-                    Fmt(r.RegistrationDate), r.RegistrationAging,
-                    r.SubsidyAging, r.SubsidyDocumentsAging
+                    r.BookedAging,
+                    r.PaperReceivedAging,
+                    r.InvoiceAging,
+                    r.InsuranceAging,
+                    r.AgentAging,
+                    r.RegistrationAging,
+                    r.SubsidyAging,
+                    r.SubsidyDocumentsAging
                 });
                 return cells;
             }
 
             return ExcelExportHelper.ToFileResult(
                 this,
-                $"vehicle_aging_{DateTime.Now:yyyyMMdd}.xlsx",
+                $"vehicle_ageing_{DateTime.Now:yyyyMMdd}.xlsx",
                 headers,
                 rows.Select(Map),
-                "Vehicle Aging");
+                "Vehicle Ageing");
         }
 
         private GetVehicleAgingQuery BuildQuery(

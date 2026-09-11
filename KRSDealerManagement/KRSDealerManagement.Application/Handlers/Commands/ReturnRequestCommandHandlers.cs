@@ -57,6 +57,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 VehicleId = request.VehicleId,
                 RefundAmount = vehicle.CurrentPrice,
                 ReturnReason = request.ReturnReason,
+                ReturnDate = request.ReturnDate.Date,
                 Status = 0,
                 CreatedDate = DateTime.UtcNow,
                 ModifiedDate = DateTime.UtcNow
@@ -131,7 +132,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                     && t.AccountId == returnRequest.AccountId);
 
                 returnRequest.RefundAmount = request.RefundAmount;
-                returnRequest.Approve(request.ApprovedBy, request.Remarks);
+                returnRequest.Approve(request.ApprovedBy, request.Remarks, request.ReturnReceivedDate);
 
                 if (request.ReassignToSubdealerId.HasValue)
                 {
@@ -264,7 +265,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                         amount: returnRequest.RefundAmount, balanceAfter: balance?.CurrentBalance ?? 0,
                         reason: TransactionReasonHelper.Return(vehicle.ChassisNumber),
                         referenceType: "ReturnRequest", referenceId: returnRequest.ReturnRequestId,
-                        remarks: request.Remarks, initiatedBy: request.ApprovedBy);
+                        remarks: request.Remarks, initiatedBy: request.ApprovedBy,
+                        transactionDate: returnRequest.ReturnReceivedDate);
                 }
 
                 if (targetAccountId.HasValue && targetBalance != null)

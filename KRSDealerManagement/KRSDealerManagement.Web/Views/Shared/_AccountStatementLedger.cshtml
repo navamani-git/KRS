@@ -32,7 +32,6 @@
                     <th class="text-end">Approved Amt (₹)</th>
                     <th class="text-end text-danger">Debit (₹)</th>
                     <th class="text-end text-success">Credit (₹)</th>
-                    <th class="text-end">Balance (₹)</th>
                     <th>Details</th>
                 </tr>
                 <partial name="_PaginatedGridFilters" />
@@ -41,7 +40,10 @@
                 @{ var sr = rowOffset + 1; }
                 @foreach (var t in Model)
                 {
-                    var rowClass = t.IsDebit() ? "table-danger" : "table-success";
+                    var isOpeningRow = t.TransactionId <= 0;
+                    var rowClass = isOpeningRow
+                        ? "table-secondary"
+                        : (t.IsDebit() ? "table-danger" : "table-success");
                     var detailDatesJson = JsonSerializer.Serialize(
                         t.DetailDates.Select(d => new
                         {
@@ -84,18 +86,24 @@
                         <td class="text-end text-success fw-bold">
                             @(t.IsCredit() ? $"₹{t.Amount:N2}" : "-")
                         </td>
-                        <td class="text-end fw-bold">₹@t.BalanceAfterTransaction.ToString("N2")</td>
                         <td>
-                            <button type="button"
-                                    class="btn btn-sm btn-outline-info statement-detail-btn"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#statementDetailModal"
-                                    data-txn-label="@t.StatementDate.ToString("yyyy-MM-dd HH:mm") · @t.CategoryLabel"
-                                    data-detail-dates="@System.Net.WebUtility.HtmlEncode(detailDatesJson)"
-                                    data-remarks="@(t.Remarks ?? "-")"
-                                    title="View full transaction details">
-                                <i class="bi bi-eye"></i> View
-                            </button>
+                            @if (!isOpeningRow)
+                            {
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-info statement-detail-btn"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#statementDetailModal"
+                                        data-txn-label="@t.StatementDate.ToString("yyyy-MM-dd HH:mm") · @t.CategoryLabel"
+                                        data-detail-dates="@System.Net.WebUtility.HtmlEncode(detailDatesJson)"
+                                        data-remarks="@(t.Remarks ?? "-")"
+                                        title="View full transaction details">
+                                    <i class="bi bi-eye"></i> View
+                                </button>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">—</span>
+                            }
                         </td>
                     </tr>
                 }
@@ -109,7 +117,13 @@
                         <td class="text-end text-success">₹@totals.TotalApproved.ToString("N2")</td>
                         <td class="text-end text-danger">₹@totals.TotalDebit.ToString("N2")</td>
                         <td class="text-end text-success">₹@totals.TotalCredit.ToString("N2")</td>
-                        <td colspan="2"></td>
+                        <td></td>
+                    </tr>
+                    <tr class="table-secondary">
+                        <td colspan="11" class="text-end">Net (Credit − Debit)</td>
+                        <td class="text-end @(totals.NetCreditMinusDebit >= 0 ? "text-success" : "text-danger")">
+                            ₹@totals.NetCreditMinusDebit.ToString("N2")
+                        </td>
                     </tr>
                 </tfoot>
             }

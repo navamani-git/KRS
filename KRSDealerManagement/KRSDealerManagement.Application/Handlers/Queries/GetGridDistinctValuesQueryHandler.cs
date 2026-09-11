@@ -409,18 +409,11 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             ["model"] = r => r.ModelName,
             ["color"] = r => r.ColorName,
             ["subdealer"] = r => r.SubdealerName,
-            ["purchase"] = r => r.PurchaseDate?.ToString("yyyy-MM-dd"),
-            ["booked"] = r => r.BookedDate?.ToString("yyyy-MM-dd"),
             ["bookedAging"] = r => r.BookedAging?.ToString(),
-            ["paper"] = r => r.PaperReceivedDate?.ToString("yyyy-MM-dd"),
             ["paperAging"] = r => r.PaperReceivedAging?.ToString(),
-            ["invoice"] = r => r.InvoiceDate?.ToString("yyyy-MM-dd"),
             ["invoiceAging"] = r => r.InvoiceAging?.ToString(),
-            ["insurance"] = r => r.InsuranceDate?.ToString("yyyy-MM-dd"),
             ["insuranceAging"] = r => r.InsuranceAging?.ToString(),
-            ["agent"] = r => r.AgentDate?.ToString("yyyy-MM-dd"),
             ["agentAging"] = r => r.AgentAging?.ToString(),
-            ["registration"] = r => r.RegistrationDate?.ToString("yyyy-MM-dd"),
             ["registrationAging"] = r => r.RegistrationAging?.ToString(),
             ["subsidyAging"] = r => r.SubsidyAging?.ToString(),
             ["subsidyDocsAging"] = r => r.SubsidyDocumentsAging?.ToString()
@@ -530,7 +523,6 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             ["approvedAmt"] = t => t.ApprovedPaymentAmount?.ToString("N2"),
             ["debit"] = t => t.IsDebit() ? t.Amount.ToString("N2") : null,
             ["credit"] = t => t.IsCredit() ? t.Amount.ToString("N2") : null,
-            ["balance"] = t => t.BalanceAfterTransaction.ToString("N2"),
             ["txnDate"] = t => t.StatementDate.ToString("yyyy-MM-dd")
         };
 

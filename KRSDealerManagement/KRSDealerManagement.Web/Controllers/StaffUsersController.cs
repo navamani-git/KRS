@@ -79,6 +79,7 @@ namespace KRSDealerManagement.Web.Controllers
                     PhoneNumber = phoneNumber,
                     CreatedBy = userId.Value,
                     CanExport = IsFormChecked("canExport"),
+                    CanViewStatement = IsFormChecked("canViewStatement"),
                     CanEditWarrantyClaims = IsFormChecked("canEditWarrantyClaims")
                 });
 
@@ -116,6 +117,7 @@ namespace KRSDealerManagement.Web.Controllers
         {
             var isActive = IsFormChecked("isActive");
             var canExport = IsFormChecked("canExport");
+            var canViewStatement = IsFormChecked("canViewStatement");
             var canEditWarrantyClaims = IsFormChecked("canEditWarrantyClaims");
 
             var user = await _unitOfWork.Users.GetByIdAsync(id);
@@ -176,6 +178,7 @@ namespace KRSDealerManagement.Web.Controllers
             user.PhoneNumber = phoneNumber?.Trim() ?? "";
             user.IsActive = isActive;
             user.CanExport = canExport;
+            user.CanViewStatement = canViewStatement;
             user.CanEditWarrantyClaims = canEditWarrantyClaims;
             user.UserRole = Application.Services.RoleTemplateDefaults.MapTemplateToLegacyUserRole(selectedRole.RoleTemplateCode);
             if (!string.IsNullOrWhiteSpace(password))
@@ -271,6 +274,7 @@ namespace KRSDealerManagement.Web.Controllers
                 DealershipName = dealership?.DealershipName,
                 IsActive = user.IsActive,
                 CanExport = user.CanExport,
+                CanViewStatement = user.CanViewStatement,
                 CanEditWarrantyClaims = user.CanEditWarrantyClaims,
                 PasswordHash = user.PasswordHash,
                 CreatedDate = user.CreatedDate

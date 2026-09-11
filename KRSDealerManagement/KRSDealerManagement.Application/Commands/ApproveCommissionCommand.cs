@@ -11,5 +11,6 @@ namespace KRSDealerManagement.Application.Commands
         public int CommissionId { get; set; }
         public int ApprovedBy { get; set; }
         public string? Remarks { get; set; }
+        public DateTime? ApprovalDate { get; set; }
     }
 }

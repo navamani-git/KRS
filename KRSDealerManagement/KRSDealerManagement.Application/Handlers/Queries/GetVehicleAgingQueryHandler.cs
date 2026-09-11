@@ -80,12 +80,25 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     var insurance = booking?.InsuranceDate;
                     var agent = booking?.AgentDate;
                     var registration = booking?.RegistrationDate;
-                    var subsidyIdDate = !string.IsNullOrWhiteSpace(booking?.SubsidyId)
+                    var hasSubsidyId = !string.IsNullOrWhiteSpace(booking?.SubsidyId);
+                    var subsidyIdDate = hasSubsidyId
                         ? booking!.SubsidyIdDate ?? booking.ModifiedDate
                         : (DateTime?)null;
                     var approveDate = booking?.SubsidyCompletedApproved == true
                         ? booking.SubsidyCompletedApprovedDate
                         : null;
+
+                    var aging = VehicleAgingCalculator.Compute(new VehicleAgingInputs(
+                        PurchaseDate: purchase,
+                        BookedDate: booked,
+                        PaperReceivedDate: paper,
+                        InvoiceDate: invoice,
+                        InsuranceDate: insurance,
+                        AgentDate: agent,
+                        RegistrationDate: registration,
+                        HasSubsidyId: hasSubsidyId,
+                        SubsidyIdDate: subsidyIdDate,
+                        SubsidyCompletedApprovedDate: approveDate));
 
                     var chassis = UnifiedVehicleStatus.IsPlaceholderChassis(v.ChassisNumber)
                         ? "-"
@@ -102,33 +115,19 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         SubdealerName = user?.GetFullName() ?? "Unknown",
                         PurchaseDate = purchase,
                         BookedDate = booked,
-                        BookedAging = VehicleAgingCalculator.CalendarDays(purchase, booked),
+                        BookedAging = aging.BookedAging,
                         PaperReceivedDate = paper,
-                        PaperReceivedAging = booked.HasValue
-                            ? VehicleAgingCalculator.CalendarDays(booked, paper)
-                            : null,
+                        PaperReceivedAging = aging.PaperReceivedAging,
                         InvoiceDate = invoice,
-                        InvoiceAging = paper.HasValue
-                            ? VehicleAgingCalculator.CalendarDays(paper, invoice)
-                            : null,
+                        InvoiceAging = aging.InvoiceAging,
                         InsuranceDate = insurance,
-                        InsuranceAging = invoice.HasValue
-                            ? VehicleAgingCalculator.CalendarDays(invoice, insurance)
-                            : null,
+                        InsuranceAging = aging.InsuranceAging,
                         AgentDate = agent,
-                        AgentAging = invoice.HasValue
-                            ? VehicleAgingCalculator.CalendarDays(invoice, agent)
-                            : null,
+                        AgentAging = aging.AgentAging,
                         RegistrationDate = registration,
-                        RegistrationAging = agent.HasValue
-                            ? VehicleAgingCalculator.CalendarDays(agent, registration)
-                            : null,
-                        SubsidyAging = invoice.HasValue
-                            ? VehicleAgingCalculator.CalendarDays(invoice, subsidyIdDate)
-                            : null,
-                        SubsidyDocumentsAging = subsidyIdDate.HasValue
-                            ? VehicleAgingCalculator.CalendarDays(subsidyIdDate, approveDate)
-                            : null
+                        RegistrationAging = aging.RegistrationAging,
+                        SubsidyAging = aging.SubsidyAging,
+                        SubsidyDocumentsAging = aging.SubsidyDocumentsAging
                     };
                 });
 
@@ -150,7 +149,15 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             }
 
             return rows
-                .OrderByDescending(r => r.BookedAging ?? r.SubsidyDocumentsAging ?? 0)
+                .OrderByDescending(r => VehicleAgingCalculator.PendingAgingScore(new VehicleAgingResults(
+                    r.BookedAging,
+                    r.PaperReceivedAging,
+                    r.InvoiceAging,
+                    r.InsuranceAging,
+                    r.AgentAging,
+                    r.RegistrationAging,
+                    r.SubsidyAging,
+                    r.SubsidyDocumentsAging)))
                 .ThenBy(r => r.SubdealerName)
                 .ThenBy(r => r.ChassisNumber)
                 .ToList();

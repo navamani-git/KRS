@@ -24,6 +24,7 @@ namespace KRSDealerManagement.Application.Queries
         public List<string> AccessibleMenuKeys { get; set; } = new();
         public Dictionary<string, MenuAccessLevel> MenuAccess { get; set; } = new();
         public bool CanExport { get; set; } = true;
+        public bool CanViewStatement { get; set; } = true;
         public string? QuickActionKeys { get; set; }
         public string? DashboardWidgetKeys { get; set; }
         public bool IsSystemAdmin => RoleCode.Equals(RoleCodes.SystemAdmin, StringComparison.OrdinalIgnoreCase);
@@ -86,6 +87,7 @@ namespace KRSDealerManagement.Application.Queries
                 AccessibleMenuKeys = menus,
                 MenuAccess = menuAccess,
                 CanExport = user?.CanExport ?? true,
+                CanViewStatement = user?.CanViewStatement ?? true,
                 QuickActionKeys = user?.QuickActionKeys,
                 DashboardWidgetKeys = user?.DashboardWidgetKeys
             };

@@ -102,6 +102,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                     MenuAccess = menuAccess,
                     IsActive = user.IsActive,
                     CanExport = user.CanExport,
+                    CanViewStatement = user.CanViewStatement,
                     QuickActionKeys = user.QuickActionKeys,
                     DashboardWidgetKeys = user.DashboardWidgetKeys
                 };

@@ -176,7 +176,6 @@ namespace KRSDealerManagement.Web.Helpers
             GridFilterColumn.Combo("approvedAmt", "Approved"),
             GridFilterColumn.Combo("debit", "Debit"),
             GridFilterColumn.Combo("credit", "Credit"),
-            GridFilterColumn.Combo("balance", "Balance"),
             GridFilterColumn.Actions()
         };
 
@@ -421,21 +420,14 @@ namespace KRSDealerManagement.Web.Helpers
                 cols.Add(GridFilterColumn.Combo("subdealer", "Subdealer"));
             cols.AddRange(new[]
             {
-                GridFilterColumn.DateCol("purchase", "Purchase Date"),
-                GridFilterColumn.DateCol("booked", "Booked Date"),
-                GridFilterColumn.Combo("bookedAging", "Booked Aging"),
-                GridFilterColumn.DateCol("paper", "Paper Received Date"),
-                GridFilterColumn.Combo("paperAging", "Paper Received Aging"),
-                GridFilterColumn.DateCol("invoice", "Invoice Date"),
-                GridFilterColumn.Combo("invoiceAging", "Invoice Aging"),
-                GridFilterColumn.DateCol("insurance", "Insurance Date"),
-                GridFilterColumn.Combo("insuranceAging", "Insurance Aging"),
-                GridFilterColumn.DateCol("agent", "Agent Date"),
-                GridFilterColumn.Combo("agentAging", "Agent Aging"),
-                GridFilterColumn.DateCol("registration", "Registration Date"),
-                GridFilterColumn.Combo("registrationAging", "Registration Aging"),
-                GridFilterColumn.Combo("subsidyAging", "Subsidy Aging"),
-                GridFilterColumn.Combo("subsidyDocsAging", "Subsidy Documents Aging")
+                GridFilterColumn.Combo("bookedAging", "Booked Ageing"),
+                GridFilterColumn.Combo("paperAging", "Paper Received Ageing"),
+                GridFilterColumn.Combo("invoiceAging", "Invoice Ageing"),
+                GridFilterColumn.Combo("insuranceAging", "Insurance Ageing"),
+                GridFilterColumn.Combo("agentAging", "Agent Ageing"),
+                GridFilterColumn.Combo("registrationAging", "Registration Ageing"),
+                GridFilterColumn.Combo("subsidyAging", "Subsidy Ageing"),
+                GridFilterColumn.Combo("subsidyDocsAging", "Subsidy Documents Ageing")
             });
             return cols;
         }

@@ -77,7 +77,7 @@ namespace KRSDealerManagement.Shared.Constants
             (BookingSubsidyIdPending, "Subsidy ID Pending"),
             (BookingSubsidyDocsPending, "Subsidy Docs Pending"),
             (BookingRegistered, "Registered"),
-            (VehicleAging, "Vehicle Aging"),
+            (VehicleAging, "Vehicle Ageing"),
             (ChassisHistory, "Chassis History"),
             (Vehicles, "Subdealer Vehicles"),
             (DealerStock, "Dealer Stock"),
@@ -400,7 +400,7 @@ namespace KRSDealerManagement.Shared.Constants
             new MenuItemDefinition
             {
                 Key = VehicleAging,
-                Name = "Vehicle Aging",
+                Name = "Vehicle Ageing",
                 Controller = "VehicleAging",
                 Action = "Index",
                 Icon = "bi-hourglass-split",

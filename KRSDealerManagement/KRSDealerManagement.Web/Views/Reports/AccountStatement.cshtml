@@ -62,7 +62,16 @@
         </div>
     }
     <div class="row mb-3">
-        <div class="col-md-4">
+        <div class="col-md-3">
+            <div class="info-box bg-secondary">
+                <span class="info-box-icon"><i class="bi bi-bank"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text text-white">Initial Balance</span>
+                    <span class="info-box-number text-white">₹@((balance.InitialBalance ?? 0m).ToString("N2"))</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
             <div class="info-box bg-success">
                 <span class="info-box-icon"><i class="bi bi-wallet2"></i></span>
                 <div class="info-box-content">
@@ -71,7 +80,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="info-box bg-warning">
                 <span class="info-box-icon"><i class="bi bi-lock"></i></span>
                 <div class="info-box-content">
@@ -80,7 +89,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="info-box bg-info">
                 <span class="info-box-icon"><i class="bi bi-unlock"></i></span>
                 <div class="info-box-content">

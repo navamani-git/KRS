@@ -1988,3 +1988,46 @@ table.grid-excel-table td.grid-sticky-col-2 {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
 }
+
+/* Searchable dropdowns (Tom Select) */
+.content-wrapper .ts-wrapper {
+    width: 100%;
+}
+
+.content-wrapper .ts-wrapper .ts-control {
+    border-radius: var(--border-radius);
+    min-height: calc(1.5em + 0.75rem + 2px);
+}
+
+.content-wrapper .ts-wrapper.ts-sm .ts-control {
+    min-height: calc(1.5em + 0.25rem + 2px);
+    font-size: 0.9375rem;
+    padding-top: 0.125rem;
+    padding-bottom: 0.125rem;
+}
+
+.content-wrapper .ts-wrapper .ts-control input {
+    font-size: inherit;
+}
+
+.content-wrapper .ts-dropdown,
+.modal .ts-dropdown {
+    z-index: 10060 !important;
+}
+
+.grid-column-filters .ts-wrapper {
+    min-width: 0;
+}
+
+.ts-dropdown .dropdown-input {
+    padding: 0.35rem 0.5rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.ts-dropdown .dropdown-input input {
+    width: 100%;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.9375rem;
+}

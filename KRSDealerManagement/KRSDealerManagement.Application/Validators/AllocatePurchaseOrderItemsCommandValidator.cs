@@ -1,5 +1,6 @@
 using FluentValidation;
 using KRSDealerManagement.Application.Commands;
+using KRSDealerManagement.Shared.Helpers;
 
 namespace KRSDealerManagement.Application.Validators
 {
@@ -10,6 +11,9 @@ namespace KRSDealerManagement.Application.Validators
             RuleFor(x => x.OrderId).GreaterThan(0);
             RuleFor(x => x.ApprovedBy).GreaterThan(0);
             RuleFor(x => x.Items).NotEmpty().WithMessage("Select at least one line item.");
+            RuleFor(x => x.AllocateDate)
+                .Must(d => !d.HasValue || !BusinessDateValidation.IsFutureDate(d.Value))
+                .WithMessage("Allocate date cannot be in the future.");
 
             RuleForEach(x => x.Items).ChildRules(item =>
             {

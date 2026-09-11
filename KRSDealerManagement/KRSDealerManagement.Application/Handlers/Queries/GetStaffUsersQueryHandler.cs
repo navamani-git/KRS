@@ -57,6 +57,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         DealershipName = dealership?.DealershipName,
                     IsActive = user.IsActive,
                     CanExport = user.CanExport,
+                    CanViewStatement = user.CanViewStatement,
                     CanEditWarrantyClaims = user.CanEditWarrantyClaims,
                     PasswordHash = user.PasswordHash,
                         CreatedDate = user.CreatedDate

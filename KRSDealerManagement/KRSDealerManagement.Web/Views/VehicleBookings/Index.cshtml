@@ -349,6 +349,7 @@
                         subSel.value = keepId;
                     else
                         subSel.value = '';
+                    if (window.KrsSearchableSelect) window.KrsSearchableSelect.refresh(subSel);
                 }
 
                 async function loadSubdealers(keepSelection) {

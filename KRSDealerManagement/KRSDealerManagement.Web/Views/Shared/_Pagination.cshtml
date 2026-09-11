@@ -22,7 +22,7 @@
             </small>
             <label class="d-flex align-items-center gap-1 mb-0">
                 <small class="text-muted">Rows:</small>
-                <select class="form-select form-select-sm" style="width: auto;"
+                <select class="form-select form-select-sm no-search-select" style="width: auto;"
                         onchange="var u=this.options[this.selectedIndex].getAttribute('data-url'); if(u) window.krsNavigate(u, 'Loading...');">
                     @foreach (var size in allowedSizes)
                     {

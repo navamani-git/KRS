@@ -14,7 +14,8 @@ namespace KRSDealerManagement.Application.Helpers
             int allocatedBy,
             int status,
             decimal price,
-            string? remarks = null)
+            string? remarks = null,
+            DateTime? allocatedDate = null)
         {
             var master = await unitOfWork.VehicleMasters.GetByIdAsync(vehicleMasterId)
                 ?? throw new InvalidOperationException("Selected chassis was not found in dealer stock.");
@@ -42,6 +43,7 @@ namespace KRSDealerManagement.Application.Helpers
                 ControllerNo = master.ControllerNo,
                 ConverterNo = master.ConverterNo,
                 ManufacturingYear = 0,
+                AllocatedDate = allocatedDate ?? DateTime.UtcNow,
                 CreatedBy = allocatedBy,
                 CreatedDate = DateTime.UtcNow,
                 ModifiedDate = DateTime.UtcNow

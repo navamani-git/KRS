@@ -69,6 +69,7 @@ namespace KRSDealerManagement.Web.Controllers
                 result.Data.AccessibleMenuKeys,
                 result.Data.MenuAccess,
                 result.Data.CanExport,
+                result.Data.CanViewStatement,
                 result.Data.QuickActionKeys,
                 result.Data.DashboardWidgetKeys
             );

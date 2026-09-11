@@ -6,5 +6,8 @@ namespace KRSDealerManagement.Web.Models
         public decimal TotalDebit { get; set; }
         public decimal TotalCredit { get; set; }
         public int TransactionCount { get; set; }
+
+        /// <summary>Total credit minus total debit for the filtered rows.</summary>
+        public decimal NetCreditMinusDebit => TotalCredit - TotalDebit;
     }
 }

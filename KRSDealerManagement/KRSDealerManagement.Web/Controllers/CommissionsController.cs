@@ -530,7 +530,7 @@ namespace KRSDealerManagement.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AuthorizeRole(1)]
-        public async Task<IActionResult> Approve(int id, string remarks)
+        public async Task<IActionResult> Approve(int id, string remarks, DateTime approvalDate)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
@@ -541,7 +541,8 @@ namespace KRSDealerManagement.Web.Controllers
                 {
                     CommissionId = id,
                     ApprovedBy = userId.Value,
-                    Remarks = string.IsNullOrWhiteSpace(remarks) ? "Approved" : remarks.Trim()
+                    Remarks = string.IsNullOrWhiteSpace(remarks) ? "Approved" : remarks.Trim(),
+                    ApprovalDate = approvalDate.Date
                 });
 
                 TempData[result ? "Success" : "Error"] = result

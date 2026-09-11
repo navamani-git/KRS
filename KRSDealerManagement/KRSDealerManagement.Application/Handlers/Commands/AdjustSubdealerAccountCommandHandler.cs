@@ -60,7 +60,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 referenceType: "ManualAdjustment",
                 referenceId: null,
                 remarks: request.Remarks?.Trim(),
-                initiatedBy: request.AdjustedBy);
+                initiatedBy: request.AdjustedBy,
+                transactionDate: request.TransactionDate?.Date);
 
             await _auditService.LogActionAsync(
                 entityType: "AccountBalance",

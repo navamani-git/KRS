@@ -65,6 +65,11 @@
                 <label class="form-check-label" for="canExport">Allow Excel export</label>
                 <div class="form-text">When off, Export Excel buttons are hidden and downloads are blocked. User must sign out and back in for this to apply.</div>
             </div>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="canViewStatement" value="true" id="canViewStatement" @(Model.CanViewStatement ? "checked" : "") />
+                <label class="form-check-label" for="canViewStatement">Allow account statement view</label>
+                <div class="form-text">When off, staff cannot open subdealer account statements from Balances or Subdealer details.</div>
+            </div>
             <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="canEditWarrantyClaims" value="true" id="canEditWarrantyClaims" @(Model.CanEditWarrantyClaims ? "checked" : "") />
                 <label class="form-check-label" for="canEditWarrantyClaims">Warranty claim staff actions</label>

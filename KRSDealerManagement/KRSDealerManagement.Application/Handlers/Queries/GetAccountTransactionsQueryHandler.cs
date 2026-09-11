@@ -73,7 +73,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     else
                     {
                         reason = AccountStatementDescriptionHelper.NormalizeOrderVehicleReason(t.Reason);
-                        reason = EnrichReason(reason, t.ReferenceType, t.ReferenceId, chassis, returns, vehicles, models, colors);
+                        reason = EnrichReason(reason, t.ReferenceType, t.ReferenceId, chassis, returns, vehicles, models, colors, commissions);
                     }
 
                     string? customerName = null;
@@ -229,7 +229,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             Dictionary<int, Domain.Entities.ReturnRequest> returns,
             Dictionary<int, Domain.Entities.Vehicle> vehicles,
             Dictionary<int, Domain.Entities.VehicleModel> models,
-            Dictionary<int, Domain.Entities.VehicleColor> colors)
+            Dictionary<int, Domain.Entities.VehicleColor> colors,
+            Dictionary<int, Domain.Entities.Commission> commissions)
         {
             if (string.Equals(referenceType, "ReturnRequest", StringComparison.OrdinalIgnoreCase)
                 && referenceId.HasValue
@@ -244,14 +245,21 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     color?.ColorName);
             }
 
+            if (string.Equals(referenceType, "Commission", StringComparison.OrdinalIgnoreCase)
+                && referenceId.HasValue
+                && commissions.TryGetValue(referenceId.Value, out var commission)
+                && vehicles.TryGetValue(commission.VehicleId, out var commissionVehicle))
+            {
+                models.TryGetValue(commissionVehicle.ModelId, out var model);
+                return TransactionReasonHelper.Commission(
+                    chassis ?? commissionVehicle.ChassisNumber,
+                    model?.ModelName);
+            }
+
             if (string.IsNullOrWhiteSpace(chassis))
                 return reason ?? "";
 
-            return referenceType switch
-            {
-                "Commission" => TransactionReasonHelper.Commission(chassis),
-                _ => reason ?? ""
-            };
+            return reason ?? "";
         }
     }
 }

@@ -34,8 +34,7 @@ namespace KRSDealerManagement.Web.Helpers
                     ["requestedAmt"] = t => t.RequestedAmount?.ToString("N2"),
                     ["approvedAmt"] = t => t.ApprovedPaymentAmount?.ToString("N2"),
                     ["debit"] = t => t.IsDebit() ? t.Amount.ToString("N2") : null,
-                    ["credit"] = t => t.IsCredit() ? t.Amount.ToString("N2") : null,
-                    ["balance"] = t => t.BalanceAfterTransaction.ToString("N2")
+                    ["credit"] = t => t.IsCredit() ? t.Amount.ToString("N2") : null
                 },
                 new Dictionary<string, Func<AccountTransactionDto, DateTime?>>(StringComparer.OrdinalIgnoreCase)
                 {
@@ -305,16 +304,7 @@ namespace KRSDealerManagement.Web.Helpers
                     ["subsidyAging"] = r => r.SubsidyAging?.ToString(),
                     ["subsidyDocsAging"] = r => r.SubsidyDocumentsAging?.ToString()
                 },
-                new Dictionary<string, Func<VehicleAgingRowDto, DateTime?>>(StringComparer.OrdinalIgnoreCase)
-                {
-                    ["purchase"] = r => r.PurchaseDate,
-                    ["booked"] = r => r.BookedDate,
-                    ["paper"] = r => r.PaperReceivedDate,
-                    ["invoice"] = r => r.InvoiceDate,
-                    ["insurance"] = r => r.InsuranceDate,
-                    ["agent"] = r => r.AgentDate,
-                    ["registration"] = r => r.RegistrationDate
-                });
+                new Dictionary<string, Func<VehicleAgingRowDto, DateTime?>>(StringComparer.OrdinalIgnoreCase));
 
         public static IEnumerable<VehicleMasterDto> ApplyDealerStock(
             IEnumerable<VehicleMasterDto> rows,

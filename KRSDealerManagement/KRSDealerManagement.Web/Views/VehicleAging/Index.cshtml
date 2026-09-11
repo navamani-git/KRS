@@ -3,23 +3,39 @@
 @using KRSDealerManagement.Shared.Helpers
 @using KRSDealerManagement.Web.Models
 @{
-    ViewData["Title"] = "Vehicle Aging";
+    ViewData["Title"] = "Vehicle Ageing";
     var isSubdealerView = ViewBag.IsSubdealerView as bool? ?? false;
     var locations = ViewBag.DealershipLocations as IEnumerable<string> ?? Enumerable.Empty<string>();
     var subdealers = ViewBag.Subdealers as IEnumerable<UserDto> ?? Enumerable.Empty<UserDto>();
     var selectedLocation = ViewBag.SelectedDealershipLocation as string;
-    string Fmt(DateTime? value) => value.HasValue ? IstTime.ToIst(value)!.Value.ToString("yyyy-MM-dd") : "—";
     string Days(int? value) => value.HasValue ? value.Value.ToString() : "—";
 }
 
 <div class="row mb-3">
     <div class="col-lg-8">
-        <h1 class="m-0"><i class="bi bi-hourglass-split"></i> Vehicle Aging</h1>
+        <h1 class="m-0"><i class="bi bi-hourglass-split"></i> Vehicle Ageing</h1>
         <p class="text-muted mb-0">
             Allocated vehicles stay here until subsidy documents (Face, RC, Booth, Undertaking) are uploaded
             and staff/admin clicks <strong>All subsidy completed – Approve</strong> on Manage.
             Return requested / returned vehicles are excluded.
         </p>
+        <details class="mt-2 small text-muted">
+            <summary class="fw-semibold">How ageing is calculated (each column)</summary>
+            <table class="table table-sm table-bordered mt-2 mb-0 bg-white">
+                <thead><tr><th>Column</th><th>Starts after</th><th>Ends when</th><th>Done =</th><th>Pending =</th></tr></thead>
+                <tbody>
+                    <tr><td>Booked</td><td>Vehicle allocated</td><td>Customer booking submitted</td><td>0</td><td>Days since allocation</td></tr>
+                    <tr><td>Paper Received</td><td>Booked</td><td>Paper received date saved</td><td>0</td><td>Days since booked</td></tr>
+                    <tr><td>Invoice</td><td>Paper received</td><td>Invoice date saved</td><td>0</td><td>Days since paper received</td></tr>
+                    <tr><td>Insurance</td><td>Invoice</td><td>Insurance date saved</td><td>0</td><td>Days since invoice</td></tr>
+                    <tr><td>Agent</td><td>Insurance</td><td>Agent / RTO requested date saved</td><td>0</td><td>Days since insurance</td></tr>
+                    <tr><td>Registration</td><td>Agent</td><td>Registration / RTO number date saved</td><td>0</td><td>Days since agent</td></tr>
+                    <tr><td>Subsidy</td><td>Registration</td><td>Subsidy ID entered</td><td>0</td><td>Days since registration</td></tr>
+                    <tr><td>Subsidy Documents</td><td>Subsidy ID entered</td><td>All subsidy docs approved on Manage</td><td>0</td><td>Days since subsidy ID</td></tr>
+                </tbody>
+            </table>
+            <p class="mb-0 mt-2">— means that earlier step is not done yet, so this column does not apply. Only one column should show a positive number at a time (the current waiting step).</p>
+        </details>
     </div>
     <div class="col-lg-4 text-lg-end mt-2 mt-lg-0">
         <partial name="_ExportExcel" />
@@ -69,7 +85,7 @@
 
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title mb-0">Aging list (@(ViewBag.TotalItems ?? Model.Count()))</h3>
+        <h3 class="card-title mb-0">Ageing list (@(ViewBag.TotalItems ?? Model.Count()))</h3>
     </div>
     <div class="card-body p-0">
         @if (Model.Any())
@@ -87,21 +103,14 @@
                             {
                                 <th>Subdealer</th>
                             }
-                            <th>Purchase Date</th>
-                            <th>Booked Date</th>
-                            <th>Booked Aging</th>
-                            <th>Paper Received Date</th>
-                            <th>Paper Received Aging</th>
-                            <th>Invoice Date</th>
-                            <th>Invoice Aging</th>
-                            <th>Insurance Date</th>
-                            <th>Insurance Aging</th>
-                            <th>Agent Date</th>
-                            <th>Agent Aging</th>
-                            <th>Registration Date</th>
-                            <th>Registration Aging</th>
-                            <th>Subsidy Aging</th>
-                            <th>Subsidy Documents Aging</th>
+                            <th>Booked Ageing</th>
+                            <th>Paper Received Ageing</th>
+                            <th>Invoice Ageing</th>
+                            <th>Insurance Ageing</th>
+                            <th>Agent Ageing</th>
+                            <th>Registration Ageing</th>
+                            <th>Subsidy Ageing</th>
+                            <th>Subsidy Documents Ageing</th>
                         </tr>
                         <partial name="_PaginatedGridFilters" />
                     </thead>
@@ -117,18 +126,11 @@
                                 {
                                     <td>@r.SubdealerName</td>
                                 }
-                                <td class="text-nowrap">@Fmt(r.PurchaseDate)</td>
-                                <td class="text-nowrap">@Fmt(r.BookedDate)</td>
                                 <td>@Days(r.BookedAging)</td>
-                                <td class="text-nowrap">@Fmt(r.PaperReceivedDate)</td>
                                 <td>@Days(r.PaperReceivedAging)</td>
-                                <td class="text-nowrap">@Fmt(r.InvoiceDate)</td>
                                 <td>@Days(r.InvoiceAging)</td>
-                                <td class="text-nowrap">@Fmt(r.InsuranceDate)</td>
                                 <td>@Days(r.InsuranceAging)</td>
-                                <td class="text-nowrap">@Fmt(r.AgentDate)</td>
                                 <td>@Days(r.AgentAging)</td>
-                                <td class="text-nowrap">@Fmt(r.RegistrationDate)</td>
                                 <td>@Days(r.RegistrationAging)</td>
                                 <td>@Days(r.SubsidyAging)</td>
                                 <td>@Days(r.SubsidyDocumentsAging)</td>
@@ -141,7 +143,7 @@
         }
         else
         {
-            <p class="text-muted p-3 mb-0">No vehicles on aging.</p>
+            <p class="text-muted p-3 mb-0">No vehicles on ageing.</p>
         }
     </div>
 </div>

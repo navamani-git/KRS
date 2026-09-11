@@ -18,6 +18,7 @@ namespace KRSDealerManagement.Web.Helpers
         private const string SessionKeyMenus = "AccessibleMenus";
         private const string SessionKeyMenuAccess = "MenuAccessLevels";
         private const string SessionKeyCanExport = "CanExport";
+        private const string SessionKeyCanViewStatement = "CanViewStatement";
         private const string SessionKeyQuickActionKeys = "QuickActionKeys";
         private const string SessionKeyDashboardWidgetKeys = "DashboardWidgetKeys";
 
@@ -35,6 +36,7 @@ namespace KRSDealerManagement.Web.Helpers
             IEnumerable<string>? menuKeys = null,
             IDictionary<string, MenuAccessLevel>? menuAccess = null,
             bool canExport = true,
+            bool canViewStatement = true,
             string? quickActionKeys = null,
             string? dashboardWidgetKeys = null)
         {
@@ -53,6 +55,7 @@ namespace KRSDealerManagement.Web.Helpers
             session.SetString(SessionKeyMenus, string.Join(",", menuKeys ?? Array.Empty<string>()));
             session.SetString(SessionKeyMenuAccess, SerializeMenuAccess(menuAccess));
             session.SetString(SessionKeyCanExport, canExport ? "1" : "0");
+            session.SetString(SessionKeyCanViewStatement, canViewStatement ? "1" : "0");
             if (quickActionKeys != null)
                 session.SetString(SessionKeyQuickActionKeys, quickActionKeys);
             else
@@ -172,6 +175,14 @@ namespace KRSDealerManagement.Web.Helpers
         {
             if (IsSystemAdmin(session)) return true;
             var raw = session.GetString(SessionKeyCanExport);
+            return raw != "0";
+        }
+
+        public static bool CanViewStatement(ISession session)
+        {
+            if (IsSystemAdmin(session)) return true;
+            if (IsSubdealer(session)) return true;
+            var raw = session.GetString(SessionKeyCanViewStatement);
             return raw != "0";
         }
 

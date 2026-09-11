@@ -1,5 +1,6 @@
 using FluentValidation;
 using KRSDealerManagement.Application.Commands;
+using KRSDealerManagement.Shared.Helpers;
 
 namespace KRSDealerManagement.Application.Validators
 {
@@ -12,7 +13,10 @@ namespace KRSDealerManagement.Application.Validators
             RuleFor(x => x.Amount).GreaterThan(0).WithMessage("Amount must be greater than 0");
             RuleFor(x => x.PaymentTypeId).GreaterThan(0).WithMessage("Payment type is required");
             RuleFor(x => x.PaymentType).NotEmpty();
-            RuleFor(x => x.PaymentDate).NotEmpty();
+            RuleFor(x => x.PaymentDate)
+                .NotEmpty()
+                .Must(d => !BusinessDateValidation.IsFutureDate(d))
+                .WithMessage("Payment date cannot be in the future.");
 
             RuleFor(x => x.PaymentProofPath)
                 .NotEmpty().When(x => !x.IsCreditRequest)

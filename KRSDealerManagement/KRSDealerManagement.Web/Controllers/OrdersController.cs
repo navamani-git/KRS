@@ -233,7 +233,7 @@ namespace KRSDealerManagement.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AuthorizeRole(1, 4)]
-        public async Task<IActionResult> Allocate(int orderId, string remarks,
+        public async Task<IActionResult> Allocate(int orderId, string remarks, DateTime allocateDate,
             [FromForm] List<int> orderItemIds,
             [FromForm] List<string> actionFlags,
             [FromForm] List<int> vehicleMasterIds,
@@ -301,6 +301,7 @@ namespace KRSDealerManagement.Web.Controllers
                     OrderId = orderId,
                     ApprovedBy = userId.Value,
                     Remarks = remarks?.Trim(),
+                    AllocateDate = allocateDate.Date,
                     Items = items
                 });
 
@@ -339,6 +340,14 @@ namespace KRSDealerManagement.Web.Controllers
             var (pageItems, pageInfo) = ListPagingHelper.Paginate(orders, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
 
+            var itemsByOrder = new Dictionary<int, List<PurchaseOrderItemDto>>();
+            foreach (var o in pageItems)
+            {
+                var items = (await _mediator.Send(new GetPurchaseOrderItemsQuery { OrderId = o.OrderId })).ToList();
+                itemsByOrder[o.OrderId] = items;
+            }
+            ViewBag.ItemsByOrder = itemsByOrder;
+
             var subdealers = await _mediator.Send(new GetSubdealersQuery { IsActive = true, DealershipId = scope });
             ViewBag.Subdealers = subdealers;
             ViewBag.SelectedStatus = status;
@@ -347,7 +356,7 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.FromDate = from.ToString("yyyy-MM-dd");
             ViewBag.ToDate = to.ToString("yyyy-MM-dd");
             ViewBag.FilteredTotal = pageInfo.TotalItems;
-            ViewBag.PendingCount = orders.Count(o => o.Status == UnifiedVehicleStatus.Submitted);
+            ViewBag.PendingCount = orders.Count(o => o.PendingItemCount > 0);
             ViewBag.Statuses = await _statuses.GetActiveByCategoryAsync(StatusCategories.Vehicle);
 
             return View(pageItems);

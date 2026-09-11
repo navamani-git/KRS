@@ -7,13 +7,13 @@ namespace KRSDealerManagement.Application.Services
     {
         public static int ResolveOrderDisplayStatus(IEnumerable<Vehicle> vehicles, IEnumerable<PurchaseOrderItem> items)
         {
+            var itemList = items.ToList();
+            if (itemList.Any(i => i.IsPending()))
+                return UnifiedVehicleStatus.Submitted;
+
             var vehicleList = vehicles.ToList();
             if (vehicleList.Count == 0)
-            {
-                var pending = items.Count(i => i.IsPending());
-                if (pending > 0) return UnifiedVehicleStatus.Submitted;
                 return UnifiedVehicleStatus.RejectedByDealer;
-            }
 
             if (vehicleList.All(v => v.Status == UnifiedVehicleStatus.RejectedByDealer))
                 return UnifiedVehicleStatus.RejectedByDealer;

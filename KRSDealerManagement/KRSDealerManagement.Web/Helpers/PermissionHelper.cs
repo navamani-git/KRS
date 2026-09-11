@@ -35,6 +35,7 @@ namespace KRSDealerManagement.Web.Helpers
                 ctx.AccessibleMenuKeys,
                 ctx.MenuAccess,
                 ctx.CanExport,
+                ctx.CanViewStatement,
                 ctx.QuickActionKeys,
                 ctx.DashboardWidgetKeys);
         }

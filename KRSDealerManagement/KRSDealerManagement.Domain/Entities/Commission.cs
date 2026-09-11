@@ -120,27 +120,27 @@ namespace KRSDealerManagement.Domain.Entities
         /// <summary>
         /// Approve the commission
         /// </summary>
-        public void Approve(int approverUserId)
+        public void Approve(int approverUserId, DateTime? approvalDate = null)
         {
             if (!CanBeApproved())
                 throw new InvalidOperationException($"Cannot approve commission in {GetStatusDisplay()} status");
 
             Status = (int)CommissionStatusEnum.Approved;
             ApprovedBy = approverUserId;
-            ApprovedDate = DateTime.UtcNow;
+            ApprovedDate = approvalDate ?? DateTime.UtcNow;
             ModifiedDate = DateTime.UtcNow;
         }
 
         /// <summary>
         /// Mark commission as paid (credit to account)
         /// </summary>
-        public void MarkAsPaid()
+        public void MarkAsPaid(DateTime? paidDate = null)
         {
             if (!CanBePaid())
                 throw new InvalidOperationException($"Cannot pay commission in {GetStatusDisplay()} status");
 
             Status = (int)CommissionStatusEnum.Paid;
-            PaidDate = DateTime.UtcNow;
+            PaidDate = paidDate ?? DateTime.UtcNow;
             ModifiedDate = DateTime.UtcNow;
         }
 

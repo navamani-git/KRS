@@ -225,6 +225,7 @@ namespace KRSDealerManagement.Web.Controllers
             string? colorName,
             string? chassisNumber,
             string? reason,
+            DateTime? paymentDate,
             IFormFile? paymentProof)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
@@ -265,7 +266,7 @@ namespace KRSDealerManagement.Web.Controllers
                     Amount = amount.Value,
                     PaymentTypeId = creditType.PaymentTypeId,
                     PaymentType = creditType.TypeName,
-                    PaymentDate = DateTime.Today,
+                    PaymentDate = paymentDate?.Date ?? DateTime.Today,
                     SubdealerRemarks = reason?.Trim(),
                     VinNumber = chassisNumber,
                     CreditRequestModelName = modelName,

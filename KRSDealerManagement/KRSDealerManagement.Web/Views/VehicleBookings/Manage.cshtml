@@ -509,11 +509,37 @@
         const max = toDateTimeLocalMax(new Date());
         staffForm.querySelectorAll('input[type="datetime-local"]').forEach(function (el) { el.max = max; });
     }
+    function applyMilestoneMinConstraints() {
+        const chain = [
+            { id: 'paperReceivedDate', prev: null },
+            { id: 'invoiceDate', prev: 'paperReceivedDate' },
+            { id: 'insuranceDate', prev: 'invoiceDate' },
+            { id: 'agentDate', prev: 'insuranceDate' },
+            { id: 'registrationDate', prev: 'agentDate' }
+        ];
+        chain.forEach(function (step) {
+            const el = document.getElementById(step.id);
+            if (!el || el.type !== 'datetime-local') return;
+            if (step.prev) {
+                const prev = document.getElementById(step.prev);
+                el.min = prev && prev.value ? prev.value : '';
+            } else {
+                el.removeAttribute('min');
+            }
+        });
+    }
+    function refreshMilestoneDateConstraints() {
+        refreshMilestoneMax();
+        applyMilestoneMinConstraints();
+    }
     staffForm.querySelectorAll('input[type="datetime-local"]').forEach(function (el) {
-        el.addEventListener('focus', refreshMilestoneMax);
-        el.addEventListener('click', refreshMilestoneMax);
+        el.addEventListener('focus', refreshMilestoneDateConstraints);
+        el.addEventListener('click', refreshMilestoneDateConstraints);
+        el.addEventListener('input', refreshMilestoneDateConstraints);
+        el.addEventListener('change', refreshMilestoneDateConstraints);
     });
-    refreshMilestoneMax();
+    refreshMilestoneDateConstraints();
+    window.setInterval(refreshMilestoneMax, 30000);
 
     const Booked = @UnifiedVehicleStatus.BookedToCustomer;
     const Paper = @UnifiedVehicleStatus.PaperReceived;
@@ -624,10 +650,12 @@
 
     document.querySelectorAll('.milestone-input, .manage-doc-input').forEach(function (el) {
         el.addEventListener('change', function () {
+            refreshMilestoneDateConstraints();
             applyStatusConstraints();
             applyConditionalRequirements();
         });
         el.addEventListener('input', function () {
+            refreshMilestoneDateConstraints();
             applyStatusConstraints();
             applyConditionalRequirements();
         });
@@ -643,7 +671,7 @@
     });
 
     staffForm.addEventListener('submit', async function (e) {
-        refreshMilestoneMax();
+        refreshMilestoneDateConstraints();
         const conditionalError = validateConditionalRequirements();
         if (conditionalError) {
             e.preventDefault();

@@ -2,8 +2,8 @@ namespace KRSDealerManagement.Shared.Helpers
 {
     public static class TransactionReasonHelper
     {
-        public static string Commission(string? chassisNumber)
-            => $"Commission - {FormatChassis(chassisNumber)}";
+        public static string Commission(string? chassisNumber, string? modelName = null)
+            => $"Commission\n{FormatChassis(chassisNumber)}\n{(modelName ?? "-").Trim()}";
 
         public static string Return(string? chassisNumber)
             => Return(chassisNumber, null, null);

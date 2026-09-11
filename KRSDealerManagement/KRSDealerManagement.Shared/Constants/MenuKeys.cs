@@ -272,7 +272,7 @@ namespace KRSDealerManagement.Shared.Constants
             new MenuItemDefinition
             {
                 Key = VehicleAging,
-                Name = "Vehicle Aging",
+                Name = "Vehicle Ageing",
                 DefaultAccessible = true,
                 Controller = "VehicleAging",
                 Action = "Index",
@@ -314,7 +314,7 @@ namespace KRSDealerManagement.Shared.Constants
                 Vehicles => "Vehicles",
                 VehiclesView => "View Vehicles",
                 VehiclesBookingStages => "Vehicle Booking Stages",
-                VehicleAging => "Vehicle Aging",
+                VehicleAging => "Vehicle Ageing",
                 MyReturns => "My Returns",
                 MyWarrantyClaims => "My Warranty Claims",
                 WarrantyApply => "Apply Warranty / Campaign",

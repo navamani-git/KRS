@@ -42,6 +42,7 @@
     
     <link rel="shortcut icon" href="~/images/krslogo.png" type="image/png" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
     
     <style>
         .sidebar-dark-primary {
@@ -324,6 +325,8 @@
             dir: @Html.Raw(System.Text.Json.JsonSerializer.Serialize((ViewBag.GridSortDir as string) ?? ""))
         };
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/js/tom-select.complete.min.js"></script>
+    <script src="~/js/searchable-select.js" asp-append-version="true"></script>
     <script src="~/js/grid-scroll.js" asp-append-version="true"></script>
     <script src="~/js/grid-columns.js" asp-append-version="true"></script>
     <script src="~/js/grid-sort.js" asp-append-version="true"></script>

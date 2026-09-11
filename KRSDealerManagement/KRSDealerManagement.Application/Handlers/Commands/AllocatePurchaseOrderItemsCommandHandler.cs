@@ -35,6 +35,9 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 var balance = await _unitOfWork.AccountBalances.GetByIdAsync(order.AccountId)
                     ?? throw new InvalidOperationException("Account balance not found.");
 
+                var allocateDate = request.AllocateDate?.Date ?? DateTime.UtcNow.Date;
+                var allocateTimestamp = allocateDate;
+
                 var dealershipId = await ResolveDealershipIdAsync(order.SubdealerId);
                 await ValidateMasterSelectionsAsync(request, dealershipId);
 
@@ -64,7 +67,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                             request.ApprovedBy,
                             UnifiedVehicleStatus.ApprovedByDealer,
                             item.UnitPrice,
-                            alloc.Remarks ?? request.Remarks);
+                            alloc.Remarks ?? request.Remarks,
+                            allocateTimestamp);
 
                         var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(subdealerVehicleId)
                             ?? throw new InvalidOperationException("Failed to load allocated vehicle.");
@@ -78,7 +82,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                         item.ConverterNo = vehicle.ConverterNo;
                         item.ChassisNumber = vehicle.ChassisNumber;
                         item.ApprovedBy = request.ApprovedBy;
-                        item.ApprovedDate = DateTime.UtcNow;
+                        item.ApprovedDate = allocateTimestamp;
                         item.Remarks = alloc.Remarks ?? request.Remarks;
                         item.ModifiedDate = DateTime.UtcNow;
                         await _unitOfWork.PurchaseOrderItems.UpdateAsync(item);
@@ -134,7 +138,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 order.ApprovedVehicleCount = totalApproved;
                 order.AdminNotes = request.Remarks;
                 order.ApprovedBy = request.ApprovedBy;
-                order.ApprovedDate = DateTime.UtcNow;
+                order.ApprovedDate = allocateTimestamp;
                 order.ModifiedDate = DateTime.UtcNow;
                 await _unitOfWork.PurchaseOrders.UpdateAsync(order);
 
@@ -158,7 +162,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                             referenceType: "Vehicle",
                             referenceId: vehicle.VehicleId,
                             remarks: request.Remarks,
-                            initiatedBy: request.ApprovedBy);
+                            initiatedBy: request.ApprovedBy,
+                            transactionDate: allocateTimestamp);
                     }
                 }
 

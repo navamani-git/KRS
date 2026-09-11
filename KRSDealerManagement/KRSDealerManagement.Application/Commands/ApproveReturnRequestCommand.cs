@@ -12,6 +12,7 @@ namespace KRSDealerManagement.Application.Commands
         public int ApprovedBy { get; set; }
         public decimal RefundAmount { get; set; }
         public string Remarks { get; set; } = "";
+        public DateTime ReturnReceivedDate { get; set; }
         /// <summary>When set, vehicle is reassigned to this subdealer. Null = dealer showroom stock.</summary>
         public int? ReassignToSubdealerId { get; set; }
     }

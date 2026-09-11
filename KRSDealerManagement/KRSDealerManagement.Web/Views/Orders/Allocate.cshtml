@@ -1,6 +1,7 @@
 @model KRSDealerManagement.Application.DTOs.PurchaseOrderDto
 
 @using KRSDealerManagement.Application.DTOs
+@using KRSDealerManagement.Shared.Helpers
 
 @{
 
@@ -183,6 +184,18 @@ else
 
             <div class="mb-2">
 
+                <label class="fw-bold">Allocate date <span class="text-danger">*</span></label>
+
+                <input type="date" name="allocateDate" class="form-control" style="max-width: 280px;" required
+                       max="@IstTime.DateInputMaxValue()"
+                       value="@IstTime.Today.ToString("yyyy-MM-dd")" />
+
+                <small class="text-muted">Used for account statement ordering.</small>
+
+            </div>
+
+            <div class="mb-2">
+
                 <label class="fw-bold">Remarks</label>
 
                 <input type="text" name="remarks" class="form-control" placeholder="Optional overall remarks" />
@@ -321,6 +334,7 @@ else
             select.appendChild(opt);
         });
         if (current) select.value = current;
+        if (window.KrsSearchableSelect) window.KrsSearchableSelect.refresh(select);
     }
 
     function applyMasterSelection(idx) {

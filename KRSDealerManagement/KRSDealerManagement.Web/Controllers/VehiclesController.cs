@@ -329,7 +329,7 @@ namespace KRSDealerManagement.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AuthorizeRole(2)]
-        public async Task<IActionResult> RaiseReturn(int vehicleId, string returnReason)
+        public async Task<IActionResult> RaiseReturn(int vehicleId, string returnReason, DateTime returnDate)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
@@ -374,6 +374,7 @@ namespace KRSDealerManagement.Web.Controllers
                     OrderId = order.OrderId,
                     VehicleId = vehicleId,
                     ReturnReason = returnReason.Trim(),
+                    ReturnDate = returnDate.Date,
                     CreatedBy = userId.Value
                 });
 
