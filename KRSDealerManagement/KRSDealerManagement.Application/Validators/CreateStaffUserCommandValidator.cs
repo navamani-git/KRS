@@ -11,7 +11,7 @@ namespace KRSDealerManagement.Application.Validators
             RuleFor(x => x.Username).NotEmpty().MinimumLength(3).MaximumLength(50);
             RuleFor(x => x.Password).NotEmpty().MinimumLength(6);
             RuleFor(x => x.RoleId).GreaterThan(0);
-            RuleFor(x => x.DealershipId).GreaterThan(0);
+            RuleFor(x => x.DealershipIds).NotEmpty().WithMessage("Select at least one location.");
             RuleFor(x => x.CreatedBy).GreaterThan(0);
         }
     }

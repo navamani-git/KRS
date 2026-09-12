@@ -9,7 +9,7 @@ namespace KRSDealerManagement.Application.Commands
         public string RoleName { get; set; } = "";
         public string? Description { get; set; }
         public string RoleTemplateCode { get; set; } = "";
-        public int DealershipId { get; set; }
+        public int? DealershipId { get; set; }
         public List<RoleMenuPermissionInput> Menus { get; set; } = new();
         public int CreatedBy { get; set; }
     }

@@ -1,0 +1,24 @@
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var form = document.getElementById('staffUserForm');
+        var locationSelect = document.getElementById('dealershipIds');
+        if (!form || !locationSelect) return;
+
+        form.addEventListener('submit', function (e) {
+            var values = locationSelect.tomselect
+                ? locationSelect.tomselect.getValue()
+                : Array.from(locationSelect.selectedOptions).map(function (o) { return o.value; });
+
+            var count = Array.isArray(values) ? values.filter(Boolean).length : (values ? 1 : 0);
+            if (count === 0) {
+                e.preventDefault();
+                alert('Select at least one location.');
+                if (locationSelect.tomselect) {
+                    locationSelect.tomselect.focus();
+                } else {
+                    locationSelect.focus();
+                }
+            }
+        });
+    });
+</script>

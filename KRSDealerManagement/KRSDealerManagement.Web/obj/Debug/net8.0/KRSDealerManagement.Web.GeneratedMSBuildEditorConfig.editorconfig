@@ -251,6 +251,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUnRvTG9jYXRpb25zXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Shared/Components/LocationFilter/Default.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXENvbXBvbmVudHNcTG9jYXRpb25GaWx0ZXJcRGVmYXVsdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Shared/Components/QuickActions/Default.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXENvbXBvbmVudHNcUXVpY2tBY3Rpb25zXERlZmF1bHQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
@@ -295,6 +299,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9GaWxlQXR0YWNobWVudExpbmtzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Shared/_FontSizeControl.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9Gb250U2l6ZUNvbnRyb2wuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Shared/_GridColumnFilters.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9HcmlkQ29sdW1uRmlsdGVycy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
@@ -309,6 +317,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Shared/_Layout.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9MYXlvdXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Shared/_ListPager.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9MaXN0UGFnZXIuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Shared/_ModelColorCheckboxes.cshtml]
@@ -345,6 +357,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Shared/_StaffAccessWorkflowHelp.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9TdGFmZkFjY2Vzc1dvcmtmbG93SGVscC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Shared/_StaffUserFormScripts.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9TdGFmZlVzZXJGb3JtU2NyaXB0cy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Shared/_VehicleChassisModal.cshtml]

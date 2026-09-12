@@ -8,6 +8,7 @@ namespace KRSDealerManagement.Application.Queries
         public required string Column { get; set; }
         public string? Search { get; set; }
         public int? DealershipId { get; set; }
+        public List<int>? DealershipIds { get; set; }
         public int? SubdealerId { get; set; }
         public int? UserId { get; set; }
         public int? AccountId { get; set; }

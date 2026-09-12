@@ -1,45 +1,95 @@
+@using KRSDealerManagement.Web.Helpers
 @{
     ViewData["Title"] = "Login - KRS Dealer Management";
-    Layout = null; // No layout for login page
+    Layout = null;
 }
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="login-page">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>@ViewData["Title"]</title>
-    
-    <!-- Bootstrap 5 CSS -->
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
-    
-    <!-- AdminLTE CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/admin-lte@3/dist/css/adminlte.min.css" rel="stylesheet">
-    
     <link rel="shortcut icon" href="~/images/krslogo.png" type="image/png" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    
+
     <style>
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+        html.login-page,
+        body.login-page-body {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        html.login-page {
+            font-size: 17px;
+            min-height: 100dvh;
+            height: auto;
+            overflow-x: hidden;
+            overflow-y: auto;
+            scrollbar-gutter: stable;
+        }
+
+        body.login-page-body {
+            font-family: Verdana, Geneva, Tahoma, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            background-attachment: fixed;
+            min-height: 100dvh;
+            margin: 0;
+            overflow-x: hidden;
+            overflow-y: visible;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            padding: 1.5rem;
+            padding-top: calc(1.5rem + env(safe-area-inset-top, 0px));
+            padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+            box-sizing: border-box;
+        }
+
+        .login-shell {
+            width: 100%;
+            max-width: 520px;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            flex: 0 0 auto;
+        }
+
+        .login-font-bar {
+            width: 100%;
+            max-width: 520px;
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .login-font-bar label {
+            color: #fff !important;
+        }
+
+        .login-font-bar .form-select {
+            background-color: rgba(255, 255, 255, 0.96);
+            color: #212529;
+            border-color: rgba(255, 255, 255, 0.45);
+            min-width: 6.5rem;
         }
 
         .login-box {
             width: 100%;
-            max-width: 440px;
+            max-width: 520px;
+            flex-shrink: 0;
         }
 
         .login-card {
             border: none;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            box-shadow: 0 14px 48px rgba(0, 0, 0, 0.22);
+            overflow: hidden;
         }
 
         .login-header {
@@ -56,34 +106,34 @@
 
         .login-brand--dealer {
             width: 100%;
-            margin: 14px 0 0;
+            margin: 12px 0 0;
             overflow: hidden;
-            border-radius: 10px 10px 0 0;
+            border-radius: 12px 12px 0 0;
         }
 
         .login-brand__logo--dealer {
             display: block;
             width: 100%;
             max-width: 100%;
+            max-height: 96px;
             height: auto;
-            max-height: none;
             object-fit: contain;
             object-position: center;
         }
 
         .login-body {
-            padding: 30px 30px 0;
+            padding: 28px 36px 0;
         }
 
         .login-brand--ampere {
-            width: calc(100% + 60px);
-            margin: 16px -30px 0;
+            width: calc(100% + 72px);
+            margin: 18px -36px 0;
             padding: 0;
             overflow: hidden;
             background-color: #f9f9f9;
             border-top: 1px solid #f0f0f0;
-            border-radius: 0 0 10px 10px;
-            min-height: 76px;
+            border-radius: 0 0 12px 12px;
+            min-height: 80px;
             display: flex;
             align-items: stretch;
             justify-content: center;
@@ -93,29 +143,30 @@
             display: block;
             width: 100%;
             height: 100%;
-            min-height: 76px;
-            max-height: none;
+            max-height: 80px;
+            min-height: 72px;
             object-fit: contain;
             object-position: center;
-            padding: 10px 16px;
+            padding: 12px 18px;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
 
         .form-group label {
             font-weight: 500;
             color: #333;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+            font-size: 16px;
         }
 
         .form-control {
             border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 10px 15px;
+            border-radius: 6px;
+            padding: 10px 14px;
             font-size: 15px;
-            transition: border-color 0.3s;
+            min-height: 44px;
         }
 
         .form-control:focus {
@@ -127,18 +178,21 @@
             border: 1px solid #ddd;
             background-color: #f9f9f9;
             color: #667eea;
+            min-height: 44px;
+            padding-left: 12px;
+            padding-right: 12px;
         }
 
         .btn-login {
             width: 100%;
             padding: 12px;
+            min-height: 46px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             color: white;
             font-weight: 600;
             font-size: 17px;
-            transition: transform 0.3s, box-shadow 0.3s;
         }
 
         .btn-login:hover {
@@ -147,27 +201,9 @@
             color: white;
         }
 
-        .btn-login:active {
-            transform: translateY(0);
-        }
-
         .form-check {
-            font-size: 15px;
-        }
-
-        .forgot-password {
-            text-align: center;
-            margin-top: 15px;
-        }
-
-        .forgot-password a {
-            color: #667eea;
-            text-decoration: none;
-            font-size: 15px;
-        }
-
-        .forgot-password a:hover {
-            text-decoration: underline;
+            font-size: 16px;
+            margin-bottom: 1.25rem !important;
         }
 
         .alert-error {
@@ -183,39 +219,72 @@
             margin-right: 8px;
         }
 
+        .login-font-control label {
+            color: #fff !important;
+        }
+
+        .login-font-control .form-select {
+            background-color: rgba(255, 255, 255, 0.96);
+            color: #212529;
+            border-color: rgba(255, 255, 255, 0.45);
+            min-width: 6.5rem;
+        }
+
+        .bi {
+            font-family: "bootstrap-icons" !important;
+        }
+
         @@media (max-width: 576px) {
+            body.login-page-body {
+                justify-content: flex-start;
+                padding: calc(1rem + env(safe-area-inset-top, 0px)) 1rem calc(2.5rem + env(safe-area-inset-bottom, 0px));
+            }
+
+            .login-shell {
+                max-width: 100%;
+            }
+
+            .login-font-bar {
+                order: 2;
+                margin-top: 1rem;
+                margin-bottom: 0;
+                justify-content: center;
+            }
+
             .login-box {
-                padding: 20px;
+                order: 1;
             }
 
             .login-body {
-                padding: 20px 20px 0;
+                padding: 24px 24px 0;
             }
 
             .login-brand--ampere {
-                width: calc(100% + 40px);
-                margin: 16px -20px 0;
-                min-height: 64px;
+                width: calc(100% + 48px);
+                margin: 18px -24px 0;
+                min-height: 72px;
             }
 
             .login-brand__logo--ampere {
-                min-height: 64px;
-                padding: 8px 12px;
+                min-height: 72px;
+                padding: 10px 14px;
             }
         }
     </style>
 </head>
-<body>
+<body class="login-page-body">
+    <div class="login-shell">
+        <div class="login-font-bar login-font-control">
+            <partial name="_FontSizeControl" />
+        </div>
     <div class="login-box">
         <div class="card login-card">
-            <!-- Login Header with Logo -->
             <div class="login-header">
                 <div class="login-brand login-brand--dealer">
                     <img src="~/images/krslogo.png" asp-append-version="true" alt="KRS Enterprises" class="login-brand__logo--dealer" />
                 </div>
             </div>
 
-            <!-- Login Form -->
             <div class="login-body">
                 @if (TempData["Error"] != null)
                 {
@@ -226,16 +295,15 @@
                 }
 
                 <form method="post" action="@Url.Action("Login", "Account")">
-                    <!-- Username Field -->
                     <div class="form-group">
                         <label for="username">Username</label>
                         <div class="input-group">
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="username" 
-                                   name="username" 
-                                   placeholder="Enter your username" 
-                                   required 
+                            <input type="text"
+                                   class="form-control"
+                                   id="username"
+                                   name="username"
+                                   placeholder="Enter your username"
+                                   required
                                    autofocus />
                             <span class="input-group-text">
                                 <i class="bi bi-person"></i>
@@ -243,15 +311,14 @@
                         </div>
                     </div>
 
-                    <!-- Password Field -->
                     <div class="form-group">
                         <label for="password">Password</label>
                         <div class="input-group">
-                            <input type="password" 
-                                   class="form-control" 
-                                   id="password" 
-                                   name="password" 
-                                   placeholder="Enter your password" 
+                            <input type="password"
+                                   class="form-control"
+                                   id="password"
+                                   name="password"
+                                   placeholder="Enter your password"
                                    required />
                             <span class="input-group-text" id="togglePassword" style="cursor: pointer;">
                                 <i class="bi bi-eye"></i>
@@ -259,18 +326,11 @@
                         </div>
                     </div>
 
-                    <!-- Remember Me -->
                     <div class="form-check mb-3">
-                        <input class="form-check-input" 
-                               type="checkbox" 
-                               id="rememberMe" 
-                               name="rememberMe" />
-                        <label class="form-check-label" for="rememberMe">
-                            Remember me
-                        </label>
+                        <input class="form-check-input" type="checkbox" id="rememberMe" name="rememberMe" />
+                        <label class="form-check-label" for="rememberMe">Remember me</label>
                     </div>
 
-                    <!-- Login Button -->
                     <button type="submit" class="btn btn-login">
                         <i class="bi bi-box-arrow-in-right"></i> Sign In
                     </button>
@@ -282,36 +342,28 @@
             </div>
         </div>
     </div>
+    </div>
 
-    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
     <script>
-        // Toggle password visibility
-        document.getElementById('togglePassword').addEventListener('click', function() {
+        document.getElementById('togglePassword').addEventListener('click', function () {
             const passwordInput = document.getElementById('password');
             const icon = this.querySelector('i');
-            
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
-                icon.classList.remove('bi-eye');
-                icon.classList.add('bi-eye-slash');
+                icon.classList.replace('bi-eye', 'bi-eye-slash');
             } else {
                 passwordInput.type = 'password';
-                icon.classList.remove('bi-eye-slash');
-                icon.classList.add('bi-eye');
+                icon.classList.replace('bi-eye-slash', 'bi-eye');
             }
         });
 
-        // Prevent form submission on enter in password field for demo
-        document.getElementById('rememberMe').addEventListener('change', function() {
+        document.getElementById('rememberMe').addEventListener('change', function () {
             localStorage.setItem('rememberMe', this.checked);
         });
 
-        // Load remember me state on page load
-        window.addEventListener('load', function() {
-            const rememberMe = localStorage.getItem('rememberMe') === 'true';
-            document.getElementById('rememberMe').checked = rememberMe;
+        window.addEventListener('load', function () {
+            document.getElementById('rememberMe').checked = localStorage.getItem('rememberMe') === 'true';
         });
     </script>
 </body>

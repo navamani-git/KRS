@@ -53,7 +53,7 @@ namespace KRSDealerManagement.Web.Controllers
                 query.SubdealerId = userId;
             else
             {
-                query.DealershipId = SessionHelper.GetDealershipScope(HttpContext.Session);
+                DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, query);
                 if (subdealerId.HasValue) query.SubdealerId = subdealerId;
             }
             return query;
@@ -104,14 +104,11 @@ namespace KRSDealerManagement.Web.Controllers
 
             if (!ViewBag.IsSubdealer)
             {
-                var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
-                var allSubdealers = (await _mediator.Send(new GetSubdealersQuery
-                {
-                    IsActive = true,
-                    DealershipId = scope
-                })).ToList();
+                var subdealersQuery = new GetSubdealersQuery { IsActive = true };
+                DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, subdealersQuery);
+                var allSubdealers = (await _mediator.Send(subdealersQuery)).ToList();
                 var dealerships = (await _unitOfWork.Dealerships.GetAllAsync())
-                    .Where(d => d.IsActive && (!scope.HasValue || d.DealershipId == scope.Value))
+                    .Where(d => d.IsActive && (!subdealersQuery.DealershipId.HasValue || d.DealershipId == subdealersQuery.DealershipId.Value))
                     .OrderBy(d => d.Location ?? d.DealershipName)
                     .ToList();
                 ViewBag.DealershipLocations = dealerships
@@ -235,7 +232,7 @@ namespace KRSDealerManagement.Web.Controllers
             if (SessionHelper.IsSubdealer(HttpContext.Session))
                 query.SubdealerId = userId.Value;
             else
-                query.DealershipId = SessionHelper.GetDealershipScope(HttpContext.Session);
+                DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, query);
 
             var vehicle = (await _mediator.Send(query)).FirstOrDefault(v => v.VehicleId == id);
             if (vehicle == null)

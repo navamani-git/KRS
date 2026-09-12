@@ -41,11 +41,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToDictionary(d => d.DealershipId);
             var orgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync()).ToList();
 
-            var scopedUserIds = request.DealershipId.HasValue
-                ? (await _unitOfWork.UserOrgRoles.GetAllAsync())
-                    .Where(a => a.IsActive && a.DealershipId == request.DealershipId.Value)
-                    .Select(a => a.UserId)
-                    .ToHashSet()
+            var dealershipFilter = DealershipQueryScope.ResolveDealershipIds(request.DealershipId, request.DealershipIds);
+            var scopedUserIds = dealershipFilter != null
+                ? DealershipQueryScope.GetScopedSubdealerUserIds(orgRoles, dealershipFilter)
                 : null;
 
             var result = from r in returns

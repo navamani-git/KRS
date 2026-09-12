@@ -21,6 +21,13 @@ namespace KRSDealerManagement.Web.Helpers
             var ctx = await mediator.Send(new GetUserAccessContextQuery { UserId = userId.Value });
             if (ctx == null) return;
 
+            var locationFilter = SessionHelper.GetLocationFilterDealershipId(httpContext.Session);
+            var assignedIds = ctx.DealershipIds?.Count > 0
+                ? ctx.DealershipIds
+                : ctx.DealershipId.HasValue
+                    ? new List<int> { ctx.DealershipId.Value }
+                    : SessionHelper.GetAssignedDealershipIds(httpContext.Session).ToList();
+
             SessionHelper.SetUserSession(
                 httpContext.Session,
                 userId.Value,
@@ -29,15 +36,17 @@ namespace KRSDealerManagement.Web.Helpers
                 SessionHelper.GetUserRole(httpContext.Session) ?? 0,
                 ctx.RoleName,
                 ctx.RoleCode,
-                ctx.DealershipId,
-                ctx.DealershipName,
-                ctx.SubDealerId,
-                ctx.AccessibleMenuKeys,
-                ctx.MenuAccess,
-                ctx.CanExport,
-                ctx.CanViewStatement,
-                ctx.QuickActionKeys,
-                ctx.DashboardWidgetKeys);
+                dealershipId: ctx.DealershipId,
+                dealershipName: ctx.DealershipName,
+                subDealerId: ctx.SubDealerId,
+                assignedDealershipIds: assignedIds,
+                locationFilterDealershipId: locationFilter,
+                menuKeys: ctx.AccessibleMenuKeys,
+                menuAccess: ctx.MenuAccess,
+                canExport: ctx.CanExport,
+                canViewStatement: ctx.CanViewStatement,
+                quickActionKeys: ctx.QuickActionKeys,
+                dashboardWidgetKeys: ctx.DashboardWidgetKeys);
         }
     }
 }

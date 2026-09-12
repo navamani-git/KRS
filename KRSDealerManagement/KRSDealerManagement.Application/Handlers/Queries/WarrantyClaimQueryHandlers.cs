@@ -31,8 +31,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
             if (request.Status.HasValue)
                 claims = claims.Where(c => c.Status == request.Status.Value);
-            if (request.DealershipId.HasValue)
-                claims = claims.Where(c => c.DealershipId == request.DealershipId.Value);
+            var dealershipFilter = DealershipQueryScope.ResolveDealershipIds(request.DealershipId, request.DealershipIds);
+            if (dealershipFilter != null)
+                claims = claims.Where(c => c.DealershipId.HasValue && dealershipFilter.Contains(c.DealershipId.Value));
             if (request.AccountId.HasValue)
                 claims = claims.Where(c => c.AccountId == request.AccountId.Value);
             if (!string.IsNullOrWhiteSpace(request.ClaimType))
@@ -104,7 +105,10 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             {
                 if (request.AccountId.HasValue && claim.AccountId != request.AccountId.Value)
                     return null;
-                if (request.DealershipId.HasValue && claim.DealershipId != request.DealershipId.Value)
+                var dealershipFilter = DealershipQueryScope.ResolveDealershipIds(request.DealershipId, request.DealershipIds);
+                if (dealershipFilter != null
+                    && claim.DealershipId.HasValue
+                    && !DealershipQueryScope.MatchesDealership(claim.DealershipId.Value, dealershipFilter))
                     return null;
             }
 

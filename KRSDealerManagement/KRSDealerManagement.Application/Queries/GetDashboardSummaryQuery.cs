@@ -10,6 +10,7 @@ namespace KRSDealerManagement.Application.Queries
         public int? SubdealerId { get; set; } // Optional: for subdealer dashboard
         /// <summary>When set, staff dashboard counts are limited to this dealership's subdealers.</summary>
         public int? DealershipId { get; set; }
+        public List<int>? DealershipIds { get; set; }
         public bool IncludeRecentActivities { get; set; } // System admin only
         /// <summary>When false, skip loading payment pending count (e.g. branch manager).</summary>
         public bool IncludePaymentPending { get; set; } = true;

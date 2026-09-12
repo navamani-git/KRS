@@ -12,6 +12,7 @@ namespace KRSDealerManagement.Application.Queries
         public int? AccountId { get; set; }
         public int? SubdealerId { get; set; }
         public int? DealershipId { get; set; }
+        public List<int>? DealershipIds { get; set; }
         public int? Status { get; set; } // 0=Pending, 1=Approved, 2=Rejected
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }

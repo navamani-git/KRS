@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using KRSDealerManagement.Application.Commands;
 using KRSDealerManagement.Application.Queries;
+using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
 using KRSDealerManagement.Shared.Enums;
@@ -60,7 +61,7 @@ namespace KRSDealerManagement.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
             string fullName, string username, string password,
-            int roleId, int dealershipId,
+            int roleId, int[] dealershipIds,
             string? email, string? phoneNumber)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
@@ -74,7 +75,7 @@ namespace KRSDealerManagement.Web.Controllers
                     Username = username,
                     Password = password,
                     RoleId = roleId,
-                    DealershipId = dealershipId,
+                    DealershipIds = dealershipIds?.Where(id => id > 0).Distinct().ToList() ?? new List<int>(),
                     Email = email,
                     PhoneNumber = phoneNumber,
                     CreatedBy = userId.Value,
@@ -89,7 +90,7 @@ namespace KRSDealerManagement.Web.Controllers
             catch (Exception ex)
             {
                 TempData["Error"] = ex.Message;
-                await LoadFormViewBags(dealershipId);
+                await LoadFormViewBags();
                 return View();
             }
         }
@@ -107,13 +108,13 @@ namespace KRSDealerManagement.Web.Controllers
                 }
             }
 
-            await LoadFormViewBags(staff.DealershipId);
+            await LoadFormViewBags();
             return View(staff);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, string fullName, string username, string? email, string? phoneNumber, int dealershipId, int roleId, string? password)
+        public async Task<IActionResult> Edit(int id, string fullName, string username, string? email, string? phoneNumber, int[] dealershipIds, int roleId, string? password)
         {
             var isActive = IsFormChecked("isActive");
             var canExport = IsFormChecked("canExport");
@@ -163,10 +164,28 @@ namespace KRSDealerManagement.Web.Controllers
             }
 
             var selectedRole = await _unitOfWork.Roles.GetByIdAsync(roleId);
-            if (selectedRole == null || !selectedRole.IsActive || selectedRole.IsSystemRole
-                || !selectedRole.DealershipId.HasValue || selectedRole.DealershipId.Value != dealershipId)
+            if (selectedRole == null)
             {
-                TempData["Error"] = "Selected role does not match the dealership.";
+                TempData["Error"] = "Selected role is invalid.";
+                return RedirectToAction(nameof(Edit), new { id });
+            }
+
+            try
+            {
+                await StaffDealershipService.ValidateStaffRoleAsync(_unitOfWork, roleId);
+                var locationIds = dealershipIds?.Where(x => x > 0).Distinct().ToList() ?? new List<int>();
+                await StaffDealershipService.ValidateDealershipsAsync(_unitOfWork, locationIds);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction(nameof(Edit), new { id });
+            }
+
+            var primaryDealershipId = (dealershipIds ?? Array.Empty<int>()).FirstOrDefault(id => id > 0);
+            if (primaryDealershipId <= 0)
+            {
+                TempData["Error"] = "Select at least one location.";
                 return RedirectToAction(nameof(Edit), new { id });
             }
 
@@ -189,11 +208,14 @@ namespace KRSDealerManagement.Web.Controllers
             foreach (var a in (await _unitOfWork.UserOrgRoles.GetAllAsync()).Where(x => x.UserId == id))
             {
                 a.RoleId = roleId;
-                a.DealershipId = dealershipId;
+                a.DealershipId = primaryDealershipId;
                 a.IsActive = isActive;
                 a.ModifiedDate = DateTime.UtcNow;
                 await _unitOfWork.UserOrgRoles.UpdateAsync(a);
             }
+
+            await StaffDealershipService.ReplaceUserDealershipsAsync(
+                _unitOfWork, id, (dealershipIds ?? Array.Empty<int>()).Where(x => x > 0), isActive);
 
             await _unitOfWork.SaveChangesAsync();
             TempData["Success"] = "Staff user updated.";
@@ -226,11 +248,10 @@ namespace KRSDealerManagement.Web.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        private async Task LoadFormViewBags(int? dealershipId = null)
+        private async Task LoadFormViewBags()
         {
             ViewBag.Dealerships = await _mediator.Send(new GetDealershipsQuery { IsActive = true });
-            ViewBag.Roles = await _mediator.Send(new GetStaffRolesQuery { AssignableOnly = true, IsActive = true, DealershipId = dealershipId });
-            ViewBag.SelectedDealershipId = dealershipId;
+            ViewBag.Roles = await _mediator.Send(new GetStaffRolesQuery { AssignableOnly = true, IsActive = true });
         }
 
         private bool IsFormChecked(string name)
@@ -260,6 +281,17 @@ namespace KRSDealerManagement.Web.Controllers
                 ? await _unitOfWork.Dealerships.GetByIdAsync(assignment.DealershipId.Value)
                 : null;
 
+            var assignedIds = (await StaffDealershipService.GetAssignedDealershipIdsAsync(_unitOfWork, userId)).ToList();
+            if (assignedIds.Count == 0 && assignment.DealershipId.HasValue)
+                assignedIds.Add(assignment.DealershipId.Value);
+
+            var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToDictionary(d => d.DealershipId);
+            var dealerNames = assignedIds
+                .Select(did => dealerships.TryGetValue(did, out var d) ? d.DealershipName : null)
+                .Where(n => !string.IsNullOrWhiteSpace(n))
+                .Cast<string>()
+                .ToList();
+
             return new Application.DTOs.StaffUserDto
             {
                 UserId = user.UserId,
@@ -270,8 +302,10 @@ namespace KRSDealerManagement.Web.Controllers
                 UserRole = user.UserRole,
                 RoleId = role.RoleId,
                 RoleName = role.RoleName,
-                DealershipId = assignment.DealershipId,
-                DealershipName = dealership?.DealershipName,
+                DealershipId = assignedIds.FirstOrDefault() is int first && first > 0 ? first : assignment.DealershipId,
+                DealershipName = dealerNames.FirstOrDefault() ?? dealership?.DealershipName,
+                DealershipIds = assignedIds,
+                DealershipNames = dealerNames.Count > 0 ? string.Join(", ", dealerNames) : null,
                 IsActive = user.IsActive,
                 CanExport = user.CanExport,
                 CanViewStatement = user.CanViewStatement,

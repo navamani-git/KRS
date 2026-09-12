@@ -18,8 +18,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
         {
             var orgs = (await _unitOfWork.SubDealers.GetAllAsync()).AsEnumerable();
             var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToDictionary(d => d.DealershipId);
-            if (request.DealershipId.HasValue)
-                orgs = orgs.Where(o => o.DealershipId == request.DealershipId.Value);
+            var dealershipFilter = DealershipQueryScope.ResolveDealershipIds(request.DealershipId, request.DealershipIds);
+            if (dealershipFilter != null)
+                orgs = orgs.Where(o => dealershipFilter.Contains(o.DealershipId));
 
             if (request.IsActive.HasValue)
                 orgs = orgs.Where(o => o.IsActive == request.IsActive.Value);

@@ -18,6 +18,7 @@ namespace KRSDealerManagement.Application.Queries
         public string RoleCode { get; set; } = "";
         public string RoleName { get; set; } = "";
         public int? DealershipId { get; set; }
+        public List<int>? DealershipIds { get; set; }
         public string? DealershipName { get; set; }
         public int? SubDealerId { get; set; }
         public string? SubDealerName { get; set; }
@@ -70,6 +71,16 @@ namespace KRSDealerManagement.Application.Queries
                 subDealerName = s?.SubDealerName;
             }
 
+            var assignedDealershipIds = await StaffDealershipService.GetAssignedDealershipIdsAsync(_unitOfWork, request.UserId);
+            if (assignedDealershipIds.Count == 0 && assignment.DealershipId is int legacyDid)
+                assignedDealershipIds = new List<int> { legacyDid };
+
+            if (assignedDealershipIds.Count == 1)
+            {
+                var d = await _unitOfWork.Dealerships.GetByIdAsync(assignedDealershipIds[0]);
+                dealershipName = d?.DealershipName;
+            }
+
             var menus = await MenuAccessResolver.ResolveAsync(_unitOfWork, request.UserId, role);
             var menuAccess = await MenuAccessResolver.ResolveMapAsync(_unitOfWork, request.UserId, role);
             var user = await _unitOfWork.Users.GetByIdAsync(request.UserId);
@@ -80,7 +91,8 @@ namespace KRSDealerManagement.Application.Queries
                 RoleId = role.RoleId,
                 RoleCode = role.RoleCode,
                 RoleName = role.RoleName,
-                DealershipId = assignment.DealershipId,
+                DealershipId = assignedDealershipIds.Count == 1 ? assignedDealershipIds[0] : assignment.DealershipId,
+                DealershipIds = assignedDealershipIds.ToList(),
                 DealershipName = dealershipName,
                 SubDealerId = assignment.SubDealerId,
                 SubDealerName = subDealerName,

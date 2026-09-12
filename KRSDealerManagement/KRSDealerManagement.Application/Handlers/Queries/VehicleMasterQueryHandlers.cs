@@ -50,8 +50,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     : $"Subdealer #{subdealerUserId}";
             }
 
-            if (request.DealershipId.HasValue)
-                masters = masters.Where(m => m.DealershipId == request.DealershipId.Value);
+            var dealershipFilter = DealershipQueryScope.ResolveDealershipIds(request.DealershipId, request.DealershipIds);
+            if (dealershipFilter != null)
+                masters = masters.Where(m => dealershipFilter.Contains(m.DealershipId));
             if (request.IsAllocated.HasValue)
                 masters = masters.Where(m => m.IsAllocated == request.IsAllocated.Value);
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))

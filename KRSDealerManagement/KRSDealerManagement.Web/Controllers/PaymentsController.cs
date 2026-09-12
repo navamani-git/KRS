@@ -327,7 +327,6 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeMenu(StaffMenuAccess.Payments, StaffOnly = true)]
         public async Task<IActionResult> Index(int? status, int? subdealerId, DateTime? fromDate, DateTime? toDate, int? page, int? pageSize)
         {
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Payments);
             var payments = await _mediator.Send(new GetPaymentsQuery
@@ -339,8 +338,10 @@ namespace KRSDealerManagement.Web.Controllers
                 ColumnFilters = columnFilters
             });
 
-            var subdealers = (await _mediator.Send(new GetSubdealersQuery { IsActive = true, DealershipId = scope })).ToList();
-            if (scope.HasValue)
+            var subdealersQuery = new GetSubdealersQuery { IsActive = true };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, subdealersQuery);
+            var subdealers = (await _mediator.Send(subdealersQuery)).ToList();
+            if (subdealersQuery.DealershipId.HasValue)
             {
                 var allowed = subdealers.Select(s => s.UserId).ToHashSet();
                 payments = payments.Where(p => allowed.Contains(p.SubdealerId));
@@ -364,7 +365,6 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeMenu(StaffMenuAccess.Payments, StaffOnly = true)]
         public async Task<IActionResult> Export(int? status, int? subdealerId, DateTime? fromDate, DateTime? toDate)
         {
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Payments);
             var payments = await _mediator.Send(new GetPaymentsQuery
@@ -376,8 +376,10 @@ namespace KRSDealerManagement.Web.Controllers
                 ColumnFilters = columnFilters
             });
 
-            var subdealers = (await _mediator.Send(new GetSubdealersQuery { IsActive = true, DealershipId = scope })).ToList();
-            if (scope.HasValue)
+            var subdealersQuery = new GetSubdealersQuery { IsActive = true };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, subdealersQuery);
+            var subdealers = (await _mediator.Send(subdealersQuery)).ToList();
+            if (subdealersQuery.DealershipId.HasValue)
             {
                 var allowed = subdealers.Select(s => s.UserId).ToHashSet();
                 payments = payments.Where(p => allowed.Contains(p.SubdealerId));
@@ -569,10 +571,11 @@ namespace KRSDealerManagement.Web.Controllers
             if (SessionHelper.IsSystemAdmin(HttpContext.Session))
                 return true;
 
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
-            if (!scope.HasValue) return true;
+            var subdealersQuery = new GetSubdealersQuery { IsActive = true };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, subdealersQuery);
+            if (!subdealersQuery.DealershipId.HasValue) return true;
 
-            var allowed = (await _mediator.Send(new GetSubdealersQuery { IsActive = true, DealershipId = scope }))
+            var allowed = (await _mediator.Send(subdealersQuery))
                 .Select(s => s.UserId)
                 .ToHashSet();
             return matching.Any(p => allowed.Contains(p.SubdealerId));

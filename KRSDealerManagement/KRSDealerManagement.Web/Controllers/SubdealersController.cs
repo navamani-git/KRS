@@ -25,23 +25,23 @@ namespace KRSDealerManagement.Web.Controllers
 
         public async Task<IActionResult> Index(string searchTerm, bool? isActive, string? district, int? page, int? pageSize)
         {
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Subdealers);
-            var subdealers = await _mediator.Send(new GetSubdealersQuery
+            var subdealersQuery = new GetSubdealersQuery
             {
                 SearchTerm = searchTerm,
                 IsActive = isActive,
                 District = district,
-                DealershipId = scope,
                 ColumnFilters = columnFilters
-            });
+            };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, subdealersQuery);
+            var subdealers = await _mediator.Send(subdealersQuery);
             var (pageItems, pageInfo) = ListPagingHelper.Paginate(subdealers, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
             ViewBag.SearchTerm = searchTerm;
             ViewBag.IsActive = isActive;
             ViewBag.SelectedDistrict = district;
             ViewBag.Districts = (await _unitOfWork.Dealerships.GetAllAsync())
-                .Where(d => d.IsActive && (!scope.HasValue || d.DealershipId == scope.Value))
+                .Where(d => d.IsActive && (!subdealersQuery.DealershipId.HasValue || d.DealershipId == subdealersQuery.DealershipId.Value))
                 .Select(d => d.Location?.Trim())
                 .Where(l => !string.IsNullOrWhiteSpace(l))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -55,14 +55,15 @@ namespace KRSDealerManagement.Web.Controllers
 
         public async Task<IActionResult> Export(string searchTerm, bool? isActive, string? district)
         {
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
-            var subdealers = (await _mediator.Send(new GetSubdealersQuery
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Subdealers);
+            var subdealersQuery = new GetSubdealersQuery
             {
                 SearchTerm = searchTerm,
                 IsActive = isActive,
-                District = district,
-                DealershipId = scope
-            })).ToList();
+                District = district
+            };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, subdealersQuery);
+            var subdealers = (await _mediator.Send(subdealersQuery)).ToList();
             var headers = new[] { "Name", "Email", "District", "Location", "Logins", "Phone", "Status", "Created" };
             var rows = subdealers.Select(s => (IReadOnlyList<object?>)new List<object?>
             {
@@ -141,20 +142,15 @@ namespace KRSDealerManagement.Web.Controllers
 
         public async Task<IActionResult> Details(int id)
         {
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
-            var subdealer = await _mediator.Send(new GetSubdealerDetailQuery
-            {
-                SubDealerId = id,
-                DealershipId = scope
-            });
+            var detailQuery = new GetSubdealerDetailQuery { SubDealerId = id };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, detailQuery);
+            var subdealer = await _mediator.Send(detailQuery);
 
             if (subdealer == null)
             {
-                subdealer = await _mediator.Send(new GetSubdealerDetailQuery
-                {
-                    UserId = id,
-                    DealershipId = scope
-                });
+                detailQuery = new GetSubdealerDetailQuery { UserId = id };
+                DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, detailQuery);
+                subdealer = await _mediator.Send(detailQuery);
             }
 
             if (subdealer == null)

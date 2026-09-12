@@ -12,6 +12,8 @@ namespace KRSDealerManagement.Application.DTOs
         public required string RoleName { get; set; }
         public int? DealershipId { get; set; }
         public string? DealershipName { get; set; }
+        public List<int> DealershipIds { get; set; } = new();
+        public string? DealershipNames { get; set; }
         public bool IsActive { get; set; }
         public bool CanExport { get; set; } = true;
         public bool CanViewStatement { get; set; } = true;

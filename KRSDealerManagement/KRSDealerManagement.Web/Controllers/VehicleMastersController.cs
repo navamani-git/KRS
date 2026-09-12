@@ -21,13 +21,16 @@ namespace KRSDealerManagement.Web.Controllers
         {
             var effectiveDealershipId = ResolveDealershipFilter(dealershipId);
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.DealerStock);
+            var mastersQuery = new GetVehicleMastersQuery
+            {
+                IsAllocated = isAllocated,
+                SearchTerm = searchTerm
+            };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, mastersQuery);
+            if (!mastersQuery.DealershipId.HasValue)
+                mastersQuery.DealershipId = effectiveDealershipId;
             var masters = GridScreenFilterHelper.ApplyDealerStock(
-                await _mediator.Send(new GetVehicleMastersQuery
-                {
-                    DealershipId = effectiveDealershipId,
-                    IsAllocated = isAllocated,
-                    SearchTerm = searchTerm
-                }),
+                await _mediator.Send(mastersQuery),
                 columnFilters).ToList();
 
             var (pageItems, pageInfo) = ListPagingHelper.Paginate(masters, page, pageSize);
@@ -51,13 +54,16 @@ namespace KRSDealerManagement.Web.Controllers
         {
             var effectiveDealershipId = ResolveDealershipFilter(dealershipId);
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.DealerStock);
+            var mastersQuery = new GetVehicleMastersQuery
+            {
+                IsAllocated = isAllocated,
+                SearchTerm = searchTerm
+            };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, mastersQuery);
+            if (!mastersQuery.DealershipId.HasValue)
+                mastersQuery.DealershipId = effectiveDealershipId;
             var masters = GridScreenFilterHelper.ApplyDealerStock(
-                await _mediator.Send(new GetVehicleMastersQuery
-                {
-                    DealershipId = effectiveDealershipId,
-                    IsAllocated = isAllocated,
-                    SearchTerm = searchTerm
-                }),
+                await _mediator.Send(mastersQuery),
                 columnFilters).ToList();
 
             var headers = new[] { "Branch", "Chassis", "Model", "Color", "Motor", "Battery", "Charger", "Controller", "Converter", "Invoice No", "Ampere Invoice", "Received", "Status", "Allocated To", "Remarks" };
@@ -140,8 +146,9 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeMenu(StaffMenuAccess.DealerStock)]
         public async Task<IActionResult> Edit(int id)
         {
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
-            var master = (await _mediator.Send(new GetVehicleMastersQuery { DealershipId = scope }))
+            var mastersQuery = new GetVehicleMastersQuery();
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, mastersQuery);
+            var master = (await _mediator.Send(mastersQuery))
                 .FirstOrDefault(m => m.VehicleMasterId == id);
             if (master == null)
             {
@@ -168,8 +175,9 @@ namespace KRSDealerManagement.Web.Controllers
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
-            var master = (await _mediator.Send(new GetVehicleMastersQuery { DealershipId = scope }))
+            var mastersQuery = new GetVehicleMastersQuery();
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, mastersQuery);
+            var master = (await _mediator.Send(mastersQuery))
                 .FirstOrDefault(m => m.VehicleMasterId == vehicleMasterId);
             if (master == null)
             {
@@ -213,8 +221,9 @@ namespace KRSDealerManagement.Web.Controllers
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
-            var master = (await _mediator.Send(new GetVehicleMastersQuery { DealershipId = scope }))
+            var mastersQuery = new GetVehicleMastersQuery();
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, mastersQuery);
+            var master = (await _mediator.Send(mastersQuery))
                 .FirstOrDefault(m => m.VehicleMasterId == id);
             if (master == null)
             {
@@ -247,10 +256,11 @@ namespace KRSDealerManagement.Web.Controllers
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
-            var master = (await _mediator.Send(new GetVehicleMastersQuery { DealershipId = scope }))
+            var mastersQuery = new GetVehicleMastersQuery();
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, mastersQuery);
+            var master = (await _mediator.Send(mastersQuery))
                 .FirstOrDefault(m => m.VehicleMasterId == id);
-            if (master == null && scope.HasValue)
+            if (master == null && mastersQuery.DealershipId.HasValue)
             {
                 TempData["Error"] = "Vehicle not found in your branch.";
                 return RedirectToAction(nameof(Index));
@@ -268,7 +278,7 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            if (scope.HasValue && master.DealershipId != scope.Value)
+            if (mastersQuery.DealershipId.HasValue && master.DealershipId != mastersQuery.DealershipId.Value)
             {
                 TempData["Error"] = "You can only transfer vehicles from your branch.";
                 return RedirectToAction(nameof(Index));
@@ -296,16 +306,22 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeRole(1, 4)]
         public async Task<IActionResult> Available(int modelId, int colorId, int? dealershipId)
         {
-            var scope = dealershipId ?? SessionHelper.GetDealershipScope(HttpContext.Session);
-            if (!scope.HasValue)
-                return Json(Array.Empty<object>());
-
-            var options = await _mediator.Send(new GetAvailableVehicleMastersQuery
+            var availableQuery = new GetAvailableVehicleMastersQuery
             {
-                DealershipId = scope.Value,
                 ModelId = modelId,
                 ColorId = colorId
-            });
+            };
+            if (dealershipId.HasValue)
+                availableQuery.DealershipId = dealershipId.Value;
+            else
+            {
+                var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
+                if (!scope.HasValue)
+                    return Json(Array.Empty<object>());
+                availableQuery.DealershipId = scope.Value;
+            }
+
+            var options = await _mediator.Send(availableQuery);
             return Json(options);
         }
 

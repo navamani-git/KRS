@@ -9,6 +9,7 @@
     var isStaff = SessionHelper.IsStaff(Context.Session);
     var isSubdealer = SessionHelper.IsSubdealer(Context.Session);
     var session = Context.Session;
+    var fontOption = SessionHelper.GetFontSizeOption(session);
     var navController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
     var navAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
     if (string.Equals(navController, "ExcelImport", StringComparison.OrdinalIgnoreCase))
@@ -25,10 +26,22 @@
 }
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en"
+      class="krs-fs-@fontOption.Code"
+      data-krs-font-preset="@fontOption.Code"
+      style="font-size: @(fontOption.RootPx)px">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <script>
+        (function () {
+            var px = @fontOption.RootPx;
+            var preset = '@fontOption.Code';
+            document.documentElement.style.fontSize = px + 'px';
+            document.documentElement.dataset.krsFontPreset = preset;
+            document.documentElement.classList.add('krs-fs-' + preset);
+        })();
+    </script>
     <title>@ViewData["Title"] - KRS Dealer Management</title>
     
     <!-- Bootstrap 5 CSS -->
@@ -70,7 +83,7 @@
         }
     </style>
 </head>
-<body class="hold-transition sidebar-mini layout-fixed">
+<body class="hold-transition layout-fixed">
     <div class="wrapper">
         
         <!-- Navbar -->
@@ -87,9 +100,14 @@
 
             <!-- Right navbar links -->
             <ul class="navbar-nav ml-auto">
+                @await Component.InvokeAsync("LocationFilter")
+                <li class="nav-item d-flex align-items-center px-2">
+                    <partial name="_FontSizeControl" />
+                </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="@Url.Action("Profile", "Account")" title="My login">
-                        <i class="bi bi-person-circle"></i> @fullName (@roleName)
+                    <a class="nav-link" href="@Url.Action("Profile", "Account")" title="@fullName (@roleName)">
+                        <i class="bi bi-person-circle"></i>
+                        <span class="d-none d-md-inline"> @fullName (@roleName)</span>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -326,6 +344,8 @@
         };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/js/tom-select.complete.min.js"></script>
+    <script src="~/js/font-scale.js" asp-append-version="true"></script>
+    <script src="~/js/mobile-sidebar.js" asp-append-version="true"></script>
     <script src="~/js/searchable-select.js" asp-append-version="true"></script>
     <script src="~/js/grid-scroll.js" asp-append-version="true"></script>
     <script src="~/js/grid-columns.js" asp-append-version="true"></script>

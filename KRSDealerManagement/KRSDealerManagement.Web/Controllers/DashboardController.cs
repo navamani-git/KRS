@@ -66,7 +66,7 @@ namespace KRSDealerManagement.Web.Controllers
             }
             else if (!isAdmin)
             {
-                query.DealershipId = SessionHelper.GetDealershipScope(HttpContext.Session);
+                DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, query);
             }
 
             var summary = await _mediator.Send(query);

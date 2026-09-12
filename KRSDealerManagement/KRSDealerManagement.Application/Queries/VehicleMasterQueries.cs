@@ -6,6 +6,7 @@ namespace KRSDealerManagement.Application.Queries
     public class GetVehicleMastersQuery : IRequest<IEnumerable<VehicleMasterDto>>
     {
         public int? DealershipId { get; set; }
+        public List<int>? DealershipIds { get; set; }
         public bool? IsAllocated { get; set; }
         public string? SearchTerm { get; set; }
     }

@@ -185,7 +185,7 @@ namespace KRSDealerManagement.Web.Controllers
             if (isSubdealer && userId.HasValue)
                 orderQuery.SubdealerId = userId.Value;
             else if (SessionHelper.IsStaff(HttpContext.Session))
-                orderQuery.DealershipId = SessionHelper.GetDealershipScope(HttpContext.Session);
+                DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, orderQuery);
 
             var orders = await _mediator.Send(orderQuery);
             var order = orders.FirstOrDefault(o => o.OrderId == id);
@@ -212,10 +212,9 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeRole(1, 4)]
         public async Task<IActionResult> Allocate(int id)
         {
-            var orders = await _mediator.Send(new GetPurchaseOrdersQuery
-            {
-                DealershipId = SessionHelper.GetDealershipScope(HttpContext.Session)
-            });
+            var ordersQuery = new GetPurchaseOrdersQuery();
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, ordersQuery);
+            var orders = await _mediator.Send(ordersQuery);
             var order = orders.FirstOrDefault(o => o.OrderId == id);
             if (order == null)
             {
@@ -247,10 +246,9 @@ namespace KRSDealerManagement.Web.Controllers
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
-            var scopedOrders = await _mediator.Send(new GetPurchaseOrdersQuery
-            {
-                DealershipId = SessionHelper.GetDealershipScope(HttpContext.Session)
-            });
+            var scopedOrdersQuery = new GetPurchaseOrdersQuery();
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, scopedOrdersQuery);
+            var scopedOrders = await _mediator.Send(scopedOrdersQuery);
             if (!scopedOrders.Any(o => o.OrderId == orderId))
             {
                 TempData["Error"] = "Order not found or outside your branch scope.";
@@ -323,19 +321,19 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeRole(1, 4)]
         public async Task<IActionResult> Index(int? status, int? subdealerId, string searchTerm, DateTime? fromDate, DateTime? toDate, int? page, int? pageSize)
         {
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Orders);
-            var orders = await _mediator.Send(new GetPurchaseOrdersQuery
+            var ordersQuery = new GetPurchaseOrdersQuery
             {
                 Status = status,
                 SubdealerId = subdealerId,
                 SearchTerm = searchTerm,
-                DealershipId = scope,
                 FromDate = from,
                 ToDate = to,
                 ColumnFilters = columnFilters
-            });
+            };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, ordersQuery);
+            var orders = await _mediator.Send(ordersQuery);
 
             var (pageItems, pageInfo) = ListPagingHelper.Paginate(orders, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
@@ -348,7 +346,9 @@ namespace KRSDealerManagement.Web.Controllers
             }
             ViewBag.ItemsByOrder = itemsByOrder;
 
-            var subdealers = await _mediator.Send(new GetSubdealersQuery { IsActive = true, DealershipId = scope });
+            var subdealersQuery = new GetSubdealersQuery { IsActive = true };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, subdealersQuery);
+            var subdealers = await _mediator.Send(subdealersQuery);
             ViewBag.Subdealers = subdealers;
             ViewBag.SelectedStatus = status;
             ViewBag.SelectedSubdealerId = subdealerId;
@@ -365,19 +365,19 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeRole(1, 4)]
         public async Task<IActionResult> Export(int? status, int? subdealerId, string searchTerm, DateTime? fromDate, DateTime? toDate)
         {
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Orders);
-            var orders = (await _mediator.Send(new GetPurchaseOrdersQuery
+            var ordersQuery = new GetPurchaseOrdersQuery
             {
                 Status = status,
                 SubdealerId = subdealerId,
                 SearchTerm = searchTerm,
-                DealershipId = scope,
                 FromDate = from,
                 ToDate = to,
                 ColumnFilters = columnFilters
-            })).ToList();
+            };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, ordersQuery);
+            var orders = (await _mediator.Send(ordersQuery)).ToList();
 
             var headers = new[] { "Order #", "Subdealer", "Qty", "Amount", "Status", "Pending", "Approved", "Created", "Last Allocation" };
             var rows = orders.Select(o => (IReadOnlyList<object?>)new List<object?>
@@ -395,8 +395,9 @@ namespace KRSDealerManagement.Web.Controllers
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
-            var subdealers = await _mediator.Send(new GetSubdealersQuery { IsActive = true, DealershipId = scope });
+            var subdealersQuery = new GetSubdealersQuery { IsActive = true };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, subdealersQuery);
+            var subdealers = await _mediator.Send(subdealersQuery);
             var models = await _mediator.Send(new GetVehicleModelsQuery { IsActive = true });
 
             ViewBag.Subdealers = subdealers;
@@ -421,8 +422,9 @@ namespace KRSDealerManagement.Web.Controllers
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
-            var scopedSubdealers = await _mediator.Send(new GetSubdealersQuery { IsActive = true, DealershipId = scope });
+            var scopedSubdealersQuery = new GetSubdealersQuery { IsActive = true };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, scopedSubdealersQuery);
+            var scopedSubdealers = await _mediator.Send(scopedSubdealersQuery);
             if (!scopedSubdealers.Any(s => s.UserId == subdealerId))
             {
                 TempData["Error"] = "Selected subdealer is not in your dealership scope.";
@@ -491,8 +493,9 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeMenu(StaffMenuAccess.Balances, StaffOnly = true)]
         public async Task<IActionResult> GetSubdealerAccount(int subdealerId)
         {
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
-            var scopedSubdealers = await _mediator.Send(new GetSubdealersQuery { IsActive = true, DealershipId = scope });
+            var scopedSubdealersQuery = new GetSubdealersQuery { IsActive = true };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, scopedSubdealersQuery);
+            var scopedSubdealers = await _mediator.Send(scopedSubdealersQuery);
             if (!scopedSubdealers.Any(s => s.UserId == subdealerId))
                 return Json(new { success = false, message = "Subdealer not in your scope." });
 

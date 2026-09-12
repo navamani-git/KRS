@@ -79,4 +79,15 @@ namespace KRSDealerManagement.Domain.Entities
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
         public DateTime ModifiedDate { get; set; } = DateTime.UtcNow;
     }
+
+    /// <summary>Staff user access to one or more dealership locations.</summary>
+    public class UserDealership
+    {
+        public int UserDealershipId { get; set; }
+        public int UserId { get; set; }
+        public int DealershipId { get; set; }
+        public bool IsActive { get; set; } = true;
+        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+        public DateTime ModifiedDate { get; set; } = DateTime.UtcNow;
+    }
 }

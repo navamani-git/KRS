@@ -26,20 +26,11 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
         public async Task<int> Handle(CreateStaffUserCommand request, CancellationToken cancellationToken)
         {
+            await StaffDealershipService.ValidateStaffRoleAsync(_unitOfWork, request.RoleId);
+            await StaffDealershipService.ValidateDealershipsAsync(_unitOfWork, request.DealershipIds);
+
             var role = await _unitOfWork.Roles.GetByIdAsync(request.RoleId)
                 ?? throw new InvalidOperationException("Role not found.");
-
-            if (!role.IsActive || role.IsSystemRole
-                || role.RoleCode.Equals(RoleCodes.SystemAdmin, StringComparison.OrdinalIgnoreCase)
-                || role.RoleCode.Equals(RoleCodes.Subdealer, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("Select a valid staff role.");
-
-            if (!role.DealershipId.HasValue || role.DealershipId.Value != request.DealershipId)
-                throw new InvalidOperationException("Selected role does not belong to the chosen dealership.");
-
-            var dealership = await _unitOfWork.Dealerships.GetByIdAsync(request.DealershipId);
-            if (dealership == null || !dealership.IsActive)
-                throw new InvalidOperationException("Dealership not found or inactive.");
 
             var username = request.Username.Trim().ToLowerInvariant();
             var existing = (await _unitOfWork.Users.GetAllAsync())
@@ -51,6 +42,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             var nameParts = request.FullName.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
             var firstName = nameParts[0];
             var lastName = nameParts.Length > 1 ? nameParts[1] : role.RoleName;
+            var primaryDealershipId = request.DealershipIds.First();
 
             var userId = await _unitOfWork.Users.AddAsync(new User
             {
@@ -73,13 +65,16 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             {
                 UserId = userId,
                 RoleId = role.RoleId,
-                DealershipId = request.DealershipId,
+                DealershipId = primaryDealershipId,
                 SubDealerId = null,
                 IsPrimary = true,
                 IsActive = true,
                 CreatedDate = DateTime.UtcNow,
                 ModifiedDate = DateTime.UtcNow
             });
+
+            await StaffDealershipService.ReplaceUserDealershipsAsync(
+                _unitOfWork, userId, request.DealershipIds, isActive: true);
 
             await _unitOfWork.SaveChangesAsync();
 
@@ -95,8 +90,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                     username,
                     role.RoleId,
                     role.RoleCode,
-                    request.DealershipId,
-                    Dealership = dealership.DealershipCode,
+                    DealershipIds = request.DealershipIds,
                     request.FullName
                 }));
 

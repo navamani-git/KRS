@@ -7,6 +7,7 @@ namespace KRSDealerManagement.Application.Queries
     {
         public int? Status { get; set; }
         public int? DealershipId { get; set; }
+        public List<int>? DealershipIds { get; set; }
         public int? AccountId { get; set; }
         public int? SubdealerUserId { get; set; }
         public string? ClaimType { get; set; }
@@ -17,6 +18,7 @@ namespace KRSDealerManagement.Application.Queries
         public int WarrantyClaimId { get; set; }
         public int? AccountId { get; set; }
         public int? DealershipId { get; set; }
+        public List<int>? DealershipIds { get; set; }
         public bool IsSystemAdmin { get; set; }
     }
 

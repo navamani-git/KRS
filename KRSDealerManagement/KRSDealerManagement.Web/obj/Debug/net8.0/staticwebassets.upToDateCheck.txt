@@ -8,11 +8,13 @@ wwwroot\images\grevesampere.png
 wwwroot\images\krslogo.png
 wwwroot\js\amount-format.js
 wwwroot\js\dashboard-widgets.js
+wwwroot\js\font-scale.js
 wwwroot\js\grid-columns.js
 wwwroot\js\grid-combobox.js
 wwwroot\js\grid-resize.js
 wwwroot\js\grid-scroll.js
 wwwroot\js\grid-sort.js
+wwwroot\js\mobile-sidebar.js
 wwwroot\js\model-color-filter.js
 wwwroot\js\price-color-picker.js
 wwwroot\js\query-string.js

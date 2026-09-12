@@ -7,6 +7,7 @@ namespace KRSDealerManagement.Application.Queries
     {
         public int? SubdealerId { get; set; }
         public int? DealershipId { get; set; }
+        public List<int>? DealershipIds { get; set; }
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }
         public string? SearchTerm { get; set; }

@@ -1,5 +1,6 @@
 using MediatR;
 using KRSDealerManagement.Application.DTOs;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
@@ -31,19 +32,16 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 .GroupBy(i => i.VehicleId!.Value)
                 .ToDictionary(g => g.Key, g => g.OrderByDescending(i => i.ApprovedDate ?? i.CreatedDate).First());
             var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToDictionary(d => d.DealershipId);
-            var orgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync())
+            var allOrgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync()).ToList();
+            var orgRoles = allOrgRoles
                 .Where(a => a.IsActive)
                 .GroupBy(a => a.UserId)
                 .ToDictionary(g => g.Key, g => g.OrderByDescending(a => a.IsPrimary).First());
 
-            HashSet<int>? scopedSubdealerIds = null;
-            if (request.DealershipId.HasValue)
-            {
-                scopedSubdealerIds = orgRoles.Values
-                    .Where(a => a.DealershipId == request.DealershipId.Value)
-                    .Select(a => a.UserId)
-                    .ToHashSet();
-            }
+            var dealershipFilter = DealershipQueryScope.ResolveDealershipIds(request.DealershipId, request.DealershipIds);
+            HashSet<int>? scopedSubdealerIds = dealershipFilter != null
+                ? DealershipQueryScope.GetScopedSubdealerUserIds(allOrgRoles, dealershipFilter)
+                : null;
 
             if (!string.IsNullOrWhiteSpace(request.DealershipLocation))
             {

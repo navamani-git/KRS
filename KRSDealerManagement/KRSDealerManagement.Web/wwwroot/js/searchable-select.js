@@ -17,14 +17,19 @@
 
     function buildConfig(select) {
         var isSm = select.classList.contains('form-select-sm');
+        var isMultiple = select.hasAttribute('multiple');
         return {
-            plugins: ['dropdown_input'],
-            allowEmptyOption: true,
+            plugins: isMultiple ? ['remove_button', 'dropdown_input'] : ['dropdown_input'],
+            allowEmptyOption: !isMultiple,
             maxOptions: 5000,
+            maxItems: isMultiple ? null : 1,
+            hideSelected: false,
             dropdownParent: 'body',
             create: false,
+            placeholder: isMultiple ? 'Select one or more...' : undefined,
             sortField: { field: 'text', direction: 'asc' },
             onInitialize: function () {
+                this.wrapper.classList.add(isMultiple ? 'ts-multi' : 'ts-single');
                 if (isSm) {
                     this.wrapper.classList.add('ts-sm');
                 }
@@ -86,9 +91,18 @@
         if (!select) return null;
         refreshing.add(select);
         try {
-            var previousValue = select.value;
+            var previousValues = select.multiple
+                ? Array.from(select.selectedOptions).map(function (o) { return o.value; })
+                : null;
+            var previousValue = select.multiple ? null : select.value;
             destroy(select);
-            select.value = previousValue;
+            if (select.multiple && previousValues) {
+                Array.from(select.options).forEach(function (option) {
+                    option.selected = previousValues.indexOf(option.value) >= 0;
+                });
+            } else if (!select.multiple) {
+                select.value = previousValue;
+            }
             return init(select);
         } finally {
             refreshing.delete(select);

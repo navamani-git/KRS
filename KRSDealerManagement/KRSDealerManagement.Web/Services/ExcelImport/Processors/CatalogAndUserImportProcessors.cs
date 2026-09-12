@@ -387,10 +387,10 @@ namespace KRSDealerManagement.Web.Services.ExcelImport.Processors
         public string Key => ExcelImportKeys.StaffUsers;
         public string TemplateFileName => "import_staff_users_sample.xlsx";
         public string DataSheetName => "Staff Users";
-        public IReadOnlyList<string> DataHeaders => new[] { "FullName", "Username", "Password", "RoleName", "DealershipCode", "Email", "PhoneNumber" };
+        public IReadOnlyList<string> DataHeaders => new[] { "FullName", "Username", "Password", "RoleName", "DealershipCodes", "Email", "PhoneNumber" };
         public IReadOnlyList<IReadOnlyList<object?>> ExampleRows => new[]
         {
-            new List<object?> { "Finance User", "finance.salem", "ChangeMe@123", "Salem Finance Manager", "KRS_SALEM", "finance@krs.com", "9876500000" }
+            new List<object?> { "Finance User", "finance.salem", "ChangeMe@123", "Finance Manager", "KRS_SALEM,KRS_KARUR", "finance@krs.com", "9876500000" }
         };
 
         public async Task<IReadOnlyDictionary<string, IReadOnlyList<string>>> GetLookupsAsync(ExcelImportContext context)
@@ -400,7 +400,7 @@ namespace KRSDealerManagement.Web.Services.ExcelImport.Processors
             return new Dictionary<string, IReadOnlyList<string>>
             {
                 ["RoleName"] = roles.Select(r => r.RoleName).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList(),
-                ["DealershipCode"] = dealerships.Select(d => d.DealershipCode).ToList()
+                ["DealershipCodes"] = dealerships.Select(d => d.DealershipCode).ToList()
             };
         }
 
@@ -418,12 +418,16 @@ namespace KRSDealerManagement.Web.Services.ExcelImport.Processors
                 var username = ExcelImportValidationHelper.Require(row, "Username", errors);
                 ExcelImportValidationHelper.Require(row, "Password", errors);
                 var roleRaw = ExcelImportValidationHelper.Require(row, "RoleName", errors);
-                var dealerCode = ExcelImportValidationHelper.Require(row, "DealershipCode", errors);
-                var dealer = dealerCode != null ? ExcelImportLookupHelper.FindDealership(dealerships, dealerCode) : null;
-                if (dealerCode != null && dealer == null)
-                    errors.Add(new ExcelImportError { RowNumber = row.RowNumber, Column = "DealershipCode", Message = $"Unknown dealership '{dealerCode}'." });
-                if (roleRaw != null && dealer != null && !TryResolveRoleId(roleRaw, dealer.DealershipId, roles, out _))
-                    errors.Add(new ExcelImportError { RowNumber = row.RowNumber, Column = "RoleName", Message = $"No active role '{roleRaw}' for dealership '{dealerCode}'." });
+                var dealerCodesRaw = row.Get("DealershipCodes") ?? row.Get("DealershipCode");
+                if (string.IsNullOrWhiteSpace(dealerCodesRaw))
+                    errors.Add(new ExcelImportError { RowNumber = row.RowNumber, Column = "DealershipCodes", Message = "DealershipCodes is required (comma-separated codes)." });
+
+                var resolvedDealers = ResolveDealerships(dealerships, dealerCodesRaw);
+                if (!string.IsNullOrWhiteSpace(dealerCodesRaw) && resolvedDealers.Count == 0)
+                    errors.Add(new ExcelImportError { RowNumber = row.RowNumber, Column = "DealershipCodes", Message = $"Unknown dealership code(s) '{dealerCodesRaw}'." });
+
+                if (roleRaw != null && resolvedDealers.Count > 0 && !TryResolveRoleId(roleRaw, resolvedDealers[0].DealershipId, roles, out _))
+                    errors.Add(new ExcelImportError { RowNumber = row.RowNumber, Column = "RoleName", Message = $"No active role '{roleRaw}'." });
                 if (username != null)
                 {
                     ExcelImportValidationHelper.DuplicateInFile(row, username, seenUser, "Username", errors);
@@ -441,15 +445,15 @@ namespace KRSDealerManagement.Web.Services.ExcelImport.Processors
             var roles = await GetAssignableRolesAsync(context);
             foreach (var row in rows)
             {
-                var dealer = ExcelImportLookupHelper.FindDealership(dealerships, row.Get("DealershipCode"))!;
-                TryResolveRoleId(row.Get("RoleName")!, dealer.DealershipId, roles, out var roleId);
+                var resolvedDealers = ResolveDealerships(dealerships, row.Get("DealershipCodes") ?? row.Get("DealershipCode"));
+                TryResolveRoleId(row.Get("RoleName")!, resolvedDealers[0].DealershipId, roles, out var roleId);
                 await mediator.Send(new CreateStaffUserCommand
                 {
                     FullName = row.Get("FullName")!.Trim(),
                     Username = row.Get("Username")!.Trim(),
                     Password = row.Get("Password")!,
                     RoleId = roleId,
-                    DealershipId = dealer.DealershipId,
+                    DealershipIds = resolvedDealers.Select(d => d.DealershipId).Distinct().ToList(),
                     Email = row.Get("Email")?.Trim(),
                     PhoneNumber = row.Get("PhoneNumber")?.Trim(),
                     CreatedBy = context.UserId
@@ -458,17 +462,43 @@ namespace KRSDealerManagement.Web.Services.ExcelImport.Processors
             return rows.Count;
         }
 
+        private static List<DealershipDto> ResolveDealerships(
+            IReadOnlyList<DealershipDto> dealerships,
+            string? rawCodes)
+        {
+            if (string.IsNullOrWhiteSpace(rawCodes))
+                return new List<DealershipDto>();
+
+            return rawCodes
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(code => ExcelImportLookupHelper.FindDealership(dealerships, code))
+                .Where(d => d != null)
+                .Cast<DealershipDto>()
+                .GroupBy(d => d.DealershipId)
+                .Select(g => g.First())
+                .ToList();
+        }
+
         private static async Task<IReadOnlyList<Domain.Entities.Role>> GetAssignableRolesAsync(ExcelImportContext context)
         {
             var uow = context.Services.GetRequiredService<IUnitOfWork>();
             return (await uow.Roles.GetAllAsync())
-                .Where(r => r.IsActive && !r.IsSystemRole && r.DealershipId.HasValue)
+                .Where(r => r.IsActive && !r.IsSystemRole)
                 .ToList();
         }
 
         private static bool TryResolveRoleId(string raw, int dealershipId, IReadOnlyList<Domain.Entities.Role> roles, out int roleId)
         {
             roleId = 0;
+            var sharedMatch = roles.FirstOrDefault(r =>
+                !r.DealershipId.HasValue
+                && r.RoleName.Equals(raw.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (sharedMatch != null)
+            {
+                roleId = sharedMatch.RoleId;
+                return true;
+            }
+
             var dealerRoles = roles.Where(r => r.DealershipId == dealershipId).ToList();
             var match = dealerRoles.FirstOrDefault(r => r.RoleName.Equals(raw.Trim(), StringComparison.OrdinalIgnoreCase));
             if (match != null)
@@ -487,7 +517,10 @@ namespace KRSDealerManagement.Web.Services.ExcelImport.Processors
 
             if (template != null)
             {
-                match = dealerRoles.FirstOrDefault(r => string.Equals(r.RoleTemplateCode, template, StringComparison.OrdinalIgnoreCase));
+                match = roles.FirstOrDefault(r =>
+                    !r.DealershipId.HasValue
+                    && string.Equals(r.RoleTemplateCode, template, StringComparison.OrdinalIgnoreCase))
+                    ?? dealerRoles.FirstOrDefault(r => string.Equals(r.RoleTemplateCode, template, StringComparison.OrdinalIgnoreCase));
                 if (match != null)
                 {
                     roleId = match.RoleId;

@@ -32,15 +32,13 @@ namespace KRSDealerManagement.Web.Controllers
             if (string.IsNullOrWhiteSpace(grid) || string.IsNullOrWhiteSpace(column))
                 return Json(Array.Empty<string>());
 
-            var sessionScope = SessionHelper.GetDealershipScope(HttpContext.Session);
             var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
 
-            var values = await _mediator.Send(new GetGridDistinctValuesQuery
+            var distinctQuery = new GetGridDistinctValuesQuery
             {
                 GridId = grid.Trim(),
                 Column = column.Trim(),
                 Search = search,
-                DealershipId = sessionScope ?? dealershipId,
                 SubdealerId = subdealerId,
                 AccountId = accountId ?? id,
                 UserId = SessionHelper.GetUserId(HttpContext.Session),
@@ -51,7 +49,12 @@ namespace KRSDealerManagement.Web.Controllers
                 DealershipLocation = dealershipLocation,
                 BookingPhaseOnly = bookingPhaseOnly == true,
                 Limit = 100
-            });
+            };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, distinctQuery);
+            if (!distinctQuery.DealershipId.HasValue)
+                distinctQuery.DealershipId = dealershipId;
+
+            var values = await _mediator.Send(distinctQuery);
 
             return Json(values);
         }

@@ -7,6 +7,7 @@ namespace KRSDealerManagement.Application.Queries
     {
         public int? RoleId { get; set; }
         public int? DealershipId { get; set; }
+        public List<int>? DealershipIds { get; set; }
         public bool? IsActive { get; set; }
         public string? SearchTerm { get; set; }
     }

@@ -2,15 +2,13 @@
 @using KRSDealerManagement.Shared.Constants
 @{
     ViewData["Title"] = "Add Staff Role";
-    var dealerships = ViewBag.Dealerships as IEnumerable<KRSDealerManagement.Application.Queries.DealershipDto>
-        ?? Enumerable.Empty<KRSDealerManagement.Application.Queries.DealershipDto>();
     ViewData["RoleForm"] = Model;
 }
 
 <div class="row mb-3">
     <div class="col-md-8">
         <h1 class="m-0"><i class="bi bi-plus-circle"></i> Add Staff Role</h1>
-        <p class="text-muted mb-0">Create a regional role and choose which menus staff can access.</p>
+        <p class="text-muted mb-0">Create a shared role and choose which menus staff can access. Assign locations when creating staff users.</p>
     </div>
     <div class="col-md-4 text-end">
         <a href="@Url.Action("Index")" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
@@ -26,23 +24,13 @@
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-6 col-lg-4">
-                    <label class="form-label fw-bold">Dealership / Region <span class="text-danger">*</span></label>
-                    <select name="DealershipId" id="dealershipId" class="form-select" required>
-                        <option value="">-- Select --</option>
-                        @foreach (var d in dealerships)
-                        {
-                            <option value="@d.DealershipId" selected="@(Model.DealershipId == d.DealershipId)">@d.DealershipName (@d.DealershipCode)</option>
-                        }
-                    </select>
-                </div>
-                <div class="col-md-6 col-lg-4">
                     <label class="form-label fw-bold">Display Name <span class="text-danger">*</span></label>
-                    <input type="text" name="RoleName" id="roleName" class="form-control" value="@Model.RoleName" required placeholder="e.g., Salem Manager" />
+                    <input type="text" name="RoleName" id="roleName" class="form-control" value="@Model.RoleName" required placeholder="e.g., Finance Manager" />
                 </div>
                 <div class="col-md-6 col-lg-4">
                     <label class="form-label fw-bold">Role Code <span class="text-danger">*</span></label>
-                    <input type="text" name="RoleCode" id="roleCode" class="form-control" value="@Model.RoleCode" required placeholder="Auto-suggested" />
-                    <small class="text-muted">Auto-filled from dealership; edit only if needed.</small>
+                    <input type="text" name="RoleCode" id="roleCode" class="form-control" value="@Model.RoleCode" required placeholder="Auto-suggested from name" />
+                    <small class="text-muted">Unique code used internally. Shared across all locations.</small>
                 </div>
                 <div class="col-md-12">
                     <label class="form-label fw-bold">Description</label>
@@ -63,14 +51,13 @@
 @section Scripts {
 <script>
     async function refreshSuggestedCode() {
-        const dealershipId = document.getElementById('dealershipId').value;
-        if (!dealershipId) return;
-        const res = await fetch('@Url.Action("SuggestCode")?dealershipId=' + encodeURIComponent(dealershipId));
+        const roleName = document.getElementById('roleName').value;
+        if (!roleName) return;
+        const res = await fetch('@Url.Action("SuggestCode")?roleName=' + encodeURIComponent(roleName));
         const data = await res.json();
         if (data.code) document.getElementById('roleCode').value = data.code;
     }
 
-    document.getElementById('dealershipId').addEventListener('change', refreshSuggestedCode);
-    refreshSuggestedCode();
+    document.getElementById('roleName').addEventListener('blur', refreshSuggestedCode);
 </script>
 }

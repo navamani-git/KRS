@@ -119,7 +119,7 @@ namespace KRSDealerManagement.Web.Controllers
                 query.SubdealerId = SessionHelper.GetUserId(HttpContext.Session);
             else
             {
-                query.DealershipId = SessionHelper.GetDealershipScope(HttpContext.Session);
+                DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, query);
                 query.SubdealerId = subdealerId;
             }
             return query;
@@ -136,7 +136,9 @@ namespace KRSDealerManagement.Web.Controllers
             if (isSubdealer)
                 return;
 
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
+            var scopeQuery = new GetSubdealersQuery { IsActive = true };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, scopeQuery);
+            var scope = scopeQuery.DealershipId;
             var dealerships = (await _unitOfWork.Dealerships.GetAllAsync())
                 .Where(d => d.IsActive && (!scope.HasValue || d.DealershipId == scope.Value))
                 .OrderBy(d => d.Location ?? d.DealershipName)
@@ -150,11 +152,7 @@ namespace KRSDealerManagement.Web.Controllers
                 .ToList();
             ViewBag.SelectedDealershipLocation = dealershipLocation;
 
-            var allSubdealers = await _mediator.Send(new GetSubdealersQuery
-            {
-                IsActive = true,
-                DealershipId = scope
-            });
+            var allSubdealers = await _mediator.Send(scopeQuery);
 
             if (!string.IsNullOrWhiteSpace(dealershipLocation))
             {

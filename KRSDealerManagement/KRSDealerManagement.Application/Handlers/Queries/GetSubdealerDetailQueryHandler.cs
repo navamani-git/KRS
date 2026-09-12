@@ -1,5 +1,6 @@
 using MediatR;
 using KRSDealerManagement.Application.DTOs;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Repositories;
@@ -23,7 +24,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var org = await _unitOfWork.SubDealers.GetByIdAsync(orgId.Value);
             if (org == null) return null;
 
-            if (request.DealershipId.HasValue && org.DealershipId != request.DealershipId)
+            var dealershipFilter = DealershipQueryScope.ResolveDealershipIds(request.DealershipId, request.DealershipIds);
+            if (dealershipFilter != null && !DealershipQueryScope.MatchesDealership(org.DealershipId, dealershipFilter))
                 return null;
 
             var dealership = await _unitOfWork.Dealerships.GetByIdAsync(org.DealershipId);

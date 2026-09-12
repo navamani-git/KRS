@@ -1,5 +1,6 @@
 using MediatR;
 using KRSDealerManagement.Application.DTOs;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Entities;
@@ -35,6 +36,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 GridScreenIds.Subdealers => await DistinctFrom(await _mediator.Send(new GetSubdealersQuery
                 {
                     DealershipId = request.DealershipId,
+                    DealershipIds = request.DealershipIds,
                     IsActive = null
                 }), column, request, SubdealerProjections),
 
@@ -42,6 +44,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 {
                     SubdealerId = request.SubdealerId,
                     DealershipId = request.DealershipId,
+                    DealershipIds = request.DealershipIds,
                     FromDate = request.FromDate,
                     ToDate = request.ToDate,
                     SearchTerm = request.SearchTerm
@@ -58,6 +61,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 GridScreenIds.Orders => await DistinctFrom(await _mediator.Send(new GetPurchaseOrdersQuery
                 {
                     DealershipId = request.DealershipId,
+                    DealershipIds = request.DealershipIds,
                     SubdealerId = request.SubdealerId,
                     Status = request.Status,
                     FromDate = request.FromDate,
@@ -94,7 +98,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
                 GridScreenIds.StaffUsers => await DistinctFrom(await _mediator.Send(new GetStaffUsersQuery
                 {
-                    DealershipId = request.DealershipId
+                    DealershipId = request.DealershipId,
+                    DealershipIds = request.DealershipIds
                 }), column, request, StaffUserProjections),
 
                 GridScreenIds.Accounts => await DistinctAccounts(column, request),
@@ -116,6 +121,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 GridScreenIds.ShowroomStock => await DistinctFrom(await _mediator.Send(new GetShowroomStockQuery
                 {
                     DealershipId = request.DealershipId,
+                    DealershipIds = request.DealershipIds,
                     DealershipLocation = request.DealershipLocation,
                     SubdealerId = request.SubdealerId,
                     SearchTerm = request.SearchTerm
@@ -124,6 +130,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 GridScreenIds.VehicleAging => await DistinctFrom(await _mediator.Send(new GetVehicleAgingQuery
                 {
                     DealershipId = request.DealershipId,
+                    DealershipIds = request.DealershipIds,
                     DealershipLocation = request.DealershipLocation,
                     SubdealerId = request.SubdealerId,
                     SearchTerm = request.SearchTerm
@@ -132,6 +139,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 GridScreenIds.DealerStock => await DistinctFrom(await _mediator.Send(new GetVehicleMastersQuery
                 {
                     DealershipId = request.DealershipId,
+                    DealershipIds = request.DealershipIds,
                     SearchTerm = request.SearchTerm
                 }), column, request, DealerStockProjections),
 
@@ -141,7 +149,12 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
         private async Task<IReadOnlyList<string>> DistinctAccounts(string column, GetGridDistinctValuesQuery request)
         {
-            var subdealers = await _mediator.Send(new GetSubdealersQuery { IsActive = true, DealershipId = request.DealershipId });
+            var subdealers = await _mediator.Send(new GetSubdealersQuery
+            {
+                IsActive = true,
+                DealershipId = request.DealershipId,
+                DealershipIds = request.DealershipIds
+            });
             var accounts = new List<SubdealerAccountDto>();
             foreach (var s in subdealers)
             {
@@ -171,7 +184,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var bookings = (await _unitOfWork.VehicleBookings.GetAllAsync()).ToList();
             var vehicles = (await _unitOfWork.Vehicles.GetAllAsync()).ToDictionary(v => v.VehicleId);
             var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
-            var scopedIds = await GetBookingScopedSubdealerIdsAsync(request.DealershipId);
+            var scopedIds = await GetBookingScopedSubdealerIdsAsync(request.DealershipId, request.DealershipIds);
 
             var rows = new List<VehicleBookingGridRowDto>();
             foreach (var b in bookings.Where(b => scopedIds.Contains(b.SubdealerId))
@@ -220,19 +233,20 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             return DistinctSync(list.Cast<object>(), column, request, VehicleBookingProjections);
         }
 
-        private async Task<HashSet<int>> GetBookingScopedSubdealerIdsAsync(int? dealershipId)
+        private async Task<HashSet<int>> GetBookingScopedSubdealerIdsAsync(int? dealershipId, IList<int>? dealershipIds)
         {
+            var dealershipFilter = DealershipQueryScope.ResolveDealershipIds(dealershipId, dealershipIds);
             var roles = (await _unitOfWork.Roles.GetAllAsync()).ToList();
             var subRole = roles.FirstOrDefault(r =>
                 r.RoleCode.Equals(RoleCodes.Subdealer, StringComparison.OrdinalIgnoreCase));
 
-            var assignments = (await _unitOfWork.UserOrgRoles.GetAllAsync())
+            var orgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync())
                 .Where(a => a.IsActive && (subRole == null || a.RoleId == subRole.RoleId));
 
-            if (dealershipId.HasValue)
-                assignments = assignments.Where(a => a.DealershipId == dealershipId.Value);
+            if (dealershipFilter != null)
+                return DealershipQueryScope.GetScopedSubdealerUserIds(orgRoles, dealershipFilter, subRole?.RoleId);
 
-            return assignments.Select(a => a.UserId).ToHashSet();
+            return orgRoles.Select(a => a.UserId).ToHashSet();
         }
 
         private async Task<IReadOnlyList<string>> DistinctStatusLookups(string column, GetGridDistinctValuesQuery request)
@@ -496,7 +510,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
         {
             ["name"] = u => u.FullName,
             ["role"] = u => u.RoleName,
-            ["dealership"] = u => u.DealershipName,
+            ["dealership"] = u => u.DealershipNames ?? u.DealershipName,
             ["username"] = u => u.Username,
             ["phone"] = u => u.PhoneNumber,
             ["status"] = u => u.IsActive ? "Active" : "Inactive"

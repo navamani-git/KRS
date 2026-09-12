@@ -409,13 +409,11 @@ namespace KRSDealerManagement.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> SubdealersForFilter(int? dealershipId)
         {
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
-            var effectiveDealershipId = scope ?? dealershipId;
-            var subdealers = await _mediator.Send(new GetSubdealersQuery
-            {
-                IsActive = true,
-                DealershipId = effectiveDealershipId
-            });
+            var subdealersQuery = new GetSubdealersQuery { IsActive = true };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, subdealersQuery);
+            if (!subdealersQuery.DealershipId.HasValue && dealershipId.HasValue)
+                subdealersQuery.DealershipId = dealershipId;
+            var subdealers = await _mediator.Send(subdealersQuery);
 
             return Json(subdealers.Select(s => new { id = s.UserId, name = s.GetFullName() }));
         }
@@ -1380,8 +1378,9 @@ namespace KRSDealerManagement.Web.Controllers
         {
             if (SessionHelper.IsSubdealer(HttpContext.Session))
                 return booking.SubdealerId == SessionHelper.GetUserId(HttpContext.Session);
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
-            var scoped = await _mediator.Send(new GetSubdealersQuery { DealershipId = scope });
+            var subdealersQuery = new GetSubdealersQuery();
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, subdealersQuery);
+            var scoped = await _mediator.Send(subdealersQuery);
             return scoped.Any(s => s.UserId == booking.SubdealerId);
         }
 

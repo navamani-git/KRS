@@ -103,7 +103,7 @@ namespace KRSDealerManagement.Domain.Repositories
         /// <summary>
         /// Repository for AuditLog entities
         /// </summary>
-        IRepository<AuditLog> AuditLogs { get; }
+        IAuditLogRepository AuditLogs { get; }
 
         IRepository<Role> Roles { get; }
         IRepository<Dealership> Dealerships { get; }
@@ -111,6 +111,7 @@ namespace KRSDealerManagement.Domain.Repositories
         IRepository<RoleMenu> RoleMenus { get; }
         IRoleTemplateRepository RoleTemplates { get; }
         IRepository<UserOrgRole> UserOrgRoles { get; }
+        IRepository<UserDealership> UserDealerships { get; }
         IRepository<PaymentType> PaymentTypes { get; }
         IRepository<FinanceNameMaster> FinanceNames { get; }
         IRepository<StatusLookup> StatusLookups { get; }

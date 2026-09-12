@@ -67,8 +67,17 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 if (role == null)
                     return Result<LoginResult>.Failure("No role assignment found. Contact administrator.");
 
+                var assignedDealershipIds = await StaffDealershipService.GetAssignedDealershipIdsAsync(_unitOfWork, user.UserId);
+                if (assignedDealershipIds.Count == 0 && assignment?.DealershipId is int legacyDid)
+                    assignedDealershipIds = new List<int> { legacyDid };
+
                 string? dealershipName = null;
-                if (assignment?.DealershipId is int did)
+                if (assignedDealershipIds.Count == 1)
+                {
+                    var d = await _unitOfWork.Dealerships.GetByIdAsync(assignedDealershipIds[0]);
+                    dealershipName = d?.DealershipName;
+                }
+                else if (assignment?.DealershipId is int did)
                 {
                     var d = await _unitOfWork.Dealerships.GetByIdAsync(did);
                     dealershipName = d?.DealershipName;
@@ -95,8 +104,9 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                     UserRole = legacyRole,
                     RoleName = role.RoleName,
                     RoleCode = role.RoleCode,
-                    DealershipId = assignment?.DealershipId,
+                    DealershipId = assignedDealershipIds.Count == 1 ? assignedDealershipIds[0] : assignment?.DealershipId,
                     DealershipName = dealershipName,
+                    AssignedDealershipIds = assignedDealershipIds.ToList(),
                     SubDealerId = assignment?.SubDealerId,
                     AccessibleMenuKeys = menus,
                     MenuAccess = menuAccess,

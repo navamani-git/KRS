@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using KRSDealerManagement.Shared.Constants;
 using KRSDealerManagement.Shared.Enums;
+using KRSDealerManagement.Shared.Helpers;
 
 namespace KRSDealerManagement.Web.Helpers
 {
@@ -14,6 +15,8 @@ namespace KRSDealerManagement.Web.Helpers
         private const string SessionKeyRoleCode = "RoleCode";
         private const string SessionKeyDealershipId = "DealershipId";
         private const string SessionKeyDealershipName = "DealershipName";
+        private const string SessionKeyAssignedDealershipIds = "AssignedDealershipIds";
+        private const string SessionKeyLocationFilterDealershipId = "LocationFilterDealershipId";
         private const string SessionKeySubDealerId = "SubDealerId";
         private const string SessionKeyMenus = "AccessibleMenus";
         private const string SessionKeyMenuAccess = "MenuAccessLevels";
@@ -21,6 +24,24 @@ namespace KRSDealerManagement.Web.Helpers
         private const string SessionKeyCanViewStatement = "CanViewStatement";
         private const string SessionKeyQuickActionKeys = "QuickActionKeys";
         private const string SessionKeyDashboardWidgetKeys = "DashboardWidgetKeys";
+        private const string SessionKeyFontSizePreset = "FontSizePreset";
+
+        public const string DefaultFontSizePreset = "md";
+
+        public sealed class FontSizeOption
+        {
+            public required string Code { get; init; }
+            public required string Label { get; init; }
+            public required int RootPx { get; init; }
+        }
+
+        public static readonly FontSizeOption[] FontSizeOptions =
+        {
+            new() { Code = "sm", Label = "Small", RootPx = 14 },
+            new() { Code = "md", Label = "Default", RootPx = 16 },
+            new() { Code = "lg", Label = "Large", RootPx = 18 },
+            new() { Code = "xl", Label = "Extra Large", RootPx = 20 }
+        };
 
         public static void SetUserSession(
             ISession session,
@@ -33,6 +54,8 @@ namespace KRSDealerManagement.Web.Helpers
             int? dealershipId = null,
             string? dealershipName = null,
             int? subDealerId = null,
+            IEnumerable<int>? assignedDealershipIds = null,
+            int? locationFilterDealershipId = null,
             IEnumerable<string>? menuKeys = null,
             IDictionary<string, MenuAccessLevel>? menuAccess = null,
             bool canExport = true,
@@ -52,6 +75,22 @@ namespace KRSDealerManagement.Web.Helpers
             else session.Remove(SessionKeyDealershipName);
             if (subDealerId.HasValue) session.SetInt32(SessionKeySubDealerId, subDealerId.Value);
             else session.Remove(SessionKeySubDealerId);
+
+            var assignedIds = assignedDealershipIds?
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList() ?? new List<int>();
+            if (assignedIds.Count > 0)
+                session.SetString(SessionKeyAssignedDealershipIds, string.Join(",", assignedIds));
+            else
+                session.Remove(SessionKeyAssignedDealershipIds);
+
+            if (locationFilterDealershipId.HasValue
+                && (assignedIds.Count == 0 || assignedIds.Contains(locationFilterDealershipId.Value)))
+                session.SetInt32(SessionKeyLocationFilterDealershipId, locationFilterDealershipId.Value);
+            else
+                session.Remove(SessionKeyLocationFilterDealershipId);
+
             session.SetString(SessionKeyMenus, string.Join(",", menuKeys ?? Array.Empty<string>()));
             session.SetString(SessionKeyMenuAccess, SerializeMenuAccess(menuAccess));
             session.SetString(SessionKeyCanExport, canExport ? "1" : "0");
@@ -83,6 +122,59 @@ namespace KRSDealerManagement.Web.Helpers
         public static string? GetDealershipName(ISession session) => session.GetString(SessionKeyDealershipName);
         public static int? GetSubDealerId(ISession session) => session.GetInt32(SessionKeySubDealerId);
 
+        public static IReadOnlyList<int> GetAssignedDealershipIds(ISession session)
+        {
+            var raw = session.GetString(SessionKeyAssignedDealershipIds);
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                var legacy = GetDealershipId(session);
+                return legacy.HasValue ? new[] { legacy.Value } : Array.Empty<int>();
+            }
+
+            return raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(s => int.TryParse(s, out var id) ? id : 0)
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList();
+        }
+
+        public static int? GetLocationFilterDealershipId(ISession session)
+            => session.GetInt32(SessionKeyLocationFilterDealershipId);
+
+        public static void SetLocationFilterDealershipId(ISession session, int? dealershipId)
+        {
+            if (!dealershipId.HasValue)
+            {
+                session.Remove(SessionKeyLocationFilterDealershipId);
+                return;
+            }
+
+            var assigned = GetAssignedDealershipIds(session);
+            if (assigned.Count > 0 && !assigned.Contains(dealershipId.Value))
+                return;
+
+            session.SetInt32(SessionKeyLocationFilterDealershipId, dealershipId.Value);
+        }
+
+        public static DealershipScopeContext GetDealershipScopeContext(ISession session)
+            => DealershipScopeContextFactory.Create(
+                IsSystemAdmin(session),
+                GetAssignedDealershipIds(session),
+                GetLocationFilterDealershipId(session));
+
+        public static List<int>? GetEffectiveDealershipIds(ISession session)
+        {
+            var ctx = GetDealershipScopeContext(session);
+            if (ctx.IsUnrestricted)
+                return null;
+
+            var ids = ctx.EffectiveDealershipIds?.ToList() ?? new List<int>();
+            return ids.Count > 0 ? ids : new List<int>();
+        }
+
+        public static bool HasMultipleAssignedLocations(ISession session)
+            => !IsSystemAdmin(session) && GetAssignedDealershipIds(session).Count > 1;
+
         public static bool IsAuthenticated(ISession session) => session.GetInt32(SessionKeyUserId).HasValue;
 
         public static bool IsSystemAdmin(ISession session) =>
@@ -108,10 +200,7 @@ namespace KRSDealerManagement.Web.Helpers
             || HasAnyConfiguredStaffMenu(session);
 
         public static int? GetDealershipScope(ISession session)
-        {
-            if (IsSystemAdmin(session)) return null;
-            return GetDealershipId(session);
-        }
+            => GetDealershipScopeContext(session).LegacySingleDealershipId;
 
         public static MenuAccessLevel GetMenuAccessLevel(ISession session, string menuKey)
         {
@@ -209,6 +298,30 @@ namespace KRSDealerManagement.Web.Helpers
         }
 
         public static void ClearSession(ISession session) => session.Clear();
+
+        public static string GetFontSizePreset(ISession session)
+        {
+            var raw = session.GetString(SessionKeyFontSizePreset);
+            if (!string.IsNullOrWhiteSpace(raw)
+                && FontSizeOptions.Any(o => o.Code.Equals(raw, StringComparison.OrdinalIgnoreCase)))
+            {
+                return raw.ToLowerInvariant();
+            }
+
+            return DefaultFontSizePreset;
+        }
+
+        public static FontSizeOption GetFontSizeOption(ISession session)
+            => FontSizeOptions.First(o => o.Code.Equals(GetFontSizePreset(session), StringComparison.OrdinalIgnoreCase));
+
+        public static void SetFontSizePreset(ISession session, string? preset)
+        {
+            var code = string.IsNullOrWhiteSpace(preset) ? DefaultFontSizePreset : preset.Trim().ToLowerInvariant();
+            if (!FontSizeOptions.Any(o => o.Code.Equals(code, StringComparison.OrdinalIgnoreCase)))
+                code = DefaultFontSizePreset;
+
+            session.SetString(SessionKeyFontSizePreset, code);
+        }
 
         private static bool HasAnyConfiguredStaffMenu(ISession session)
         {

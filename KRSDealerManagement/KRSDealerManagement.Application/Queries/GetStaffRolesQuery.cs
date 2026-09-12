@@ -7,6 +7,7 @@ namespace KRSDealerManagement.Application.Queries
     public class GetStaffRolesQuery : IRequest<IEnumerable<StaffRoleDto>>
     {
         public int? DealershipId { get; set; }
+        public List<int>? DealershipIds { get; set; }
         public bool? IsActive { get; set; }
         public string? SearchTerm { get; set; }
         public bool AssignableOnly { get; set; }

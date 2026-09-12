@@ -14,6 +14,7 @@ namespace KRSDealerManagement.Application.Queries
         public string? District { get; set; }
         /// <summary>When set, only subdealers under this dealership (via UserOrgRoles).</summary>
         public int? DealershipId { get; set; }
+        public List<int>? DealershipIds { get; set; }
         public Dictionary<string, string>? ColumnFilters { get; set; }
     }
 }

@@ -41,7 +41,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 roles = roles.Where(r => r.IsActive == request.IsActive.Value);
 
             if (request.DealershipId.HasValue)
-                roles = roles.Where(r => r.DealershipId == request.DealershipId.Value);
+                roles = roles.Where(r => !r.DealershipId.HasValue || r.DealershipId == request.DealershipId.Value);
 
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
@@ -83,7 +83,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 RoleTemplateCode = role.RoleTemplateCode,
                 RoleTemplateName = templateName,
                 DealershipId = role.DealershipId,
-                DealershipName = dealership?.DealershipName,
+                DealershipName = role.DealershipId.HasValue ? dealership?.DealershipName : "All locations (shared)",
                 IsSystemRole = role.IsSystemRole,
                 IsActive = role.IsActive,
                 UserCount = assignments.Count(a => a.RoleId == role.RoleId),

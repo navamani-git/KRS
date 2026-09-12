@@ -28,9 +28,6 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
         public async Task<int> Handle(CreateStaffRoleCommand request, CancellationToken cancellationToken)
         {
-            var dealership = await _unitOfWork.Dealerships.GetByIdAsync(request.DealershipId)
-                ?? throw new InvalidOperationException("Dealership not found.");
-
             var roleCode = NormalizeRoleCode(request.RoleCode);
             if (string.IsNullOrWhiteSpace(roleCode))
                 throw new InvalidOperationException("Role code is required.");
@@ -48,7 +45,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 RoleName = request.RoleName.Trim(),
                 Description = request.Description?.Trim(),
                 RoleTemplateCode = request.RoleTemplateCode.Trim().ToUpperInvariant(),
-                DealershipId = request.DealershipId,
+                DealershipId = null,
                 IsSystemRole = false,
                 IsActive = true,
                 SortOrder = 200,
@@ -65,7 +62,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             return roleId;
         }
 
-        internal static string NormalizeRoleCode(string value)
+        public static string NormalizeRoleCode(string value)
         {
             var code = new string(value.Trim().ToUpperInvariant()
                 .Select(c => char.IsLetterOrDigit(c) ? c : '_')

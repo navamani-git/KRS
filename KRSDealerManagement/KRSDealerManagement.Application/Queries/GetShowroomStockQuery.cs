@@ -7,6 +7,7 @@ namespace KRSDealerManagement.Application.Queries
     {
         /// <summary>Limit to subdealers under this dealership (branch manager scope).</summary>
         public int? DealershipId { get; set; }
+        public List<int>? DealershipIds { get; set; }
         public string? DealershipLocation { get; set; }
         public int? SubdealerId { get; set; }
         public string? SearchTerm { get; set; }

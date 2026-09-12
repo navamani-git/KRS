@@ -38,10 +38,11 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeMenu(StaffMenuAccess.WarrantyClaims)]
         public async Task<IActionResult> Index(int? status, string? claimType, int? page, int? pageSize)
         {
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.WarrantyClaims);
+            var claimsQuery = new GetWarrantyClaimsQuery { Status = status, ClaimType = claimType };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, claimsQuery);
             var claims = GridScreenFilterHelper.ApplyWarrantyClaims(
-                await _mediator.Send(new GetWarrantyClaimsQuery { Status = status, DealershipId = scope, ClaimType = claimType }),
+                await _mediator.Send(claimsQuery),
                 columnFilters).ToList();
             var (pageItems, pageInfo) = ListPagingHelper.Paginate(claims, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
@@ -221,7 +222,6 @@ namespace KRSDealerManagement.Web.Controllers
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session)!.Value;
             var isStaff = SessionHelper.IsStaff(HttpContext.Session);
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             int? accountId = null;
             if (!isStaff)
             {
@@ -229,13 +229,16 @@ namespace KRSDealerManagement.Web.Controllers
                 accountId = account?.AccountId;
             }
 
-            var detail = await _mediator.Send(new GetWarrantyClaimDetailQuery
+            var detailQuery = new GetWarrantyClaimDetailQuery
             {
                 WarrantyClaimId = id,
                 AccountId = accountId,
-                DealershipId = isStaff && !SessionHelper.IsSystemAdmin(HttpContext.Session) ? scope : null,
                 IsSystemAdmin = SessionHelper.IsSystemAdmin(HttpContext.Session)
-            });
+            };
+            if (isStaff && !SessionHelper.IsSystemAdmin(HttpContext.Session))
+                DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, detailQuery);
+
+            var detail = await _mediator.Send(detailQuery);
             if (detail == null) return NotFound();
 
             ViewBag.IsStaff = isStaff;
@@ -486,7 +489,6 @@ namespace KRSDealerManagement.Web.Controllers
                 return null;
 
             var isStaff = SessionHelper.IsStaff(HttpContext.Session);
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             int? accountId = null;
             if (!isStaff)
             {
@@ -494,13 +496,16 @@ namespace KRSDealerManagement.Web.Controllers
                 accountId = account?.AccountId;
             }
 
-            var detail = await _mediator.Send(new GetWarrantyClaimDetailQuery
+            var detailQuery = new GetWarrantyClaimDetailQuery
             {
                 WarrantyClaimId = claimId,
                 AccountId = accountId,
-                DealershipId = isStaff && !SessionHelper.IsSystemAdmin(HttpContext.Session) ? scope : null,
                 IsSystemAdmin = SessionHelper.IsSystemAdmin(HttpContext.Session)
-            });
+            };
+            if (isStaff && !SessionHelper.IsSystemAdmin(HttpContext.Session))
+                DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, detailQuery);
+
+            var detail = await _mediator.Send(detailQuery);
             if (detail == null)
                 return null;
 

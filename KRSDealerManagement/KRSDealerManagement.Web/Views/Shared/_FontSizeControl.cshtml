@@ -1,0 +1,30 @@
+@using KRSDealerManagement.Web.Helpers
+@{
+    var fontOption = SessionHelper.GetFontSizeOption(Context.Session);
+}
+
+<form method="post"
+      action="@Url.Action("SetFontSize", "Account")"
+      class="d-flex align-items-center gap-1 mb-0"
+      data-krs-font-form="1">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="returnUrl" value="@(Context.Request.Path + Context.Request.QueryString)" />
+    <label class="form-label mb-0 small me-1 d-none d-lg-inline text-white" title="Font size">Font</label>
+    <select name="fontSizePreset"
+            class="form-select form-select-sm no-search-select"
+            style="width: auto; min-width: 6.5rem;"
+            title="Font size"
+            onchange="this.form.submit()">
+        @foreach (var opt in SessionHelper.FontSizeOptions)
+        {
+            if (fontOption.Code.Equals(opt.Code, StringComparison.OrdinalIgnoreCase))
+            {
+                <option value="@opt.Code" selected="selected">@opt.Label</option>
+            }
+            else
+            {
+                <option value="@opt.Code">@opt.Label</option>
+            }
+        }
+    </select>
+</form>

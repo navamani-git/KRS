@@ -29,17 +29,16 @@ namespace KRSDealerManagement.Web.Controllers
             int? page,
             int? pageSize)
         {
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             var isAdmin = SessionHelper.IsSystemAdmin(HttpContext.Session);
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.ShowroomStock);
 
             var query = new GetShowroomStockQuery
             {
-                DealershipId = scope,
                 DealershipLocation = dealershipLocation,
                 SubdealerId = subdealerId,
                 SearchTerm = searchTerm
             };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, query);
 
             var stock = GridScreenFilterHelper.ApplyShowroomStock(
                 await _mediator.Send(query),
@@ -49,7 +48,7 @@ namespace KRSDealerManagement.Web.Controllers
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
 
             var dealerships = (await _unitOfWork.Dealerships.GetAllAsync())
-                .Where(d => d.IsActive && (!scope.HasValue || d.DealershipId == scope.Value))
+                .Where(d => d.IsActive && (!query.DealershipId.HasValue || d.DealershipId == query.DealershipId.Value))
                 .OrderBy(d => d.Location ?? d.DealershipName)
                 .ToList();
 
@@ -63,11 +62,9 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.SearchTerm = searchTerm;
             ViewBag.IsAdmin = isAdmin;
 
-            var allSubdealers = await _mediator.Send(new GetSubdealersQuery
-            {
-                IsActive = true,
-                DealershipId = scope
-            });
+            var allSubdealersQuery = new GetSubdealersQuery { IsActive = true };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, allSubdealersQuery);
+            var allSubdealers = await _mediator.Send(allSubdealersQuery);
 
             if (!string.IsNullOrWhiteSpace(dealershipLocation))
             {
@@ -97,17 +94,18 @@ namespace KRSDealerManagement.Web.Controllers
             int? subdealerId,
             string? searchTerm)
         {
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.ShowroomStock);
 
+            var stockQuery = new GetShowroomStockQuery
+            {
+                DealershipLocation = dealershipLocation,
+                SubdealerId = subdealerId,
+                SearchTerm = searchTerm
+            };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, stockQuery);
+
             var stock = GridScreenFilterHelper.ApplyShowroomStock(
-                await _mediator.Send(new GetShowroomStockQuery
-                {
-                    DealershipId = scope,
-                    DealershipLocation = dealershipLocation,
-                    SubdealerId = subdealerId,
-                    SearchTerm = searchTerm
-                }),
+                await _mediator.Send(stockQuery),
                 columnFilters).ToList();
 
             var headers = new[] { "Location", "Subdealer", "Chassis", "Model", "Color", "Order #", "Allocated", "Days in stock", "Price" };

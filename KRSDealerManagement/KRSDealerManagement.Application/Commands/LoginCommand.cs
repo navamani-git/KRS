@@ -27,6 +27,7 @@ namespace KRSDealerManagement.Application.Commands
         public required string RoleCode { get; set; }
         public int? DealershipId { get; set; }
         public string? DealershipName { get; set; }
+        public List<int> AssignedDealershipIds { get; set; } = new();
         public int? SubDealerId { get; set; }
         public List<string> AccessibleMenuKeys { get; set; } = new();
         public Dictionary<string, MenuAccessLevel> MenuAccess { get; set; } = new();

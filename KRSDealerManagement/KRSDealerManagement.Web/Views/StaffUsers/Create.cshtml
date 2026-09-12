@@ -11,7 +11,7 @@
 <div class="row mb-3">
     <div class="col-md-6">
         <h1 class="m-0"><i class="bi bi-person-plus"></i> Add Staff User</h1>
-        <p class="text-muted">Assign staff logins to a regional role</p>
+        <p class="text-muted">Assign staff logins to a shared role and one or more locations</p>
     </div>
     <div class="col-md-6 text-end">
         <a href="@Url.Action("Index")" class="btn btn-secondary">
@@ -26,7 +26,7 @@
     <div class="col-md-7">
         <div class="card card-primary">
             <div class="card-header"><h3 class="card-title">Staff Login Details</h3></div>
-            <form method="post">
+            <form method="post" id="staffUserForm">
                 @Html.AntiForgeryToken()
                 <div class="card-body">
                     <div class="form-group mb-3">
@@ -36,14 +36,14 @@
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Dealership <span class="text-danger">*</span></label>
-                            <select name="dealershipId" id="dealershipId" class="form-select" required>
-                                <option value="">-- Select location --</option>
+                            <label class="form-label fw-bold">Locations <span class="text-danger">*</span></label>
+                            <select name="dealershipIds" id="dealershipIds" class="form-select" multiple>
                                 @foreach (var d in dealerships)
                                 {
                                     <option value="@d.DealershipId">@d.DealershipName (@d.DealershipCode)</option>
                                 }
                             </select>
+                            <small class="text-muted">Select one or more locations. Data defaults to all selected locations combined.</small>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Role <span class="text-danger">*</span></label>
@@ -51,7 +51,7 @@
                                 <option value="">-- Select role --</option>
                                 @foreach (var r in roles)
                                 {
-                                    <option value="@r.RoleId" data-dealership="@r.DealershipId">@r.RoleName (@r.DealershipName)</option>
+                                    <option value="@r.RoleId">@r.RoleName</option>
                                 }
                             </select>
                         </div>
@@ -114,9 +114,9 @@
             <div class="card-body">
                 <p class="fw-bold mb-1">How it works</p>
                 <ul class="small mb-0">
-                    <li>Create <strong>Staff Roles</strong> per dealership and set menus on the role.</li>
-                    <li>Pick the dealership, then choose a role for that location.</li>
-                    <li>Menu access is controlled by the role — options below are extra per-user settings only.</li>
+                    <li>Create shared <strong>Staff Roles</strong> once and set menus on the role.</li>
+                    <li>Assign one or more locations to each staff user.</li>
+                    <li>Staff with multiple locations see combined data by default; use the header location filter to narrow to one site.</li>
                 </ul>
             </div>
         </div>
@@ -124,6 +124,7 @@
 </div>
 
 @section Scripts {
+<partial name="_StaffUserFormScripts" />
 <script>
     document.getElementById('togglePwd').addEventListener('click', function () {
         const input = document.getElementById('password');
@@ -132,17 +133,5 @@
         input.type = show ? 'text' : 'password';
         icon.className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
     });
-    const dealershipSelect = document.getElementById('dealershipId');
-    const roleSelect = document.getElementById('roleId');
-    function filterRoles() {
-        const dealerId = dealershipSelect.value;
-        [...roleSelect.options].forEach(opt => {
-            if (!opt.value) return;
-            opt.hidden = dealerId && opt.dataset.dealership !== dealerId;
-        });
-        if (roleSelect.selectedOptions[0]?.hidden) roleSelect.value = '';
-    }
-    dealershipSelect.addEventListener('change', filterRoles);
-    filterRoles();
 </script>
 }

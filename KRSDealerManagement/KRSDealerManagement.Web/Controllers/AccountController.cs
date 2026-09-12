@@ -63,20 +63,50 @@ namespace KRSDealerManagement.Web.Controllers
                 result.Data.UserRole,
                 result.Data.RoleName,
                 result.Data.RoleCode,
-                result.Data.DealershipId,
-                result.Data.DealershipName,
-                result.Data.SubDealerId,
-                result.Data.AccessibleMenuKeys,
-                result.Data.MenuAccess,
-                result.Data.CanExport,
-                result.Data.CanViewStatement,
-                result.Data.QuickActionKeys,
-                result.Data.DashboardWidgetKeys
-            );
+                dealershipId: result.Data.DealershipId,
+                dealershipName: result.Data.DealershipName,
+                subDealerId: result.Data.SubDealerId,
+                assignedDealershipIds: result.Data.AssignedDealershipIds,
+                menuKeys: result.Data.AccessibleMenuKeys,
+                menuAccess: result.Data.MenuAccess,
+                canExport: result.Data.CanExport,
+                canViewStatement: result.Data.CanViewStatement,
+                quickActionKeys: result.Data.QuickActionKeys,
+                dashboardWidgetKeys: result.Data.DashboardWidgetKeys);
 
             TempData["Success"] = $"Welcome back, {result.Data.FullName}!";
 
             return RedirectToAction("Index", "Dashboard");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult SetLocationFilter(int? dealershipId, string? returnUrl)
+        {
+            if (!SessionHelper.IsAuthenticated(HttpContext.Session))
+                return RedirectToAction(nameof(Login));
+
+            SessionHelper.SetLocationFilterDealershipId(HttpContext.Session, dealershipId > 0 ? dealershipId : null);
+
+            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            return RedirectToAction("Index", "Dashboard");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult SetFontSize(string fontSizePreset, string? returnUrl)
+        {
+            SessionHelper.SetFontSizePreset(HttpContext.Session, fontSizePreset);
+
+            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            if (SessionHelper.IsAuthenticated(HttpContext.Session))
+                return RedirectToAction("Index", "Dashboard");
+
+            return RedirectToAction(nameof(Login));
         }
 
         [HttpGet]

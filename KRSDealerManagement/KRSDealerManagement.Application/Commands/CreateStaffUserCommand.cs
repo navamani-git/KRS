@@ -10,7 +10,7 @@ namespace KRSDealerManagement.Application.Commands
         public required string Username { get; set; }
         public required string Password { get; set; }
         public int RoleId { get; set; }
-        public int DealershipId { get; set; }
+        public List<int> DealershipIds { get; set; } = new();
         public int CreatedBy { get; set; }
         public bool CanExport { get; set; } = true;
         public bool CanViewStatement { get; set; } = true;

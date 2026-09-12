@@ -25,10 +25,11 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeRole(1, 4)]
         public async Task<IActionResult> Index(int? status, int? page, int? pageSize)
         {
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Returns);
+            var returnsQuery = new GetReturnRequestsQuery { Status = status };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, returnsQuery);
             var returns = GridScreenFilterHelper.ApplyReturns(
-                await _mediator.Send(new GetReturnRequestsQuery { Status = status, DealershipId = scope }),
+                await _mediator.Send(returnsQuery),
                 columnFilters).ToList();
             var (pageItems, pageInfo) = ListPagingHelper.Paginate(returns, page, pageSize);
             ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
@@ -44,10 +45,11 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeRole(1, 4)]
         public async Task<IActionResult> Export(int? status)
         {
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Returns);
+            var returnsQuery = new GetReturnRequestsQuery { Status = status };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, returnsQuery);
             var returns = GridScreenFilterHelper.ApplyReturns(
-                await _mediator.Send(new GetReturnRequestsQuery { Status = status, DealershipId = scope }),
+                await _mediator.Send(returnsQuery),
                 columnFilters).ToList();
             var headers = new[] { "ID", "Order", "Chassis", "Subdealer", "Refund", "Status", "Reason", "Requested", "Processed" };
             var rows = returns.Select(r => (IReadOnlyList<object?>)new List<object?>
@@ -238,8 +240,9 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
-            ViewBag.Subdealers = await _mediator.Send(new GetSubdealersQuery { IsActive = true, DealershipId = scope });
+            var subdealersQuery = new GetSubdealersQuery { IsActive = true };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, subdealersQuery);
+            ViewBag.Subdealers = await _mediator.Send(subdealersQuery);
             ViewBag.CanViewBalances = SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Balances);
             return View(item);
         }
@@ -298,8 +301,9 @@ namespace KRSDealerManagement.Web.Controllers
         private async Task<ReturnRequestDto?> LoadReturnRequestAsync(int id)
         {
             if (id <= 0) return null;
-            var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
-            var items = await _mediator.Send(new GetReturnRequestsQuery { ReturnRequestId = id, DealershipId = scope });
+            var returnsQuery = new GetReturnRequestsQuery { ReturnRequestId = id };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, returnsQuery);
+            var items = await _mediator.Send(returnsQuery);
             return items.FirstOrDefault();
         }
     }

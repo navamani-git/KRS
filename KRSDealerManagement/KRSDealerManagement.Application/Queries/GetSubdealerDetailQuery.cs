@@ -12,5 +12,6 @@ namespace KRSDealerManagement.Application.Queries
         public int? UserId { get; set; }
 
         public int? DealershipId { get; set; }
+        public List<int>? DealershipIds { get; set; }
     }
 }

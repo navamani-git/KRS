@@ -1,0 +1,18 @@
+@model KRSDealerManagement.Web.ViewComponents.LocationFilterModel
+
+<li class="nav-item d-flex align-items-center px-2">
+    <form method="post" action="@Url.Action("SetLocationFilter", "Account")" class="d-flex align-items-center gap-1 mb-0">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+        <label class="form-label mb-0 small me-1 d-none d-lg-inline text-white">Location</label>
+        <select name="dealershipId" class="form-select form-select-sm no-search-select" style="min-width: 10rem;" onchange="this.form.submit()">
+            <option value="">All locations</option>
+            @foreach (var option in Model.Options)
+            {
+                <option value="@option.DealershipId" selected="@(Model.SelectedDealershipId == option.DealershipId)">
+                    @option.DealershipName
+                </option>
+            }
+        </select>
+    </form>
+</li>

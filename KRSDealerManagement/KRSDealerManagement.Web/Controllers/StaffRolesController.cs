@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using KRSDealerManagement.Application.Commands;
+using KRSDealerManagement.Application.Handlers.Commands;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Shared.Constants;
 using KRSDealerManagement.Shared.Enums;
@@ -23,19 +24,16 @@ namespace KRSDealerManagement.Web.Controllers
             _roleTemplateService = roleTemplateService;
         }
 
-        public async Task<IActionResult> Index(int? dealershipId, bool? isActive, string? searchTerm)
+        public async Task<IActionResult> Index(bool? isActive, string? searchTerm)
         {
             var roles = await _mediator.Send(new GetStaffRolesQuery
             {
-                DealershipId = dealershipId,
                 IsActive = isActive,
                 SearchTerm = searchTerm
             });
 
-            ViewBag.DealershipId = dealershipId;
             ViewBag.IsActive = isActive;
             ViewBag.SearchTerm = searchTerm;
-            ViewBag.Dealerships = await _mediator.Send(new GetDealershipsQuery { IsActive = true });
             return View(roles);
         }
 
@@ -62,7 +60,7 @@ namespace KRSDealerManagement.Web.Controllers
                     RoleTemplateCode = string.IsNullOrWhiteSpace(model.RoleTemplateCode)
                         ? RoleTemplateCodes.Custom
                         : model.RoleTemplateCode,
-                    DealershipId = model.DealershipId,
+                    DealershipId = model.DealershipId > 0 ? model.DealershipId : null,
                     Menus = ParseMenus(model),
                     CreatedBy = userId.Value
                 });
@@ -123,12 +121,12 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         [HttpGet]
-        public IActionResult SuggestCode(int dealershipId)
+        public IActionResult SuggestCode(string? roleName)
         {
-            var dealerships = _mediator.Send(new GetDealershipsQuery { IsActive = true }).GetAwaiter().GetResult();
-            var dealer = dealerships.FirstOrDefault(d => d.DealershipId == dealershipId);
-            if (dealer == null) return Json(new { code = "" });
-            var code = _roleTemplateService.BuildSuggestedRoleCode(dealer.DealershipCode, RoleTemplateCodes.Custom);
+            if (string.IsNullOrWhiteSpace(roleName))
+                return Json(new { code = "" });
+
+            var code = CreateStaffRoleCommandHandler.NormalizeRoleCode(roleName);
             return Json(new { code });
         }
 
@@ -168,7 +166,7 @@ namespace KRSDealerManagement.Web.Controllers
                 RoleName = role.RoleName,
                 Description = role.Description,
                 RoleTemplateCode = role.RoleTemplateCode ?? RoleTemplateCodes.Custom,
-                DealershipId = role.DealershipId ?? 0,
+                DealershipId = role.DealershipId,
                 IsActive = role.IsActive,
                 MenuKeys = allMenuKeys,
                 MenuAccessLevels = allMenuKeys
@@ -185,7 +183,7 @@ namespace KRSDealerManagement.Web.Controllers
         public string RoleName { get; set; } = "";
         public string? Description { get; set; }
         public string RoleTemplateCode { get; set; } = RoleTemplateCodes.Custom;
-        public int DealershipId { get; set; }
+        public int? DealershipId { get; set; }
         public bool IsActive { get; set; } = true;
         public List<string> MenuKeys { get; set; } = new();
         public List<int> MenuAccessLevels { get; set; } = new();

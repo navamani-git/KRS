@@ -65,12 +65,11 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             if (request.SubdealerId.HasValue)
                 result = result.Where(o => o.SubdealerId == request.SubdealerId.Value);
 
-            if (request.DealershipId.HasValue)
+            var dealershipFilter = DealershipQueryScope.ResolveDealershipIds(request.DealershipId, request.DealershipIds);
+            if (dealershipFilter != null)
             {
-                var scopedUserIds = (await _unitOfWork.UserOrgRoles.GetAllAsync())
-                    .Where(a => a.IsActive && a.DealershipId == request.DealershipId.Value)
-                    .Select(a => a.UserId)
-                    .ToHashSet();
+                var orgRoles = await _unitOfWork.UserOrgRoles.GetAllAsync();
+                var scopedUserIds = DealershipQueryScope.GetScopedSubdealerUserIds(orgRoles, dealershipFilter);
                 result = result.Where(o => scopedUserIds.Contains(o.SubdealerId));
             }
 
