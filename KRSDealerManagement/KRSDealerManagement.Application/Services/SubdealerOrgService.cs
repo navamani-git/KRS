@@ -111,6 +111,30 @@ namespace KRSDealerManagement.Application.Services
                     && o.SubDealerName.Equals(normalized, StringComparison.OrdinalIgnoreCase)
                     && (!excludeOrgId.HasValue || o.SubDealerId != excludeOrgId.Value));
         }
+
+        public static async Task ValidateOwnShowroomToggleAsync(
+            IUnitOfWork unitOfWork,
+            int dealershipId,
+            bool ownShowroom,
+            int? excludeOrgId = null)
+        {
+            if (!ownShowroom) return;
+
+            var existing = (await unitOfWork.SubDealers.GetAllAsync())
+                .FirstOrDefault(o => o.DealershipId == dealershipId
+                    && o.OwnShowroom
+                    && (!excludeOrgId.HasValue || o.SubDealerId != excludeOrgId.Value));
+
+            if (existing != null)
+            {
+                throw new InvalidOperationException(
+                    $"This dealership already has an Own Showroom subdealer ({existing.SubDealerName}). Only one is allowed.");
+            }
+        }
+
+        public static async Task<bool> HasActiveOwnShowroomAsync(IUnitOfWork unitOfWork, int dealershipId)
+            => (await unitOfWork.SubDealers.GetAllAsync())
+                .Any(o => o.DealershipId == dealershipId && o.OwnShowroom && o.IsActive);
     }
 
 }

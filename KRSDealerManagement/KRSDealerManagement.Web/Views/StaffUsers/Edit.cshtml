@@ -76,10 +76,9 @@
                 <label class="form-check-label" for="canViewStatement">Allow account statement view</label>
                 <div class="form-text">When off, staff cannot open subdealer account statements from Balances or Subdealer details.</div>
             </div>
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="canEditWarrantyClaims" value="true" id="canEditWarrantyClaims" @(Model.CanEditWarrantyClaims ? "checked" : "") />
-                <label class="form-check-label" for="canEditWarrantyClaims">Warranty claim staff actions</label>
-                <div class="form-text">Allows approve/reject, SO number, and other warranty staff actions. Menu access to Warranty Claims still comes from the role. System admin always has full access.</div>
+            <div class="alert alert-light border small mb-0">
+                Warranty approve/reject, staff apply, and warranty-only stock access are controlled in
+                <strong>Staff Roles → Menu Access</strong> (Full vs Read-only).
             </div>
         </div>
         <div class="card-footer"><button type="submit" class="btn btn-primary">Save</button></div>

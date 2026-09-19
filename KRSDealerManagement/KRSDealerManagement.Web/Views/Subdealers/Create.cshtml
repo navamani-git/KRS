@@ -2,6 +2,9 @@
     ViewData["Title"] = "Add Subdealer";
     ViewData["ExcelImportKey"] = KRSDealerManagement.Web.Helpers.ExcelImport.ExcelImportKeys.Subdealers;
     ViewData["ExcelImportReturnAction"] = "Create";
+    var dealerships = ViewBag.Dealerships as IEnumerable<KRSDealerManagement.Application.Queries.DealershipDto>
+        ?? Enumerable.Empty<KRSDealerManagement.Application.Queries.DealershipDto>();
+    var lockedId = ViewBag.LockedDealershipId as int?;
 }
 
 <div class="row mb-3">
@@ -81,11 +84,6 @@
 
                     <div class="form-group mb-3">
                         <label class="form-label fw-bold">Dealership Location <span class="text-danger">*</span></label>
-                        @{
-                            var dealerships = ViewBag.Dealerships as IEnumerable<KRSDealerManagement.Application.Queries.DealershipDto>
-                                ?? Enumerable.Empty<KRSDealerManagement.Application.Queries.DealershipDto>();
-                            var lockedId = ViewBag.LockedDealershipId as int?;
-                        }
                         @if (lockedId.HasValue)
                         {
                             <input type="hidden" name="dealershipId" value="@lockedId.Value" />
@@ -101,6 +99,11 @@
                                 }
                             </select>
                         }
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="ownShowroom" value="true" id="ownShowroom" />
+                        <label class="form-check-label" for="ownShowroom">Own Showroom</label>
+                        <div class="form-text">One per dealership. Use the main dealer name (e.g. KRS Karur). Required for warranty-only vehicles.</div>
                     </div>
                 </div>
                 <div class="card-footer">

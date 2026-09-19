@@ -31,6 +31,22 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
             if (request.Status.HasValue)
                 claims = claims.Where(c => c.Status == request.Status.Value);
+            if (request.ExcludeDraft)
+                claims = claims.Where(c => c.Status != WarrantyClaimStatus.Draft);
+            if (request.ExcludeComplete)
+                claims = claims.Where(c => c.Status != WarrantyClaimStatus.Complete);
+            if (request.OnlyComplete)
+                claims = claims.Where(c => c.Status == WarrantyClaimStatus.Complete);
+            if (request.CompletedFromDate.HasValue)
+            {
+                var from = request.CompletedFromDate.Value.Date;
+                claims = claims.Where(c => c.CompletedDate.HasValue && c.CompletedDate.Value.Date >= from);
+            }
+            if (request.CompletedToDate.HasValue)
+            {
+                var to = request.CompletedToDate.Value.Date;
+                claims = claims.Where(c => c.CompletedDate.HasValue && c.CompletedDate.Value.Date <= to);
+            }
             var dealershipFilter = DealershipQueryScope.ResolveDealershipIds(request.DealershipId, request.DealershipIds);
             if (dealershipFilter != null)
                 claims = claims.Where(c => c.DealershipId.HasValue && dealershipFilter.Contains(c.DealershipId.Value));
@@ -68,7 +84,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         StatusName = st?.StatusName,
                         StatusBadgeClass = st?.BadgeClass,
                         AccountId = c.AccountId,
-                        AccountName = account?.AccountName ?? subUser?.GetFullName(),
+                        AccountName = subUser?.GetFullName() ?? account?.AccountName,
                         SubdealerId = c.SubdealerId,
                         DealershipId = c.DealershipId,
                         DealershipName = dealer?.DealershipName,
@@ -77,6 +93,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         PartName = WarrantyPartHelper.ResolveDisplayName(part, c.OtherPartName),
                         CurrentKms = c.CurrentKms,
                         SubmittedDate = c.SubmittedDate,
+                        CompletedDate = c.CompletedDate,
                         CreatedDate = c.CreatedDate,
                         ModifiedDate = c.ModifiedDate
                     };
@@ -136,7 +153,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 StatusName = st?.StatusName,
                 StatusBadgeClass = st?.BadgeClass,
                 AccountId = claim.AccountId,
-                AccountName = account?.AccountName ?? subUser?.GetFullName(),
+                AccountName = subUser?.GetFullName() ?? account?.AccountName,
                 SubdealerId = claim.SubdealerId,
                 DealershipId = claim.DealershipId,
                 DealershipName = dealer?.DealershipName,
@@ -165,16 +182,34 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 MoreInfoNotes = claim.MoreInfoNotes,
                 SoNumber = claim.SoNumber,
                 SubmittedDate = claim.SubmittedDate,
+                CompletedDate = claim.CompletedDate,
                 CreatedDate = claim.CreatedDate,
                 ModifiedDate = claim.ModifiedDate,
                 AmpereAppliedDate = claim.AmpereAppliedDate,
                 AmpereAppliedByName = Name(claim.AmpereAppliedByUserId),
-                ProductReceivedDate = claim.ProductReceivedDate,
-                ProductReceivedByName = Name(claim.ProductReceivedByUserId),
-                CollectedDate = claim.CollectedDate,
-                CollectedByName = AccountName(claim.CollectedByAccountId),
-                DefectiveSubmittedDate = claim.DefectiveSubmittedDate,
-                DefectiveSubmittedByName = AccountName(claim.DefectiveSubmittedByAccountId),
+                AmpereApprovedDate = claim.AmpereApprovedDate,
+                AmpereApprovedByName = Name(claim.AmpereApprovedByUserId),
+                AcceptedDate = claim.ApprovedDate,
+                AcceptedByName = Name(claim.ApprovedByUserId),
+                DealerResolutionType = claim.DealerResolutionType,
+                DealerResolutionTypeName = WarrantyDealerResolutionTypes.GetDisplayName(claim.DealerResolutionType),
+                DealerClosedPartNumber = claim.DealerClosedPartNumber,
+                DealerClosedDate = claim.DealerClosedDate,
+                DealerClosedInvoiceNumber = claim.DealerClosedInvoiceNumber,
+                ResolutionPartCompleted = claim.ResolutionPartCompleted,
+                DealerInvoiceClosedCompleted = claim.DealerInvoiceClosedCompleted,
+                ReplacementPartReceivedCompleted = claim.ReplacementPartReceivedCompleted,
+                SubdealerPartReceivedCompleted = claim.SubdealerPartReceivedCompleted,
+                DefectiveHandoverCompleted = claim.DefectiveHandoverCompleted,
+                DefectiveSentToAmpereCompleted = claim.DefectiveSentToAmpereCompleted,
+                SubdealerPartReceivedLockedByStaff = claim.SubdealerPartReceivedStaffUserId.HasValue,
+                DefectiveHandoverLockedByStaff = claim.DefectiveHandoverStaffUserId.HasValue,
+                ReplacementPartReceivedDate = claim.ProductReceivedDate,
+                ReplacementPartReceivedByName = Name(claim.ProductReceivedByUserId),
+                SubdealerPartReceivedDate = claim.CollectedDate,
+                SubdealerPartReceivedByName = claim.CollectedByName,
+                DefectiveHandoverDate = claim.DefectiveSubmittedDate,
+                DefectiveHandoverByName = claim.DefectiveSubmittedByName,
                 DefectiveSentToAmpereDate = claim.DefectiveSentToAmpereDate,
                 DefectiveSentToAmpereByName = Name(claim.DefectiveSentToAmpereByUserId),
                 ServiceEntries = (await _unitOfWork.WarrantyClaimServiceEntries.GetAllAsync())
@@ -228,45 +263,90 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var chassis = request.ChassisNo.Trim().ToUpperInvariant();
             if (string.IsNullOrWhiteSpace(chassis)) return null;
 
-            var orgUserIds = await SubdealerOrgService.GetOrgLoginUserIdsAsync(_unitOfWork, request.SubdealerUserId);
-            var models = (await _unitOfWork.VehicleModels.GetAllAsync()).ToDictionary(m => m.ModelId);
-            var colors = (await _unitOfWork.VehicleColors.GetAllAsync()).ToDictionary(c => c.ColorId);
-            var bookings = (await _unitOfWork.VehicleBookings.GetAllAsync()).ToDictionary(b => b.VehicleId);
-
-            var vehicle = (await _unitOfWork.Vehicles.GetAllAsync())
-                .FirstOrDefault(v =>
-                    v.ChassisNumber != null
-                    && v.ChassisNumber.Equals(chassis, StringComparison.OrdinalIgnoreCase)
-                    && v.SubdealerId.HasValue
-                    && (orgUserIds.Contains(v.SubdealerId.Value) || v.SubdealerId.Value == request.SubdealerUserId)
-                    && v.Status >= UnifiedVehicleStatus.BookedToCustomer);
-
-            if (vehicle == null)
+            var master = await _unitOfWork.VehicleMasters.GetByChassisAsync(chassis);
+            if (master == null)
             {
                 return new WarrantyChassisLookupDto
                 {
                     ChassisNo = chassis,
-                    IsKnownSoldVehicle = false
+                    FoundInMaster = false
                 };
             }
 
-            models.TryGetValue(vehicle.ModelId, out var model);
-            colors.TryGetValue(vehicle.ColorId, out var color);
-            bookings.TryGetValue(vehicle.VehicleId, out var booking);
+            var models = (await _unitOfWork.VehicleModels.GetAllAsync()).ToDictionary(m => m.ModelId);
+            var colors = (await _unitOfWork.VehicleColors.GetAllAsync()).ToDictionary(c => c.ColorId);
+            models.TryGetValue(master.ModelId, out var model);
+            colors.TryGetValue(master.ColorId, out var color);
 
-            return new WarrantyChassisLookupDto
+            var dto = new WarrantyChassisLookupDto
             {
-                VehicleId = vehicle.VehicleId,
+                VehicleMasterId = master.VehicleMasterId,
                 ChassisNo = chassis,
-                ModelId = vehicle.ModelId,
+                ModelId = master.ModelId,
                 ModelName = model?.ModelName,
-                ColorId = vehicle.ColorId,
+                ColorId = master.ColorId,
                 ColorName = color?.ColorName,
-                CustomerName = booking?.CustomerName,
-                CustomerMobile = booking?.CustomerMobile,
-                SaleDate = booking?.SubmittedDate,
-                IsKnownSoldVehicle = true
+                FoundInMaster = true
             };
+
+            var bookings = (await _unitOfWork.VehicleBookings.GetAllAsync()).ToDictionary(b => b.VehicleId);
+            var vehicle = (await _unitOfWork.Vehicles.GetAllAsync())
+                .FirstOrDefault(v =>
+                    v.ChassisNumber != null
+                    && v.ChassisNumber.Equals(chassis, StringComparison.OrdinalIgnoreCase));
+
+            if (vehicle != null)
+            {
+                bookings.TryGetValue(vehicle.VehicleId, out var booking);
+                dto.VehicleId = vehicle.VehicleId;
+                dto.CustomerName = booking?.CustomerName;
+                dto.CustomerMobile = booking?.CustomerMobile;
+                dto.SaleDate = booking?.SubmittedDate;
+            }
+
+            return dto;
+        }
+    }
+
+    public class SearchWarrantyChassisQueryHandler : IRequestHandler<SearchWarrantyChassisQuery, IEnumerable<WarrantyChassisOptionDto>>
+    {
+        private readonly IUnitOfWork _unitOfWork;
+
+        public SearchWarrantyChassisQueryHandler(IUnitOfWork unitOfWork) => _unitOfWork = unitOfWork;
+
+        public async Task<IEnumerable<WarrantyChassisOptionDto>> Handle(SearchWarrantyChassisQuery request, CancellationToken cancellationToken)
+        {
+            var term = request.Term?.Trim().ToUpperInvariant() ?? "";
+            var take = request.Take <= 0 ? 50 : Math.Min(request.Take, 100);
+
+            var models = (await _unitOfWork.VehicleModels.GetAllAsync()).ToDictionary(m => m.ModelId);
+            var colors = (await _unitOfWork.VehicleColors.GetAllAsync()).ToDictionary(c => c.ColorId);
+
+            var query = (await _unitOfWork.VehicleMasters.GetAllAsync()).AsEnumerable();
+            if (!string.IsNullOrWhiteSpace(term))
+                query = query.Where(m => m.ChassisNumber.Contains(term, StringComparison.OrdinalIgnoreCase));
+
+            return query
+                .OrderBy(m => m.ChassisNumber)
+                .Take(take)
+                .Select(m =>
+                {
+                    models.TryGetValue(m.ModelId, out var model);
+                    colors.TryGetValue(m.ColorId, out var color);
+                    var modelName = model?.ModelName ?? "";
+                    var colorName = color?.ColorName ?? "";
+                    return new WarrantyChassisOptionDto
+                    {
+                        VehicleMasterId = m.VehicleMasterId,
+                        ChassisNo = m.ChassisNumber,
+                        ModelId = m.ModelId,
+                        ModelName = modelName,
+                        ColorId = m.ColorId,
+                        ColorName = colorName,
+                        Label = m.ChassisNumber
+                    };
+                })
+                .ToList();
         }
     }
 }

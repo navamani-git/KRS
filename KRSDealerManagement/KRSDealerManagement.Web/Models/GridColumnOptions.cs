@@ -11,6 +11,8 @@ namespace KRSDealerManagement.Web.Models
         public bool IsSubdealer { get; init; }
         public bool ShowBranchColumn { get; init; }
         public bool IsSubdealerView { get; init; }
+        public bool SubsidyDocsPendingOnly { get; init; }
+        public bool RegisteredAwaitingPlateOnly { get; init; }
 
         public static GridColumnOptions FromViewBag(ViewDataDictionary viewBag, HttpContext httpContext)
         {
@@ -24,7 +26,9 @@ namespace KRSDealerManagement.Web.Models
                 ShowBranchColumn = viewBag["ShowBranchColumn"] as bool?
                     ?? viewBag["ShowDealershipColumn"] as bool?
                     ?? false,
-                IsSubdealerView = viewBag["IsSubdealerView"] as bool? ?? false
+                IsSubdealerView = viewBag["IsSubdealerView"] as bool? ?? false,
+                SubsidyDocsPendingOnly = viewBag["SubsidyDocsPendingOnly"] as bool? ?? false,
+                RegisteredAwaitingPlateOnly = viewBag["RegisteredAwaitingPlateOnly"] as bool? ?? false
             };
         }
     }

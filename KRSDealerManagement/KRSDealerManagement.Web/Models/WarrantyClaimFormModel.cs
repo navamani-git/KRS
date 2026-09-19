@@ -5,6 +5,9 @@ namespace KRSDealerManagement.Web.Models
     public class WarrantyClaimFormModel
     {
         public int WarrantyClaimId { get; set; }
+        public bool IsStaffApply { get; set; }
+        public int? TargetSubdealerUserId { get; set; }
+        public int? VehicleMasterId { get; set; }
         public string ClaimType { get; set; } = WarrantyClaimTypes.Warranty;
         public int? SubdealerVehicleId { get; set; }
         public string ChassisNo { get; set; } = "";
@@ -26,7 +29,7 @@ namespace KRSDealerManagement.Web.Models
         public string? CustomerComplaint { get; set; }
         public string? DealerObservation { get; set; }
         public string? Remarks { get; set; }
-        public List<WarrantyServiceEntryFormModel> ServiceEntries { get; set; } = new() { new(), new() };
+        public List<WarrantyServiceEntryFormModel> ServiceEntries { get; set; } = new() { new(), new(), new(), new(), new() };
         public List<WarrantyAttachmentUploadModel>? AttachmentFiles { get; set; }
     }
 

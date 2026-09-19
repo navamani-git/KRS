@@ -1,0 +1,75 @@
+@model KRSDealerManagement.Application.DTOs.WarrantyOnlyVehicleEditDto
+@{
+    ViewData["Title"] = "Edit Warranty-Only Vehicle";
+    var models = ViewBag.Models as IEnumerable<KRSDealerManagement.Application.DTOs.VehicleModelDto> ?? Enumerable.Empty<KRSDealerManagement.Application.DTOs.VehicleModelDto>();
+    var modelColorMapJson = ViewBag.ModelColorMapJson as string ?? "{}";
+    var saleDateValue = Model.SaleDate?.ToString("yyyy-MM-dd");
+}
+
+<h1 class="mb-3"><i class="bi bi-pencil"></i> Edit — @Model.ChassisNumber</h1>
+<p class="text-muted">Update model/color and customer booking details used for warranty lookup.</p>
+
+<form method="post" class="card">
+    <div class="card-body">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="vehicleMasterId" value="@Model.VehicleMasterId" />
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Chassis</label>
+                <input type="text" class="form-control" value="@Model.ChassisNumber" readonly />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Model *</label>
+                <select name="modelId" id="modelId" class="form-select" required>
+                    @foreach (var m in models)
+                    {
+                        if (m.ModelId == Model.ModelId)
+                        {
+                            <option value="@m.ModelId" selected="selected">@m.ModelName</option>
+                        }
+                        else
+                        {
+                            <option value="@m.ModelId">@m.ModelName</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Color *</label>
+                <select name="colorId" id="colorId" class="form-select" required>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Customer Name</label>
+                <input type="text" name="customerName" class="form-control" maxlength="100" value="@Model.CustomerName" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Customer Mobile</label>
+                <input type="tel" name="customerMobile" class="form-control" maxlength="15" value="@Model.CustomerMobile" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Sale Date</label>
+                <input type="date" name="saleDate" class="form-control" max="@DateTime.Today.ToString("yyyy-MM-dd")" value="@saleDateValue" />
+            </div>
+            <div class="col-12">
+                <label class="form-label">Remarks</label>
+                <input name="remarks" class="form-control" value="@Model.Remarks" />
+            </div>
+        </div>
+    </div>
+    <div class="card-footer">
+        <button type="submit" class="btn btn-primary">Update</button>
+        <a href="@Url.Action("Index")" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <script src="~/js/model-color-filter.js" asp-append-version="true"></script>
+    <script>
+        KrsModelColors.init(@Html.Raw(modelColorMapJson));
+        KrsModelColors.bindEdit(
+            document.getElementById('modelId'),
+            document.getElementById('colorId'),
+            @Model.ColorId);
+    </script>
+}

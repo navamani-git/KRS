@@ -84,26 +84,26 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.CanViewShowroomStock = canViewShowroomStock;
             ViewBag.CanViewDealerStock = canViewDealerStock;
             ViewBag.CanViewRtoSubsidyProgress = canViewRtoSubsidyProgress;
-            ViewBag.DealershipName = SessionHelper.GetDealershipName(HttpContext.Session);
 
-            var showBookingCounts = canViewBookings;
-            var widgetContext = new DashboardWidgetsContext
+            var assignedIds = SessionHelper.GetAssignedDealershipIds(HttpContext.Session);
+            var assignedDealershipNames = new List<string>();
+            if (!isAdmin && !isSubdealer && assignedIds.Count > 0)
             {
-                IsAdmin = isAdmin,
-                IsSubdealer = isSubdealer,
-                IsBranchManager = isBranchManager,
-                CanViewOrders = canViewOrders,
-                CanViewReturns = canViewReturns,
-                CanViewPayments = canViewPayments,
-                CanViewCommissions = canViewCommissions,
-                CanViewDealerStock = canViewDealerStock,
-                CanViewShowroomStock = canViewShowroomStock,
-                ShowBookingCounts = showBookingCounts,
-                ShowStaffOnlyBookingStages = isAdmin || isBranchManager,
-                CanViewRtoSubsidyProgress = canViewRtoSubsidyProgress
-            };
+                var dealerships = await _unitOfWork.Dealerships.GetAllAsync();
+                assignedDealershipNames = dealerships
+                    .Where(d => d.IsActive && assignedIds.Contains(d.DealershipId))
+                    .OrderBy(d => d.DealershipName)
+                    .Select(d => d.DealershipName)
+                    .ToList();
+            }
 
-            var widgetCatalog = DashboardWidgets.GetCatalog(widgetContext);
+            ViewBag.AssignedDealershipNames = assignedDealershipNames;
+            ViewBag.DealershipName = assignedDealershipNames.Count == 1
+                ? assignedDealershipNames[0]
+                : SessionHelper.GetDealershipName(HttpContext.Session);
+
+            var widgetContext = DashboardWidgetsContext.Build(HttpContext.Session);
+            var widgetCatalog = DashboardWidgets.GetCatalog(widgetContext, HttpContext.Session);
             var savedWidgetKeys = SessionHelper.GetDashboardWidgetKeys(HttpContext.Session);
             if (savedWidgetKeys == null)
             {
@@ -171,32 +171,8 @@ namespace KRSDealerManagement.Web.Controllers
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
-            var isAdmin = SessionHelper.IsSystemAdmin(HttpContext.Session);
-            var isSubdealer = SessionHelper.IsSubdealer(HttpContext.Session);
-            var isBranchManager = SessionHelper.IsBranchManager(HttpContext.Session);
-            var canViewBookings = isAdmin
-                || SessionHelper.HasAnyBookingStaffMenuAccess(HttpContext.Session)
-                || (isSubdealer && SessionHelper.HasMenuAccess(HttpContext.Session, MenuKeys.VehiclesBookingStages));
-
-            var widgetContext = new DashboardWidgetsContext
-            {
-                IsAdmin = isAdmin,
-                IsSubdealer = isSubdealer,
-                IsBranchManager = isBranchManager,
-                CanViewOrders = isSubdealer || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Orders),
-                CanViewReturns = isSubdealer || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Returns),
-                CanViewPayments = isSubdealer || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Payments),
-                CanViewCommissions = isSubdealer || isAdmin,
-                CanViewDealerStock = SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.DealerStock),
-                CanViewShowroomStock = SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.ShowroomStock),
-                ShowBookingCounts = canViewBookings,
-                ShowStaffOnlyBookingStages = isAdmin || isBranchManager,
-                CanViewRtoSubsidyProgress = isAdmin
-                    || SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.VehicleBookings)
-                    || (isSubdealer && SessionHelper.HasMenuAccess(HttpContext.Session, MenuKeys.VehiclesBookingStages))
-            };
-
-            var catalog = DashboardWidgets.GetCatalog(widgetContext);
+            var widgetContext = DashboardWidgetsContext.Build(HttpContext.Session);
+            var catalog = DashboardWidgets.GetCatalog(widgetContext, HttpContext.Session);
             var allowed = catalog.Select(c => c.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             List<string> ordered;

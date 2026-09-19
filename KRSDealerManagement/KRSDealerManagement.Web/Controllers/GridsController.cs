@@ -27,7 +27,11 @@ namespace KRSDealerManagement.Web.Controllers
             DateTime? toDate,
             string? searchTerm,
             string? dealershipLocation,
-            bool? bookingPhaseOnly)
+            bool? bookingPhaseOnly,
+            bool? subsidyIdPendingOnly,
+            bool? subsidyDocsPendingOnly,
+            bool? registeredAwaitingPlateOnly,
+            bool? bookedToCustomerView)
         {
             if (string.IsNullOrWhiteSpace(grid) || string.IsNullOrWhiteSpace(column))
                 return Json(Array.Empty<string>());
@@ -48,6 +52,10 @@ namespace KRSDealerManagement.Web.Controllers
                 SearchTerm = searchTerm,
                 DealershipLocation = dealershipLocation,
                 BookingPhaseOnly = bookingPhaseOnly == true,
+                SubsidyIdPendingOnly = subsidyIdPendingOnly == true,
+                SubsidyDocsPendingOnly = subsidyDocsPendingOnly == true,
+                RegisteredAwaitingPlateOnly = registeredAwaitingPlateOnly == true,
+                BookedToCustomerView = bookedToCustomerView == true,
                 Limit = 100
             };
             DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, distinctQuery);

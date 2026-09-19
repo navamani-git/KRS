@@ -4,6 +4,7 @@
 @{
     ViewData["Title"] = "Warranty Claims";
     var statuses = ViewBag.Statuses as IEnumerable<StatusLookup> ?? Enumerable.Empty<StatusLookup>();
+    var subdealers = ViewBag.Subdealers as IEnumerable<KRSDealerManagement.Application.DTOs.UserDto> ?? Enumerable.Empty<KRSDealerManagement.Application.DTOs.UserDto>();
 }
 
 <div class="row mb-3">
@@ -17,6 +18,16 @@
     <div class="card-body py-2">
         <form method="get" class="row g-2 align-items-end" id="gridFilterForm">
             <div class="col-md-3">
+                <label class="form-label form-label-sm mb-0">Subdealer</label>
+                <select name="subdealerUserId" class="form-select form-select-sm">
+                    <option value="">All subdealers</option>
+                    @foreach (var s in subdealers)
+                    {
+                        <option value="@s.UserId" selected="@(ViewBag.SelectedSubdealerUserId as int? == s.UserId)">@s.GetFullName()</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
                 <label class="form-label form-label-sm mb-0">Status</label>
                 <select name="status" class="form-select form-select-sm">
                     <option value="">All</option>
@@ -77,7 +88,12 @@
                             <td>@c.DealershipName</td>
                             <td><span class="badge @(c.StatusBadgeClass ?? "bg-secondary")">@(c.StatusName ?? c.Status.ToString())</span></td>
                             <td>@(c.SubmittedDate?.ToString("dd-MMM-yyyy") ?? "—")</td>
-                            <td class="text-end"><a href="@Url.Action("Details", new { id = c.WarrantyClaimId })" class="btn btn-sm btn-outline-primary">View</a></td>
+                            <td class="text-end warranty-grid-actions">
+                                <button type="button" class="btn btn-sm btn-outline-secondary btn-warranty-history mb-1" data-history-url="@Url.Action("History", new { id = c.WarrantyClaimId })" title="View History">
+                                    <i class="bi bi-clock-history"></i> History
+                                </button>
+                                <a href="@Url.Action("Details", new { id = c.WarrantyClaimId })" class="btn btn-sm btn-outline-primary d-block">View</a>
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -86,3 +102,43 @@
         <div class="p-3"><partial name="_Pagination" /></div>
     </div>
 </div>
+
+<div class="modal fade" id="warrantyHistoryModal" tabindex="-1" aria-labelledby="warrantyHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="warrantyHistoryModalLabel">Claim History</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="warrantyHistoryModalBody">
+                <div class="text-muted">Loading...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    const modalEl = document.getElementById('warrantyHistoryModal');
+    const bodyEl = document.getElementById('warrantyHistoryModalBody');
+    if (!modalEl || !bodyEl) return;
+
+    document.querySelectorAll('.btn-warranty-history').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+            const url = btn.dataset.historyUrl;
+            if (!url) return;
+            bodyEl.innerHTML = '<div class="text-muted">Loading...</div>';
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+            try {
+                const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                bodyEl.innerHTML = res.ok ? await res.text() : '<div class="text-danger">Unable to load history.</div>';
+            } catch (e) {
+                bodyEl.innerHTML = '<div class="text-danger">Unable to load history.</div>';
+            }
+        });
+    });
+})();
+</script>
+}

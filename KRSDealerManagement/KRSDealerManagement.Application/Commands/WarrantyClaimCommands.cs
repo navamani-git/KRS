@@ -14,6 +14,7 @@ namespace KRSDealerManagement.Application.Commands
 
         public string ClaimType { get; set; } = "";
         public int? SubdealerVehicleId { get; set; }
+        public int? VehicleMasterId { get; set; }
         public string ChassisNo { get; set; } = "";
         public string? CustomerName { get; set; }
         public string? CustomerMobile { get; set; }
@@ -51,27 +52,43 @@ namespace KRSDealerManagement.Application.Commands
         public int UserId { get; set; }
         public string? Notes { get; set; }
         public bool IsSystemAdmin { get; set; }
+        public DateTime? ActionDate { get; set; }
     }
 
-    public class ApproveWarrantyClaimCommand : WarrantyClaimActionCommand { }
+    public class AcceptWarrantyClaimCommand : WarrantyClaimActionCommand { }
+
+    [Obsolete("Use AcceptWarrantyClaimCommand")]
+    public class ApproveWarrantyClaimCommand : AcceptWarrantyClaimCommand { }
+
     public class RejectWarrantyClaimCommand : WarrantyClaimActionCommand { }
     public class RequestWarrantyInfoCommand : WarrantyClaimActionCommand { }
-    public class ApplyWarrantyToAmpereCommand : WarrantyClaimActionCommand
-    {
-        public string SoNumber { get; set; } = "";
-    }
+    public class ApplyWarrantyToAmpereCommand : WarrantyClaimActionCommand { }
+    public class MarkWarrantyAmpereApprovedCommand : WarrantyClaimActionCommand { }
     public class UpdateWarrantySoNumberCommand : WarrantyClaimActionCommand
     {
         public string SoNumber { get; set; } = "";
     }
-    public class MarkWarrantyProductReceivedCommand : WarrantyClaimActionCommand { }
-    public class MarkWarrantyCollectedCommand : WarrantyClaimActionCommand
+    public class SaveWarrantyResolutionPartCommand : WarrantyClaimActionCommand
     {
-        public int AccountId { get; set; }
+        public string DealerResolutionType { get; set; } = "";
+        public string DealerClosedPartNumber { get; set; } = "";
     }
-    public class MarkWarrantyDefectiveSubmittedCommand : WarrantyClaimActionCommand
+    public class SaveWarrantyDealerInvoiceClosedCommand : WarrantyClaimActionCommand
+    {
+        public string DealerClosedInvoiceNumber { get; set; } = "";
+    }
+    public class MarkWarrantyReplacementPartReceivedCommand : WarrantyClaimActionCommand { }
+    public class MarkWarrantySubdealerPartReceivedCommand : WarrantyClaimActionCommand
     {
         public int AccountId { get; set; }
+        public string ReceivedByName { get; set; } = "";
+        public bool OnBehalfOfSubdealerByStaff { get; set; }
+    }
+    public class MarkWarrantyDefectiveHandoverCommand : WarrantyClaimActionCommand
+    {
+        public int AccountId { get; set; }
+        public string HandoverByName { get; set; } = "";
+        public bool OnBehalfOfSubdealerByStaff { get; set; }
     }
     public class MarkWarrantyDefectiveSentToAmpereCommand : WarrantyClaimActionCommand { }
 }

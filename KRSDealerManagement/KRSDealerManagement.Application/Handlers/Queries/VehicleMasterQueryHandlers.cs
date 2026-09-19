@@ -55,6 +55,10 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 masters = masters.Where(m => dealershipFilter.Contains(m.DealershipId));
             if (request.IsAllocated.HasValue)
                 masters = masters.Where(m => m.IsAllocated == request.IsAllocated.Value);
+            if (request.WarrantyOnly.HasValue)
+                masters = masters.Where(m => m.WarrantyOnly == request.WarrantyOnly.Value);
+            else
+                masters = masters.Where(m => !m.WarrantyOnly);
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
                 var term = request.SearchTerm.Trim();
@@ -94,6 +98,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         AmpereInvoiceDate = m.AmpereInvoiceDate,
                         ReceivedDate = m.ReceivedDate,
                         IsAllocated = m.IsAllocated,
+                        WarrantyOnly = m.WarrantyOnly,
                         AllocatedToSubdealerName = allocatedTo,
                         Remarks = m.Remarks,
                         CreatedDate = m.CreatedDate
@@ -124,6 +129,48 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 ConverterNo = m.ConverterNo,
                 AmpereInvoiceNo = m.AmpereInvoiceNo
             });
+        }
+    }
+
+    public class GetWarrantyOnlyVehicleEditQueryHandler : IRequestHandler<GetWarrantyOnlyVehicleEditQuery, WarrantyOnlyVehicleEditDto?>
+    {
+        private readonly IUnitOfWork _unitOfWork;
+
+        public GetWarrantyOnlyVehicleEditQueryHandler(IUnitOfWork unitOfWork) => _unitOfWork = unitOfWork;
+
+        public async Task<WarrantyOnlyVehicleEditDto?> Handle(GetWarrantyOnlyVehicleEditQuery request, CancellationToken cancellationToken)
+        {
+            var master = await _unitOfWork.VehicleMasters.GetByIdAsync(request.VehicleMasterId);
+            if (master == null || !master.WarrantyOnly)
+                return null;
+
+            var dealershipFilter = DealershipQueryScope.ResolveDealershipIds(request.DealershipId, request.DealershipIds);
+            if (dealershipFilter != null && !DealershipQueryScope.MatchesDealership(master.DealershipId, dealershipFilter))
+                return null;
+
+            var vehicle = (await _unitOfWork.Vehicles.GetAllAsync())
+                .Where(v => v.VehicleMasterId == master.VehicleMasterId)
+                .OrderByDescending(v => v.CreatedDate)
+                .FirstOrDefault();
+
+            VehicleBooking? booking = null;
+            if (vehicle != null)
+            {
+                booking = (await _unitOfWork.VehicleBookings.GetAllAsync())
+                    .FirstOrDefault(b => b.VehicleId == vehicle.VehicleId);
+            }
+
+            return new WarrantyOnlyVehicleEditDto
+            {
+                VehicleMasterId = master.VehicleMasterId,
+                ChassisNumber = master.ChassisNumber,
+                ModelId = master.ModelId,
+                ColorId = master.ColorId,
+                Remarks = master.Remarks,
+                CustomerName = WarrantyOnlyVehicleFlowHelper.DisplayCustomerValue(booking?.CustomerName),
+                CustomerMobile = WarrantyOnlyVehicleFlowHelper.DisplayCustomerValue(booking?.CustomerMobile),
+                SaleDate = booking?.SubmittedDate
+            };
         }
     }
 }

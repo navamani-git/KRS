@@ -1,0 +1,254 @@
+using KRSDealerManagement.Application.Services;
+using KRSDealerManagement.Domain.Entities;
+using KRSDealerManagement.Domain.Repositories;
+using KRSDealerManagement.Shared.Constants;
+
+namespace KRSDealerManagement.Application.Helpers
+{
+    public static class WarrantyOnlyVehicleFlowHelper
+    {
+        public const string Placeholder = "-";
+
+        public static string? DisplayCustomerValue(string? value)
+            => string.IsNullOrWhiteSpace(value) || value == Placeholder ? null : value.Trim();
+
+        public static string NormalizeCustomerValue(string? value)
+            => string.IsNullOrWhiteSpace(value) ? Placeholder : value.Trim();
+
+        public static async Task EnsureOwnShowroomExistsAsync(IUnitOfWork unitOfWork, int dealershipId)
+        {
+            if (!await SubdealerOrgService.HasActiveOwnShowroomAsync(unitOfWork, dealershipId))
+                throw new InvalidOperationException("Create Own Showroom subdealer first.");
+        }
+
+        public static async Task<(SubDealer Org, int SubdealerUserId)> ResolveOwnShowroomAsync(
+            IUnitOfWork unitOfWork,
+            int dealershipId,
+            int subDealerOrgId)
+        {
+            var org = await unitOfWork.SubDealers.GetByIdAsync(subDealerOrgId)
+                ?? throw new InvalidOperationException("Selected subdealer was not found.");
+
+            if (org.DealershipId != dealershipId)
+                throw new InvalidOperationException("Selected subdealer does not belong to this dealership.");
+
+            if (!org.OwnShowroom)
+                throw new InvalidOperationException("Select an Own Showroom subdealer.");
+
+            if (!org.IsActive)
+                throw new InvalidOperationException("Own Showroom subdealer is inactive.");
+
+            var subdealerUserId = await SubdealerOrgService.GetPrimaryUserIdForOrgAsync(unitOfWork, subDealerOrgId);
+            if (!subdealerUserId.HasValue)
+            {
+                throw new InvalidOperationException(
+                    "Own Showroom has no login yet. Add a subdealer login to the Own Showroom before uploading warranty-only vehicles.");
+            }
+
+            return (org, subdealerUserId.Value);
+        }
+
+        public static async Task<HashSet<int>> GetWarrantyOnlyVehicleIdsAsync(IUnitOfWork unitOfWork)
+        {
+            var warrantyMasterIds = (await unitOfWork.VehicleMasters.GetAllAsync())
+                .Where(m => m.WarrantyOnly)
+                .Select(m => m.VehicleMasterId)
+                .ToHashSet();
+
+            if (warrantyMasterIds.Count == 0)
+                return new HashSet<int>();
+
+            return (await unitOfWork.Vehicles.GetAllAsync())
+                .Where(v => warrantyMasterIds.Contains(v.VehicleMasterId))
+                .Select(v => v.VehicleId)
+                .ToHashSet();
+        }
+
+        public static async Task SyncOperationalSubdealerAsync(
+            IUnitOfWork unitOfWork,
+            VehicleMaster master,
+            Vehicle vehicle,
+            VehicleBooking? booking)
+        {
+            var ownShowroom = (await unitOfWork.SubDealers.GetAllAsync())
+                .FirstOrDefault(o => o.DealershipId == master.DealershipId && o.OwnShowroom && o.IsActive)
+                ?? throw new InvalidOperationException("Own Showroom subdealer not found for this dealership.");
+
+            var (_, subdealerUserId) = await ResolveOwnShowroomAsync(
+                unitOfWork, master.DealershipId, ownShowroom.SubDealerId);
+
+            if (vehicle.SubdealerId != subdealerUserId)
+            {
+                vehicle.SubdealerId = subdealerUserId;
+                vehicle.ModifiedDate = DateTime.UtcNow;
+                await unitOfWork.Vehicles.UpdateAsync(vehicle);
+            }
+
+            if (booking != null && booking.SubdealerId != subdealerUserId)
+            {
+                booking.SubdealerId = subdealerUserId;
+                booking.ModifiedDate = DateTime.UtcNow;
+                await unitOfWork.VehicleBookings.UpdateAsync(booking);
+            }
+
+            ApplyTerminalSoldStatus(vehicle, booking, booking?.SubmittedDate ?? vehicle.DeliveryDate);
+            await unitOfWork.Vehicles.UpdateAsync(vehicle);
+            if (booking != null)
+                await unitOfWork.VehicleBookings.UpdateAsync(booking);
+        }
+
+        /// <summary>
+        /// Warranty-only vehicles are externally sold; mark them delivered so they cannot re-enter booking.
+        /// </summary>
+        public static void ApplyTerminalSoldStatus(Vehicle vehicle, VehicleBooking? booking, DateTime? saleDate)
+        {
+            var deliveredOn = saleDate?.Date ?? vehicle.DeliveryDate?.Date ?? DateTime.UtcNow.Date;
+
+            if (vehicle.Status != UnifiedVehicleStatus.Delivered)
+            {
+                vehicle.Status = UnifiedVehicleStatus.Delivered;
+                vehicle.DeliveryDate = deliveredOn;
+                vehicle.ModifiedDate = DateTime.UtcNow;
+            }
+            else if (!vehicle.DeliveryDate.HasValue)
+            {
+                vehicle.DeliveryDate = deliveredOn;
+                vehicle.ModifiedDate = DateTime.UtcNow;
+            }
+
+            if (booking != null && booking.BookingStatus != UnifiedVehicleStatus.Delivered)
+            {
+                booking.BookingStatus = UnifiedVehicleStatus.Delivered;
+                booking.ModifiedDate = DateTime.UtcNow;
+            }
+        }
+
+        public static async Task EnsureNotWarrantyOnlyOperationalVehicleAsync(IUnitOfWork unitOfWork, int vehicleId)
+        {
+            var vehicle = await unitOfWork.Vehicles.GetByIdAsync(vehicleId);
+            if (vehicle == null)
+                return;
+
+            var master = await unitOfWork.VehicleMasters.GetByIdAsync(vehicle.VehicleMasterId);
+            if (master?.WarrantyOnly == true)
+            {
+                throw new InvalidOperationException(
+                    "This chassis is warranty-only (externally sold) and cannot be booked through the sales process.");
+            }
+        }
+
+        public static async Task ProvisionSoldVehicleAsync(
+            IUnitOfWork unitOfWork,
+            VehicleMaster master,
+            int subdealerUserId,
+            int createdBy,
+            string? customerName,
+            string? customerMobile,
+            DateTime? saleDate)
+        {
+            var defaults = await ResolveBookingDefaultsAsync(unitOfWork);
+            var submitted = saleDate?.Date ?? DateTime.UtcNow.Date;
+            var name = NormalizeCustomerValue(customerName);
+            var mobile = NormalizeCustomerValue(customerMobile);
+
+            var vehicle = new Vehicle
+            {
+                VehicleMasterId = master.VehicleMasterId,
+                ModelId = master.ModelId,
+                ColorId = master.ColorId,
+                ChassisNumber = master.ChassisNumber,
+                Status = UnifiedVehicleStatus.Delivered,
+                PurchaseOrderId = null,
+                SubdealerId = subdealerUserId,
+                CurrentPrice = 0,
+                OriginalPrice = 0,
+                MotorNo = master.MotorNo,
+                BatteryNo = master.BatteryNo,
+                ChargerNo = master.ChargerNo,
+                ControllerNo = master.ControllerNo,
+                ConverterNo = master.ConverterNo,
+                ManufacturingYear = 0,
+                AllocatedDate = submitted,
+                DeliveryDate = submitted,
+                CreatedBy = createdBy,
+                CreatedDate = DateTime.UtcNow,
+                ModifiedDate = DateTime.UtcNow
+            };
+
+            var vehicleId = await unitOfWork.Vehicles.AddAsync(vehicle);
+            await unitOfWork.SubdealerVehicleHistories.AddAsync(new SubdealerVehicleHistory
+            {
+                SubdealerVehicleId = vehicleId,
+                Action = "WarrantyOnlySold",
+                Remarks = "Warranty-only external sale",
+                UserId = createdBy
+            });
+
+            await unitOfWork.VehicleBookings.AddAsync(new VehicleBooking
+            {
+                VehicleId = vehicleId,
+                SubdealerId = subdealerUserId,
+                BookingStatus = UnifiedVehicleStatus.Delivered,
+                CustomerName = name,
+                CustomerMobile = mobile,
+                AlternativeMobile = Placeholder,
+                CustomerEmail = Placeholder,
+                EAadhaarPath = Placeholder,
+                EAadhaarPassword = Placeholder,
+                DocumentTypeId = defaults.DocumentTypeId,
+                DocumentPath = Placeholder,
+                CustomerPhotoPath = Placeholder,
+                ChassisPhotoPath = Placeholder,
+                CustomerSignPath = Placeholder,
+                RtoLocationId = defaults.RtoLocationId,
+                FancyNumber = false,
+                PaymentMode = "Cash",
+                FinanceNameId = defaults.FinanceNameId,
+                NomineeName = Placeholder,
+                NomineeDob = new DateTime(2000, 1, 1),
+                NomineeRelationship = Placeholder,
+                SubmittedDate = submitted,
+                CreatedBy = createdBy,
+                CreatedDate = DateTime.UtcNow,
+                ModifiedDate = DateTime.UtcNow
+            });
+
+            await unitOfWork.VehicleMasters.SetAllocatedAsync(master.VehicleMasterId, true, createdBy);
+            await unitOfWork.VehicleMasters.AddHistoryAsync(new VehicleMasterHistory
+            {
+                VehicleMasterId = master.VehicleMasterId,
+                Action = "WarrantyOnlySold",
+                Remarks = "Warranty-only sold via Own Showroom",
+                UserId = createdBy
+            });
+        }
+
+        private static async Task<(int DocumentTypeId, int RtoLocationId, int FinanceNameId)> ResolveBookingDefaultsAsync(
+            IUnitOfWork unitOfWork)
+        {
+            var documentTypeId = (await unitOfWork.DocumentTypes.GetAllAsync())
+                .Where(d => d.IsActive)
+                .OrderBy(d => d.DocumentTypeId)
+                .Select(d => d.DocumentTypeId)
+                .FirstOrDefault();
+            var rtoLocationId = (await unitOfWork.RtoLocations.GetAllAsync())
+                .Where(r => r.IsActive)
+                .OrderBy(r => r.RtoLocationId)
+                .Select(r => r.RtoLocationId)
+                .FirstOrDefault();
+            var financeNameId = (await unitOfWork.FinanceNames.GetAllAsync())
+                .Where(f => f.IsActive)
+                .OrderBy(f => f.FinanceNameId)
+                .Select(f => f.FinanceNameId)
+                .FirstOrDefault();
+
+            if (documentTypeId <= 0 || rtoLocationId <= 0 || financeNameId <= 0)
+            {
+                throw new InvalidOperationException(
+                    "Booking master data is incomplete. Ensure document types, RTO locations, and finance names exist.");
+            }
+
+            return (documentTypeId, rtoLocationId, financeNameId);
+        }
+    }
+}

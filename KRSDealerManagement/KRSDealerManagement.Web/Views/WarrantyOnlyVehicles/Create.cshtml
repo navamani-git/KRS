@@ -1,0 +1,119 @@
+@{
+    ViewData["Title"] = "Add Warranty-Only Vehicle";
+    ViewData["ExcelImportKey"] = KRSDealerManagement.Web.Helpers.ExcelImport.ExcelImportKeys.WarrantyOnlyVehicleMasters;
+    var models = ViewBag.Models as IEnumerable<KRSDealerManagement.Application.DTOs.VehicleModelDto> ?? Enumerable.Empty<KRSDealerManagement.Application.DTOs.VehicleModelDto>();
+    var requireDealership = ViewBag.RequireDealershipSelection as bool? == true;
+    var dealerships = ViewBag.Dealerships as IEnumerable<KRSDealerManagement.Application.Queries.DealershipDto>
+        ?? Enumerable.Empty<KRSDealerManagement.Application.Queries.DealershipDto>();
+    var ownShowrooms = ViewBag.OwnShowroomSubdealers as IEnumerable<KRSDealerManagement.Application.DTOs.UserDto>
+        ?? Enumerable.Empty<KRSDealerManagement.Application.DTOs.UserDto>();
+    var hasOwnShowroom = ViewBag.HasOwnShowroom as bool? == true;
+    var selectedDealershipId = ViewBag.SelectedDealershipId as int?;
+}
+
+<h1 class="mb-3"><i class="bi bi-plus-circle"></i> Add Warranty-Only Vehicle</h1>
+<p class="text-muted">External/already-sold chassis for warranty. Creates master stock, links to an <strong>Own Showroom</strong> subdealer, and a booking (with placeholders when customer fields are blank).</p>
+
+@if (!hasOwnShowroom)
+{
+    <div class="alert alert-warning">
+        <strong>Create Own Showroom subdealer first.</strong>
+        Mark one subdealer per dealership as Own Showroom (use the main dealer name). A login can be added later.
+        <a href="@Url.Action("Index", "Subdealers")" class="alert-link">Go to Subdealers</a>
+    </div>
+}
+
+<form method="post" class="card">
+    <div class="card-body">
+        @Html.AntiForgeryToken()
+        <div class="row g-3">
+            @if (requireDealership)
+            {
+                <div class="col-md-4">
+                    <label class="form-label">Dealership *</label>
+                    <select name="dealershipId" id="dealershipId" class="form-select" required>
+                        <option value="">Select dealership</option>
+                        @foreach (var d in dealerships)
+                        {
+                            <option value="@d.DealershipId" selected="@(selectedDealershipId == d.DealershipId)">@d.DealershipName (@d.DealershipCode)</option>
+                        }
+                    </select>
+                </div>
+            }
+            <div class="col-md-4">
+                <label class="form-label">Own Showroom Subdealer *</label>
+                <select name="subDealerId" id="subDealerId" class="form-select" required @(hasOwnShowroom ? null : "disabled")>
+                    <option value="">Select subdealer</option>
+                    @foreach (var s in ownShowrooms)
+                    {
+                        <option value="@s.SubDealerId" data-dealership-id="@s.DealershipId">@s.FirstName (@s.District)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Chassis Number *</label>
+                <input type="text" name="chassisNumber" class="form-control text-uppercase" required maxlength="50" style="text-transform:uppercase" @(hasOwnShowroom ? null : "disabled") />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Model *</label>
+                <select name="modelId" id="modelId" class="form-select" required @(hasOwnShowroom ? null : "disabled")>
+                    <option value="">Select model</option>
+                    @foreach (var m in models) { <option value="@m.ModelId">@m.ModelName</option> }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Color *</label>
+                <select name="colorId" id="colorId" class="form-select" required @(hasOwnShowroom ? null : "disabled")>
+                    <option value="">Select color</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Customer Name</label>
+                <input type="text" name="customerName" class="form-control" maxlength="100" @(hasOwnShowroom ? null : "disabled") />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Customer Mobile</label>
+                <input type="tel" name="customerMobile" class="form-control" maxlength="15" @(hasOwnShowroom ? null : "disabled") />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Sale Date</label>
+                <input type="date" name="saleDate" class="form-control" max="@DateTime.Today.ToString("yyyy-MM-dd")" @(hasOwnShowroom ? null : "disabled") />
+            </div>
+            <div class="col-12">
+                <label class="form-label">Remarks</label>
+                <input name="remarks" class="form-control" @(hasOwnShowroom ? null : "disabled") />
+            </div>
+        </div>
+    </div>
+    <div class="card-footer">
+        <button type="submit" class="btn btn-primary" @(hasOwnShowroom ? null : "disabled")>Save</button>
+        <a href="@Url.Action("Index")" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ModelColorFilter" />
+    @if (requireDealership)
+    {
+        <script>
+            (function () {
+                var dealerSelect = document.getElementById('dealershipId');
+                var subSelect = document.getElementById('subDealerId');
+                if (!dealerSelect || !subSelect) return;
+
+                function filterSubdealers() {
+                    var dealerId = dealerSelect.value;
+                    Array.from(subSelect.options).forEach(function (opt, idx) {
+                        if (idx === 0) { opt.hidden = false; return; }
+                        var match = !dealerId || opt.getAttribute('data-dealership-id') === dealerId;
+                        opt.hidden = !match;
+                        if (!match && opt.selected) opt.selected = false;
+                    });
+                }
+
+                dealerSelect.addEventListener('change', filterSubdealers);
+                filterSubdealers();
+            })();
+        </script>
+    }
+}

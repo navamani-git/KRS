@@ -4,7 +4,13 @@
 @using KRSDealerManagement.Web.Models
 @{
     ViewData["Title"] = Model.WarrantyClaimId > 0 ? "Edit Warranty Claim" : "Apply Warranty / Campaign";
-    var serviceEntries = Model.ServiceEntries ?? new List<WarrantyServiceEntryFormModel> { new(), new() };
+    var isStaffApply = Model.IsStaffApply || (ViewBag.IsStaffApply as bool? == true);
+    var subdealers = ViewBag.Subdealers as IEnumerable<KRSDealerManagement.Application.DTOs.UserDto> ?? Enumerable.Empty<KRSDealerManagement.Application.DTOs.UserDto>();
+    var serviceEntries = Model.ServiceEntries ?? new List<WarrantyServiceEntryFormModel> { new(), new(), new(), new(), new() };
+    while (serviceEntries.Count < 5) { serviceEntries.Add(new()); }
+    var existingAttachments = ViewBag.ExistingAttachments as IEnumerable<KRSDealerManagement.Application.DTOs.WarrantyClaimAttachmentDto>
+        ?? Enumerable.Empty<KRSDealerManagement.Application.DTOs.WarrantyClaimAttachmentDto>();
+    var existingAttachmentTypes = existingAttachments.Select(a => a.AttachmentType).ToHashSet(StringComparer.OrdinalIgnoreCase);
     var parts = ViewBag.Parts as IEnumerable<WarrantyPartMaster> ?? Enumerable.Empty<WarrantyPartMaster>();
     var othersPartId = ViewBag.OthersPartId as int?;
     var models = ViewBag.Models as IEnumerable<VehicleModel> ?? Enumerable.Empty<VehicleModel>();
@@ -12,21 +18,45 @@
     var modelColorMapJson = ViewBag.ModelColorMapJson as string ?? "{}";
     var warrantyTypes = WarrantyAttachmentTypes.RequiredForWarranty.Select(t => new { Key = t, Name = WarrantyAttachmentTypes.GetDisplayName(t) }).ToList();
     var campaignTypes = WarrantyAttachmentTypes.RequiredForCampaign.Select(t => new { Key = t, Name = WarrantyAttachmentTypes.GetDisplayName(t) }).ToList();
+    var maxDate = DateTime.Today.ToString("yyyy-MM-dd");
 }
 
 <div class="row mb-3">
     <div class="col-md-8">
         <h1 class="m-0"><i class="bi bi-plus-circle"></i> @ViewData["Title"]</h1>
-        <p class="text-muted">Fill all required fields. Chassis can be selected from your sold vehicles or entered manually.</p>
+        <p class="text-muted">Select a registered chassis from the master list. If your chassis is missing, contact your dealer admin.</p>
     </div>
 </div>
 
-<form method="post" asp-action="Save" enctype="multipart/form-data" id="warrantyClaimForm">
+<form method="post" asp-action="Save" enctype="multipart/form-data" id="warrantyClaimForm" novalidate
+      data-long-submit="true"
+      data-loader-message="Submitting claim and uploading attachments — please wait until this page finishes loading.">
     @Html.AntiForgeryToken()
     <input type="hidden" asp-for="WarrantyClaimId" />
+    <input type="hidden" asp-for="IsStaffApply" />
     <input type="hidden" asp-for="SubdealerVehicleId" id="SubdealerVehicleId" />
+    <input type="hidden" asp-for="VehicleMasterId" id="VehicleMasterId" />
+    <input type="hidden" asp-for="ChassisNo" id="ChassisNo" />
     <input type="hidden" asp-for="ModelName" id="ModelName" />
     <input type="hidden" asp-for="ColorName" id="ColorName" />
+    <input type="hidden" name="saveMode" id="SaveMode" value="" />
+
+    @if (isStaffApply)
+    {
+        <div class="card mb-3">
+            <div class="card-header"><strong>Subdealer</strong></div>
+            <div class="card-body">
+                <label class="form-label">Apply on behalf of *</label>
+                <select asp-for="TargetSubdealerUserId" class="form-select" id="TargetSubdealerUserId" data-field-label="Apply on behalf of" required>
+                    <option value="">-- Select subdealer --</option>
+                    @foreach (var s in subdealers)
+                    {
+                        <option value="@s.UserId" selected="@(Model.TargetSubdealerUserId == s.UserId)">@s.GetFullName()</option>
+                    }
+                </select>
+            </div>
+        </div>
+    }
 
     <div class="card mb-3">
         <div class="card-header"><strong>Claim Type</strong></div>
@@ -45,16 +75,17 @@
         <div class="card-body row g-3">
             <div class="col-md-6">
                 <label class="form-label">Chassis No *</label>
-                <input asp-for="ChassisNo" class="form-control" id="ChassisNo" required />
-                <div id="chassisWarning" class="form-text text-warning d-none">This chassis is not in your sold vehicle list (you may still continue).</div>
+                <select id="ChassisSelect" class="form-select no-search-select" data-field-label="Chassis No" required></select>
+                <div id="chassisWarning" class="form-text text-danger d-none">This chassis is not registered. Please contact your dealer admin.</div>
             </div>
             <div class="col-md-3">
                 <label class="form-label">Current KMs *</label>
-                <input asp-for="CurrentKms" type="number" class="form-control" required />
+                <input asp-for="CurrentKms" type="number" class="form-control" data-field-label="Current KMs" required />
             </div>
             <div class="col-md-3">
                 <label class="form-label">Complaint Date</label>
-                <input asp-for="ComplaintDate" type="date" class="form-control" />
+                <input asp-for="ComplaintDate" type="date" class="form-control" max="@maxDate" data-field-label="Complaint Date" />
+                <div class="invalid-feedback"></div>
             </div>
             <div class="col-md-4">
                 <label class="form-label">Customer Name</label>
@@ -66,33 +97,26 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label">Sale Date</label>
-                <input asp-for="SaleDate" type="date" class="form-control" id="SaleDate" />
+                <input asp-for="SaleDate" type="date" class="form-control" id="SaleDate" max="@maxDate" data-field-label="Sale Date" />
+                <div class="invalid-feedback"></div>
             </div>
             <div class="col-md-4">
-                <label class="form-label">Model <span id="modelRequiredMark" class="text-danger d-none">*</span></label>
-                <select asp-for="ModelId" class="form-select" id="ModelId">
-                    <option value="">-- Select model --</option>
-                    @foreach (var m in models)
-                    {
-                        <option value="@m.ModelId" selected="@(Model.ModelId == m.ModelId)">@m.ModelName</option>
-                    }
-                </select>
-                <small id="modelHint" class="form-text text-muted d-none">Select model manually for chassis not in your sold list.</small>
+                <label class="form-label">Model</label>
+                <input type="text" class="form-control bg-light" id="ModelDisplay" readonly value="@Model.ModelName" />
+                <input type="hidden" asp-for="ModelId" id="ModelId" />
             </div>
             <div class="col-md-4">
-                <label class="form-label">Color <span id="colorRequiredMark" class="text-danger d-none">*</span></label>
-                <select asp-for="ColorId" class="form-select" id="ColorId">
-                    <option value="">-- Select color --</option>
-                </select>
-                <small id="colorHint" class="form-text text-muted d-none">Select color manually for chassis not in your sold list.</small>
+                <label class="form-label">Color</label>
+                <input type="text" class="form-control bg-light" id="ColorDisplay" readonly value="@Model.ColorName" />
+                <input type="hidden" asp-for="ColorId" id="ColorId" />
             </div>
             <div class="col-md-4">
                 <label class="form-label">Contact Person *</label>
-                <input asp-for="ContactPerson" class="form-control" required />
+                <input asp-for="ContactPerson" class="form-control" data-field-label="Contact Person" required />
             </div>
             <div class="col-md-4">
                 <label class="form-label">Contact Mobile *</label>
-                <input asp-for="ContactMobile" class="form-control" required />
+                <input asp-for="ContactMobile" class="form-control" data-field-label="Contact Mobile" required />
             </div>
         </div>
     </div>
@@ -102,7 +126,7 @@
         <div class="card-body row g-3">
             <div class="col-md-4">
                 <label class="form-label">Part Name *</label>
-                <select asp-for="WarrantyPartId" class="form-select" id="WarrantyPartId" required>
+                <select asp-for="WarrantyPartId" class="form-select" id="WarrantyPartId" data-field-label="Part Name" required>
                     <option value="">Select part</option>
                     @foreach (var p in parts)
                     {
@@ -113,7 +137,7 @@
             <div class="col-md-4 d-none" id="otherPartNameDiv">
                 <label class="form-label">Specify Part Name *</label>
                 <input asp-for="OtherPartName" class="form-control text-uppercase" id="OtherPartName"
-                       style="text-transform:uppercase" placeholder="ENTER PART NAME" />
+                       data-field-label="Specify Part Name" style="text-transform:uppercase" placeholder="ENTER PART NAME" />
             </div>
             <div class="col-md-4">
                 <label class="form-label">Part Code</label>
@@ -125,7 +149,7 @@
             </div>
             <div class="col-md-12">
                 <label class="form-label">Customer Complaint *</label>
-                <textarea asp-for="CustomerComplaint" class="form-control" rows="2" required></textarea>
+                <textarea asp-for="CustomerComplaint" class="form-control" rows="2" data-field-label="Customer Complaint" required></textarea>
             </div>
             <div class="col-md-12">
                 <label class="form-label">Dealer Observation</label>
@@ -150,7 +174,7 @@
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <input name="ServiceEntries[@i].ServiceDate" type="date" class="form-control form-control-sm" value="@(serviceEntries[i].ServiceDate?.ToString("yyyy-MM-dd"))" />
+                        <input name="ServiceEntries[@i].ServiceDate" type="date" class="form-control form-control-sm" max="@maxDate" data-field-label="Service Date" value="@(serviceEntries[i].ServiceDate?.ToString("yyyy-MM-dd"))" />
                     </div>
                     <div class="col-md-4">
                         <input name="ServiceEntries[@i].ServiceKms" type="number" class="form-control form-control-sm" placeholder="KMs" value="@serviceEntries[i].ServiceKms" />
@@ -166,15 +190,27 @@
             @foreach (var att in warrantyTypes)
             {
                 <div class="mb-2 attachment-row" data-claim-types="WARRANTY">
-                    <label class="form-label">@att.Name *</label>
-                    <input type="file" name="attachment_@att.Key" class="form-control form-control-sm warranty-attachment-file" accept="@WarrantyAttachmentTypes.GetAttachmentAccept(att.Key)" data-media-kind="@(WarrantyAttachmentTypes.IsImageAttachment(att.Key) ? "image" : "video")" />
+                    <label class="form-label">
+                        @att.Name @(existingAttachmentTypes.Contains(att.Key) ? "(uploaded)" : "*")
+                    </label>
+                    @if (existingAttachmentTypes.Contains(att.Key))
+                    {
+                        <div class="small text-success mb-1"><i class="bi bi-check-circle"></i> File on record — upload only to replace</div>
+                    }
+                    <input type="file" name="attachment_@att.Key" class="form-control form-control-sm warranty-attachment-file" accept="@WarrantyAttachmentTypes.GetAttachmentAccept(att.Key)" data-media-kind="@(WarrantyAttachmentTypes.IsImageAttachment(att.Key) ? "image" : "video")" data-att-type="@att.Key" data-field-label="@att.Name" data-max-mb="100" />
                 </div>
             }
             @foreach (var att in campaignTypes.Where(a => !warrantyTypes.Any(w => w.Key == a.Key)))
             {
                 <div class="mb-2 attachment-row" data-claim-types="CAMPAIGN">
-                    <label class="form-label">@att.Name *</label>
-                    <input type="file" name="attachment_@att.Key" class="form-control form-control-sm warranty-attachment-file" accept="@WarrantyAttachmentTypes.GetAttachmentAccept(att.Key)" data-media-kind="@(WarrantyAttachmentTypes.IsImageAttachment(att.Key) ? "image" : "video")" />
+                    <label class="form-label">
+                        @att.Name @(existingAttachmentTypes.Contains(att.Key) ? "(uploaded)" : "*")
+                    </label>
+                    @if (existingAttachmentTypes.Contains(att.Key))
+                    {
+                        <div class="small text-success mb-1"><i class="bi bi-check-circle"></i> File on record — upload only to replace</div>
+                    }
+                    <input type="file" name="attachment_@att.Key" class="form-control form-control-sm warranty-attachment-file" accept="@WarrantyAttachmentTypes.GetAttachmentAccept(att.Key)" data-media-kind="@(WarrantyAttachmentTypes.IsImageAttachment(att.Key) ? "image" : "video")" data-att-type="@att.Key" data-field-label="@att.Name" data-max-mb="100" />
                 </div>
             }
             <div class="mt-2">
@@ -185,22 +221,35 @@
     </div>
 
     <div class="d-flex gap-2">
-        <button type="submit" name="action" value="draft" class="btn btn-outline-secondary" formnovalidate>Save Draft</button>
-        <button type="submit" name="action" value="submit" class="btn btn-primary">Submit Claim</button>
-        <a href="@Url.Action("MyClaims")" class="btn btn-link">Cancel</a>
+        <button type="submit" class="btn btn-outline-secondary" id="saveDraftBtn" data-save-mode="draft" formnovalidate>Save Draft</button>
+        <button type="submit" class="btn btn-primary" id="submitClaimBtn" data-save-mode="submit">Submit Claim</button>
+        <a href="@(isStaffApply ? Url.Action("Index") : Url.Action("MyClaims"))" class="btn btn-link">Cancel</a>
     </div>
 </form>
 
 @section Scripts {
-<script src="~/js/model-color-filter.js"></script>
 <script>
 (function () {
-    KrsModelColors.init(@Html.Raw(modelColorMapJson));
+    const isStaffApply = @(isStaffApply ? "true" : "false");
+    const searchUrl = '@Url.Action("SearchChassis")';
+    const lookupUrl = '@Url.Action("LookupChassis")';
+    const initialChassis = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ChassisNo ?? ""));
+    const initialMasterId = @(Model.VehicleMasterId.HasValue ? Model.VehicleMasterId.Value.ToString() : "null");
+    const existingAttachmentTypes = new Set(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(existingAttachmentTypes.ToList())));
 
     const othersPartId = @(othersPartId.HasValue ? othersPartId.Value.ToString() : "null");
     const partSelect = document.getElementById('WarrantyPartId');
     const otherPartDiv = document.getElementById('otherPartNameDiv');
     const otherPartInput = document.getElementById('OtherPartName');
+    const warning = document.getElementById('chassisWarning');
+    const chassisHidden = document.getElementById('ChassisNo');
+    const masterIdInput = document.getElementById('VehicleMasterId');
+    const vehicleIdInput = document.getElementById('SubdealerVehicleId');
+    const modelIdInput = document.getElementById('ModelId');
+    const colorIdInput = document.getElementById('ColorId');
+    const modelDisplay = document.getElementById('ModelDisplay');
+    const colorDisplay = document.getElementById('ColorDisplay');
+    const subdealerSelect = document.getElementById('TargetSubdealerUserId');
 
     function syncOtherPartField() {
         const isOthers = othersPartId && parseInt(partSelect.value, 10) === othersPartId;
@@ -214,146 +263,388 @@
     partSelect?.addEventListener('change', syncOtherPartField);
     syncOtherPartField();
 
-    const chassisInput = document.getElementById('ChassisNo');
-    const warning = document.getElementById('chassisWarning');
-    const modelSelect = document.getElementById('ModelId');
-    const colorSelect = document.getElementById('ColorId');
-    const vehicleIdInput = document.getElementById('SubdealerVehicleId');
-    let timer;
+    function applyLookup(data) {
+        if (!data || !data.foundInMaster) {
+            warning.classList.remove('d-none');
+            masterIdInput.value = '';
+            vehicleIdInput.value = '';
+            return;
+        }
 
-    function setModelColorManual(manual) {
-        [modelSelect, colorSelect].forEach(s => {
-            s.style.pointerEvents = manual ? '' : 'none';
-            s.tabIndex = manual ? 0 : -1;
-            s.classList.toggle('bg-light', !manual);
-        });
-        document.getElementById('modelRequiredMark').classList.toggle('d-none', !manual);
-        document.getElementById('colorRequiredMark').classList.toggle('d-none', !manual);
-        document.getElementById('modelHint').classList.toggle('d-none', !manual);
-        document.getElementById('colorHint').classList.toggle('d-none', !manual);
-        modelSelect.required = manual;
-        colorSelect.required = manual;
-    }
-
-    function applyKnownVehicle(data) {
+        warning.classList.add('d-none');
+        chassisHidden.value = data.chassisNo || '';
+        masterIdInput.value = data.vehicleMasterId || '';
         vehicleIdInput.value = data.vehicleId || '';
-        modelSelect.value = data.modelId || '';
-        KrsModelColors.populateSelect(colorSelect, data.modelId, data.colorId);
+        modelIdInput.value = data.modelId || '';
+        colorIdInput.value = data.colorId || '';
+        modelDisplay.value = data.modelName || '';
+        colorDisplay.value = data.colorName || '';
         document.getElementById('ModelName').value = data.modelName || '';
         document.getElementById('ColorName').value = data.colorName || '';
-        document.getElementById('CustomerName').value = data.customerName || '';
-        document.getElementById('CustomerMobile').value = data.customerMobile || '';
+        if (data.customerName) document.getElementById('CustomerName').value = data.customerName;
+        if (data.customerMobile) document.getElementById('CustomerMobile').value = data.customerMobile;
         if (data.saleDate) document.getElementById('SaleDate').value = data.saleDate.substring(0, 10);
-        setModelColorManual(false);
     }
 
-    function applyUnknownChassis() {
-        vehicleIdInput.value = '';
-        KrsModelColors.populateSelect(colorSelect, modelSelect.value, null);
-        setModelColorManual(true);
+    function lookupQuery() {
+        const params = new URLSearchParams({ chassis: chassisHidden.value || '' });
+        if (isStaffApply && subdealerSelect?.value)
+            params.set('subdealerUserId', subdealerSelect.value);
+        return params.toString();
     }
+
+    async function refreshLookup() {
+        const chassis = (chassisHidden.value || '').trim();
+        if (chassis.length < 3) {
+            warning.classList.add('d-none');
+            return;
+        }
+        const res = await fetch(lookupUrl + '?' + lookupQuery());
+        if (!res.ok) return;
+        applyLookup(await res.json());
+    }
+
+    let chassisSelect;
+    if (typeof TomSelect !== 'undefined') {
+        chassisSelect = new TomSelect('#ChassisSelect', {
+            valueField: 'chassisNo',
+            labelField: 'label',
+            searchField: ['chassisNo', 'label'],
+            maxOptions: 100,
+            create: false,
+            load: function (query, callback) {
+                fetch(searchUrl + '?term=' + encodeURIComponent(query || ''))
+                    .then(r => r.json())
+                    .then(callback)
+                    .catch(() => callback());
+            },
+            onChange: function (value) {
+                const option = this.options[value];
+                chassisHidden.value = value || '';
+                masterIdInput.value = option?.vehicleMasterId || '';
+                refreshLookup();
+            }
+        });
+
+        if (initialChassis) {
+            chassisSelect.addOption({
+                chassisNo: initialChassis,
+                label: initialChassis,
+                vehicleMasterId: initialMasterId
+            });
+            chassisSelect.setValue(initialChassis, true);
+            if (initialMasterId) masterIdInput.value = initialMasterId;
+            refreshLookup();
+        }
+    }
+
+    subdealerSelect?.addEventListener('change', refreshLookup);
 
     function updateAttachmentVisibility() {
         const type = document.querySelector('input[name="ClaimType"]:checked')?.value || 'WARRANTY';
         document.querySelectorAll('.attachment-row').forEach(row => {
             const types = (row.dataset.claimTypes || '').split(',');
             row.style.display = types.includes(type) ? '' : 'none';
-            row.querySelector('input[type=file]').required = types.includes(type) && document.querySelector('button[value=submit]:focus') !== null;
         });
     }
 
     document.querySelectorAll('input[name="ClaimType"]').forEach(r => r.addEventListener('change', updateAttachmentVisibility));
     updateAttachmentVisibility();
 
-    function validateWarrantyAttachment(input) {
+    function fieldLabel(el) {
+        return (el?.dataset?.fieldLabel || '').trim() || 'This field';
+    }
+
+    function feedbackAnchor(input) {
+        if (!input) return null;
+        if (input.id === 'ChassisSelect') {
+            return input.closest('.col-md-6')?.querySelector('.ts-wrapper') || input;
+        }
+        return input;
+    }
+
+    function ensureFeedback(input) {
+        const anchor = feedbackAnchor(input);
+        const parent = anchor?.parentElement;
+        if (!parent) return null;
+        let fb = anchor.nextElementSibling;
+        if (!fb || !fb.classList.contains('invalid-feedback')) {
+            fb = parent.querySelector(':scope > .invalid-feedback');
+        }
+        if (!fb || !fb.classList.contains('invalid-feedback')) {
+            fb = document.createElement('div');
+            fb.className = 'invalid-feedback';
+            anchor.insertAdjacentElement('afterend', fb);
+        }
+        return fb;
+    }
+
+    function setFieldInvalid(input, message) {
+        if (!input) return;
+        input.classList.add('is-invalid');
+        const anchor = feedbackAnchor(input);
+        if (anchor && anchor !== input) anchor.classList.add('is-invalid');
+        const fb = ensureFeedback(input);
+        if (fb) fb.textContent = message;
+    }
+
+    function clearFieldInvalid(input) {
+        if (!input) return;
+        input.classList.remove('is-invalid');
+        input.setCustomValidity('');
+        const anchor = feedbackAnchor(input);
+        if (anchor && anchor !== input) anchor.classList.remove('is-invalid');
+        const fb = ensureFeedback(input);
+        if (fb) fb.textContent = '';
+    }
+
+    function clearAllFieldInvalids(form) {
+        form.querySelectorAll('.is-invalid').forEach(function (el) {
+            el.classList.remove('is-invalid');
+        });
+        form.querySelectorAll('.invalid-feedback').forEach(function (fb) {
+            fb.textContent = '';
+        });
+    }
+
+    function reportField(el, message) {
+        if (!el) return;
+        setFieldInvalid(el, message || el.validationMessage || (fieldLabel(el) + ' is required.'));
+    }
+
+    function isAttachmentRowVisible(input) {
+        const row = input?.closest('.attachment-row');
+        return !row || row.style.display !== 'none';
+    }
+
+    function validateFutureDate(input) {
+        if (!input || input.type !== 'date' || !(input.value || '').trim()) return true;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const picked = new Date(input.value + 'T00:00:00');
+        if (picked > today) {
+            setFieldInvalid(input, fieldLabel(input) + ' cannot be a future date.');
+            return false;
+        }
+        clearFieldInvalid(input);
+        return true;
+    }
+
+    function validateRequiredText(input) {
+        const label = fieldLabel(input);
+        const value = (input.value || '').trim();
+        if (!value) {
+            setFieldInvalid(input, label + ' is required.');
+            return false;
+        }
+        clearFieldInvalid(input);
+        return true;
+    }
+
+    function validateChassis() {
+        const chassisSelectEl = document.getElementById('ChassisSelect');
+        if (!chassisHidden.value || !masterIdInput.value) {
+            if (!masterIdInput.value) {
+                masterIdInput.value = chassisSelect?.options[chassisHidden.value]?.vehicleMasterId || initialMasterId || '';
+            }
+        }
+        if (!chassisHidden.value || !masterIdInput.value) {
+            warning?.classList.remove('d-none');
+            if (chassisSelectEl) {
+                setFieldInvalid(chassisSelectEl, 'Chassis No: Please select a registered chassis number.');
+                return false;
+            }
+        }
+        warning?.classList.add('d-none');
+        if (chassisSelectEl) clearFieldInvalid(chassisSelectEl);
+        return true;
+    }
+
+    function validateWarrantyAttachment(input, required) {
+        const label = fieldLabel(input);
         if (!input.files || input.files.length === 0) {
-            input.setCustomValidity('');
+            if (required) {
+                setFieldInvalid(input, label + ' is required.');
+                return false;
+            }
+            clearFieldInvalid(input);
             return true;
         }
+
         const file = input.files[0];
         const kind = input.dataset.mediaKind || 'image';
         if (kind === 'video') {
             if (!file.type.startsWith('video/')) {
-                input.setCustomValidity('Please upload a video file only.');
+                setFieldInvalid(input, label + ': Please upload a video file only.');
                 return false;
             }
         } else if (!file.type.startsWith('image/')) {
-            input.setCustomValidity('Please upload an image file only.');
+            setFieldInvalid(input, label + ': Please upload an image file only.');
             return false;
         }
-        input.setCustomValidity('');
+
+        const maxMb = parseInt(input.getAttribute('data-max-mb'), 10);
+        if (!Number.isNaN(maxMb) && file.size > maxMb * 1024 * 1024) {
+            setFieldInvalid(input, label + ': Maximum file size is ' + maxMb + ' MB.');
+            return false;
+        }
+
+        clearFieldInvalid(input);
         return true;
     }
 
     document.querySelectorAll('.warranty-attachment-file').forEach(function (input) {
         input.addEventListener('change', function () {
-            validateWarrantyAttachment(input);
-            input.reportValidity();
+            validateWarrantyAttachment(input, false);
         });
-        input.addEventListener('blur', function () {
-            validateWarrantyAttachment(input);
-            input.reportValidity();
+    });
+
+    function validateSubmitForm(form) {
+        clearAllFieldInvalids(form);
+
+        if (isStaffApply) {
+            const subdealerField = document.getElementById('TargetSubdealerUserId');
+            if (subdealerField && !validateRequiredText(subdealerField)) {
+                subdealerField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return false;
+            }
+        }
+
+        if (!validateChassis()) {
+            const chassisSelectEl = document.getElementById('ChassisSelect');
+            chassisSelectEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return false;
+        }
+
+        const requiredFields = form.querySelectorAll('[data-field-label][required]');
+        for (const input of requiredFields) {
+            if (input.type === 'file') continue;
+            if (input.id === 'ChassisSelect') continue;
+            if (input === otherPartInput && otherPartDiv?.classList.contains('d-none')) continue;
+            if (input.type === 'date' && !validateFutureDate(input)) {
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return false;
+            }
+            if (!validateRequiredText(input)) {
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return false;
+            }
+        }
+
+        for (const input of form.querySelectorAll('input[type="date"]')) {
+            if ((input.value || '').trim() && !validateFutureDate(input)) {
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return false;
+            }
+        }
+
+        const claimType = document.querySelector('input[name="ClaimType"]:checked')?.value || 'WARRANTY';
+        const requiredTypes = claimType === 'CAMPAIGN'
+            ? @Html.Raw(System.Text.Json.JsonSerializer.Serialize(WarrantyAttachmentTypes.RequiredForCampaign))
+            : @Html.Raw(System.Text.Json.JsonSerializer.Serialize(WarrantyAttachmentTypes.RequiredForWarranty));
+
+        for (const type of requiredTypes) {
+            if (existingAttachmentTypes.has(type)) continue;
+            const input = form.querySelector('[name="attachment_' + type + '"]');
+            if (!input || !isAttachmentRowVisible(input)) continue;
+            if (!validateWarrantyAttachment(input, true)) {
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return false;
+            }
+        }
+
+        for (const input of form.querySelectorAll('.warranty-attachment-file')) {
+            if (!isAttachmentRowVisible(input)) continue;
+            if (input.files?.length && !validateWarrantyAttachment(input, false)) {
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function applyServerFieldError(message) {
+        if (!message) return;
+        const form = document.getElementById('warrantyClaimForm');
+        if (!form) return;
+
+        let matched = false;
+        form.querySelectorAll('[data-field-label]').forEach(function (el) {
+            const label = fieldLabel(el);
+            if (message.startsWith(label + ':') || message === label + ' is required.') {
+                setFieldInvalid(el, message);
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                matched = true;
+            }
+        });
+
+        if (!matched) {
+            form.querySelectorAll('.warranty-attachment-file').forEach(function (input) {
+                const label = fieldLabel(input);
+                if (label && message.indexOf(label) >= 0) {
+                    setFieldInvalid(input, message);
+                    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+        }
+    }
+
+    document.getElementById('warrantyClaimForm')?.querySelectorAll('[data-field-label], input[type="date"]').forEach(function (input) {
+        input.addEventListener('input', function () {
+            if (!input.classList.contains('is-invalid')) return;
+            if (input.type === 'date') validateFutureDate(input);
+            else if (input.hasAttribute('required')) validateRequiredText(input);
+            else clearFieldInvalid(input);
+        });
+    });
+
+    const serverError = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["Error"]?.ToString() ?? ""));
+    if (serverError) {
+        applyServerFieldError(serverError);
+    }
+
+    const saveModeInput = document.getElementById('SaveMode');
+    const saveDraftBtn = document.getElementById('saveDraftBtn');
+    const submitClaimBtn = document.getElementById('submitClaimBtn');
+
+    function resolveSaveMode(submitter) {
+        return submitter?.dataset?.saveMode
+            || (submitter === submitClaimBtn ? 'submit' : null)
+            || (submitter === saveDraftBtn ? 'draft' : null)
+            || saveModeInput?.value
+            || 'draft';
+    }
+
+    [saveDraftBtn, submitClaimBtn].forEach(function (btn) {
+        btn?.addEventListener('click', function () {
+            if (saveModeInput && btn.dataset.saveMode) {
+                saveModeInput.value = btn.dataset.saveMode;
+            }
         });
     });
 
     document.getElementById('warrantyClaimForm')?.addEventListener('submit', function (e) {
-        const isDraft = e.submitter?.value === 'draft';
+        const saveMode = resolveSaveMode(e.submitter);
+        if (saveModeInput) saveModeInput.value = saveMode;
+
+        const isDraft = saveMode === 'draft';
         if (isDraft) {
             this.querySelectorAll('[required]').forEach(el => el.removeAttribute('required'));
             return;
         }
-        for (const input of this.querySelectorAll('.warranty-attachment-file')) {
-            if (!validateWarrantyAttachment(input)) {
-                e.preventDefault();
-                input.reportValidity();
-                return;
-            }
-        }
-    });
 
-    // Initial state: manual pick if no linked sold vehicle
-    if (vehicleIdInput.value) {
-        setModelColorManual(false);
-    } else if ((chassisInput.value || '').trim().length >= 5) {
-        setModelColorManual(true);
-    } else {
-        setModelColorManual(false);
-    }
-
-    modelSelect.addEventListener('change', function () {
-        const opt = modelSelect.selectedOptions[0];
-        document.getElementById('ModelName').value = opt?.text && opt.value ? opt.text : '';
-        KrsModelColors.populateSelect(colorSelect, modelSelect.value, null);
-        document.getElementById('ColorName').value = colorSelect.selectedOptions[0]?.text && colorSelect.value
-            ? colorSelect.selectedOptions[0].text : '';
-    });
-    colorSelect.addEventListener('change', function () {
-        const opt = colorSelect.selectedOptions[0];
-        document.getElementById('ColorName').value = opt?.text && opt.value ? opt.text : '';
-    });
-
-    KrsModelColors.populateSelect(colorSelect, modelSelect.value, @(Model.ColorId.HasValue ? Model.ColorId.Value.ToString() : "null"));
-
-    chassisInput?.addEventListener('input', function () {
-        clearTimeout(timer);
-        const val = this.value.trim();
-        if (val.length < 5) {
-            warning.classList.add('d-none');
+        if (!validateSubmitForm(this)) {
+            e.preventDefault();
             return;
         }
-        timer = setTimeout(async () => {
-            const res = await fetch('@Url.Action("LookupChassis")?chassis=' + encodeURIComponent(val));
-            if (!res.ok) return;
-            const data = await res.json();
-            if (!data) return;
-            if (data.isKnownSoldVehicle) {
-                warning.classList.add('d-none');
-                applyKnownVehicle(data);
-            } else {
-                warning.classList.remove('d-none');
-                applyUnknownChassis();
-            }
-        }, 400);
+
+        alert('Claim submission may take some time because file uploads are heavy. Please wait — do not close or refresh this page until loading completes.');
+        // Disable after the browser collects form data — disabled submit buttons are not posted.
+        window.setTimeout(function () {
+            saveDraftBtn?.setAttribute('disabled', 'disabled');
+            submitClaimBtn?.setAttribute('disabled', 'disabled');
+        }, 0);
     });
 })();
 </script>

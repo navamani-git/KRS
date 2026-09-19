@@ -19,6 +19,7 @@ namespace KRSDealerManagement.Application.DTOs
         public DateTime AmpereInvoiceDate { get; set; }
         public DateTime ReceivedDate { get; set; }
         public bool IsAllocated { get; set; }
+        public bool WarrantyOnly { get; set; }
         public string? AllocatedToSubdealerName { get; set; }
         public string? Remarks { get; set; }
         public DateTime CreatedDate { get; set; }

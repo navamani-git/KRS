@@ -12,16 +12,18 @@ namespace KRSDealerManagement.Web.Helpers
             ".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v"
         };
 
-        public static async Task<string> SaveAsync(IFormFile file, IWebHostEnvironment env)
+        public static async Task<string> SaveAsync(IFormFile file, IWebHostEnvironment env, string? fieldLabel = null)
         {
+            var prefix = string.IsNullOrWhiteSpace(fieldLabel) ? string.Empty : fieldLabel.Trim() + ": ";
+
             if (file == null || file.Length == 0)
-                throw new InvalidOperationException("File is empty.");
+                throw new InvalidOperationException(prefix + "File is empty.");
             if (file.Length > MaxFileBytes)
-                throw new InvalidOperationException("Maximum file size is 100 MB.");
+                throw new InvalidOperationException(prefix + "Maximum file size is 100 MB.");
 
             var ext = Path.GetExtension(file.FileName)?.ToLowerInvariant() ?? "";
             if (!AllowedExtensions.Contains(ext))
-                throw new InvalidOperationException("Allowed file types: images, PDF, and video (MP4, MOV, WEBM, etc.).");
+                throw new InvalidOperationException(prefix + "Allowed file types: images, PDF, and video (MP4, MOV, WEBM, etc.).");
 
             var dayFolder = DateTime.Now.ToString("yyyy_MM_dd");
             var absoluteDir = AppFileStorageHelper.EnsureSectionDayFolder(env, AppFileStorageHelper.Sections.Warranty, dayFolder);

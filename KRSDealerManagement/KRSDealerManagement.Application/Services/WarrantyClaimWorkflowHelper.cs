@@ -46,5 +46,23 @@ namespace KRSDealerManagement.Application.Services
                 throw new InvalidOperationException($"Missing required attachments: {names}");
             }
         }
+
+        public static void TryMarkComplete(WarrantyClaim claim)
+        {
+            if (claim.Status != WarrantyClaimStatus.AmpereApproved)
+                return;
+
+            if (!WarrantyClaimStatus.AllProgressFlagsComplete(
+                    claim.ResolutionPartCompleted,
+                    claim.DealerInvoiceClosedCompleted,
+                    claim.ReplacementPartReceivedCompleted,
+                    claim.SubdealerPartReceivedCompleted,
+                    claim.DefectiveHandoverCompleted,
+                    claim.DefectiveSentToAmpereCompleted))
+                return;
+
+            claim.Status = WarrantyClaimStatus.Complete;
+            claim.CompletedDate ??= DateTime.UtcNow;
+        }
     }
 }

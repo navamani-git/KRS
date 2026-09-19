@@ -35,6 +35,12 @@
     stagePurpose ??= BookingGridStageInfo.GetHelp(selectedStatus, bookingPhaseOnly, bookedToCustomerView, subsidyIdPendingOnly, subsidyDocsPendingOnly, registeredAwaitingPlateOnly).ScreenPurpose;
     var totalItems = (int)(ViewBag.TotalItems ?? Model.Count());
 
+    var resetAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "Index";
+    var resetRoute = new Microsoft.AspNetCore.Routing.RouteValueDictionary();
+    if (selectedStatus.HasValue)
+        resetRoute["status"] = selectedStatus.Value;
+    var resetFiltersUrl = Url.Action(resetAction, "VehicleBookings", resetRoute);
+
     string FmtDate(DateTime? value) => value?.ToString("yyyy-MM-dd") ?? "—";
 }
 
@@ -72,6 +78,22 @@
             @if (bookingPhaseOnly)
             {
                 <input type="hidden" name="bookingPhaseOnly" value="true" />
+            }
+            @if (subsidyIdPendingOnly)
+            {
+                <input type="hidden" name="subsidyIdPendingOnly" value="true" />
+            }
+            @if (subsidyDocsPendingOnly)
+            {
+                <input type="hidden" name="subsidyDocsPendingOnly" value="true" />
+            }
+            @if (registeredAwaitingPlateOnly)
+            {
+                <input type="hidden" name="registeredAwaitingPlateOnly" value="true" />
+            }
+            @if (bookedToCustomerView)
+            {
+                <input type="hidden" name="bookedToCustomerView" value="true" />
             }
             @if (showDealershipFilter)
             {
@@ -128,7 +150,7 @@
             </div>
             <div class="col-md-2">
                 <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel"></i> Filter</button>
-                <a href="@Url.Action(ViewContext.RouteData.Values["action"]?.ToString() ?? "Index", ViewContext.RouteData.Values["controller"]?.ToString() ?? "VehicleBookings")" class="btn btn-sm btn-secondary" title="Reset filters"><i class="bi bi-arrow-clockwise"></i></a>
+                <a href="@resetFiltersUrl" class="btn btn-sm btn-secondary" title="Reset filters"><i class="bi bi-arrow-clockwise"></i></a>
             </div>
         </form>
     </div>
@@ -136,7 +158,7 @@
 
 <div class="card">
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
-        <h3 class="card-title mb-0">Bookings (@totalItems)</h3>
+        <h3 class="card-title mb-0">@pageTitle (@totalItems)</h3>
         <span class="card-header-hint">Drag column edge to resize · ↗ expand / ↙ shrink · scroll right for more columns</span>
     </div>
     <div class="card-body p-0">
@@ -144,7 +166,7 @@
         {
             <partial name="_GridScrollHint" />
             <div class="table-responsive">
-                <table class="table table-sm table-hover table-striped mb-0 grid-excel-table"
+                <table class="table table-sm table-hover table-striped mb-0 grid-excel-table grid-data-table"
                        data-grid-id="@GridIds.VehicleBookings">
                     <thead class="table-dark">
                         <tr>
@@ -181,10 +203,7 @@
                             }
                             <th class="grid-col-actions">Actions</th>
                         </tr>
-                        @if (!subsidyDocsPendingOnly && !registeredAwaitingPlateOnly)
-                        {
-                            <partial name="_PaginatedGridFilters" />
-                        }
+                        <partial name="_PaginatedGridFilters" />
                     </thead>
                     <tbody>
                         @foreach (var row in Model)

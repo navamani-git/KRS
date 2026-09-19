@@ -1,0 +1,151 @@
+@model IEnumerable<KRSDealerManagement.Application.DTOs.WarrantyClaimDto>
+@using KRSDealerManagement.Application.DTOs
+@{
+    ViewData["Title"] = "Completed Warranty";
+    var isStaff = ViewBag.IsStaff as bool? ?? false;
+    var subdealers = ViewBag.Subdealers as IEnumerable<UserDto> ?? Enumerable.Empty<UserDto>();
+}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1 class="m-0"><i class="bi bi-check2-circle"></i> Completed Warranty</h1>
+        <p class="text-muted">Finished warranty / campaign claims</p>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end">
+            @if (isStaff)
+            {
+                <div class="col-md-3">
+                    <label class="form-label form-label-sm mb-0">Subdealer</label>
+                    <select name="subdealerUserId" class="form-select form-select-sm">
+                        <option value="">All subdealers</option>
+                        @foreach (var s in subdealers)
+                        {
+                            <option value="@s.UserId" selected="@(ViewBag.SelectedSubdealerUserId as int? == s.UserId)">@s.GetFullName()</option>
+                        }
+                    </select>
+                </div>
+            }
+            <div class="col-md-2">
+                <label class="form-label form-label-sm mb-0">From Date</label>
+                <input type="date" name="fromDate" class="form-control form-control-sm" value="@ViewBag.FromDate" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label form-label-sm mb-0">To Date</label>
+                <input type="date" name="toDate" class="form-control form-control-sm" value="@ViewBag.ToDate" />
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-sm btn-primary w-100">Search</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover table-striped mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>Claim #</th>
+                        <th>Type</th>
+                        <th>Chassis</th>
+                        <th>Customer</th>
+                        <th>Part</th>
+                        @if (isStaff)
+                        {
+                            <th>Subdealer</th>
+                        }
+                        <th>Completed</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ int i = 1; }
+                    @foreach (var c in Model)
+                    {
+                        <tr>
+                            <td>@(i++)</td>
+                            <td><strong>@c.ClaimNumber</strong></td>
+                            <td>@c.ClaimType</td>
+                            <td>@c.ChassisNo</td>
+                            <td>@c.CustomerName</td>
+                            <td>@c.PartName</td>
+                            @if (isStaff)
+                            {
+                                <td>@c.AccountName</td>
+                            }
+                            <td>@(c.CompletedDate?.ToString("dd-MMM-yyyy") ?? "—")</td>
+                            <td class="text-end warranty-grid-actions">
+                                @if (isStaff)
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-secondary btn-warranty-history mb-1" data-history-url="@Url.Action("History", new { id = c.WarrantyClaimId })" title="View History">
+                                        <i class="bi bi-clock-history"></i> History
+                                    </button>
+                                }
+                                <a href="@Url.Action("Details", new { id = c.WarrantyClaimId })" class="btn btn-sm btn-outline-primary d-block">View</a>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="@(isStaff ? 9 : 8)" class="text-center text-muted py-4">No completed warranty claims found.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="p-3"><partial name="_Pagination" /></div>
+    </div>
+</div>
+
+@if (isStaff)
+{
+    <div class="modal fade" id="warrantyHistoryModal" tabindex="-1" aria-labelledby="warrantyHistoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="warrantyHistoryModalLabel">Claim History</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="warrantyHistoryModalBody">
+                    <div class="text-muted">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (isStaff)
+{
+@section Scripts {
+<script>
+(function () {
+    const modalEl = document.getElementById('warrantyHistoryModal');
+    const bodyEl = document.getElementById('warrantyHistoryModalBody');
+    if (!modalEl || !bodyEl) return;
+
+    document.querySelectorAll('.btn-warranty-history').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+            const url = btn.dataset.historyUrl;
+            if (!url) return;
+            bodyEl.innerHTML = '<div class="text-muted">Loading...</div>';
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+            try {
+                const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                bodyEl.innerHTML = res.ok ? await res.text() : '<div class="text-danger">Unable to load history.</div>';
+            } catch (e) {
+                bodyEl.innerHTML = '<div class="text-danger">Unable to load history.</div>';
+            }
+        });
+    });
+})();
+</script>
+}
+}

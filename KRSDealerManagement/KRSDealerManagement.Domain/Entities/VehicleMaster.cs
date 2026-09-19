@@ -19,6 +19,8 @@ namespace KRSDealerManagement.Domain.Entities
         public DateTime AmpereInvoiceDate { get; set; }
         public DateTime ReceivedDate { get; set; }
         public bool IsAllocated { get; set; }
+        /// <summary>Warranty-only external stock — not allocatable or sold; used for warranty claims only.</summary>
+        public bool WarrantyOnly { get; set; }
         public string? Remarks { get; set; }
         public int CreatedBy { get; set; }
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;

@@ -199,9 +199,11 @@ namespace KRSDealerManagement.Web.Controllers
             var bookings = (await _unitOfWork.VehicleBookings.GetAllAsync()).ToList();
             var vehicles = (await _unitOfWork.Vehicles.GetAllAsync()).ToDictionary(v => v.VehicleId);
             var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
+            var warrantyOnlyVehicleIds = await WarrantyOnlyVehicleFlowHelper.GetWarrantyOnlyVehicleIdsAsync(_unitOfWork);
 
             var rows = new List<VehicleBookingGridRowDto>();
-            foreach (var b in bookings.Where(b => scopedIds.Contains(b.SubdealerId)))
+            foreach (var b in bookings.Where(b =>
+                scopedIds.Contains(b.SubdealerId) && !warrantyOnlyVehicleIds.Contains(b.VehicleId)))
             {
                 vehicles.TryGetValue(b.VehicleId, out var v);
                 users.TryGetValue(b.SubdealerId, out var u);
@@ -346,9 +348,10 @@ namespace KRSDealerManagement.Web.Controllers
             var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
             var statusMap = (await _statuses.GetActiveByCategoryAsync(StatusCategories.Vehicle))
                 .ToDictionary(s => s.StatusValue, s => s.StatusName);
+            var warrantyOnlyVehicleIds = await WarrantyOnlyVehicleFlowHelper.GetWarrantyOnlyVehicleIdsAsync(_unitOfWork);
 
             var list = bookings
-                .Where(b => scopedIds.Contains(b.SubdealerId))
+                .Where(b => scopedIds.Contains(b.SubdealerId) && !warrantyOnlyVehicleIds.Contains(b.VehicleId))
                 .Select(b =>
                 {
                     vehicles.TryGetValue(b.VehicleId, out var v);
@@ -425,6 +428,16 @@ namespace KRSDealerManagement.Web.Controllers
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
+            try
+            {
+                await WarrantyOnlyVehicleFlowHelper.EnsureNotWarrantyOnlyOperationalVehicleAsync(_unitOfWork, vehicleId);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("Index", "Vehicles");
+            }
+
             var vehicle = await LoadVehicleOrNull(vehicleId, userId.Value);
             if (vehicle == null) { TempData["Error"] = "Vehicle not found."; return RedirectToAction("Index", "Vehicles"); }
 
@@ -461,6 +474,16 @@ namespace KRSDealerManagement.Web.Controllers
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
+
+            try
+            {
+                await WarrantyOnlyVehicleFlowHelper.EnsureNotWarrantyOnlyOperationalVehicleAsync(_unitOfWork, vehicleId);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("Index", "Vehicles");
+            }
 
             var vehicle = await LoadVehicleOrNull(vehicleId, userId.Value);
             if (vehicle == null) { TempData["Error"] = "Vehicle not found."; return RedirectToAction("Index", "Vehicles"); }
@@ -1376,6 +1399,10 @@ namespace KRSDealerManagement.Web.Controllers
 
         private async Task<bool> CanAccessBooking(VehicleBooking booking)
         {
+            var warrantyOnlyVehicleIds = await WarrantyOnlyVehicleFlowHelper.GetWarrantyOnlyVehicleIdsAsync(_unitOfWork);
+            if (warrantyOnlyVehicleIds.Contains(booking.VehicleId))
+                return false;
+
             if (SessionHelper.IsSubdealer(HttpContext.Session))
                 return booking.SubdealerId == SessionHelper.GetUserId(HttpContext.Session);
             var subdealersQuery = new GetSubdealersQuery();

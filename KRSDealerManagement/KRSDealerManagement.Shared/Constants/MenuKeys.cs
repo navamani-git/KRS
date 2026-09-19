@@ -33,6 +33,7 @@ namespace KRSDealerManagement.Shared.Constants
         public const string VehiclesEdit = "vehicles_edit";
         public const string MyReturns = "my_returns";
         public const string MyWarrantyClaims = "my_warranty_claims";
+        public const string MyCompletedWarrantyClaims = "my_completed_warranty";
         public const string WarrantyApply = "warranty_apply";
 
         // Account Management (Subdealer features)
@@ -63,7 +64,7 @@ namespace KRSDealerManagement.Shared.Constants
                 PurchaseOrders, PurchaseOrderCreate, PurchaseOrderView, PurchaseOrderEdit, PurchaseOrderApprove,
                 Commissions, CommissionSubmit, CommissionView, CommissionInvoiced, CommissionApprove,
                 Vehicles, VehiclesView, VehiclesBookingStages, VehicleAging, VehiclesCreate, VehiclesEdit, MyReturns,
-                MyWarrantyClaims, WarrantyApply,
+                MyWarrantyClaims, MyCompletedWarrantyClaims, WarrantyApply,
                 Account, AccountBalance, AccountTransactions, AccountStatements, MyPayments, Reports,
                 AdminPanel, SubdealerManagement, AccountManagement, PermissionManagement,
                 PriceManagement, VehicleManagement, ReportsAdmin
@@ -153,6 +154,12 @@ namespace KRSDealerManagement.Shared.Constants
                             Key = MyWarrantyClaims, Name = GetDisplayName(MyWarrantyClaims),
                             DefaultAccessible = true, Controller = "WarrantyClaims", Action = "MyClaims", Icon = "bi-clipboard-check",
                             Actions = new[] { "MyClaims", "Details" }
+                        },
+                        new MenuItemDefinition
+                        {
+                            Key = MyCompletedWarrantyClaims, Name = GetDisplayName(MyCompletedWarrantyClaims),
+                            DefaultAccessible = true, Controller = "WarrantyClaims", Action = "MyCompleted", Icon = "bi-check2-circle",
+                            Actions = new[] { "MyCompleted", "Details" }
                         },
                         new MenuItemDefinition
                         {
@@ -317,6 +324,7 @@ namespace KRSDealerManagement.Shared.Constants
                 VehicleAging => "Vehicle Ageing",
                 MyReturns => "My Returns",
                 MyWarrantyClaims => "My Warranty Claims",
+                MyCompletedWarrantyClaims => "Completed Warranty",
                 WarrantyApply => "Apply Warranty / Campaign",
                 VehiclesCreate => "Create Vehicles",
                 VehiclesEdit => "Edit Vehicles",

@@ -1,7 +1,7 @@
 @{
     var modelColorMapJson = ViewBag.ModelColorMapJson as string ?? "{}";
 }
-<script src="~/js/model-color-filter.js"></script>
+<script src="~/js/model-color-filter.js" asp-append-version="true"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const modelSelect = document.getElementById('modelId');

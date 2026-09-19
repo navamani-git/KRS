@@ -78,6 +78,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 SecondaryPhone = org.SecondaryPhone,
                 SalesRepMobile = org.SalesRepMobile,
                 ServiceRepMobile = org.ServiceRepMobile,
+                OwnShowroom = org.OwnShowroom,
                 IsActive = org.IsActive,
                 CreatedDate = org.CreatedDate,
                 PrimaryUserId = primaryUserId,

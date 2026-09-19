@@ -4,5 +4,13 @@
         <strong>Grid tips:</strong>
         Scroll right for extra columns · drag header edges to resize · click ↗ to expand · click ↙ to shrink
     </span>
-    <span class="scroll-arrow"><i class="bi bi-arrows-expand"></i> Scroll →</span>
+    <div class="grid-scroll-hint-actions">
+        <button type="button"
+                class="btn btn-sm btn-outline-secondary grid-clear-column-filters"
+                data-filter-form="gridFilterForm"
+                title="Clear all column filters and reload grid">
+            <i class="bi bi-x-circle"></i> Clear column filters
+        </button>
+        <span class="scroll-arrow"><i class="bi bi-arrows-expand"></i> Scroll →</span>
+    </div>
 </div>

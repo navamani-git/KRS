@@ -13,6 +13,7 @@ namespace KRSDealerManagement.Application.Commands
         public string? SalesRepMobile { get; set; }
         public string? ServiceRepMobile { get; set; }
         public bool IsActive { get; set; }
+        public bool OwnShowroom { get; set; }
         public int DealershipId { get; set; }
         public int UpdatedBy { get; set; }
     }

@@ -94,6 +94,11 @@
                         }
                     </div>
                     <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="ownShowroom" value="true" id="ownShowroom" @(Model.OwnShowroom ? "checked" : null) />
+                        <label class="form-check-label" for="ownShowroom">Own Showroom</label>
+                        <div class="form-text">One per dealership. Use the main dealer name for warranty-only sold vehicles.</div>
+                    </div>
+                    <div class="form-check mb-2">
                         <input class="form-check-input" type="checkbox" name="isActive" value="true" id="isActive" @(Model.IsActive ? "checked" : null) />
                         <label class="form-check-label" for="isActive">Active</label>
                     </div>

@@ -36,6 +36,21 @@
         table = table || panel.querySelector('table');
         if (!table || !table.tHead) return;
 
+        measureHeaderRows(panel);
+        applyCellTitles(panel);
+
+        if (window.matchMedia('(max-width: 991.98px)').matches) {
+            panel.classList.add('grid-scroll-panel', 'grid-scroll-panel--mobile');
+            panel.style.maxHeight = 'none';
+            panel.style.height = 'auto';
+            panel.style.overflowX = 'auto';
+            panel.style.overflowY = 'visible';
+            document.dispatchEvent(new CustomEvent('grid-scroll-ready'));
+            return;
+        }
+
+        panel.classList.remove('grid-scroll-panel--mobile');
+
         var top = panel.getBoundingClientRect().top;
         var cardBody = panel.parentElement;
         var paginationBar = cardBody.querySelector('.d-flex.flex-wrap.justify-content-between.align-items-center');

@@ -54,7 +54,7 @@
         <div class="card-header"><h3 class="card-title mb-0">Booking Summary</h3></div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-sm table-bordered mb-0">
+                <table class="table table-sm table-bordered mb-0 booking-summary-table">
                     <thead class="table-light">
                         <tr>
                             <th>Name</th>
@@ -62,7 +62,7 @@
                             <th>Mobile 2</th>
                             <th>Model</th>
                             <th>Color</th>
-                            <th>Chassis</th>
+                            <th class="booking-summary-chassis">Chassis</th>
                             <th>RTO District</th>
                             <th>RTO Location</th>
                             <th>Fancy</th>
@@ -76,7 +76,7 @@
                             <td>@Model.AlternativeMobile</td>
                             <td>@ViewBag.ModelName</td>
                             <td>@ViewBag.ColorName</td>
-                            <td class="text-nowrap">@ViewBag.Chassis</td>
+                            <td class="booking-summary-chassis"><span class="booking-chassis-value" title="@ViewBag.Chassis">@ViewBag.Chassis</span></td>
                             <td>@(ViewBag.RtoDistrictName ?? "—")</td>
                             <td>@(ViewBag.RtoLocationName ?? "—")</td>
                             <td>@(ViewBag.FancyNumberLabel ?? "—")</td>

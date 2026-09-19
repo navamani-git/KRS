@@ -120,15 +120,21 @@
 
                             <td>
 
-                                <strong>@r.RoleName</strong><br />
+                                <strong>@r.DisplayName</strong>
 
-                                <code class="small">@r.RoleCode</code>
-
-                                @if (r.DealershipId.HasValue)
+                                @if (!string.IsNullOrWhiteSpace(r.Description))
 
                                 {
 
-                                    <br /><span class="badge bg-secondary mt-1">Legacy: @r.DealershipName</span>
+                                    <br /><span class="text-muted small">@r.Description</span>
+
+                                }
+
+                                @if (r.DealershipId.HasValue && !string.IsNullOrWhiteSpace(r.DealershipName))
+
+                                {
+
+                                    <br /><span class="badge bg-secondary mt-1">@r.DealershipName</span>
 
                                 }
 

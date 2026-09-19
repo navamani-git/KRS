@@ -29,6 +29,9 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 throw new InvalidOperationException(
                     $"A subdealer named '{request.SubdealerName.Trim()}' already exists at this location.");
 
+            await SubdealerOrgService.ValidateOwnShowroomToggleAsync(
+                _unitOfWork, request.DealershipId, request.OwnShowroom);
+
             var code = GenerateCode(request.SubdealerName);
 
             var subDealerId = await _unitOfWork.SubDealers.AddAsync(new SubDealer
@@ -42,6 +45,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 SalesRepMobile = request.SalesRepMobile?.Trim(),
                 ServiceRepMobile = request.ServiceRepMobile?.Trim(),
                 Email = request.Email.Trim(),
+                OwnShowroom = request.OwnShowroom,
                 IsActive = true,
                 CreatedDate = DateTime.UtcNow,
                 ModifiedDate = DateTime.UtcNow

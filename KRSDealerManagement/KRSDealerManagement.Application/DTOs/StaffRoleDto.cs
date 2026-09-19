@@ -1,3 +1,4 @@
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Shared.Enums;
 
 namespace KRSDealerManagement.Application.DTOs
@@ -24,5 +25,11 @@ namespace KRSDealerManagement.Application.DTOs
         public int UserCount { get; set; }
         public int MenuCount { get; set; }
         public List<RoleMenuPermissionDto> Menus { get; set; } = new();
+
+        public string DisplayName => StaffRoleDisplayHelper.ResolveDisplayName(
+            RoleName,
+            RoleCode,
+            RoleTemplateName,
+            DealershipName);
     }
 }

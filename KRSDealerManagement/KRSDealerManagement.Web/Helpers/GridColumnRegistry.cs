@@ -29,7 +29,7 @@ namespace KRSDealerManagement.Web.Helpers
                 GridIds.RtoLocations => RtoLocations(),
                 GridIds.StaffUsers => StaffUsers(),
                 GridIds.StatusLookups => StatusLookups(),
-                GridIds.VehicleBookings => VehicleBookings(options.IsSubdealerView),
+                GridIds.VehicleBookings => VehicleBookings(options),
                 GridIds.VehicleColors => VehicleColors(),
                 GridIds.VehicleModels => VehicleModels(),
                 GridIds.ShowroomStock => ShowroomStock(),
@@ -324,7 +324,18 @@ namespace KRSDealerManagement.Web.Helpers
             GridFilterColumn.Skip()
         };
 
-        private static List<GridFilterColumn> VehicleBookings(bool isSubdealerView)
+        private static List<GridFilterColumn> VehicleBookings(GridColumnOptions options)
+        {
+            if (options.SubsidyDocsPendingOnly)
+                return VehicleBookingsSubsidyDocs(options.IsSubdealerView);
+
+            if (options.RegisteredAwaitingPlateOnly)
+                return VehicleBookingsRegisteredPlate(options.IsSubdealerView);
+
+            return VehicleBookingsStandard(options.IsSubdealerView);
+        }
+
+        private static List<GridFilterColumn> VehicleBookingsStandard(bool isSubdealerView)
         {
             var cols = new List<GridFilterColumn>
             {
@@ -345,6 +356,48 @@ namespace KRSDealerManagement.Web.Helpers
                 GridFilterColumn.Select("invoiceDoc", "Yes", "No"),
                 GridFilterColumn.Select("insuranceDoc", "Yes", "No"),
                 GridFilterColumn.DateCol("registration", "Registered"),
+                GridFilterColumn.Actions()
+            });
+            return cols;
+        }
+
+        private static List<GridFilterColumn> VehicleBookingsSubsidyDocs(bool isSubdealerView)
+        {
+            var cols = new List<GridFilterColumn>
+            {
+                GridFilterColumn.Combo("id", "ID"),
+                GridFilterColumn.Combo("chassis", "Chassis")
+            };
+            if (!isSubdealerView)
+                cols.Add(GridFilterColumn.Combo("subdealer", "Subdealer"));
+            cols.AddRange(new[]
+            {
+                GridFilterColumn.Combo("customer", "Customer"),
+                GridFilterColumn.Combo("mobile", "Mobile"),
+                GridFilterColumn.Select("face", "Done", "Pending"),
+                GridFilterColumn.Select("rc", "Done", "Pending"),
+                GridFilterColumn.Select("booth", "Done", "Pending"),
+                GridFilterColumn.Select("undertaking", "Done", "Pending"),
+                GridFilterColumn.Actions()
+            });
+            return cols;
+        }
+
+        private static List<GridFilterColumn> VehicleBookingsRegisteredPlate(bool isSubdealerView)
+        {
+            var cols = new List<GridFilterColumn>
+            {
+                GridFilterColumn.Combo("id", "ID"),
+                GridFilterColumn.Combo("chassis", "Chassis")
+            };
+            if (!isSubdealerView)
+                cols.Add(GridFilterColumn.Combo("subdealer", "Subdealer"));
+            cols.AddRange(new[]
+            {
+                GridFilterColumn.Combo("customer", "Customer"),
+                GridFilterColumn.Combo("mobile", "Mobile"),
+                GridFilterColumn.Combo("rtoNumber", "RTO Number"),
+                GridFilterColumn.DateCol("registered", "Registered"),
                 GridFilterColumn.Actions()
             });
             return cols;

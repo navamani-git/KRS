@@ -60,11 +60,15 @@ namespace KRSDealerManagement.Application.Services
                 RoleTemplateCodes.WarrantyManager => new Dictionary<string, MenuAccessLevel>(StringComparer.OrdinalIgnoreCase)
                 {
                     [StaffMenuAccess.WarrantyClaims] = MenuAccessLevel.Full,
+                    [StaffMenuAccess.WarrantyApply] = MenuAccessLevel.Full,
+                    [StaffMenuAccess.WarrantyOnlyStock] = MenuAccessLevel.Full,
                     [StaffMenuAccess.WarrantyParts] = MenuAccessLevel.Full,
                 },
                 RoleTemplateCodes.WarrantyStaff => new Dictionary<string, MenuAccessLevel>(StringComparer.OrdinalIgnoreCase)
                 {
                     [StaffMenuAccess.WarrantyClaims] = MenuAccessLevel.Full,
+                    [StaffMenuAccess.WarrantyApply] = MenuAccessLevel.ReadOnly,
+                    [StaffMenuAccess.WarrantyOnlyStock] = MenuAccessLevel.ReadOnly,
                     [StaffMenuAccess.WarrantyParts] = MenuAccessLevel.ReadOnly,
                 },
                 _ => new Dictionary<string, MenuAccessLevel>(StringComparer.OrdinalIgnoreCase)

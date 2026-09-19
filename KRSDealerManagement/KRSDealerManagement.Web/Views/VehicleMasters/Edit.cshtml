@@ -21,7 +21,14 @@
                 <select name="modelId" id="modelId" class="form-select" required>
                     @foreach (var m in models)
                     {
-                        <option value="@m.ModelId" selected="@(m.ModelId == Model.ModelId)">@m.ModelName</option>
+                        if (m.ModelId == Model.ModelId)
+                        {
+                            <option value="@m.ModelId" selected="selected">@m.ModelName</option>
+                        }
+                        else
+                        {
+                            <option value="@m.ModelId">@m.ModelName</option>
+                        }
                     }
                 </select>
             </div>

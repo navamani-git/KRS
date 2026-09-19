@@ -18,6 +18,7 @@ namespace KRSDealerManagement.Application.DTOs
         public string? PartName { get; set; }
         public int? CurrentKms { get; set; }
         public DateTime? SubmittedDate { get; set; }
+        public DateTime? CompletedDate { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime ModifiedDate { get; set; }
     }
@@ -47,12 +48,32 @@ namespace KRSDealerManagement.Application.DTOs
 
         public DateTime? AmpereAppliedDate { get; set; }
         public string? AmpereAppliedByName { get; set; }
-        public DateTime? ProductReceivedDate { get; set; }
-        public string? ProductReceivedByName { get; set; }
-        public DateTime? CollectedDate { get; set; }
-        public string? CollectedByName { get; set; }
-        public DateTime? DefectiveSubmittedDate { get; set; }
-        public string? DefectiveSubmittedByName { get; set; }
+        public DateTime? AmpereApprovedDate { get; set; }
+        public string? AmpereApprovedByName { get; set; }
+        public DateTime? AcceptedDate { get; set; }
+        public string? AcceptedByName { get; set; }
+
+        public string? DealerResolutionType { get; set; }
+        public string? DealerResolutionTypeName { get; set; }
+        public string? DealerClosedPartNumber { get; set; }
+        public DateTime? DealerClosedDate { get; set; }
+        public string? DealerClosedInvoiceNumber { get; set; }
+
+        public bool ResolutionPartCompleted { get; set; }
+        public bool DealerInvoiceClosedCompleted { get; set; }
+        public bool ReplacementPartReceivedCompleted { get; set; }
+        public bool SubdealerPartReceivedCompleted { get; set; }
+        public bool DefectiveHandoverCompleted { get; set; }
+        public bool DefectiveSentToAmpereCompleted { get; set; }
+        public bool SubdealerPartReceivedLockedByStaff { get; set; }
+        public bool DefectiveHandoverLockedByStaff { get; set; }
+
+        public DateTime? ReplacementPartReceivedDate { get; set; }
+        public string? ReplacementPartReceivedByName { get; set; }
+        public DateTime? SubdealerPartReceivedDate { get; set; }
+        public string? SubdealerPartReceivedByName { get; set; }
+        public DateTime? DefectiveHandoverDate { get; set; }
+        public string? DefectiveHandoverByName { get; set; }
         public DateTime? DefectiveSentToAmpereDate { get; set; }
         public string? DefectiveSentToAmpereByName { get; set; }
 
@@ -94,6 +115,7 @@ namespace KRSDealerManagement.Application.DTOs
 
     public class WarrantyChassisLookupDto
     {
+        public int? VehicleMasterId { get; set; }
         public int? VehicleId { get; set; }
         public string ChassisNo { get; set; } = "";
         public int? ModelId { get; set; }
@@ -103,6 +125,19 @@ namespace KRSDealerManagement.Application.DTOs
         public string? CustomerName { get; set; }
         public string? CustomerMobile { get; set; }
         public DateTime? SaleDate { get; set; }
-        public bool IsKnownSoldVehicle { get; set; }
+        public bool FoundInMaster { get; set; }
+        /// <summary>Legacy JSON name kept for existing clients.</summary>
+        public bool IsKnownSoldVehicle => FoundInMaster;
+    }
+
+    public class WarrantyChassisOptionDto
+    {
+        public int VehicleMasterId { get; set; }
+        public string ChassisNo { get; set; } = "";
+        public string Label { get; set; } = "";
+        public int ModelId { get; set; }
+        public string ModelName { get; set; } = "";
+        public int ColorId { get; set; }
+        public string ColorName { get; set; } = "";
     }
 }

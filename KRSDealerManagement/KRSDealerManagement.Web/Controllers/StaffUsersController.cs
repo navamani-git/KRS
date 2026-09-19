@@ -81,7 +81,7 @@ namespace KRSDealerManagement.Web.Controllers
                     CreatedBy = userId.Value,
                     CanExport = IsFormChecked("canExport"),
                     CanViewStatement = IsFormChecked("canViewStatement"),
-                    CanEditWarrantyClaims = IsFormChecked("canEditWarrantyClaims")
+                    CanEditWarrantyClaims = false
                 });
 
                 TempData["Success"] = $"Staff user created successfully (login: {username.Trim().ToLowerInvariant()}).";
@@ -119,7 +119,6 @@ namespace KRSDealerManagement.Web.Controllers
             var isActive = IsFormChecked("isActive");
             var canExport = IsFormChecked("canExport");
             var canViewStatement = IsFormChecked("canViewStatement");
-            var canEditWarrantyClaims = IsFormChecked("canEditWarrantyClaims");
 
             var user = await _unitOfWork.Users.GetByIdAsync(id);
             var assignment = (await _unitOfWork.UserOrgRoles.GetAllAsync())
@@ -198,7 +197,6 @@ namespace KRSDealerManagement.Web.Controllers
             user.IsActive = isActive;
             user.CanExport = canExport;
             user.CanViewStatement = canViewStatement;
-            user.CanEditWarrantyClaims = canEditWarrantyClaims;
             user.UserRole = Application.Services.RoleTemplateDefaults.MapTemplateToLegacyUserRole(selectedRole.RoleTemplateCode);
             if (!string.IsNullOrWhiteSpace(password))
                 user.PasswordHash = password.Trim();

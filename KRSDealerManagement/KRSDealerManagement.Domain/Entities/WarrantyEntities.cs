@@ -59,6 +59,9 @@ namespace KRSDealerManagement.Domain.Entities
 
         public int? AmpereAppliedByUserId { get; set; }
         public DateTime? AmpereAppliedDate { get; set; }
+        public int? AmpereApprovedByUserId { get; set; }
+        public DateTime? AmpereApprovedDate { get; set; }
+
         public int? ProductReceivedByUserId { get; set; }
         public DateTime? ProductReceivedDate { get; set; }
         public int? CollectedByAccountId { get; set; }
@@ -67,6 +70,28 @@ namespace KRSDealerManagement.Domain.Entities
         public DateTime? DefectiveSubmittedDate { get; set; }
         public int? DefectiveSentToAmpereByUserId { get; set; }
         public DateTime? DefectiveSentToAmpereDate { get; set; }
+
+        public string? DealerResolutionType { get; set; }
+        public string? DealerClosedPartNumber { get; set; }
+        public DateTime? DealerClosedDate { get; set; }
+        public string? DealerClosedInvoiceNumber { get; set; }
+        public string? CollectedByName { get; set; }
+        public string? DefectiveSubmittedByName { get; set; }
+
+        public bool ResolutionPartCompleted { get; set; }
+        public int? ResolutionPartCompletedByUserId { get; set; }
+        public DateTime? ResolutionPartCompletedDate { get; set; }
+        public bool DealerInvoiceClosedCompleted { get; set; }
+        public int? DealerInvoiceClosedByUserId { get; set; }
+        public bool ReplacementPartReceivedCompleted { get; set; }
+        public bool SubdealerPartReceivedCompleted { get; set; }
+        public bool DefectiveHandoverCompleted { get; set; }
+        public bool DefectiveSentToAmpereCompleted { get; set; }
+
+        public int? SubdealerPartReceivedStaffUserId { get; set; }
+        public int? DefectiveHandoverStaffUserId { get; set; }
+
+        public DateTime? CompletedDate { get; set; }
 
         public int CreatedByUserId { get; set; }
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;

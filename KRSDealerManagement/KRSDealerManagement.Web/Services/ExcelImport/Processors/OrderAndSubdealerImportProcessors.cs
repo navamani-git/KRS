@@ -15,11 +15,11 @@ namespace KRSDealerManagement.Web.Services.ExcelImport.Processors
         public string DataSheetName => "Subdealers";
         public IReadOnlyList<string> DataHeaders => new[]
         {
-            "SubdealerName", "Email", "Location", "PrimaryPhone", "SecondaryPhone", "SalesRepMobile", "ServiceRepMobile", "DealershipCode"
+            "SubdealerName", "Email", "Location", "PrimaryPhone", "SecondaryPhone", "SalesRepMobile", "ServiceRepMobile", "DealershipCode", "OwnShowroom"
         };
         public IReadOnlyList<IReadOnlyList<object?>> ExampleRows => new[]
         {
-            new List<object?> { "ABC Motors", "abc@example.com", "Salem", "9876543210", "", "9876543211", "9876543212", "KRS_SALEM" }
+            new List<object?> { "ABC Motors", "abc@example.com", "Salem", "9876543210", "", "9876543211", "9876543212", "KRS_SALEM", "No" }
         };
 
         public async Task<IReadOnlyDictionary<string, IReadOnlyList<string>>> GetLookupsAsync(ExcelImportContext context)
@@ -65,6 +65,7 @@ namespace KRSDealerManagement.Web.Services.ExcelImport.Processors
                 var dealer = ExcelImportLookupHelper.FindDealership(dealerships, row.Get("DealershipCode"))!;
                 var dealershipId = context.DealershipScopeId ?? dealer.DealershipId;
                 var name = row.Get("SubdealerName")!.Trim();
+                var ownShowroom = ParseYesNo(row.Get("OwnShowroom"));
                 await mediator.Send(new CreateSubdealerCommand
                 {
                     SubdealerName = name,
@@ -77,10 +78,21 @@ namespace KRSDealerManagement.Web.Services.ExcelImport.Processors
                     SalesRepMobile = row.Get("SalesRepMobile")?.Trim() ?? "",
                     ServiceRepMobile = row.Get("ServiceRepMobile")?.Trim() ?? "",
                     DealershipId = dealershipId,
+                    OwnShowroom = ownShowroom,
                     CreatedBy = context.UserId
                 });
             }
             return rows.Count;
+        }
+
+        private static bool ParseYesNo(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return false;
+            var v = value.Trim();
+            return v.Equals("yes", StringComparison.OrdinalIgnoreCase)
+                   || v.Equals("y", StringComparison.OrdinalIgnoreCase)
+                   || v.Equals("true", StringComparison.OrdinalIgnoreCase)
+                   || v.Equals("1", StringComparison.OrdinalIgnoreCase);
         }
     }
 

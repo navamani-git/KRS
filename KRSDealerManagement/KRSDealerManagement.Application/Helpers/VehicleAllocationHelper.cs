@@ -20,6 +20,9 @@ namespace KRSDealerManagement.Application.Helpers
             var master = await unitOfWork.VehicleMasters.GetByIdAsync(vehicleMasterId)
                 ?? throw new InvalidOperationException("Selected chassis was not found in dealer stock.");
 
+            if (master.WarrantyOnly)
+                throw new InvalidOperationException($"Chassis {master.ChassisNumber} is warranty-only and cannot be allocated or sold.");
+
             if (master.IsAllocated)
                 throw new InvalidOperationException($"Chassis {master.ChassisNumber} is already allocated.");
 

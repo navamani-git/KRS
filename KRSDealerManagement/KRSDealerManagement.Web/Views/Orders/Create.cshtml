@@ -70,7 +70,7 @@ else
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered" id="itemsTable">
+                        <table class="table table-bordered krs-order-items-table" id="itemsTable">
                             <thead class="table-dark">
                                 <tr>
                                     <th>Model</th>
@@ -109,7 +109,7 @@ else
 }
 
 @section Scripts {
-    <script src="~/js/model-color-filter.js"></script>
+    <script src="~/js/model-color-filter.js" asp-append-version="true"></script>
     <script>
         const models = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
             (ViewBag.Models as IEnumerable<VehicleModelDto> ?? new List<VehicleModelDto>())
@@ -123,11 +123,11 @@ else
         function buildModelSelect(id, onChange) {
             let opts = `<option value="">-- Select --</option>`;
             models.forEach(o => opts += `<option value="${o.id}">${o.name}</option>`);
-            return `<select name="modelIds" id="${id}" class="form-select form-select-sm" required onchange="${onChange}">${opts}</select>`;
+            return `<select name="modelIds" id="${id}" class="form-select" required onchange="${onChange}">${opts}</select>`;
         }
 
         function buildColorSelect(id, onChange) {
-            return `<select name="colorIds" id="${id}" class="form-select form-select-sm" required onchange="${onChange}">
+            return `<select name="colorIds" id="${id}" class="form-select" required onchange="${onChange}">
                 <option value="">-- Select Model First --</option></select>`;
         }
 
@@ -180,7 +180,7 @@ else
         function onModelChanged(id) {
             const modelSelect = document.getElementById(`model_${id}`);
             const colorSelect = document.getElementById(`color_${id}`);
-            KrsModelColors.populateSelect(colorSelect, modelSelect.value, null);
+            KrsModelColors.populateSelect(colorSelect, KrsModelColors.getSelectValue(modelSelect), null);
             setPrice(id, 0);
             calcRow(id);
         }
@@ -194,8 +194,8 @@ else
         }
 
         function loadPrice(id) {
-            const modelId = document.getElementById(`model_${id}`).value;
-            const colorId = document.getElementById(`color_${id}`).value;
+            const modelId = KrsModelColors.getSelectValue(document.getElementById(`model_${id}`));
+            const colorId = KrsModelColors.getSelectValue(document.getElementById(`color_${id}`));
             if (!modelId || !colorId) return;
 
             KrsQueryString.fetchGet('/Orders/GetPrice', { modelId, colorId })

@@ -507,6 +507,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVmVoaWNsZXNcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/WarrantyClaims/Completed.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcV2FycmFudHlDbGFpbXNcQ29tcGxldGVkLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/WarrantyClaims/Details.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcV2FycmFudHlDbGFpbXNcRGV0YWlscy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
@@ -521,6 +525,22 @@ build_metadata.AdditionalFiles.CssScope =
 
 [D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/WarrantyClaims/MyClaims.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcV2FycmFudHlDbGFpbXNcTXlDbGFpbXMuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/WarrantyClaims/_ClaimHistory.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcV2FycmFudHlDbGFpbXNcX0NsYWltSGlzdG9yeS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/WarrantyOnlyVehicles/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcV2FycmFudHlPbmx5VmVoaWNsZXNcQ3JlYXRlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/WarrantyOnlyVehicles/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcV2FycmFudHlPbmx5VmVoaWNsZXNcRWRpdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/WarrantyOnlyVehicles/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcV2FycmFudHlPbmx5VmVoaWNsZXNcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/WarrantyParts/Create.cshtml]

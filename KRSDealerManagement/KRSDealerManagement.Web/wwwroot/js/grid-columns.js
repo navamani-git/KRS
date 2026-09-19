@@ -166,7 +166,7 @@
 
         var hint = document.createElement('small');
         hint.className = 'grid-toolbar-hint me-auto d-none d-md-inline';
-        hint.textContent = 'Column layout is remembered on this page; filtering will not reset it.';
+        hint.textContent = 'Column layout is remembered on this page.';
 
         var dropdown = document.createElement('div');
         dropdown.className = 'dropdown';
@@ -238,6 +238,17 @@
         dropdown.appendChild(toggleBtn);
         dropdown.appendChild(menu);
         toolbar.appendChild(hint);
+
+        if (filterRow) {
+            var clearFiltersBtn = document.createElement('button');
+            clearFiltersBtn.type = 'button';
+            clearFiltersBtn.className = 'btn btn-sm btn-outline-secondary grid-clear-column-filters';
+            clearFiltersBtn.setAttribute('data-filter-form', 'gridFilterForm');
+            clearFiltersBtn.title = 'Clear all column filters and reload grid';
+            clearFiltersBtn.innerHTML = '<i class="bi bi-x-circle"></i> Clear filters';
+            toolbar.appendChild(clearFiltersBtn);
+        }
+
         toolbar.appendChild(dropdown);
 
         placeToolbar(toolbar, table, cardBody);

@@ -19,6 +19,7 @@ WHERE DealershipId = @DealershipId
   AND ModelId = @ModelId
   AND ColorId = @ColorId
   AND IsAllocated = 0
+  AND ISNULL(WarrantyOnly, 0) = 0
 ORDER BY ReceivedDate, ChassisNumber",
                     new { DealershipId = dealershipId, ModelId = modelId, ColorId = colorId },
                     transaction));

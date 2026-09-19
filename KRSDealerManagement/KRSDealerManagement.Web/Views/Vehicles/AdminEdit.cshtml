@@ -207,14 +207,12 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/model-color-filter.js"></script>
+    <script src="~/js/model-color-filter.js" asp-append-version="true"></script>
     <script>
         KrsModelColors.init(@Html.Raw(modelColorMapJson));
-        const modelSelect = document.getElementById('modelId');
-        const colorSelect = document.getElementById('colorId');
-        KrsModelColors.populateSelect(colorSelect, modelSelect.value, @Model.ColorId);
-        modelSelect.addEventListener('change', () => {
-            KrsModelColors.populateSelect(colorSelect, modelSelect.value, null);
-        });
+        KrsModelColors.bindEdit(
+            document.getElementById('modelId'),
+            document.getElementById('colorId'),
+            @Model.ColorId);
     </script>
 }

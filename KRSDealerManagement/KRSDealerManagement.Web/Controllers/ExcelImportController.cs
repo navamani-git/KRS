@@ -29,14 +29,15 @@ namespace KRSDealerManagement.Web.Controllers
                 [ExcelImportKeys.SubdealerAccounts] = (new[] { 1, 3, 4 }, StaffMenuAccess.Balances, "Create"),
                 [ExcelImportKeys.OrdersSubdealer] = (new[] { 2 }, MenuKeys.PurchaseOrderCreate, "Create"),
                 [ExcelImportKeys.OrdersForSubdealer] = (new[] { 1, 4 }, null, "CreateForSubdealer"),
-                [ExcelImportKeys.VehicleMasters] = (new[] { 1, 4 }, StaffMenuAccess.DealerStock, "Index"),
+                [ExcelImportKeys.VehicleMasters] = (Array.Empty<int>(), StaffMenuAccess.DealerStock, "Index"),
+                [ExcelImportKeys.WarrantyOnlyVehicleMasters] = (Array.Empty<int>(), StaffMenuAccess.WarrantyOnlyStock, "Index"),
             };
 
         public ExcelImportController(ExcelImportService excelImport) => _excelImport = excelImport;
 
         public IActionResult DownloadTemplate(string key)
         {
-            if (!TryAuthorize(key, out var redirect))
+            if (!TryAuthorize(key, requireWrite: false, out var redirect))
                 return redirect!;
 
             return this.DownloadImportTemplate(_excelImport, key);
@@ -46,7 +47,7 @@ namespace KRSDealerManagement.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Import(string key, IFormFile file, string? returnController, string? returnAction)
         {
-            if (!TryAuthorize(key, out var redirect))
+            if (!TryAuthorize(key, requireWrite: true, out var redirect))
                 return redirect!;
 
             if (!ImportAuth.TryGetValue(key, out var meta))
@@ -61,7 +62,7 @@ namespace KRSDealerManagement.Web.Controllers
             return await this.ImportExcelAsync(_excelImport, key, file, ra, rc);
         }
 
-        private bool TryAuthorize(string key, out IActionResult? redirect)
+        private bool TryAuthorize(string key, bool requireWrite, out IActionResult? redirect)
         {
             redirect = null;
             if (_excelImport.GetProcessor(key) == null)
@@ -78,28 +79,46 @@ namespace KRSDealerManagement.Web.Controllers
             {
                 redirect = FileDownloadHelper.RedirectWithMessage(
                     this,
-                    "Import type is not available.",
+                    "Import template is not available.",
                     RouteKeyToController(key),
                     "Create");
                 return false;
             }
 
-            var role = SessionHelper.GetUserRole(HttpContext.Session);
-            if (!role.HasValue || !meta.Roles.Contains(role.Value))
+            var session = HttpContext.Session;
+            if (!SessionHelper.IsAuthenticated(session))
             {
                 redirect = RedirectToAction("AccessDenied", "Account");
                 return false;
             }
 
-            if (!string.IsNullOrWhiteSpace(meta.Menu)
-                && !SessionHelper.HasMenuAccess(HttpContext.Session, meta.Menu))
+            if (!string.IsNullOrWhiteSpace(meta.Menu))
+            {
+                if (!SessionHelper.HasMenuAccess(session, meta.Menu))
+                {
+                    redirect = RedirectToAction("AccessDenied", "Account");
+                    return false;
+                }
+
+                if (requireWrite && !SessionHelper.CanWriteMenu(session, meta.Menu))
+                {
+                    TempData["Error"] = "This screen is read-only for your role.";
+                    redirect = RedirectToAction(RouteKeyToController(key), meta.RedirectAction);
+                    return false;
+                }
+
+                return true;
+            }
+
+            var role = SessionHelper.GetUserRole(session);
+            if (meta.Roles.Length == 0 || !role.HasValue || !meta.Roles.Contains(role.Value))
             {
                 redirect = RedirectToAction("AccessDenied", "Account");
                 return false;
             }
 
             if (key.Equals(ExcelImportKeys.Subdealers, StringComparison.OrdinalIgnoreCase)
-                && SessionHelper.IsBranchManager(HttpContext.Session))
+                && SessionHelper.IsBranchManager(session))
             {
                 redirect = RedirectToAction("AccessDenied", "Account");
                 return false;
@@ -126,6 +145,7 @@ namespace KRSDealerManagement.Web.Controllers
             ExcelImportKeys.OrdersSubdealer => "Orders",
             ExcelImportKeys.OrdersForSubdealer => "Orders",
             ExcelImportKeys.VehicleMasters => "VehicleMasters",
+            ExcelImportKeys.WarrantyOnlyVehicleMasters => "WarrantyOnlyVehicles",
             _ => "Home"
         };
     }

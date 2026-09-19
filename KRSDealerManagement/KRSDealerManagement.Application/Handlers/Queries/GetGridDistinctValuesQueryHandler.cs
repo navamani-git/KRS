@@ -185,10 +185,13 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var vehicles = (await _unitOfWork.Vehicles.GetAllAsync()).ToDictionary(v => v.VehicleId);
             var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
             var scopedIds = await GetBookingScopedSubdealerIdsAsync(request.DealershipId, request.DealershipIds);
+            var warrantyOnlyVehicleIds = await WarrantyOnlyVehicleFlowHelper.GetWarrantyOnlyVehicleIdsAsync(_unitOfWork);
 
             var rows = new List<VehicleBookingGridRowDto>();
-            foreach (var b in bookings.Where(b => scopedIds.Contains(b.SubdealerId))
-                         .Where(b => !request.SubdealerId.HasValue || b.SubdealerId == request.SubdealerId.Value))
+            foreach (var b in bookings.Where(b =>
+                         scopedIds.Contains(b.SubdealerId)
+                         && !warrantyOnlyVehicleIds.Contains(b.VehicleId)
+                         && (!request.SubdealerId.HasValue || b.SubdealerId == request.SubdealerId.Value)))
             {
                 vehicles.TryGetValue(b.VehicleId, out var v);
                 users.TryGetValue(b.SubdealerId, out var u);
@@ -197,15 +200,60 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 rows.Add(new VehicleBookingGridRowDto
                 {
                     Booking = b,
+                    VehicleId = b.VehicleId,
                     Chassis = v?.ChassisNumber ?? "-",
                     Subdealer = u?.GetFullName() ?? "Unknown",
                     StatusName = statusName,
-                    VehicleStatus = vehicleStatus
+                    VehicleStatus = vehicleStatus,
+                    RegistrationNumber = v?.RegistrationNumber
                 });
             }
 
             IEnumerable<VehicleBookingGridRowDto> list = rows;
-            if (request.Status.HasValue)
+            if (request.SubsidyIdPendingOnly)
+            {
+                list = list.Where(x => BookingStageFilter.IsSubsidyIdPending(
+                    x.Booking.InvoiceDate,
+                    x.Booking.InsuranceDate,
+                    x.Booking.SubsidyId,
+                    x.VehicleStatus));
+            }
+            else if (request.SubsidyDocsPendingOnly)
+            {
+                list = list.Where(x => BookingStageFilter.IsSubsidyDocsPending(
+                    x.Booking.SubsidyId,
+                    x.Booking.FaceVerificationPath,
+                    x.Booking.RcImagePath,
+                    x.Booking.BoothPhotoPath,
+                    x.Booking.SubsidyUndertakingPath,
+                    x.VehicleStatus));
+            }
+            else if (request.RegisteredAwaitingPlateOnly)
+            {
+                list = list.Where(x => BookingStageFilter.IsRegisteredAwaitingNumberPlate(
+                    x.VehicleStatus,
+                    x.Booking.PaperReceivedDate,
+                    x.Booking.InvoiceDate,
+                    x.Booking.InsuranceDate,
+                    x.Booking.AgentDate,
+                    x.Booking.RegistrationDate,
+                    x.Booking.SubsidyId,
+                    x.Booking.NumberPlateReceivedDate,
+                    x.Booking.NumberPlateReceivedBy));
+            }
+            else if (request.BookedToCustomerView || request.Status == UnifiedVehicleStatus.BookedToCustomer)
+            {
+                list = list.Where(x => BookingStageFilter.MatchesStage(
+                    x.VehicleStatus,
+                    UnifiedVehicleStatus.BookedToCustomer,
+                    x.Booking.PaperReceivedDate,
+                    x.Booking.InvoiceDate,
+                    x.Booking.InsuranceDate,
+                    x.Booking.AgentDate,
+                    x.Booking.RegistrationDate,
+                    x.Booking.SubsidyId));
+            }
+            else if (request.Status.HasValue)
             {
                 list = list.Where(x => BookingStageFilter.MatchesStage(
                     x.VehicleStatus,
@@ -228,6 +276,14 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         x.Booking.AgentDate,
                         x.Booking.RegistrationDate,
                         x.Booking.SubsidyId)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+            {
+                var term = request.SearchTerm.Trim();
+                list = list.Where(x => x.Chassis.Contains(term, StringComparison.OrdinalIgnoreCase)
+                    || x.Subdealer.Contains(term, StringComparison.OrdinalIgnoreCase)
+                    || (x.Booking.CustomerName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false));
             }
 
             return DistinctSync(list.Cast<object>(), column, request, VehicleBookingProjections);
@@ -548,7 +604,16 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             ["customer"] = r => r.Booking.CustomerName,
             ["mobile"] = r => r.Booking.CustomerMobile,
             ["status"] = r => r.StatusName,
-            ["submitted"] = r => r.Booking.SubmittedDate.ToString("yyyy-MM-dd")
+            ["submitted"] = r => r.Booking.SubmittedDate.ToString("yyyy-MM-dd"),
+            ["invoiceDoc"] = r => string.IsNullOrWhiteSpace(r.Booking.InvoicePath) ? "No" : "Yes",
+            ["insuranceDoc"] = r => string.IsNullOrWhiteSpace(r.Booking.InsurancePath) ? "No" : "Yes",
+            ["face"] = r => string.IsNullOrWhiteSpace(r.Booking.FaceVerificationPath) ? "Pending" : "Done",
+            ["rc"] = r => string.IsNullOrWhiteSpace(r.Booking.RcImagePath) ? "Pending" : "Done",
+            ["booth"] = r => string.IsNullOrWhiteSpace(r.Booking.BoothPhotoPath) ? "Pending" : "Done",
+            ["undertaking"] = r => string.IsNullOrWhiteSpace(r.Booking.SubsidyUndertakingPath) ? "Pending" : "Done",
+            ["rtoNumber"] = r => !string.IsNullOrWhiteSpace(r.Booking.RtoNumber)
+                ? r.Booking.RtoNumber
+                : r.RegistrationNumber
         };
 
         private static readonly Dictionary<string, Func<DocumentTypeMaster, string?>> DocumentTypeProjections = new(StringComparer.OrdinalIgnoreCase)

@@ -179,7 +179,7 @@
 
                     <div class="mb-3">
                         <label class="fw-bold">Payment Type <span class="text-danger">*</span></label>
-                        <select name="paymentTypeId" id="paymentTypeId" class="form-select" required onchange="onPaymentTypeChange()">
+                        <select name="paymentTypeId" id="paymentTypeId" class="form-select no-search-select" required onchange="onPaymentTypeChange()">
                             <option value="">-- Select --</option>
                             @foreach (var t in paymentTypes.Where(t => !string.Equals(t.TypeCode, "CREDIT_REQUEST", StringComparison.OrdinalIgnoreCase)))
                             {
@@ -209,7 +209,7 @@
                         <p class="fw-bold mb-2 text-primary"><i class="bi bi-bank"></i> Finance details</p>
                         <div class="mb-3">
                             <label class="fw-bold">Finance Name <span class="text-danger finance-req">*</span></label>
-                            <select name="financeNameId" id="financeNameId" class="form-select">
+                            <select name="financeNameId" id="financeNameId" class="form-select no-search-select">
                                 <option value="">-- Select finance --</option>
                                 @foreach (var f in financeNames)
                                 {

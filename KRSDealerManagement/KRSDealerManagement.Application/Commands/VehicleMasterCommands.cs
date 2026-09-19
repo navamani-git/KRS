@@ -84,4 +84,52 @@ namespace KRSDealerManagement.Application.Commands
         public int TransferredBy { get; set; }
         public string? Remarks { get; set; }
     }
+
+    public class CreateWarrantyOnlyVehicleMasterCommand : IRequest<int>
+    {
+        public int DealershipId { get; set; }
+        public int SubDealerId { get; set; }
+        public required string ChassisNumber { get; set; }
+        public int ModelId { get; set; }
+        public int ColorId { get; set; }
+        public string? CustomerName { get; set; }
+        public string? CustomerMobile { get; set; }
+        public DateTime? SaleDate { get; set; }
+        public string? Remarks { get; set; }
+        public int CreatedBy { get; set; }
+    }
+
+    public class UpdateWarrantyOnlyVehicleMasterCommand : IRequest<bool>
+    {
+        public int VehicleMasterId { get; set; }
+        public int ModelId { get; set; }
+        public int ColorId { get; set; }
+        public string? CustomerName { get; set; }
+        public string? CustomerMobile { get; set; }
+        public DateTime? SaleDate { get; set; }
+        public string? Remarks { get; set; }
+        public int ModifiedBy { get; set; }
+    }
+
+    public class ImportWarrantyOnlyVehicleMastersCommand : IRequest<ImportVehicleMastersResult>
+    {
+        public int DefaultDealershipId { get; set; }
+        public int ImportedBy { get; set; }
+        public required List<ImportWarrantyOnlyVehicleMasterRow> Rows { get; set; }
+    }
+
+    public class ImportWarrantyOnlyVehicleMasterRow
+    {
+        public int DealershipId { get; set; }
+        public int SubDealerId { get; set; }
+        public string ChassisNumber { get; set; } = "";
+        public int? ModelId { get; set; }
+        public int? ColorId { get; set; }
+        public string? ModelName { get; set; }
+        public string? ColorName { get; set; }
+        public string? CustomerName { get; set; }
+        public string? CustomerMobile { get; set; }
+        public DateTime? SaleDate { get; set; }
+        public string? Remarks { get; set; }
+    }
 }

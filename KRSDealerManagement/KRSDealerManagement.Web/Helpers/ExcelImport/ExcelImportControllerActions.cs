@@ -41,6 +41,8 @@ namespace KRSDealerManagement.Web.Helpers.ExcelImport
             ExcelImportKeys.SubdealerAccounts => "Accounts",
             ExcelImportKeys.OrdersSubdealer => "Orders",
             ExcelImportKeys.OrdersForSubdealer => "Orders",
+            ExcelImportKeys.VehicleMasters => "VehicleMasters",
+            ExcelImportKeys.WarrantyOnlyVehicleMasters => "WarrantyOnlyVehicles",
             _ => "Dashboard"
         };
 

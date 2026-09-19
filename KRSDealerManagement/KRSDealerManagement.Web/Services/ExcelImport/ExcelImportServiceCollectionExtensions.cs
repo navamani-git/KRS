@@ -24,6 +24,7 @@ namespace KRSDealerManagement.Web.Services.ExcelImport
             services.AddScoped<IExcelImportProcessor, OrdersSubdealerImportProcessor>();
             services.AddScoped<IExcelImportProcessor, OrdersForSubdealerImportProcessor>();
             services.AddScoped<IExcelImportProcessor, VehicleMastersImportProcessor>();
+            services.AddScoped<IExcelImportProcessor, WarrantyOnlyVehicleMastersImportProcessor>();
             return services;
         }
     }

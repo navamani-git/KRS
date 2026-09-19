@@ -6,29 +6,110 @@ namespace KRSDealerManagement.Shared.Constants
         public const int Submitted = 1;
         public const int MoreInfoRequested = 2;
         public const int Rejected = 3;
-        public const int Approved = 4;
+        public const int Accepted = 4;
         public const int AppliedToAmpere = 5;
-        public const int ProductReceived = 6;
-        public const int CollectedBySubdealer = 7;
-        public const int DefectiveSubmitted = 8;
-        public const int DefectiveSentToAmpere = 9;
+        public const int AmpereApproved = 6;
+        public const int Complete = 7;
+
+        [Obsolete("Use Accepted")]
+        public const int Approved = Accepted;
 
         public static bool IsSubdealerEditable(int status) => status is Draft or MoreInfoRequested;
 
         public static bool CanStaffReview(int status) => status is Submitted;
 
-        public static bool CanApplyToAmpere(int status) => status is Approved;
+        public static bool CanAccept(int status) => status is Submitted;
 
-        public static bool CanMarkProductReceived(int status) => status is AppliedToAmpere;
+        public static bool CanApplyToAmpere(int status) => status is Accepted;
 
-        public static bool CanSubdealerCollect(int status) => status is ProductReceived;
+        public static bool CanMarkAmpereApproved(int status) => status is AppliedToAmpere;
 
-        public static bool CanSubdealerSubmitDefective(int status) => status is CollectedBySubdealer;
+        public static bool CanUpdateSoNumber(int status) => status is AmpereApproved or Complete;
 
-        public static bool CanMarkDefectiveSentToAmpere(int status) => status is DefectiveSubmitted;
+        /// <summary>Staff may correct post-Ampere workflow steps until defective handover to Ampere is recorded.</summary>
+        public static bool CanStaffEditPostAmpereWorkflow(int status, bool defectiveSentToAmpereCompleted)
+            => status == AmpereApproved && !defectiveSentToAmpereCompleted;
+
+        public static bool CanStaffEditSoNumber(int status, bool defectiveSentToAmpereCompleted)
+            => CanStaffEditPostAmpereWorkflow(status, defectiveSentToAmpereCompleted);
+
+        public static bool CanStaffEditResolutionPart(int status, bool defectiveSentToAmpereCompleted)
+            => CanStaffEditPostAmpereWorkflow(status, defectiveSentToAmpereCompleted);
+
+        public static bool CanStaffEditDealerInvoiceClosed(int status, bool defectiveSentToAmpereCompleted)
+            => CanStaffEditPostAmpereWorkflow(status, defectiveSentToAmpereCompleted);
+
+        public static bool CanStaffEditReplacementPartReceived(int status, bool defectiveSentToAmpereCompleted)
+            => CanStaffEditPostAmpereWorkflow(status, defectiveSentToAmpereCompleted);
+
+        public static bool CanStaffMarkDefectiveSentToAmpere(int status, bool defectiveSentToAmpereCompleted)
+            => CanStaffEditPostAmpereWorkflow(status, defectiveSentToAmpereCompleted);
+
+        public static bool CanStaffEditSubdealerPartReceived(int status, bool defectiveSentToAmpereCompleted)
+            => CanStaffEditPostAmpereWorkflow(status, defectiveSentToAmpereCompleted);
+
+        public static bool CanStaffEditDefectiveHandover(int status, bool defectiveSentToAmpereCompleted)
+            => CanStaffEditPostAmpereWorkflow(status, defectiveSentToAmpereCompleted);
+
+        public static bool CanSubdealerMarkSubdealerPartReceived(int status, bool completed, bool lockedByStaff)
+            => CanMarkSubdealerPartReceived(status, completed) && !lockedByStaff;
+
+        public static bool CanSubdealerMarkDefectiveHandover(int status, bool completed, bool lockedByStaff)
+            => CanMarkDefectiveHandover(status, completed) && !lockedByStaff;
+
+        public static bool IsPostAmperePhase(int status) => status is AmpereApproved or Complete;
 
         public static bool IsTerminalForSubdealer(int status)
-            => status is Rejected or DefectiveSubmitted or DefectiveSentToAmpere;
+            => status is Rejected or Complete;
+
+        public static bool AllProgressFlagsComplete(
+            bool resolutionPartCompleted,
+            bool dealerInvoiceClosedCompleted,
+            bool replacementPartReceivedCompleted,
+            bool subdealerPartReceivedCompleted,
+            bool defectiveHandoverCompleted,
+            bool defectiveSentToAmpereCompleted)
+            => resolutionPartCompleted
+               && dealerInvoiceClosedCompleted
+               && replacementPartReceivedCompleted
+               && subdealerPartReceivedCompleted
+               && defectiveHandoverCompleted
+               && defectiveSentToAmpereCompleted;
+
+        public static bool CanSaveResolutionPart(int status, bool completed)
+            => status == AmpereApproved && !completed;
+
+        public static bool CanSaveDealerInvoiceClosed(int status, bool completed)
+            => status == AmpereApproved && !completed;
+
+        public static bool CanMarkReplacementPartReceived(int status, bool completed)
+            => status == AmpereApproved && !completed;
+
+        public static bool CanMarkSubdealerPartReceived(int status, bool completed)
+            => status == AmpereApproved && !completed;
+
+        public static bool CanMarkDefectiveHandover(int status, bool completed)
+            => status == AmpereApproved && !completed;
+
+        public static bool CanMarkDefectiveSentToAmpere(int status, bool completed)
+            => status == AmpereApproved && !completed;
+    }
+
+    public static class WarrantyDealerResolutionTypes
+    {
+        public const string Credit = "CREDIT";
+        public const string Replacement = "REPLACEMENT";
+        public const string SameItem = "SAME_ITEM";
+
+        public static readonly string[] All = { Credit, Replacement, SameItem };
+
+        public static string GetDisplayName(string? type) => type switch
+        {
+            Credit => "Given to subdealer as credit",
+            Replacement => "Give replacement item",
+            SameItem => "Give same item",
+            _ => type ?? ""
+        };
     }
 
     public static class WarrantyClaimTypes

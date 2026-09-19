@@ -89,7 +89,7 @@ namespace KRSDealerManagement.Web.Controllers
             string subdealerName, string email, string location,
             string primaryPhone, string secondaryPhone,
             string salesRepMobile, string serviceRepMobile,
-            int dealershipId)
+            int dealershipId, bool ownShowroom = false)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
@@ -115,6 +115,8 @@ namespace KRSDealerManagement.Web.Controllers
                 return View();
             }
 
+            ownShowroom = ParseCheckboxValue(Request.Form, "ownShowroom");
+
             try
             {
                 var subDealerId = await _mediator.Send(new CreateSubdealerCommand
@@ -127,6 +129,7 @@ namespace KRSDealerManagement.Web.Controllers
                     SalesRepMobile = salesRepMobile?.Trim() ?? "",
                     ServiceRepMobile = serviceRepMobile?.Trim() ?? "",
                     DealershipId = dealershipId,
+                    OwnShowroom = ownShowroom,
                     CreatedBy = userId.Value
                 });
 
@@ -197,7 +200,7 @@ namespace KRSDealerManagement.Web.Controllers
         public async Task<IActionResult> Update(
             int id, string subdealerName, string location, string email,
             string primaryPhone, string? secondaryPhone, string? salesRepMobile, string? serviceRepMobile,
-            int dealershipId)
+            int dealershipId, bool ownShowroom = false)
         {
             var adminId = SessionHelper.GetUserId(HttpContext.Session);
             if (!adminId.HasValue) return RedirectToAction("Login", "Account");
@@ -206,6 +209,7 @@ namespace KRSDealerManagement.Web.Controllers
             if (scope.HasValue) dealershipId = scope.Value;
 
             var isActive = ParseCheckboxValue(Request.Form, "isActive");
+            ownShowroom = ParseCheckboxValue(Request.Form, "ownShowroom");
 
             if (string.IsNullOrWhiteSpace(subdealerName) || string.IsNullOrWhiteSpace(location) || string.IsNullOrWhiteSpace(primaryPhone))
             {
@@ -226,6 +230,7 @@ namespace KRSDealerManagement.Web.Controllers
                     SalesRepMobile = salesRepMobile,
                     ServiceRepMobile = serviceRepMobile,
                     IsActive = isActive,
+                    OwnShowroom = ownShowroom,
                     DealershipId = dealershipId,
                     UpdatedBy = adminId.Value
                 });

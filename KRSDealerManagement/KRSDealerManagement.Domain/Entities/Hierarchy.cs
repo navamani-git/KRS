@@ -43,6 +43,8 @@ namespace KRSDealerManagement.Domain.Entities
         public string? SalesRepMobile { get; set; }
         public string? ServiceRepMobile { get; set; }
         public string? Email { get; set; }
+        /// <summary>Dealership's own showroom org (one per dealership). Used for warranty-only sold vehicles.</summary>
+        public bool OwnShowroom { get; set; }
         public bool IsActive { get; set; } = true;
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
         public DateTime ModifiedDate { get; set; } = DateTime.UtcNow;

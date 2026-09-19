@@ -18,6 +18,10 @@ namespace KRSDealerManagement.Application.Queries
         public string? SearchTerm { get; set; }
         public string? DealershipLocation { get; set; }
         public bool BookingPhaseOnly { get; set; }
+        public bool SubsidyIdPendingOnly { get; set; }
+        public bool SubsidyDocsPendingOnly { get; set; }
+        public bool RegisteredAwaitingPlateOnly { get; set; }
+        public bool BookedToCustomerView { get; set; }
         public int Limit { get; set; } = 100;
     }
 }

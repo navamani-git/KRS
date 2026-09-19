@@ -1,0 +1,22 @@
+@model KRSDealerManagement.Application.DTOs.WarrantyClaimDetailDto
+
+<div class="small">
+    <div class="mb-2 text-muted">Claim @Model.ClaimNumber · @Model.ChassisNo</div>
+    @if (Model.History.Any())
+    {
+        <ul class="list-group list-group-flush">
+            @foreach (var h in Model.History)
+            {
+                <li class="list-group-item px-0">
+                    <div><strong>@(h.ToStatusName ?? h.ToStatus.ToString())</strong> · @h.ChangedDate.ToString("dd-MMM-yyyy HH:mm")</div>
+                    <div class="text-muted">@h.ChangedByName</div>
+                    @if (!string.IsNullOrWhiteSpace(h.Notes)) { <div>@h.Notes</div> }
+                </li>
+            }
+        </ul>
+    }
+    else
+    {
+        <div class="text-muted">No history recorded yet.</div>
+    }
+</div>

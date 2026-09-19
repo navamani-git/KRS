@@ -96,8 +96,16 @@
         }
     }
 
-    function scheduleNavLoaderFallback() {
+    function isLongRunningForm(form) {
+        if (!form || form.tagName !== 'FORM') return false;
+        if (form.dataset.longSubmit === 'true') return true;
+        var enc = (form.getAttribute('enctype') || '').toLowerCase();
+        return enc.indexOf('multipart') >= 0;
+    }
+
+    function scheduleNavLoaderFallback(skipFallback) {
         clearNavFallback();
+        if (skipFallback) return;
 
         var navigated = false;
         function onPageHide() {
@@ -115,9 +123,9 @@
         }, 1200);
     }
 
-    function beginNavLoader(message) {
+    function beginNavLoader(message, skipFallback) {
         showLoader(message || 'Loading...', 'nav');
-        scheduleNavLoaderFallback();
+        scheduleNavLoaderFallback(!!skipFallback);
     }
 
     function shouldSkipFetchLoader(input, init) {
@@ -180,7 +188,7 @@
         if (shouldSkipForm(form)) return;
         if (e.defaultPrevented) return;
 
-        beginNavLoader(form.dataset.loaderMessage || 'Processing...');
+        beginNavLoader(form.dataset.loaderMessage || 'Processing...', isLongRunningForm(form));
     });
 
     document.addEventListener('click', function (e) {

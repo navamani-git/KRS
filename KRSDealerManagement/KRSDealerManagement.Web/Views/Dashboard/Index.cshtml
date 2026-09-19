@@ -8,6 +8,7 @@
     var isBranchManager = ViewBag.IsBranchManager ?? false;
     var fullName = ViewBag.FullName ?? "User";
     var dealershipName = ViewBag.DealershipName as string;
+    var assignedDealershipNames = ViewBag.AssignedDealershipNames as IList<string> ?? Array.Empty<string>();
     var canViewOrders = ViewBag.CanViewPendingOrders ?? isSubdealer;
     var canViewReturns = ViewBag.CanViewPendingReturns ?? isSubdealer;
     var canViewPayments = ViewBag.CanViewPendingPayments ?? isSubdealer;
@@ -99,7 +100,14 @@
         </h1>
         <p class="text-muted mb-0">
             Welcome back, <strong>@fullName</strong>!
-            @if (!string.IsNullOrWhiteSpace(dealershipName))
+            @if (assignedDealershipNames.Count > 1)
+            {
+                @foreach (var name in assignedDealershipNames)
+                {
+                    <span class="badge bg-secondary ms-1">@name</span>
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(dealershipName))
             {
                 <span class="badge bg-secondary ms-1">@dealershipName</span>
             }

@@ -25,6 +25,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             if (request.IsActive.HasValue)
                 orgs = orgs.Where(o => o.IsActive == request.IsActive.Value);
 
+            if (request.OwnShowroomOnly)
+                orgs = orgs.Where(o => o.OwnShowroom);
+
             if (!string.IsNullOrWhiteSpace(request.District))
             {
                 var district = request.District.Trim();
@@ -75,6 +78,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     UserRole = 2,
                     PhoneNumber = org.PrimaryPhone ?? "",
                     IsActive = org.IsActive,
+                    OwnShowroom = org.OwnShowroom,
                     CreatedDate = org.CreatedDate,
                     ModifiedDate = org.ModifiedDate
                 });

@@ -21,6 +21,7 @@ namespace KRSDealerManagement.Application.DTOs
         public int UserRole { get; set; }
         public required string PhoneNumber { get; set; }
         public bool IsActive { get; set; }
+        public bool OwnShowroom { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime ModifiedDate { get; set; }
 

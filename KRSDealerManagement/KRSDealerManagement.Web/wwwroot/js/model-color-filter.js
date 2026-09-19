@@ -5,6 +5,15 @@ window.KrsModelColors = {
         this.map = modelColorMap || {};
     },
 
+    getSelectValue(selectEl) {
+        if (!selectEl) return '';
+        if (selectEl.tomselect) {
+            const value = selectEl.tomselect.getValue();
+            return Array.isArray(value) ? (value[0] || '') : (value || '');
+        }
+        return selectEl.value || '';
+    },
+
     listForModel(modelId) {
         if (!modelId) return [];
         return this.map[modelId] || this.map[String(modelId)] || [];
@@ -12,13 +21,18 @@ window.KrsModelColors = {
 
     populateSelect(selectEl, modelId, selectedColorId, placeholder) {
         if (!selectEl) return;
+
+        if (window.KrsSearchableSelect) {
+            window.KrsSearchableSelect.destroy(selectEl);
+        }
+
         const colors = this.listForModel(modelId);
-        const current = selectedColorId != null ? String(selectedColorId) : selectEl.value;
+        const current = selectedColorId != null ? String(selectedColorId) : '';
         selectEl.innerHTML = '';
 
         const empty = document.createElement('option');
         empty.value = '';
-        empty.textContent = placeholder || '-- Select Color --';
+        empty.textContent = placeholder || (modelId ? '-- Select Color --' : '-- Select Model First --');
         selectEl.appendChild(empty);
 
         colors.forEach(c => {
@@ -36,7 +50,7 @@ window.KrsModelColors = {
         }
 
         if (window.KrsSearchableSelect) {
-            window.KrsSearchableSelect.refresh(selectEl);
+            window.KrsSearchableSelect.init(selectEl);
         }
     },
 
@@ -44,8 +58,9 @@ window.KrsModelColors = {
         if (!modelSelectEl || !colorSelectEl) return;
 
         const refresh = () => {
-            const selectedColor = colorSelectEl.value;
-            this.populateSelect(colorSelectEl, modelSelectEl.value, selectedColor);
+            const modelId = this.getSelectValue(modelSelectEl);
+            const selectedColor = this.getSelectValue(colorSelectEl);
+            this.populateSelect(colorSelectEl, modelId, selectedColor);
             if (typeof onModelChange === 'function') {
                 onModelChange();
             }
@@ -53,5 +68,14 @@ window.KrsModelColors = {
 
         modelSelectEl.addEventListener('change', refresh);
         refresh();
+    },
+
+    bindEdit(modelSelectEl, colorSelectEl, initialColorId) {
+        if (!modelSelectEl || !colorSelectEl) return;
+
+        this.populateSelect(colorSelectEl, this.getSelectValue(modelSelectEl), initialColorId);
+        modelSelectEl.addEventListener('change', () => {
+            this.populateSelect(colorSelectEl, this.getSelectValue(modelSelectEl), null);
+        });
     }
 };

@@ -47,6 +47,9 @@ namespace KRSDealerManagement.Shared.Constants
         public const string VehicleAging = "admin_vehicle_aging";
         public const string StatusLookups = "admin_status_lookups";
         public const string WarrantyClaims = "admin_warranty_claims";
+        public const string WarrantyCompleted = "admin_warranty_completed";
+        public const string WarrantyApply = "admin_warranty_apply";
+        public const string WarrantyOnlyStock = "admin_warranty_only_stock";
         public const string WarrantyParts = "admin_warranty_parts";
 
         public static IReadOnlyList<(string Key, string Name)> AllAdminMenus() => new List<(string, string)>
@@ -84,6 +87,9 @@ namespace KRSDealerManagement.Shared.Constants
             (ShowroomStock, "Subdealer Stock"),
             (Returns, "Return Requests"),
             (WarrantyClaims, "Warranty Claims"),
+            (WarrantyCompleted, "Completed Warranty"),
+            (WarrantyApply, "Apply Warranty (Staff)"),
+            (WarrantyOnlyStock, "Warranty-Only Vehicles"),
             (WarrantyParts, "Warranty Parts"),
             (Payments, "Payment Approvals"),
             (Reports, "Reports"),
@@ -327,7 +333,25 @@ namespace KRSDealerManagement.Shared.Constants
                         {
                             Key = WarrantyClaims, Name = "Warranty Claims",
                             Controller = "WarrantyClaims", Action = "Index", Icon = "bi-clipboard-check",
-                            Actions = new[] { "Index", "Details", "Approve", "Reject", "RequestInfo", "Export" }
+                            Actions = new[] { "Index", "Details", "History", "Approve", "Reject", "RequestInfo", "Export" }
+                        },
+                        new MenuItemDefinition
+                        {
+                            Key = WarrantyCompleted, Name = "Completed Warranty",
+                            Controller = "WarrantyClaims", Action = "Completed", Icon = "bi-check2-circle",
+                            Actions = new[] { "Completed", "Details", "History" }
+                        },
+                        new MenuItemDefinition
+                        {
+                            Key = WarrantyApply, Name = "Apply Warranty (Staff)",
+                            Controller = "WarrantyClaims", Action = "StaffCreate", Icon = "bi-file-earmark-plus",
+                            Actions = new[] { "StaffCreate", "StaffSave", "LookupChassis", "SearchChassis" }
+                        },
+                        new MenuItemDefinition
+                        {
+                            Key = WarrantyOnlyStock, Name = "Warranty-Only Vehicles",
+                            Controller = "WarrantyOnlyVehicles", Action = "Index", Icon = "bi-truck",
+                            Actions = new[] { "Index", "Create", "Edit", "Delete" }
                         },
                         new MenuItemDefinition
                         {

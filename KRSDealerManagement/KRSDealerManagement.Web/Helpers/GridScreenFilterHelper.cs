@@ -253,7 +253,14 @@ namespace KRSDealerManagement.Web.Helpers
                     ["mobile"] = r => r.Booking.CustomerMobile,
                     ["status"] = r => r.StatusName,
                     ["invoiceDoc"] = r => string.IsNullOrWhiteSpace(r.Booking.InvoicePath) ? "No" : "Yes",
-                    ["insuranceDoc"] = r => string.IsNullOrWhiteSpace(r.Booking.InsurancePath) ? "No" : "Yes"
+                    ["insuranceDoc"] = r => string.IsNullOrWhiteSpace(r.Booking.InsurancePath) ? "No" : "Yes",
+                    ["face"] = r => string.IsNullOrWhiteSpace(r.Booking.FaceVerificationPath) ? "Pending" : "Done",
+                    ["rc"] = r => string.IsNullOrWhiteSpace(r.Booking.RcImagePath) ? "Pending" : "Done",
+                    ["booth"] = r => string.IsNullOrWhiteSpace(r.Booking.BoothPhotoPath) ? "Pending" : "Done",
+                    ["undertaking"] = r => string.IsNullOrWhiteSpace(r.Booking.SubsidyUndertakingPath) ? "Pending" : "Done",
+                    ["rtoNumber"] = r => !string.IsNullOrWhiteSpace(r.Booking.RtoNumber)
+                        ? r.Booking.RtoNumber
+                        : r.RegistrationNumber
                 },
                 new Dictionary<string, Func<VehicleBookingGridRowDto, DateTime?>>(StringComparer.OrdinalIgnoreCase)
                 {
@@ -261,7 +268,8 @@ namespace KRSDealerManagement.Web.Helpers
                     ["paperReceived"] = r => r.Booking.PaperReceivedDate,
                     ["invoiceDate"] = r => r.Booking.InvoiceDate,
                     ["insuranceDate"] = r => r.Booking.InsuranceDate,
-                    ["registration"] = r => r.Booking.RegistrationDate
+                    ["registration"] = r => r.Booking.RegistrationDate,
+                    ["registered"] = r => r.Booking.RegistrationDate
                 });
 
         public static IEnumerable<ShowroomStockRowDto> ApplyShowroomStock(

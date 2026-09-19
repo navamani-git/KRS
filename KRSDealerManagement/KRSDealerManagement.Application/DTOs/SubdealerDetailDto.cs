@@ -13,6 +13,7 @@ namespace KRSDealerManagement.Application.DTOs
         public string? SecondaryPhone { get; set; }
         public string? SalesRepMobile { get; set; }
         public string? ServiceRepMobile { get; set; }
+        public bool OwnShowroom { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedDate { get; set; }
         public int? PrimaryUserId { get; set; }

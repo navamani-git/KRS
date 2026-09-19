@@ -6,6 +6,10 @@
         'dealershipLocation',
         'subdealerId',
         'bookingPhaseOnly',
+        'subsidyIdPendingOnly',
+        'subsidyDocsPendingOnly',
+        'registeredAwaitingPlateOnly',
+        'bookedToCustomerView',
         'fromDate',
         'toDate',
         'accountId',
@@ -17,8 +21,11 @@
     ];
     var activeInput = null;
     var suggestEl = null;
+    var cachedSuggestWidth = null;
+    var lastSuggestValues = [];
     var loadTimer = null;
     var blurTimer = null;
+    var suggestGeneration = 0;
 
     function getTargetForm(el) {
         var formId = el.getAttribute('form') || el.dataset.filterFormId || FORM_ID;
@@ -164,7 +171,13 @@
 
         appendFormFields(params, form);
 
-        var qs = params.toString();
+        PAGE_CONTEXT_PARAMS.forEach(function (name) {
+            if (!params.has(name)) {
+                var val = readPageContextParam(name);
+                if (val) params.set(name, val);
+            }
+        });
+
         navigateGridParams(params);
     }
 
@@ -275,13 +288,46 @@
 
     function ensureInputWrap(input) {
         var wrap = input.parentElement;
-        if (wrap && wrap.classList.contains('grid-filter-input-wrap')) return wrap;
+        if (wrap && wrap.classList.contains('grid-filter-input-wrap')) {
+            syncClearButton(input);
+            return wrap;
+        }
 
         wrap = document.createElement('div');
         wrap.className = 'grid-filter-input-wrap';
         input.parentNode.insertBefore(wrap, input);
         wrap.appendChild(input);
+
+        var clearBtn = document.createElement('button');
+        clearBtn.type = 'button';
+        clearBtn.className = 'btn btn-outline-secondary grid-filter-clear-btn';
+        clearBtn.title = 'Clear this column filter';
+        clearBtn.setAttribute('aria-label', 'Clear this column filter');
+        clearBtn.innerHTML = '<i class="bi bi-x-lg"></i>';
+        clearBtn.addEventListener('mousedown', function (e) {
+            e.preventDefault();
+        });
+        clearBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            input.value = '';
+            hideSuggest();
+            applyGridFilters(input, getFieldName(input));
+            syncClearFilterButtons();
+            syncClearButton(input);
+            input.focus();
+        });
+        wrap.appendChild(clearBtn);
+        syncClearButton(input);
         return wrap;
+    }
+
+    function syncClearButton(input) {
+        var wrap = input ? input.closest('.grid-filter-input-wrap') : null;
+        if (!wrap) return;
+        var btn = wrap.querySelector('.grid-filter-clear-btn');
+        if (!btn) return;
+        var hasValue = readComboboxValue(input).trim().length > 0;
+        btn.hidden = !hasValue;
     }
 
     function bindSuggestScrollWheel(box) {
@@ -330,6 +376,7 @@
             e.preventDefault();
             input.value = value;
             hideSuggest();
+            syncClearButton(input);
             applyGridFilters(input, null);
             syncClearFilterButtons();
         });
@@ -338,6 +385,122 @@
 
     function getScrollPanel(input) {
         return input ? input.closest('.grid-scroll-panel, .table-responsive') : null;
+    }
+
+    function getViewportBounds() {
+        var vv = window.visualViewport;
+        if (!vv) {
+            return {
+                top: 8,
+                left: 8,
+                right: window.innerWidth - 8,
+                bottom: window.innerHeight - 8
+            };
+        }
+
+        return {
+            top: vv.offsetTop + 8,
+            left: vv.offsetLeft + 8,
+            right: vv.offsetLeft + vv.width - 8,
+            bottom: vv.offsetTop + vv.height - 8
+        };
+    }
+
+    function getSuggestSpace(input) {
+        var wrap = input.closest('.grid-filter-input-wrap') || input;
+        var rect = wrap.getBoundingClientRect();
+        var viewport = getViewportBounds();
+        var bounds = {
+            top: viewport.top,
+            left: viewport.left,
+            right: viewport.right,
+            bottom: viewport.bottom
+        };
+
+        var panel = getScrollPanel(input);
+        if (panel) {
+            var panelRect = panel.getBoundingClientRect();
+            bounds.left = Math.max(bounds.left, panelRect.left + 2);
+            bounds.right = Math.min(bounds.right, panelRect.right - 2);
+        }
+
+        return {
+            rect: rect,
+            bounds: bounds,
+            spaceBelow: Math.max(0, viewport.bottom - rect.bottom - 2)
+        };
+    }
+
+    function markSuggestFilterCell(input) {
+        var cell = getFilterCell(input);
+        document.querySelectorAll('th.grid-filter-cell.is-suggest-open').forEach(function (node) {
+            if (node !== cell) {
+                node.classList.remove('is-suggest-open');
+            }
+        });
+        if (cell) {
+            cell.classList.add('is-suggest-open');
+        }
+        return cell;
+    }
+
+    function clearSuggestOpenWrap() {
+        document.querySelectorAll('th.grid-filter-cell.is-suggest-open').forEach(function (cell) {
+            cell.classList.remove('is-suggest-open');
+        });
+    }
+
+    function rectsOverlap(a, b, padding) {
+        padding = padding || 0;
+        return a.right > b.left + padding
+            && a.left < b.right - padding
+            && a.bottom > b.top + padding
+            && a.top < b.bottom - padding;
+    }
+
+    function isSuggestAnchorVisible(input) {
+        if (!input || !input.isConnected) return false;
+
+        var anchor = input.closest('.grid-filter-input-wrap') || input;
+        var rect = anchor.getBoundingClientRect();
+        if (rect.width < 1 || rect.height < 1) return false;
+
+        var panel = getScrollPanel(input);
+        if (panel) {
+            var panelRect = panel.getBoundingClientRect();
+            if (!rectsOverlap(rect, panelRect, 2)) {
+                return false;
+            }
+        }
+
+        var viewport = {
+            left: 0,
+            top: 0,
+            right: window.innerWidth,
+            bottom: window.innerHeight
+        };
+        if (!rectsOverlap(rect, viewport, 4)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    function dismissSuggestOnScroll() {
+        if (!activeInput || !suggestEl || suggestEl.hidden) return;
+        if (!isSuggestAnchorVisible(activeInput)) {
+            hideSuggest();
+            return;
+        }
+        layoutSuggest(activeInput, false);
+    }
+
+    function bindGridScrollDismiss() {
+        document.querySelectorAll('.grid-scroll-panel, .card-body .table-responsive').forEach(function (panel) {
+            if (panel.dataset.suggestScrollBound === '1') return;
+            panel.dataset.suggestScrollBound = '1';
+            panel.addEventListener('scroll', dismissSuggestOnScroll, { passive: true });
+        });
     }
 
     function ensureGridHeaderLayout(input) {
@@ -354,76 +517,182 @@
         }
     }
 
-    function positionSuggestFixed(input) {
+    function measureTextWidth(text, font) {
+        if (!text) return 0;
+        var canvas = measureTextWidth._canvas;
+        if (!canvas) {
+            canvas = document.createElement('canvas');
+            measureTextWidth._canvas = canvas;
+        }
+        var ctx = canvas.getContext('2d');
+        ctx.font = font || '500 15px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+        return ctx.measureText(text).width;
+    }
+
+    function measureSuggestWidth(input, anchorRect, cellRect, textValues) {
+        var inputRect = input.getBoundingClientRect();
+        var anchorWidth = Math.max(
+            cellRect ? cellRect.width : 0,
+            anchorRect ? anchorRect.width : 0,
+            inputRect.width,
+            120
+        );
+        var font = window.getComputedStyle(input).font;
+        var contentWidth = anchorWidth;
+        var values = textValues && textValues.length ? textValues : lastSuggestValues;
+
+        values.forEach(function (text) {
+            var label = (text || '').toString().trim();
+            if (!label) return;
+            contentWidth = Math.max(contentWidth, measureTextWidth(label, font) + 32);
+        });
+
+        if (!values.length) {
+            suggestEl.querySelectorAll('.grid-filter-suggest-item').forEach(function (item) {
+                var label = (item.textContent || '').trim();
+                if (!label) return;
+                contentWidth = Math.max(contentWidth, measureTextWidth(label, font) + 32);
+            });
+        }
+
+        var query = readComboboxValue(input).trim();
+        if (query) {
+            contentWidth = Math.max(contentWidth, measureTextWidth('Use: ' + query, font) + 32);
+        }
+
+        return Math.min(Math.max(contentWidth, anchorWidth, 168), window.innerWidth - 16);
+    }
+
+    function layoutSuggest(input, recalculateWidth) {
         if (!suggestEl || suggestEl.hidden || !input) return;
+
+        if (!isSuggestAnchorVisible(input)) {
+            hideSuggest();
+            return;
+        }
+
+        markSuggestFilterCell(input);
+
+        var space = getSuggestSpace(input);
+        var rect = space.rect;
+        var spaceBelow = space.spaceBelow;
+
+        if (spaceBelow < 12) {
+            hideSuggest();
+            return;
+        }
 
         if (suggestEl.parentElement !== document.body) {
             document.body.appendChild(suggestEl);
         }
 
-        ensureGridHeaderLayout(input);
-
-        var inputRect = input.getBoundingClientRect();
-        var cell = getFilterCell(input);
-        var cellRect = cell ? cell.getBoundingClientRect() : null;
-        var width = Math.max(inputRect.width, cellRect ? cellRect.width : 0, 168);
-        var left = Math.min(Math.max(8, inputRect.left), window.innerWidth - width - 8);
-        var maxHeight = 220;
-        var top = inputRect.bottom + 2;
-
-        if (top + maxHeight > window.innerHeight - 8 && inputRect.top > maxHeight + 12) {
-            top = Math.max(8, inputRect.top - maxHeight - 2);
+        if (recalculateWidth || cachedSuggestWidth == null) {
+            var cell = getFilterCell(input);
+            var cellRect = cell ? cell.getBoundingClientRect() : null;
+            cachedSuggestWidth = measureSuggestWidth(input, rect, cellRect);
         }
 
+        var width = Math.min(
+            cachedSuggestWidth,
+            Math.max(168, space.bounds.right - space.bounds.left)
+        );
+        width = Math.max(width, rect.width, 168);
+
+        var left = Math.max(space.bounds.left, Math.min(rect.left, space.bounds.right - width));
+        var maxHeight = Math.min(220, spaceBelow);
+        var top = rect.bottom + 2;
+
+        suggestEl.classList.remove('is-above');
         suggestEl.style.position = 'fixed';
-        suggestEl.style.left = left + 'px';
         suggestEl.style.top = top + 'px';
+        suggestEl.style.bottom = 'auto';
+        suggestEl.style.left = left + 'px';
+        suggestEl.style.right = 'auto';
         suggestEl.style.width = width + 'px';
-        suggestEl.style.minWidth = '168px';
+        suggestEl.style.minWidth = Math.max(rect.width, 168) + 'px';
+        suggestEl.style.maxWidth = width + 'px';
         suggestEl.style.maxHeight = maxHeight + 'px';
-        suggestEl.style.zIndex = '10050';
+        suggestEl.style.zIndex = '10070';
         suggestEl.style.display = 'block';
+
+        var scroll = suggestEl.querySelector('.grid-filter-suggest-scroll');
+        if (scroll) {
+            scroll.style.maxHeight = Math.max(32, maxHeight - 8) + 'px';
+        }
     }
 
-    function syncOpenSuggest(input) {
-        if (!input || !suggestEl || suggestEl.hidden) return;
-        positionSuggestFixed(input);
+    function positionSuggest(input, recalculateWidth) {
+        layoutSuggest(input, recalculateWidth);
     }
 
-    function scheduleSyncOpenSuggest(input) {
+    function syncOpenSuggest(input, generation) {
+        if (!canShowSuggest(input, generation) || !suggestEl || suggestEl.hidden) return;
+        positionSuggest(input, false);
+    }
+
+    function scheduleSyncOpenSuggest(input, generation) {
+        if (!canShowSuggest(input, generation)) return;
+
         ensureGridHeaderLayout(input);
-        positionSuggestFixed(input);
+        positionSuggest(input, true);
 
         requestAnimationFrame(function () {
-            positionSuggestFixed(input);
+            if (!canShowSuggest(input, generation)) return;
+            positionSuggest(input, false);
             requestAnimationFrame(function () {
-                positionSuggestFixed(input);
+                if (!canShowSuggest(input, generation)) return;
+                positionSuggest(input, false);
             });
         });
     }
 
-    function showSuggestBox(input) {
-        if (suggestEl.parentElement !== document.body) {
-            document.body.appendChild(suggestEl);
-        }
+    function showSuggestBox(input, generation) {
+        if (!canShowSuggest(input, generation)) return;
+
         suggestEl.hidden = false;
         suggestEl.removeAttribute('hidden');
-        scheduleSyncOpenSuggest(input);
+        scheduleSyncOpenSuggest(input, generation);
     }
 
     function hideSuggest() {
+        suggestGeneration += 1;
+        cachedSuggestWidth = null;
+        lastSuggestValues = [];
+        clearSuggestOpenWrap();
         if (suggestEl) {
             suggestEl.hidden = true;
+            suggestEl.classList.remove('is-above');
             suggestEl.style.display = 'none';
             suggestEl.innerHTML = '';
+            suggestEl.style.top = '';
+            suggestEl.style.bottom = '';
+            suggestEl.style.left = '';
+            suggestEl.style.width = '';
+            suggestEl.style.minWidth = '';
+            suggestEl.style.maxWidth = '';
+            suggestEl.style.maxHeight = '';
+            if (suggestEl.parentElement !== document.body) {
+                document.body.appendChild(suggestEl);
+            }
         }
         activeInput = null;
     }
 
-    function renderSuggest(input, values, query, loading) {
+    function canShowSuggest(input, generation) {
+        return generation === suggestGeneration
+            && input
+            && input.isConnected
+            && isSuggestAnchorVisible(input);
+    }
+
+    function renderSuggest(input, values, query, loading, generation) {
+        if (!canShowSuggest(input, generation)) return;
+
         var box = ensureSuggestElement();
         if (!box) return;
 
+        cachedSuggestWidth = null;
+        lastSuggestValues = loading ? [] : (values || []).slice(0, 100);
         activeInput = input;
         box.innerHTML = '';
 
@@ -460,26 +729,40 @@
                 e.preventDefault();
                 input.value = query;
                 hideSuggest();
+                syncClearButton(input);
                 applyGridFilters(input, null);
                 syncClearFilterButtons();
             });
             createScroll.appendChild(create);
         }
 
-        showSuggestBox(input);
+        if (!canShowSuggest(input, generation)) return;
+
+        showSuggestBox(input, generation);
+        requestAnimationFrame(function () {
+            if (!canShowSuggest(input, generation)) return;
+            positionSuggest(input, true);
+        });
     }
 
     function updateSuggest(input) {
+        if (activeInput && activeInput !== input) {
+            suggestGeneration += 1;
+        }
+
         var query = readComboboxValue(input).trim();
         var requestId = (input.dataset.suggestRequestId = String((parseInt(input.dataset.suggestRequestId, 10) || 0) + 1));
+        var generation = suggestGeneration;
 
-        renderSuggest(input, [], query, true);
+        renderSuggest(input, [], query, true, generation);
 
         clearTimeout(loadTimer);
         loadTimer = setTimeout(function () {
             fetchDistinctValues(input, query).then(function (items) {
                 if (input.dataset.suggestRequestId !== requestId) return;
-                renderSuggest(input, items, query, false);
+                if (generation !== suggestGeneration) return;
+                if (document.activeElement !== input && activeInput !== input) return;
+                renderSuggest(input, items, query, false, generation);
             });
         }, 150);
     }
@@ -511,8 +794,9 @@
 
         ensureInputWrap(el);
 
+        syncClearButton(el);
+
         el.addEventListener('focus', function () {
-            hideSuggest();
             ensureGridHeaderLayout(el);
             updateSuggest(el);
         });
@@ -523,6 +807,7 @@
 
         el.addEventListener('input', function () {
             updateSuggest(el);
+            syncClearButton(el);
             syncClearFilterButtons();
         });
 
@@ -547,23 +832,35 @@
             }, 200);
         });
 
-        var panel = getScrollPanel(el);
-        if (panel) {
-            panel.addEventListener('scroll', function () {
-                if (activeInput === el) positionSuggestFixed(el);
-            }, { passive: true });
+        if (typeof ResizeObserver !== 'undefined') {
+            var anchor = el.closest('.grid-filter-input-wrap') || el;
+            var observer = new ResizeObserver(function () {
+                if (activeInput !== el || !suggestEl || suggestEl.hidden) return;
+                if (!isSuggestAnchorVisible(el)) {
+                    hideSuggest();
+                    return;
+                }
+                cachedSuggestWidth = null;
+                positionSuggest(el, true);
+            });
+            observer.observe(anchor);
+            var cell = getFilterCell(el);
+            if (cell && cell !== anchor) observer.observe(cell);
         }
     }
 
     function cleanupLegacySuggestElements() {
-        document.querySelectorAll('th > .grid-filter-suggest').forEach(function (node) {
-            node.remove();
+        document.querySelectorAll('.grid-filter-suggest').forEach(function (node) {
+            if (node !== suggestEl) {
+                node.remove();
+            }
         });
     }
 
     function initAll() {
         cleanupLegacySuggestElements();
         document.querySelectorAll('.grid-combobox').forEach(initCombobox);
+        bindGridScrollDismiss();
         syncClearFilterButtons();
     }
 
@@ -603,19 +900,49 @@
     });
 
     document.addEventListener('grid-layout-changed', function () {
-        if (activeInput) scheduleSyncOpenSuggest(activeInput);
+        if (!activeInput || !suggestEl || suggestEl.hidden) return;
+        if (!isSuggestAnchorVisible(activeInput)) {
+            hideSuggest();
+            return;
+        }
+        cachedSuggestWidth = null;
+        positionSuggest(activeInput, true);
     });
 
     document.addEventListener('grid-scroll-ready', function () {
-        if (activeInput) scheduleSyncOpenSuggest(activeInput);
+        bindGridScrollDismiss();
+        if (activeInput) hideSuggest();
     });
 
     window.addEventListener('scroll', function () {
-        if (activeInput) positionSuggestFixed(activeInput);
-    }, true);
+        if (!activeInput || !suggestEl || suggestEl.hidden) return;
+        if (!isSuggestAnchorVisible(activeInput)) {
+            hideSuggest();
+            return;
+        }
+        layoutSuggest(activeInput, false);
+    }, { passive: true, capture: true });
+
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', function () {
+            if (!activeInput || !suggestEl || suggestEl.hidden) return;
+            cachedSuggestWidth = null;
+            layoutSuggest(activeInput, true);
+        });
+        window.visualViewport.addEventListener('scroll', function () {
+            if (!activeInput || !suggestEl || suggestEl.hidden) return;
+            if (!isSuggestAnchorVisible(activeInput)) {
+                hideSuggest();
+                return;
+            }
+            layoutSuggest(activeInput, false);
+        });
+    }
 
     window.addEventListener('resize', function () {
-        if (activeInput) positionSuggestFixed(activeInput);
+        if (!activeInput || !suggestEl || suggestEl.hidden) return;
+        cachedSuggestWidth = null;
+        layoutSuggest(activeInput, true);
     });
 
     if (document.readyState === 'loading') {

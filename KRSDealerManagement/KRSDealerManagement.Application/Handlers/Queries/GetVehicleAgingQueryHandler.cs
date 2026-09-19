@@ -32,6 +32,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 .Where(a => a.IsActive)
                 .GroupBy(a => a.UserId)
                 .ToDictionary(g => g.Key, g => g.OrderByDescending(a => a.IsPrimary).First());
+            var warrantyOnlyVehicleIds = await WarrantyOnlyVehicleFlowHelper.GetWarrantyOnlyVehicleIdsAsync(_unitOfWork);
 
             var dealershipFilter = DealershipQueryScope.ResolveDealershipIds(request.DealershipId, request.DealershipIds);
             HashSet<int>? scopedSubdealerIds = dealershipFilter != null
@@ -58,6 +59,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var rows = vehicles
                 .Where(v =>
                 {
+                    if (warrantyOnlyVehicleIds.Contains(v.VehicleId))
+                        return false;
+
                     bookingsByVehicle.TryGetValue(v.VehicleId, out var booking);
                     return VehicleAgingCalculator.ShouldAppearOnAgingScreen(
                         v.Status,

@@ -94,8 +94,29 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     dealerships,
                     userOrgRoles);
 
+            string ResolveOwnShowroomLabel()
+            {
+                if (master == null || !master.WarrantyOnly)
+                    return "";
+
+                var ownShowroom = orgs.Values.FirstOrDefault(o =>
+                    o.DealershipId == master.DealershipId && o.OwnShowroom && o.IsActive);
+                if (ownShowroom != null)
+                {
+                    var location = string.IsNullOrWhiteSpace(ownShowroom.Location) ? "" : $" ({ownShowroom.Location})";
+                    return $"{ownShowroom.SubDealerName}{location}";
+                }
+
+                return dealerships.TryGetValue(master.DealershipId, out var dealer)
+                    ? dealer.DealershipName
+                    : "Own Showroom";
+            }
+
             string ResolveSubdealerName(int? userId)
             {
+                if (master?.WarrantyOnly == true)
+                    return ResolveOwnShowroomLabel();
+
                 if (!userId.HasValue || userId.Value <= 0) return ResolveShowroomLabel();
                 var assignment = userOrgRoles
                     .Where(a => a.UserId == userId.Value && a.IsActive)
@@ -114,6 +135,12 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
             string ResolveDealershipName(int? userId)
             {
+                if (master?.WarrantyOnly == true
+                    && dealerships.TryGetValue(master.DealershipId, out var masterDealer))
+                {
+                    return masterDealer.DealershipName;
+                }
+
                 if (!userId.HasValue) return ResolveShowroomLabel();
                 var assignment = userOrgRoles.FirstOrDefault(a => a.UserId == userId.Value && a.IsActive);
                 if (assignment?.DealershipId is int dealerId && dealerships.TryGetValue(dealerId, out var dealer))
@@ -148,9 +175,12 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         ? u.GetFullName()
                         : "Staff";
                     var status = VehicleHistoryHelper.ActionToStatus(h.Action) ?? UnifiedVehicleStatus.Submitted;
+                    var location = master.WarrantyOnly
+                        ? ResolveDealershipName(null)
+                        : "Dealer Stock";
                     Add(h.CreatedDate, status,
                         string.IsNullOrWhiteSpace(h.Remarks) ? h.Action : $"{h.Action} — {h.Remarks}",
-                        actor, "Dealer Stock", null);
+                        actor, location, null);
                 }
             }
 

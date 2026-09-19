@@ -495,4 +495,214 @@ namespace KRSDealerManagement.Web.Services.ExcelImport.Processors
             return default;
         }
     }
+
+    public sealed class WarrantyOnlyVehicleMastersImportProcessor : IExcelImportProcessor
+    {
+        public string Key => ExcelImportKeys.WarrantyOnlyVehicleMasters;
+        public string TemplateFileName => "import_warranty_only_vehicles_sample.xlsx";
+        public string DataSheetName => "Warranty Vehicles";
+        public IReadOnlyList<string> DataHeaders => new[]
+        {
+            "DealershipCode", "SubDealerId", "ChassisNumber", "ModelId", "ColorId", "CustomerName", "CustomerMobile", "SaleDate", "Remarks"
+        };
+        public IReadOnlyList<IReadOnlyList<object?>> ExampleRows => new[]
+        {
+            new List<object?> { "KARUR", 1, "EXTCHASSIS001", 1, 1, "Ravi Kumar", "9876543210", DateTime.Today.AddMonths(-6).ToString("yyyy-MM-dd"), "External warranty stock" }
+        };
+
+        public async Task<IReadOnlyDictionary<string, IReadOnlyList<string>>> GetLookupsAsync(ExcelImportContext context)
+        {
+            var dealerships = await ExcelImportLookupHelper.GetDealershipsAsync(context);
+            return new Dictionary<string, IReadOnlyList<string>>
+            {
+                ["DealershipCode"] = dealerships.Select(d => d.DealershipCode).ToList(),
+                ["SubDealerId"] = new[] { "Own Showroom org id — see Own Showroom Subdealers table." },
+                ["ModelId"] = new[] { "Use ModelId from the Models table on the Lookups sheet." },
+                ["ColorId"] = new[] { "Use ColorId from the Colors table on the Lookups sheet." }
+            };
+        }
+
+        public async Task<IReadOnlyList<ExcelReferenceTable>> GetReferenceTablesAsync(ExcelImportContext context)
+        {
+            var dealerships = (await ExcelImportLookupHelper.GetDealershipsAsync(context))
+                .OrderBy(d => d.DealershipName)
+                .ToList();
+            var models = (await ExcelImportLookupHelper.GetModelsAsync(context))
+                .Where(m => m.IsActive)
+                .OrderBy(m => m.ModelName)
+                .ToList();
+            var colors = (await ExcelImportLookupHelper.GetColorsAsync(context))
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.ColorName)
+                .ToList();
+            var ownShowrooms = (await ExcelImportLookupHelper.GetSubdealersAsync(context))
+                .Where(s => s.OwnShowroom && s.IsActive)
+                .OrderBy(s => s.FirstName)
+                .ToList();
+            var dealershipsById = dealerships.ToDictionary(d => d.DealershipId);
+
+            return new List<ExcelReferenceTable>
+            {
+                new()
+                {
+                    Title = "Dealerships",
+                    Headers = new[] { "DealershipCode", "DealershipName" },
+                    Rows = dealerships.Select(d => (IReadOnlyList<object?>)new List<object?> { d.DealershipCode, d.DealershipName }).ToList()
+                },
+                new()
+                {
+                    Title = "Own Showroom Subdealers",
+                    Headers = new[] { "SubDealerId", "SubdealerName", "DealershipCode" },
+                    Rows = ownShowrooms.Select(s =>
+                    {
+                        dealershipsById.TryGetValue(s.DealershipId, out var dealer);
+                        return (IReadOnlyList<object?>)new List<object?> { s.SubDealerId, s.FirstName, dealer?.DealershipCode ?? "" };
+                    }).ToList()
+                },
+                new()
+                {
+                    Title = "Models",
+                    Headers = new[] { "ModelId", "ModelName" },
+                    Rows = models.Select(m => (IReadOnlyList<object?>)new List<object?> { m.ModelId, m.ModelName }).ToList()
+                },
+                new()
+                {
+                    Title = "Colors",
+                    Headers = new[] { "ColorId", "ColorName" },
+                    Rows = colors.Select(c => (IReadOnlyList<object?>)new List<object?> { c.ColorId, c.ColorName }).ToList()
+                }
+            };
+        }
+
+        public async Task<IReadOnlyList<ExcelImportError>> ValidateAsync(IReadOnlyList<ExcelImportRow> rows, ExcelImportContext context)
+        {
+            var errors = new List<ExcelImportError>();
+            var dealerships = await ExcelImportLookupHelper.GetDealershipsAsync(context);
+            var models = (await ExcelImportLookupHelper.GetModelsAsync(context))
+                .Where(m => m.IsActive)
+                .ToDictionary(m => m.ModelId);
+            var colors = (await ExcelImportLookupHelper.GetColorsAsync(context))
+                .Where(c => c.IsActive)
+                .ToDictionary(c => c.ColorId);
+            var uow = context.Services.GetRequiredService<IUnitOfWork>();
+            var ownShowrooms = (await ExcelImportLookupHelper.GetSubdealersAsync(context))
+                .Where(s => s.OwnShowroom && s.IsActive)
+                .ToDictionary(s => s.SubDealerId);
+
+            var chassisInFile = rows
+                .Select(r => r.Get("ChassisNumber")?.Trim().ToUpperInvariant() ?? "")
+                .Where(c => !string.IsNullOrEmpty(c))
+                .ToList();
+            foreach (var dup in chassisInFile.GroupBy(c => c).Where(g => g.Count() > 1).Select(g => g.Key))
+                errors.Add(new ExcelImportError { RowNumber = 0, Message = $"Duplicate chassis in file: {dup}" });
+
+            for (int i = 0; i < rows.Count; i++)
+            {
+                var row = rows[i];
+                var line = row.RowNumber > 0 ? row.RowNumber : i + 2;
+                var dealerCode = row.Get("DealershipCode")?.Trim();
+                if (!string.IsNullOrWhiteSpace(dealerCode))
+                {
+                    var dealer = ExcelImportLookupHelper.FindDealership(dealerships, dealerCode);
+                    if (dealer == null)
+                        errors.Add(new ExcelImportError { RowNumber = line, Column = "DealershipCode", Message = $"Unknown dealership '{dealerCode}'." });
+                    else if (context.DealershipScopeId.HasValue && dealer.DealershipId != context.DealershipScopeId)
+                        errors.Add(new ExcelImportError { RowNumber = line, Column = "DealershipCode", Message = "Dealership is outside your scope." });
+                }
+
+                var chassis = row.Get("ChassisNumber")?.Trim().ToUpperInvariant() ?? "";
+                if (string.IsNullOrWhiteSpace(chassis))
+                    errors.Add(new ExcelImportError { RowNumber = line, Column = "ChassisNumber", Message = "ChassisNumber is required." });
+                if (!int.TryParse(row.Get("ModelId"), out var modelId) || modelId <= 0)
+                    errors.Add(new ExcelImportError { RowNumber = line, Column = "ModelId", Message = "ModelId must be a whole number from the Lookups sheet." });
+                if (!int.TryParse(row.Get("ColorId"), out var colorId) || colorId <= 0)
+                    errors.Add(new ExcelImportError { RowNumber = line, Column = "ColorId", Message = "ColorId must be a whole number from the Lookups sheet." });
+                if (!int.TryParse(row.Get("SubDealerId"), out var subDealerId) || subDealerId <= 0)
+                    errors.Add(new ExcelImportError { RowNumber = line, Column = "SubDealerId", Message = "SubDealerId is required (Own Showroom org id from Lookups)." });
+
+                if (string.IsNullOrWhiteSpace(chassis) || modelId <= 0 || colorId <= 0 || subDealerId <= 0)
+                    continue;
+
+                if (!ownShowrooms.TryGetValue(subDealerId, out var ownOrg))
+                    errors.Add(new ExcelImportError { RowNumber = line, Column = "SubDealerId", Message = $"SubDealerId {subDealerId} is not an active Own Showroom subdealer." });
+                else if (!string.IsNullOrWhiteSpace(dealerCode))
+                {
+                    var dealer = ExcelImportLookupHelper.FindDealership(dealerships, dealerCode);
+                    if (dealer != null && ownOrg.DealershipId != dealer.DealershipId)
+                        errors.Add(new ExcelImportError { RowNumber = line, Column = "SubDealerId", Message = "SubDealerId does not belong to the selected dealership." });
+                }
+
+                var saleDateRaw = row.Get("SaleDate")?.Trim();
+                if (!string.IsNullOrWhiteSpace(saleDateRaw) && !DateTime.TryParse(saleDateRaw, out _))
+                    errors.Add(new ExcelImportError { RowNumber = line, Column = "SaleDate", Message = "SaleDate must be a valid date (yyyy-MM-dd)." });
+
+                if (string.IsNullOrWhiteSpace(chassis) || modelId <= 0 || colorId <= 0)
+                    continue;
+
+                if (!models.ContainsKey(modelId))
+                    errors.Add(new ExcelImportError { RowNumber = line, Column = "ModelId", Message = $"Unknown model id '{modelId}'." });
+                if (!colors.ContainsKey(colorId))
+                    errors.Add(new ExcelImportError { RowNumber = line, Column = "ColorId", Message = $"Unknown color id '{colorId}'." });
+                if (await uow.VehicleMasters.ChassisExistsAsync(chassis))
+                    errors.Add(new ExcelImportError { RowNumber = line, Column = "ChassisNumber", Message = $"Chassis '{chassis}' already exists." });
+            }
+
+            return errors;
+        }
+
+        public async Task<int> InsertAsync(IReadOnlyList<ExcelImportRow> rows, ExcelImportContext context)
+        {
+            var dealerships = await ExcelImportLookupHelper.GetDealershipsAsync(context);
+            var defaultDealershipId = context.DealershipScopeId ?? 0;
+            if (defaultDealershipId <= 0 && rows.Count > 0)
+            {
+                var firstDealer = ExcelImportLookupHelper.FindDealership(dealerships, rows[0].Get("DealershipCode"));
+                defaultDealershipId = firstDealer?.DealershipId ?? 0;
+            }
+            if (defaultDealershipId <= 0)
+            {
+                defaultDealershipId = dealerships.OrderBy(d => d.DealershipId).FirstOrDefault()?.DealershipId ?? 0;
+            }
+
+            var importRows = rows.Select(r => MapRow(r, dealerships, defaultDealershipId)).ToList();
+            var result = await context.Services.GetRequiredService<MediatR.IMediator>().Send(
+                new KRSDealerManagement.Application.Commands.ImportWarrantyOnlyVehicleMastersCommand
+                {
+                    DefaultDealershipId = defaultDealershipId,
+                    ImportedBy = context.UserId,
+                    Rows = importRows
+                });
+
+            if (!result.Success)
+                throw new InvalidOperationException(string.Join(" ", result.Errors));
+
+            return result.ImportedCount;
+        }
+
+        private static KRSDealerManagement.Application.Commands.ImportWarrantyOnlyVehicleMasterRow MapRow(
+            ExcelImportRow row,
+            IReadOnlyList<DealershipDto> dealerships,
+            int defaultDealershipId)
+        {
+            var dealer = ExcelImportLookupHelper.FindDealership(dealerships, row.Get("DealershipCode"));
+            DateTime? saleDate = null;
+            var saleDateRaw = row.Get("SaleDate")?.Trim();
+            if (!string.IsNullOrWhiteSpace(saleDateRaw) && DateTime.TryParse(saleDateRaw, out var parsedSale))
+                saleDate = parsedSale.Date;
+
+            int.TryParse(row.Get("SubDealerId"), out var subDealerId);
+            return new()
+            {
+                DealershipId = dealer?.DealershipId ?? defaultDealershipId,
+                SubDealerId = subDealerId,
+                ChassisNumber = row.Get("ChassisNumber")?.Trim() ?? "",
+                ModelId = int.TryParse(row.Get("ModelId"), out var modelId) ? modelId : null,
+                ColorId = int.TryParse(row.Get("ColorId"), out var colorId) ? colorId : null,
+                CustomerName = row.Get("CustomerName")?.Trim(),
+                CustomerMobile = row.Get("CustomerMobile")?.Trim(),
+                SaleDate = saleDate,
+                Remarks = row.Get("Remarks")?.Trim()
+            };
+        }
+    }
 }

@@ -101,7 +101,7 @@
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-bordered table-sm mb-0 align-middle" id="itemsTable">
+                        <table class="table table-bordered table-sm mb-0 align-middle krs-order-items-table" id="itemsTable">
                             <thead class="table-dark">
                                 <tr>
                                     <th>Model</th>
@@ -141,7 +141,8 @@
 </form>
 
 @section Scripts {
-    <script src="~/js/model-color-filter.js"></script>
+    <script src="~/js/model-color-filter.js" asp-append-version="true"></script>
+    <script src="~/js/chassis-stock-select.js" asp-append-version="true"></script>
     <script>
         (function () {
             const canViewBalances = @(canViewBalances ? "true" : "false");
@@ -161,13 +162,8 @@
             }
 
             function selectedMasterIds(exceptId) {
-                const taken = new Set();
-                chassisSelectEls().forEach(el => {
-                    const rid = el.id.replace('master_', '');
-                    if (String(rid) === String(exceptId)) return;
-                    if (el.value) taken.add(String(el.value));
-                });
-                return taken;
+                const exceptSelect = document.getElementById(`master_${exceptId}`);
+                return KrsChassisStock.collectTakenIds(chassisSelectEls(), exceptSelect);
             }
 
             function cacheKey(dealershipId, modelId, colorId) {
@@ -177,33 +173,10 @@
             function fillChassisSelect(id, options) {
                 const select = document.getElementById(`master_${id}`);
                 if (!select) return;
-                const taken = selectedMasterIds(id);
-                const current = select.value;
-                select.innerHTML = '<option value="">Select chassis</option>';
-                let shown = 0;
-                (options || []).forEach(m => {
-                    const vid = String(m.vehicleMasterId || m.VehicleMasterId || '');
-                    if (!vid) return;
-                    if (taken.has(vid) && vid !== String(current)) return;
-                    const opt = document.createElement('option');
-                    opt.value = vid;
-                    opt.textContent = m.chassisNumber || m.ChassisNumber || '';
-                    opt.dataset.motor = m.motorNo || m.MotorNo || '';
-                    opt.dataset.battery = m.batteryNo || m.BatteryNo || '';
-                    opt.dataset.charger = m.chargerNo || m.ChargerNo || '';
-                    opt.dataset.controller = m.controllerNo || m.ControllerNo || '';
-                    opt.dataset.converter = m.converterNo || m.ConverterNo || '';
-                    select.appendChild(opt);
-                    shown += 1;
+                KrsChassisStock.fillSelect(select, options, {
+                    takenIds: selectedMasterIds(id),
+                    currentValue: KrsChassisStock.getSelectValue(select)
                 });
-                if (current) select.value = current;
-                if (shown === 0) {
-                    const empty = document.createElement('option');
-                    empty.value = '';
-                    empty.textContent = 'No chassis in dealer stock for this model/color';
-                    select.appendChild(empty);
-                }
-                if (window.KrsSearchableSelect) window.KrsSearchableSelect.refresh(select);
             }
 
             function refreshOtherChassisDropdowns(exceptId) {
@@ -211,8 +184,8 @@
                 chassisSelectEls().forEach(el => {
                     const id = el.id.replace('master_', '');
                     if (!id || String(id) === String(exceptId)) return;
-                    const modelId = document.getElementById(`model_${id}`)?.value;
-                    const colorId = document.getElementById(`color_${id}`)?.value;
+                    const modelId = KrsModelColors.getSelectValue(document.getElementById(`model_${id}`));
+                    const colorId = KrsModelColors.getSelectValue(document.getElementById(`color_${id}`));
                     if (!dealershipId || !modelId || !colorId) return;
                     const cached = chassisCache[cacheKey(dealershipId, modelId, colorId)];
                     if (cached) fillChassisSelect(id, cached);
@@ -232,11 +205,11 @@
             function buildModelSelect(id, onChange) {
                 let opts = `<option value="">-- Select --</option>`;
                 models.forEach(o => opts += `<option value="${o.id}">${o.name}</option>`);
-                return `<select name="modelIds" id="${id}" class="form-select form-select-sm" required onchange="${onChange}">${opts}</select>`;
+                return `<select name="modelIds" id="${id}" class="form-select" required onchange="${onChange}">${opts}</select>`;
             }
 
             function buildColorSelect(id, onChange) {
-                return `<select name="colorIds" id="${id}" class="form-select form-select-sm" required onchange="${onChange}">
+                return `<select name="colorIds" id="${id}" class="form-select" required onchange="${onChange}">
                     <option value="">-- Select Model First --</option></select>`;
             }
 
@@ -263,30 +236,35 @@
             }
 
             async function loadChassisOptions(id) {
-                const modelId = document.getElementById(`model_${id}`).value;
-                const colorId = document.getElementById(`color_${id}`).value;
+                const modelId = KrsModelColors.getSelectValue(document.getElementById(`model_${id}`));
+                const colorId = KrsModelColors.getSelectValue(document.getElementById(`color_${id}`));
                 const select = document.getElementById(`master_${id}`);
                 const dealershipId = resolveDealershipId();
                 if (!select) return;
-                select.innerHTML = '<option value="">Select chassis</option>';
                 fillSerials(id);
-                if (!dealershipId || !modelId || !colorId) return;
+                if (!dealershipId || !modelId || !colorId) {
+                    KrsChassisStock.fillSelect(select, [], {
+                        takenIds: selectedMasterIds(id),
+                        emptyMessage: !dealershipId
+                            ? 'Select subdealer first (dealership not resolved).'
+                            : 'Select model and color first.'
+                    });
+                    return;
+                }
                 const key = cacheKey(dealershipId, modelId, colorId);
                 try {
                     if (!chassisCache[key]) {
-                        const res = await KrsQueryString.fetchGet('/VehicleMasters/Available', {
-                            dealershipId: String(dealershipId),
-                            modelId: String(modelId),
-                            colorId: String(colorId)
-                        });
-                        if (!res.ok) return;
-                        chassisCache[key] = await res.json();
+                        chassisCache[key] = await KrsChassisStock.fetchOptions(dealershipId, modelId, colorId);
                     }
                     fillChassisSelect(id, chassisCache[key]);
                     fillSerials(id);
                     refreshOtherChassisDropdowns(id);
                 } catch (e) {
                     console.error(e);
+                    KrsChassisStock.fillSelect(select, [], {
+                        takenIds: selectedMasterIds(id),
+                        emptyMessage: 'Could not load chassis list.'
+                    });
                 }
             }
 
@@ -375,7 +353,7 @@
             window.onModelChanged = function (id) {
                 const modelSelect = document.getElementById(`model_${id}`);
                 const colorSelect = document.getElementById(`color_${id}`);
-                KrsModelColors.populateSelect(colorSelect, modelSelect.value, null);
+                KrsModelColors.populateSelect(colorSelect, KrsModelColors.getSelectValue(modelSelect), null);
                 if (window.krsSetIndianAmount) window.krsSetIndianAmount(document.getElementById(`price_${id}`), 0);
                 else document.getElementById(`price_${id}`).value = '0.00';
                 document.getElementById(`total_${id}`).textContent = 0;
@@ -384,8 +362,8 @@
             };
 
             window.loadPrice = function (id) {
-                const modelId = document.getElementById(`model_${id}`).value;
-                const colorId = document.getElementById(`color_${id}`).value;
+                const modelId = KrsModelColors.getSelectValue(document.getElementById(`model_${id}`));
+                const colorId = KrsModelColors.getSelectValue(document.getElementById(`color_${id}`));
                 if (!modelId || !colorId) return;
 
                 KrsQueryString.fetchGet('/Orders/GetPrice', { modelId, colorId })

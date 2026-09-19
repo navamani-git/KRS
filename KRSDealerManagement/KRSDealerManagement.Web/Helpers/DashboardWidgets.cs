@@ -1,5 +1,6 @@
 using KRSDealerManagement.Shared.Constants;
 using KRSDealerManagement.Shared.Helpers;
+using Microsoft.AspNetCore.Http;
 
 namespace KRSDealerManagement.Web.Helpers
 {
@@ -24,14 +25,42 @@ namespace KRSDealerManagement.Web.Helpers
         public bool CanViewCommissions { get; init; }
         public bool CanViewDealerStock { get; init; }
         public bool CanViewShowroomStock { get; init; }
-        public bool ShowBookingCounts { get; init; }
-        public bool ShowStaffOnlyBookingStages { get; init; }
-        public bool CanViewRtoSubsidyProgress { get; init; }
+
+        public static DashboardWidgetsContext Build(ISession session)
+        {
+            var isAdmin = SessionHelper.IsSystemAdmin(session);
+            var isSubdealer = SessionHelper.IsSubdealer(session);
+
+            return new DashboardWidgetsContext
+            {
+                IsAdmin = isAdmin,
+                IsSubdealer = isSubdealer,
+                IsBranchManager = SessionHelper.IsBranchManager(session),
+                CanViewOrders = isSubdealer || SessionHelper.HasMenuAccess(session, StaffMenuAccess.Orders),
+                CanViewReturns = isSubdealer || SessionHelper.HasMenuAccess(session, StaffMenuAccess.Returns),
+                CanViewPayments = isSubdealer || SessionHelper.HasMenuAccess(session, StaffMenuAccess.Payments),
+                CanViewCommissions = isSubdealer || isAdmin,
+                CanViewDealerStock = SessionHelper.HasMenuAccess(session, StaffMenuAccess.DealerStock),
+                CanViewShowroomStock = SessionHelper.HasMenuAccess(session, StaffMenuAccess.ShowroomStock)
+            };
+        }
     }
 
     public static class DashboardWidgets
     {
-        public static IReadOnlyList<DashboardWidgetItem> GetCatalog(DashboardWidgetsContext ctx)
+        private static readonly (string WidgetKey, string Label, string MenuKey)[] BookingStageWidgets =
+        {
+            (DashboardWidgetKeys.BookedToCustomer, "Booked to Customer", StaffMenuAccess.BookedToCustomerView),
+            (DashboardWidgetKeys.PaperReceived, "Paper Received", StaffMenuAccess.BookingPaperReceived),
+            (DashboardWidgetKeys.Invoiced, "Invoiced", StaffMenuAccess.BookingInvoiced),
+            (DashboardWidgetKeys.InsuranceCreated, "Insurance Created", StaffMenuAccess.BookingInsuranceCreated),
+            (DashboardWidgetKeys.RtoRequested, "RTO Requested", StaffMenuAccess.BookingRtoRequested),
+            (DashboardWidgetKeys.SubsidyIdPending, "Subsidy ID Pending", StaffMenuAccess.BookingSubsidyIdPending),
+            (DashboardWidgetKeys.SubsidyDocsPending, "Subsidy Docs Pending", StaffMenuAccess.BookingSubsidyDocsPending),
+            (DashboardWidgetKeys.Registered, "Registered", StaffMenuAccess.BookingRegistered)
+        };
+
+        public static IReadOnlyList<DashboardWidgetItem> GetCatalog(DashboardWidgetsContext ctx, ISession session)
         {
             var items = new List<DashboardWidgetItem>();
 
@@ -44,20 +73,10 @@ namespace KRSDealerManagement.Web.Helpers
             if (ctx.CanViewCommissions)
                 items.Add(new(DashboardWidgetKeys.PendingCommissions, "Pending Commissions", DashboardWidgetGroups.PendingActions));
 
-            if (ctx.ShowBookingCounts)
+            foreach (var (widgetKey, label, menuKey) in BookingStageWidgets)
             {
-                items.Add(new(DashboardWidgetKeys.BookedToCustomer, "Booked to Customer", DashboardWidgetGroups.ManageVehicles));
-                items.Add(new(DashboardWidgetKeys.PaperReceived, "Paper Received", DashboardWidgetGroups.ManageVehicles));
-                items.Add(new(DashboardWidgetKeys.Invoiced, "Invoiced", DashboardWidgetGroups.ManageVehicles));
-                items.Add(new(DashboardWidgetKeys.InsuranceCreated, "Insurance Created", DashboardWidgetGroups.ManageVehicles));
-                items.Add(new(DashboardWidgetKeys.RtoRequested, "RTO Requested", DashboardWidgetGroups.ManageVehicles));
-
-                if (ctx.CanViewRtoSubsidyProgress)
-                {
-                    items.Add(new(DashboardWidgetKeys.SubsidyIdPending, "Subsidy ID Pending", DashboardWidgetGroups.ManageVehicles));
-                    items.Add(new(DashboardWidgetKeys.SubsidyDocsPending, "Subsidy Docs Pending", DashboardWidgetGroups.ManageVehicles));
-                    items.Add(new(DashboardWidgetKeys.Registered, "Registered", DashboardWidgetGroups.ManageVehicles));
-                }
+                if (CanShowBookingWidget(ctx, session, menuKey))
+                    items.Add(new(widgetKey, label, DashboardWidgetGroups.ManageVehicles));
             }
 
             if (ctx.CanViewDealerStock)
@@ -66,6 +85,17 @@ namespace KRSDealerManagement.Web.Helpers
                 items.Add(new(DashboardWidgetKeys.ShowroomStock, "Subdealer Stock", DashboardWidgetGroups.Stock));
 
             return items;
+        }
+
+        private static bool CanShowBookingWidget(DashboardWidgetsContext ctx, ISession session, string menuKey)
+        {
+            if (ctx.IsAdmin)
+                return true;
+
+            if (ctx.IsSubdealer)
+                return SessionHelper.HasMenuAccess(session, MenuKeys.VehiclesBookingStages);
+
+            return SessionHelper.HasMenuAccess(session, menuKey);
         }
 
         public static IReadOnlyList<string> ResolveOrder(IReadOnlyList<DashboardWidgetItem> catalog, string? savedKeys)

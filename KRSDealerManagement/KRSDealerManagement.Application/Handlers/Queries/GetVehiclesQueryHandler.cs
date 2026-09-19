@@ -40,12 +40,14 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToDictionary(d => d.DealershipId);
             var masters = (await _unitOfWork.VehicleMasters.GetAllAsync()).ToDictionary(m => m.VehicleMasterId);
             var userOrgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync()).ToList();
+            var warrantyOnlyVehicleIds = await WarrantyOnlyVehicleFlowHelper.GetWarrantyOnlyVehicleIdsAsync(_unitOfWork);
 
             // Vehicles assigned to subdealers, plus dealer-showroom stock (no subdealer after return)
             var result = vehicles
                 .Where(v =>
-                    (v.SubdealerId.HasValue && v.SubdealerId.Value > 0)
-                    || (!v.SubdealerId.HasValue && v.PurchaseOrderId.HasValue))
+                    !warrantyOnlyVehicleIds.Contains(v.VehicleId)
+                    && ((v.SubdealerId.HasValue && v.SubdealerId.Value > 0)
+                    || (!v.SubdealerId.HasValue && v.PurchaseOrderId.HasValue)))
                 .Select(v =>
                 {
                     users.TryGetValue(v.SubdealerId ?? 0, out var user);

@@ -38,31 +38,93 @@
         const districtSelect = document.getElementById('rtoDistrictId');
         const locationSelect = document.getElementById('rtoLocationId');
         const selectedLocationId = @(selectedLocationId?.ToString() ?? "null");
+        let tomChangeBound = false;
 
-        function renderLocations() {
-            const districtId = parseInt(districtSelect.value, 10);
+        function getSelectValue(el) {
+            if (!el) return '';
+            if (el.tomselect) {
+                const value = el.tomselect.getValue();
+                return Array.isArray(value) ? (value[0] || '') : (value || '');
+            }
+            return el.value || '';
+        }
+
+        function locationDistrictId(row) {
+            return row.rtoDistrictId ?? row.RtoDistrictId;
+        }
+
+        function locationRowId(row) {
+            return row.rtoLocationId ?? row.RtoLocationId;
+        }
+
+        function locationRowName(row) {
+            return row.locationName ?? row.LocationName ?? '';
+        }
+
+        function refreshLocationSelect() {
+            if (!districtSelect || !locationSelect) return;
+
+            const districtId = parseInt(getSelectValue(districtSelect), 10);
+
+            if (window.KrsSearchableSelect) {
+                window.KrsSearchableSelect.destroy(locationSelect);
+            }
+
             locationSelect.innerHTML = '<option value="">-- Select location --</option>';
-            if (!districtId) return;
+            if (!districtId) {
+                if (window.KrsSearchableSelect) {
+                    window.KrsSearchableSelect.init(locationSelect);
+                }
+                return;
+            }
 
             allLocations
-                .filter(l => l.rtoDistrictId === districtId)
-                .sort((a, b) => a.locationName.localeCompare(b.locationName))
-                .forEach(l => {
+                .filter(function (row) { return locationDistrictId(row) === districtId; })
+                .sort(function (a, b) { return locationRowName(a).localeCompare(locationRowName(b)); })
+                .forEach(function (row) {
                     const opt = document.createElement('option');
-                    opt.value = l.rtoLocationId;
-                    opt.textContent = l.locationName;
-                    if (selectedLocationId && selectedLocationId === l.rtoLocationId) {
+                    const id = locationRowId(row);
+                    opt.value = id;
+                    opt.textContent = locationRowName(row);
+                    if (selectedLocationId && selectedLocationId === id) {
                         opt.selected = true;
                     }
                     locationSelect.appendChild(opt);
                 });
 
             if (window.KrsSearchableSelect) {
-                window.KrsSearchableSelect.refresh(locationSelect);
+                window.KrsSearchableSelect.init(locationSelect);
             }
         }
 
-        districtSelect.addEventListener('change', renderLocations);
-        renderLocations();
+        function bindDistrictChange() {
+            if (!districtSelect || districtSelect.dataset.rtoCascadeBound === '1') return;
+            districtSelect.dataset.rtoCascadeBound = '1';
+            districtSelect.addEventListener('change', refreshLocationSelect);
+        }
+
+        function bindTomSelectDistrictChange() {
+            if (!districtSelect || !districtSelect.tomselect || tomChangeBound) return;
+            tomChangeBound = true;
+            districtSelect.tomselect.on('change', refreshLocationSelect);
+        }
+
+        function initRtoCascade() {
+            bindDistrictChange();
+            bindTomSelectDistrictChange();
+            refreshLocationSelect();
+        }
+
+        function scheduleInit() {
+            initRtoCascade();
+            requestAnimationFrame(initRtoCascade);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', scheduleInit);
+        } else {
+            scheduleInit();
+        }
+        window.addEventListener('load', scheduleInit);
     })();
 </script>

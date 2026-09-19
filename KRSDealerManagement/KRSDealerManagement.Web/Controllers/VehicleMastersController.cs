@@ -160,6 +160,11 @@ namespace KRSDealerManagement.Web.Controllers
                 TempData["Error"] = "Allocated vehicles cannot be edited.";
                 return RedirectToAction(nameof(Index));
             }
+            if (master.WarrantyOnly)
+            {
+                TempData["Error"] = "Warranty-only vehicles are managed under Warranty-Only Vehicles.";
+                return RedirectToAction(nameof(Index));
+            }
             await SetupFormViewBagAsync();
             return View(master);
         }
