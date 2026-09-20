@@ -1,0 +1,30 @@
+@{
+    ViewData["Title"] = "New Notification";
+}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1 class="m-0"><i class="bi bi-bell-plus"></i> New Notification</h1>
+        <p class="text-muted">Post a notification to subdealer users in selected location(s)</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="@Url.Action("Index")" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card card-primary">
+            <div class="card-header"><h3 class="card-title">Notification</h3></div>
+            <form method="post">
+                @Html.AntiForgeryToken()
+                <div class="card-body">
+                    <partial name="_NotificationFormFields" />
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-send"></i> Send Notification</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

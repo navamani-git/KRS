@@ -31,6 +31,9 @@ namespace KRSDealerManagement.Shared.Helpers
         public static string DateTimeLocalMaxValue()
             => Now.ToString("yyyy-MM-ddTHH:mm");
 
+        public static string DateTimeLocalEndOfToday()
+            => Today.ToString("yyyy-MM-dd") + "T23:59";
+
         public static string DateInputMaxValue()
             => Today.ToString("yyyy-MM-dd");
 

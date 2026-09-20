@@ -1,9 +1,11 @@
 using KRSDealerManagement.Application;
 using KRSDealerManagement.Infrastructure;
+using KRSDealerManagement.Web.Filters;
 using KRSDealerManagement.Web.Helpers;
 using KRSDealerManagement.Web.Middleware;
 using KRSDealerManagement.Web.Services;
 using KRSDealerManagement.Web.Services.ExcelImport;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.Features;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,8 +13,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container
 builder.Services.AddControllersWithViews(options =>
 {
-    options.Filters.Add<KRSDealerManagement.Web.Filters.ReadOnlyMenuGuardFilter>();
-    options.Filters.Add<KRSDealerManagement.Web.Filters.ExportPermissionFilter>();
+    options.Filters.Add<ReadOnlyMenuGuardFilter>();
+    options.Filters.Add<ExportPermissionFilter>();
+    options.Filters.Add<AntiforgeryLoginRedirectFilter>();
 });
 builder.Services.Configure<FormOptions>(options =>
 {
@@ -26,7 +29,11 @@ builder.WebHost.ConfigureKestrel(options =>
 });
 
 // Query string encryption (single service used across the app)
-builder.Services.AddDataProtection();
+var dataProtectionKeysPath = Path.Combine(builder.Environment.ContentRootPath, "App_Data", "DataProtection-Keys");
+Directory.CreateDirectory(dataProtectionKeysPath);
+builder.Services.AddDataProtection()
+    .SetApplicationName("KRSDealerManagement")
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
 builder.Services.AddSingleton<IQueryStringCrypto, QueryStringCrypto>();
 
 // Get connection string from configuration (appsettings / web.config env vars)
@@ -89,6 +96,7 @@ app.UseMiddleware<QueryStringEncryptionMiddleware>();
 app.UseRouting();
 
 app.UseSession();
+app.UseMiddleware<ExpiredSessionRedirectMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();

@@ -1,5 +1,8 @@
-VehicleBookings/Edit
+I need a new screen to sent notification for all the sub dealers
 
-An unhandled exception occurred while processing the request.
-ArgumentException: An item with the same key has already been added. Key: FilePath
-System.Collections.Generic.Dictionary<TKey, TValue>.TryInsert(TKey key, TValue value, InsertionBehavior behavior)
+1) In top of the screen i need a notification count 
+2) Admin can post the notification and each subdealer can see and read the notification once read the notification count get reduced and the ntification should be read by all users, For example a single subdealers have two login means both the used read notification
+
+Admin can create notification and subdealer have view the notification
+
+Dont implement explain how you are going to implement - Table structure and everything

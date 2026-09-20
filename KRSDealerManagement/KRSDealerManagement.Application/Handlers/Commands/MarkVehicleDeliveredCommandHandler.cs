@@ -3,6 +3,7 @@ using KRSDealerManagement.Application.Commands;
 using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
+using KRSDealerManagement.Shared.Helpers;
 
 namespace KRSDealerManagement.Application.Handlers.Commands
 {
@@ -32,8 +33,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
             var deliveryAt = request.DeliveryDate;
             var deliveryDay = deliveryAt.Date;
-            var today = DateTime.UtcNow.Date;
-            if (deliveryDay > today)
+            if (IstTime.IsFutureDate(deliveryAt))
                 throw new InvalidOperationException("Delivery date cannot be in the future.");
 
             DateTime? orderDate = null;

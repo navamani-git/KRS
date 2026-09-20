@@ -124,6 +124,9 @@ namespace KRSDealerManagement.Domain.Repositories
         IRepository<WarrantyClaimServiceEntry> WarrantyClaimServiceEntries { get; }
         IRepository<WarrantyClaimAttachment> WarrantyClaimAttachments { get; }
         IRepository<WarrantyClaimStatusHistory> WarrantyClaimStatusHistories { get; }
+        IRepository<Notification> Notifications { get; }
+        IRepository<NotificationTarget> NotificationTargets { get; }
+        IRepository<NotificationRecipient> NotificationRecipients { get; }
 
         Task UpdateVehicleBookingStatusAsync(int bookingId, int bookingStatus, int? modifiedBy);
 

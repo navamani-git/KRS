@@ -1,0 +1,14 @@
+@model KRSDealerManagement.Web.ViewComponents.NotificationBellModel
+
+<li class="nav-item d-flex align-items-center">
+    <a class="nav-link position-relative" href="@Url.Action("Index", "Notifications")" title="Notifications">
+        <i class="bi bi-bell"></i>
+        @if (Model.UnreadCount > 0)
+        {
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-bell-badge">
+                @(Model.UnreadCount > 99 ? "99+" : Model.UnreadCount.ToString())
+            </span>
+        }
+        <span class="d-none d-md-inline ms-1">Notifications</span>
+    </a>
+</li>

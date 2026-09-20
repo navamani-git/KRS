@@ -1,0 +1,93 @@
+@using KRSDealerManagement.Application.Queries
+@{
+    var dealerships = ViewBag.Dealerships as IEnumerable<DealershipDto> ?? Enumerable.Empty<DealershipDto>();
+    var selectedIds = ViewBag.SelectedDealershipIds as IEnumerable<int> ?? Enumerable.Empty<int>();
+    var selectedSet = selectedIds.ToHashSet();
+    var targetAll = ViewBag.TargetAllLocations as bool? ?? false;
+    var title = ViewBag.Title as string ?? "";
+    var body = ViewBag.Body as string ?? "";
+    var isEdit = ViewBag.NotificationId != null;
+}
+
+<div class="form-group mb-3">
+    <label class="form-label fw-bold">Title <span class="text-danger">*</span></label>
+    <input type="text" name="title" class="form-control" maxlength="200" required value="@title" placeholder="Notification title" />
+</div>
+
+<div class="form-group mb-3">
+    <label class="form-label fw-bold">Message <span class="text-danger">*</span></label>
+    <textarea name="body" class="form-control" rows="6" required placeholder="Write the notification message...">@body</textarea>
+</div>
+
+<div class="form-group mb-3">
+    <div class="form-check mb-2">
+        <input type="checkbox" class="form-check-input" id="targetAllLocations" name="targetAllLocations" value="true"
+               @(targetAll ? "checked" : "") />
+        <label class="form-check-label fw-bold" for="targetAllLocations">All locations</label>
+    </div>
+    <label class="form-label fw-bold">Locations</label>
+    <select name="dealershipIds" id="dealershipIds" class="form-select" multiple @(targetAll ? "disabled" : "")>
+        @foreach (var d in dealerships)
+        {
+            if (selectedSet.Contains(d.DealershipId))
+            {
+                <option value="@d.DealershipId" selected="selected">@d.DealershipName (@d.DealershipCode)</option>
+            }
+            else
+            {
+                <option value="@d.DealershipId">@d.DealershipName (@d.DealershipCode)</option>
+            }
+        }
+    </select>
+    <small class="text-muted">Select one or more locations. Only subdealer logins under those locations will receive this notification.</small>
+</div>
+
+<div class="alert alert-info py-2 mb-0" id="recipientPreview">
+    <i class="bi bi-people"></i> <span id="recipientPreviewText">Checking recipients…</span>
+</div>
+
+<script>
+(function () {
+    const allCheckbox = document.getElementById('targetAllLocations');
+    const locationSelect = document.getElementById('dealershipIds');
+    const previewText = document.getElementById('recipientPreviewText');
+    const previewUrl = '@Url.Action("PreviewCount", isEdit ? "AdminNotifications" : "AdminNotifications")';
+
+    function selectedDealershipIds() {
+        if (!locationSelect || allCheckbox.checked) return [];
+        return Array.from(locationSelect.selectedOptions).map(o => parseInt(o.value, 10)).filter(id => !isNaN(id));
+    }
+
+    function syncLocationState() {
+        if (!locationSelect) return;
+        locationSelect.disabled = allCheckbox.checked;
+        if (allCheckbox.checked) {
+            Array.from(locationSelect.options).forEach(o => o.selected = false);
+        }
+    }
+
+    async function refreshPreview() {
+        const params = new URLSearchParams();
+        params.append('targetAllLocations', allCheckbox.checked ? 'true' : 'false');
+        selectedDealershipIds().forEach(id => params.append('dealershipIds', id));
+        try {
+            const response = await fetch(previewUrl + '?' + params.toString());
+            const data = await response.json();
+            const count = data.count ?? 0;
+            previewText.textContent = count === 1
+                ? 'This will be sent to 1 subdealer login.'
+                : `This will be sent to ${count} subdealer logins.`;
+        } catch {
+            previewText.textContent = 'Could not preview recipient count.';
+        }
+    }
+
+    allCheckbox?.addEventListener('change', () => {
+        syncLocationState();
+        refreshPreview();
+    });
+    locationSelect?.addEventListener('change', refreshPreview);
+    syncLocationState();
+    refreshPreview();
+})();
+</script>

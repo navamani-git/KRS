@@ -1500,7 +1500,8 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.MinDeliveryDate = vehicle?.PurchaseOrderId is int poId
                 ? (await _unitOfWork.PurchaseOrders.GetByIdAsync(poId))?.CreatedDate.ToString("yyyy-MM-ddTHH:mm")
                 : vehicle?.CreatedDate.ToString("yyyy-MM-ddTHH:mm");
-            ViewBag.MaxDeliveryDate = DateTime.Now.ToString("yyyy-MM-ddTHH:mm");
+            ViewBag.MaxDeliveryDate = IstTime.DateTimeLocalEndOfToday();
+            ViewBag.DefaultDeliveryDate = IstTime.DateTimeLocalMaxValue();
             ViewBag.DeliveryDate = vehicle?.DeliveryDate.HasValue == true
                 ? FormDateTimeHelper.FormatDisplay(vehicle.DeliveryDate)
                 : null;

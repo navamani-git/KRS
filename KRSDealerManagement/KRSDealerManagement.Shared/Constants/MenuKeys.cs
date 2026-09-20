@@ -43,6 +43,7 @@ namespace KRSDealerManagement.Shared.Constants
         public const string AccountStatements = "account_statements";
         public const string MyPayments = "my_payments";
         public const string Reports = "reports";
+        public const string Notifications = "notifications";
 
         // Admin Features
         public const string AdminPanel = "admin_panel";
@@ -65,7 +66,7 @@ namespace KRSDealerManagement.Shared.Constants
                 Commissions, CommissionSubmit, CommissionView, CommissionInvoiced, CommissionApprove,
                 Vehicles, VehiclesView, VehiclesBookingStages, VehicleAging, VehiclesCreate, VehiclesEdit, MyReturns,
                 MyWarrantyClaims, MyCompletedWarrantyClaims, WarrantyApply,
-                Account, AccountBalance, AccountTransactions, AccountStatements, MyPayments, Reports,
+                Account, AccountBalance, AccountTransactions, AccountStatements, MyPayments, Reports, Notifications,
                 AdminPanel, SubdealerManagement, AccountManagement, PermissionManagement,
                 PriceManagement, VehicleManagement, ReportsAdmin
             };
@@ -85,6 +86,12 @@ namespace KRSDealerManagement.Shared.Constants
                     Icon = "bi-wallet2",
                     Children = new[]
                     {
+                        new MenuItemDefinition
+                        {
+                            Key = Notifications, Name = GetDisplayName(Notifications),
+                            DefaultAccessible = true, Controller = "Notifications", Action = "Index", Icon = "bi-bell",
+                            Actions = new[] { "Index", "Details" }
+                        },
                         new MenuItemDefinition
                         {
                             Key = AccountStatements, Name = GetDisplayName(AccountStatements),
@@ -334,6 +341,7 @@ namespace KRSDealerManagement.Shared.Constants
                 AccountStatements => "Account Statement",
                 MyPayments => "My Payments",
                 Reports => "Reports",
+                Notifications => "Notifications",
                 AdminPanel => "Admin Panel",
                 SubdealerManagement => "Subdealer Management",
                 AccountManagement => "Account Management",

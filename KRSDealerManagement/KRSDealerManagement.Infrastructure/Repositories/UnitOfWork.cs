@@ -54,6 +54,9 @@ namespace KRSDealerManagement.Infrastructure.Repositories
         private IRepository<WarrantyClaimServiceEntry> _warrantyClaimServiceEntries;
         private IRepository<WarrantyClaimAttachment> _warrantyClaimAttachments;
         private IRepository<WarrantyClaimStatusHistory> _warrantyClaimStatusHistories;
+        private IRepository<Notification> _notifications;
+        private IRepository<NotificationTarget> _notificationTargets;
+        private IRepository<NotificationRecipient> _notificationRecipients;
 
         public UnitOfWork(ApplicationDbContext context)
         {
@@ -100,6 +103,9 @@ namespace KRSDealerManagement.Infrastructure.Repositories
         public IRepository<WarrantyClaimServiceEntry> WarrantyClaimServiceEntries => _warrantyClaimServiceEntries ??= new Repository<WarrantyClaimServiceEntry>(_context, "WarrantyClaimServiceEntries", "ServiceEntryId");
         public IRepository<WarrantyClaimAttachment> WarrantyClaimAttachments => _warrantyClaimAttachments ??= new Repository<WarrantyClaimAttachment>(_context, "WarrantyClaimAttachments", "AttachmentId");
         public IRepository<WarrantyClaimStatusHistory> WarrantyClaimStatusHistories => _warrantyClaimStatusHistories ??= new Repository<WarrantyClaimStatusHistory>(_context, "WarrantyClaimStatusHistory", "HistoryId");
+        public IRepository<Notification> Notifications => _notifications ??= new Repository<Notification>(_context, "Notifications", "NotificationId");
+        public IRepository<NotificationTarget> NotificationTargets => _notificationTargets ??= new Repository<NotificationTarget>(_context, "NotificationTargets", "NotificationTargetId");
+        public IRepository<NotificationRecipient> NotificationRecipients => _notificationRecipients ??= new Repository<NotificationRecipient>(_context, "NotificationRecipients", "NotificationRecipientId");
 
         public async Task UpdateVehicleBookingStatusAsync(int bookingId, int vehicleStatus, int? modifiedBy)
         {

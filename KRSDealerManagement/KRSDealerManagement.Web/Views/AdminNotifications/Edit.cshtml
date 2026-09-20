@@ -1,0 +1,31 @@
+@{
+    ViewData["Title"] = "Edit Notification";
+    var notificationId = (int)ViewBag.NotificationId;
+}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1 class="m-0"><i class="bi bi-pencil-square"></i> Edit Notification</h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="@Url.Action("Details", new { id = notificationId })" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card card-primary">
+            <div class="card-header"><h3 class="card-title">Notification</h3></div>
+            <form method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@notificationId" />
+                <div class="card-body">
+                    <partial name="_NotificationFormFields" />
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,85 @@
+@model IReadOnlyList<KRSDealerManagement.Application.DTOs.AdminNotificationListItemDto>
+@using KRSDealerManagement.Shared.Helpers
+@{
+    ViewData["Title"] = "Notifications";
+    var showDeleted = ViewBag.ShowDeleted as bool? ?? false;
+}
+
+<div class="row mb-3">
+    <div class="col-md-7">
+        <h1 class="m-0"><i class="bi bi-bell"></i> Notifications</h1>
+        <p class="text-muted">Send and manage notifications to subdealer users by location</p>
+    </div>
+    <div class="col-md-5 text-end">
+        <a href="@Url.Action("Index", new { showDeleted = !showDeleted })" class="btn btn-outline-secondary">
+            @(showDeleted ? "Hide deleted" : "Show deleted")
+        </a>
+        <a href="@Url.Action("Create")" class="btn btn-primary">
+            <i class="bi bi-plus"></i> New Notification
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover table-striped mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>Title</th>
+                        <th>Location(s)</th>
+                        <th>Sent</th>
+                        <th>Recipients</th>
+                        <th>Read</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ var i = 1; }
+                    @foreach (var item in Model)
+                    {
+                        var sentAt = IstTime.ToIst(item.CreatedDate);
+                        <tr class="@(!item.IsActive ? "text-muted" : "")">
+                            <td>@(i++)</td>
+                            <td><strong>@item.Title</strong></td>
+                            <td>@item.LocationSummary</td>
+                            <td><small>@(sentAt?.ToString("dd-MMM-yyyy HH:mm") ?? "—")</small></td>
+                            <td>@item.RecipientCount</td>
+                            <td>@item.ReadCount / @item.RecipientCount</td>
+                            <td>
+                                <span class="badge @(item.IsActive ? "bg-success" : "bg-secondary")">
+                                    @(item.IsActive ? "Active" : "Deleted")
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a href="@Url.Action("Details", new { id = item.NotificationId })" class="btn btn-sm btn-outline-primary" title="View">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                @if (item.IsActive)
+                                {
+                                    <a href="@Url.Action("Edit", new { id = item.NotificationId })" class="btn btn-sm btn-warning" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form method="post" asp-action="Delete" class="d-inline"
+                                          onsubmit="return confirm('Delete this notification for all subdealers?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@item.NotificationId" />
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (!Model.Any())
+        {
+            <div class="p-3 text-muted">No notifications yet. <a href="@Url.Action("Create")">Create one</a>.</div>
+        }
+    </div>
+</div>

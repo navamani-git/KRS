@@ -39,18 +39,11 @@
         }
     }
 
-    function adjustFontDropdownDirection() {
-        document.querySelectorAll('.krs-font-dropdown').forEach(function (form) {
-            // Navbar is at top — open menu upward on mobile. Login page keeps normal dropdown.
-            var onLoginPage = !!form.closest('.login-font-bar');
-            form.classList.toggle('dropup', !onLoginPage && window.innerWidth < 992);
-        });
-    }
-
     function bindFontForms() {
         document.querySelectorAll('form[data-krs-font-form]').forEach(function (form) {
             if (form.dataset.krsFontBound === '1') return;
             form.dataset.krsFontBound = '1';
+            form.classList.remove('dropup');
 
             var hidden = form.querySelector('[data-krs-font-input]');
             var legacySelect = form.querySelector('select[name="fontSizePreset"]');
@@ -76,8 +69,6 @@
 
             if (hidden) syncFontDropdown(form, hidden.value);
         });
-
-        adjustFontDropdownDirection();
     }
 
     window.KrsFontScale = {
@@ -94,5 +85,4 @@
         bindFontForms();
     }
 
-    window.addEventListener('resize', adjustFontDropdownDirection);
 })();

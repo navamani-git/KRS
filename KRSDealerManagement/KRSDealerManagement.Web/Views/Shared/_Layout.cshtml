@@ -100,6 +100,7 @@
 
             <!-- Right navbar links -->
             <ul class="navbar-nav ml-auto">
+                @await Component.InvokeAsync("NotificationBell")
                 @await Component.InvokeAsync("LocationFilter")
                 <li class="nav-item d-flex align-items-center px-2">
                     <partial name="_FontSizeControl" />
