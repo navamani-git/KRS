@@ -26,6 +26,15 @@ namespace KRSDealerManagement.Application.Helpers
             if (master.IsAllocated)
                 throw new InvalidOperationException($"Chassis {master.ChassisNumber} is already allocated.");
 
+            await VehicleLifecycleHelper.EnsureCanAllocateToSubdealerAsync(
+                unitOfWork, master, subdealerId);
+
+            await VehicleLifecycleHelper.SupersedeActiveRowsForMasterAsync(
+                unitOfWork,
+                master.VehicleMasterId,
+                allocatedBy,
+                "Superseded when chassis was allocated from dealer stock.");
+
             if (master.ModelId != item.ModelId || master.ColorId != item.ColorId)
                 throw new InvalidOperationException("Selected chassis does not match the order line model and color.");
 

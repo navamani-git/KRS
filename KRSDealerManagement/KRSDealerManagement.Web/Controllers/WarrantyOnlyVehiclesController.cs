@@ -193,7 +193,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             try
             {
-                await _mediator.Send(new DeleteVehicleMasterCommand
+                await _mediator.Send(new DeleteWarrantyOnlyVehicleMasterCommand
                 {
                     VehicleMasterId = id,
                     DeletedBy = userId.Value,

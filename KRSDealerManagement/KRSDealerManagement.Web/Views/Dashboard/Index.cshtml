@@ -367,7 +367,13 @@
                                             <span class="badge bg-primary">@activity.ActivityType</span>
                                         </td>
                                         <td class="allow-wrap">@activity.Description</td>
-                                        <td>@activity.UserName</td>
+                                        <td>
+                                            <strong>@activity.UserName</strong>
+                                            @if (!string.IsNullOrWhiteSpace(activity.UserRole))
+                                            {
+                                                <br /><small class="text-muted">@activity.UserRole</small>
+                                            }
+                                        </td>
                                             <td>
                                                 <small class="text-muted">
                                                     <i class="bi bi-calendar"></i> @activity.CreatedDate.ToString("yyyy-MM-dd HH:mm:ss")

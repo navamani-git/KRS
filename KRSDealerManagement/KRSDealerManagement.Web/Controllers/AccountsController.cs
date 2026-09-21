@@ -38,7 +38,7 @@ namespace KRSDealerManagement.Web.Controllers
             IEnumerable<KRSDealerManagement.Application.DTOs.SubdealerAccountDto> accounts;
             if (subdealerId.HasValue)
             {
-                if (subdealersQuery.DealershipId.HasValue && subdealers.All(s => s.UserId != subdealerId.Value))
+                if (subdealersQuery.DealershipId.HasValue && subdealers.All(s => s.SubDealerId != subdealerId.Value))
                 {
                     TempData["Error"] = "Subdealer is outside your dealership.";
                     return RedirectToAction(nameof(Index));
@@ -50,7 +50,7 @@ namespace KRSDealerManagement.Web.Controllers
                 var allAccounts = new List<KRSDealerManagement.Application.DTOs.SubdealerAccountDto>();
                 foreach (var s in subdealers)
                 {
-                    var accs = await _mediator.Send(new GetSubdealerAccountsQuery { SubdealerId = s.UserId });
+                    var accs = await _mediator.Send(new GetSubdealerAccountsQuery { SubdealerId = s.SubDealerId });
                     allAccounts.AddRange(accs);
                 }
                 accounts = allAccounts;
@@ -80,7 +80,7 @@ namespace KRSDealerManagement.Web.Controllers
             IEnumerable<KRSDealerManagement.Application.DTOs.SubdealerAccountDto> accounts;
             if (subdealerId.HasValue)
             {
-                if (subdealersQuery.DealershipId.HasValue && subdealers.All(s => s.UserId != subdealerId.Value))
+                if (subdealersQuery.DealershipId.HasValue && subdealers.All(s => s.SubDealerId != subdealerId.Value))
                     return RedirectToAction(nameof(Index));
                 accounts = await _mediator.Send(new GetSubdealerAccountsQuery { SubdealerId = subdealerId.Value });
             }
@@ -89,7 +89,7 @@ namespace KRSDealerManagement.Web.Controllers
                 var allAccounts = new List<KRSDealerManagement.Application.DTOs.SubdealerAccountDto>();
                 foreach (var s in subdealers)
                 {
-                    var accs = await _mediator.Send(new GetSubdealerAccountsQuery { SubdealerId = s.UserId });
+                    var accs = await _mediator.Send(new GetSubdealerAccountsQuery { SubdealerId = s.SubDealerId });
                     allAccounts.AddRange(accs);
                 }
                 accounts = allAccounts;
@@ -207,11 +207,16 @@ namespace KRSDealerManagement.Web.Controllers
             return AccountStatementExportHelper.ToFileResult(this, id, balance.SubdealerName, transactions);
         }
 
-        private async Task<bool> IsSubdealerInScopeAsync(int subdealerUserId)
+        private async Task<bool> IsSubdealerInScopeAsync(int subdealerOrgOrUserId)
         {
-            var detailQuery = new GetSubdealerDetailQuery { UserId = subdealerUserId };
+            var detailQuery = new GetSubdealerDetailQuery { SubDealerId = subdealerOrgOrUserId };
             DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, detailQuery);
             var detail = await _mediator.Send(detailQuery);
+            if (detail != null) return true;
+
+            detailQuery = new GetSubdealerDetailQuery { UserId = subdealerOrgOrUserId };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, detailQuery);
+            detail = await _mediator.Send(detailQuery);
             return detail != null;
         }
 
@@ -285,7 +290,7 @@ namespace KRSDealerManagement.Web.Controllers
             var accountOptions = new List<KRSDealerManagement.Application.DTOs.SubdealerAccountDto>();
             foreach (var s in subdealers)
             {
-                var accs = await _mediator.Send(new GetSubdealerAccountsQuery { SubdealerId = s.UserId });
+                var accs = await _mediator.Send(new GetSubdealerAccountsQuery { SubdealerId = s.SubDealerId });
                 accountOptions.AddRange(accs);
             }
             ViewBag.AccountOptions = accountOptions.OrderBy(a => a.SubdealerName).ToList();

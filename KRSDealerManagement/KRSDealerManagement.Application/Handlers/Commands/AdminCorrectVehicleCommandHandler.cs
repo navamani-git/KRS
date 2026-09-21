@@ -29,6 +29,14 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(request.VehicleId);
             if (vehicle == null) return false;
 
+            if (vehicle.VehicleMasterId > 0)
+            {
+                var linkedMaster = await _unitOfWork.VehicleMasters.GetByIdAsync(vehicle.VehicleMasterId);
+                if (linkedMaster?.WarrantyOnly == true)
+                    throw new InvalidOperationException(
+                        "Warranty-only vehicles cannot be corrected here. Use Warranty-Only Vehicles.");
+            }
+
             var oldVehicleStatus = vehicle.Status;
             var pendingReturns = (await _unitOfWork.ReturnRequests.GetAllAsync())
                 .Where(r => r.VehicleId == vehicle.VehicleId && r.Status == 0)
@@ -123,7 +131,9 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
             vehicle.Status = request.Status;
             vehicle.CurrentPrice = request.CurrentPrice;
-            vehicle.SubdealerId = request.SubdealerId;
+            vehicle.SubdealerId = request.SubdealerId.HasValue
+                ? await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, request.SubdealerId.Value)
+                : null;
 
             if (pendingReturns.Count > 0)
             {

@@ -51,7 +51,7 @@
                     <option value="">-- Select subdealer --</option>
                     @foreach (var s in subdealers)
                     {
-                        <option value="@s.UserId" selected="@(Model.TargetSubdealerUserId == s.UserId)">@s.GetFullName()</option>
+                        <option value="@s.SubDealerId" selected="@(Model.TargetSubdealerUserId == s.SubDealerId)">@s.GetFullName()</option>
                     }
                 </select>
             </div>

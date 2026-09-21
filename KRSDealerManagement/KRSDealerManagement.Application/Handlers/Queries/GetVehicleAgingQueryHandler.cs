@@ -2,6 +2,7 @@ using MediatR;
 using KRSDealerManagement.Application.DTOs;
 using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Queries;
+using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
 using KRSDealerManagement.Shared.Helpers;
@@ -19,13 +20,14 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
         public async Task<IEnumerable<VehicleAgingRowDto>> Handle(GetVehicleAgingQuery request, CancellationToken cancellationToken)
         {
-            var vehicles = (await _unitOfWork.Vehicles.GetAllAsync()).ToList();
+            var vehicles = VehicleLifecycleHelper.FilterActiveLifecycle(await _unitOfWork.Vehicles.GetAllAsync()).ToList();
             var bookingsByVehicle = (await _unitOfWork.VehicleBookings.GetAllAsync())
                 .GroupBy(b => b.VehicleId)
                 .ToDictionary(g => g.Key, g => g.OrderByDescending(b => b.SubmittedDate).First());
             var models = (await _unitOfWork.VehicleModels.GetAllAsync()).ToDictionary(m => m.ModelId);
             var colors = (await _unitOfWork.VehicleColors.GetAllAsync()).ToDictionary(c => c.ColorId);
             var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
+            var orgs = (await _unitOfWork.SubDealers.GetAllAsync()).ToDictionary(o => o.SubDealerId);
             var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToDictionary(d => d.DealershipId);
             var allOrgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync()).ToList();
             var orgRoles = allOrgRoles
@@ -71,7 +73,6 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 .Select(v =>
                 {
                     bookingsByVehicle.TryGetValue(v.VehicleId, out var booking);
-                    users.TryGetValue(v.SubdealerId ?? 0, out var user);
                     models.TryGetValue(v.ModelId, out var model);
                     colors.TryGetValue(v.ColorId, out var color);
 
@@ -114,7 +115,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         ModelName = model?.ModelName ?? $"Model #{v.ModelId}",
                         ColorName = color?.ColorName ?? $"Color #{v.ColorId}",
                         SubdealerId = v.SubdealerId!.Value,
-                        SubdealerName = user?.GetFullName() ?? "Unknown",
+                        SubdealerName = SubdealerOrgService.ResolveDisplayName(v.SubdealerId, allOrgRoles, orgs, users),
                         PurchaseDate = purchase,
                         BookedDate = booked,
                         BookedAging = aging.BookedAging,
@@ -137,7 +138,10 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 rows = rows.Where(r => scopedSubdealerIds.Contains(r.SubdealerId));
 
             if (request.SubdealerId.HasValue)
-                rows = rows.Where(r => r.SubdealerId == request.SubdealerId.Value);
+            {
+                var orgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, request.SubdealerId.Value);
+                rows = rows.Where(r => r.SubdealerId == orgId);
+            }
 
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {

@@ -22,7 +22,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
         public async Task<IEnumerable<VehicleDto>> Handle(GetVehiclesQuery request, CancellationToken cancellationToken)
         {
-            var vehicles = (await _unitOfWork.Vehicles.GetAllAsync()).ToList();
+            var vehicles = VehicleLifecycleHelper.FilterActiveLifecycle(await _unitOfWork.Vehicles.GetAllAsync()).ToList();
             var models = (await _unitOfWork.VehicleModels.GetAllAsync()).ToDictionary(m => m.ModelId);
             var colors = (await _unitOfWork.VehicleColors.GetAllAsync()).ToDictionary(c => c.ColorId);
             var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
@@ -40,17 +40,16 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToDictionary(d => d.DealershipId);
             var masters = (await _unitOfWork.VehicleMasters.GetAllAsync()).ToDictionary(m => m.VehicleMasterId);
             var userOrgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync()).ToList();
+            var orgs = (await _unitOfWork.SubDealers.GetAllAsync()).ToDictionary(o => o.SubDealerId);
             var warrantyOnlyVehicleIds = await WarrantyOnlyVehicleFlowHelper.GetWarrantyOnlyVehicleIdsAsync(_unitOfWork);
 
-            // Vehicles assigned to subdealers, plus dealer-showroom stock (no subdealer after return)
+            // Only vehicles currently held by a subdealer. Returned dealer-stock units live on Dealer Stock.
             var result = vehicles
                 .Where(v =>
                     !warrantyOnlyVehicleIds.Contains(v.VehicleId)
-                    && ((v.SubdealerId.HasValue && v.SubdealerId.Value > 0)
-                    || (!v.SubdealerId.HasValue && v.PurchaseOrderId.HasValue)))
+                    && VehicleLifecycleHelper.IsHeldBySubdealer(v))
                 .Select(v =>
                 {
-                    users.TryGetValue(v.SubdealerId ?? 0, out var user);
                     models.TryGetValue(v.ModelId, out var model);
                     colors.TryGetValue(v.ColorId, out var color);
                     orders.TryGetValue(v.PurchaseOrderId ?? 0, out var order);
@@ -71,7 +70,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         StatusBadgeClass = st?.BadgeClass,
                         SubdealerId = v.SubdealerId,
                         SubdealerName = v.SubdealerId.HasValue
-                            ? (user?.GetFullName() ?? "Unknown")
+                            ? SubdealerOrgService.ResolveOrgDisplayName(v.SubdealerId, orgs)
                             : DealershipLocationHelper.ResolveShowroomLabel(
                                 v,
                                 order?.SubdealerId,
@@ -118,33 +117,29 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 });
 
             if (request.SubdealerId.HasValue)
-                result = result.Where(v => v.SubdealerId == request.SubdealerId.Value);
+            {
+                var orgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, request.SubdealerId.Value);
+                result = result.Where(v => SubdealerOrgService.MatchesOrgId(v.SubdealerId, orgId));
+            }
 
             var dealershipFilter = DealershipQueryScope.ResolveDealershipIds(request.DealershipId, request.DealershipIds);
             if (dealershipFilter != null)
             {
-                var scopedUserIds = DealershipQueryScope.GetScopedSubdealerUserIds(userOrgRoles, dealershipFilter);
+                var scopedOrgIds = DealershipQueryScope.GetScopedSubdealerOrgIds(userOrgRoles, dealershipFilter);
                 result = result.Where(v =>
-                    (v.SubdealerId.HasValue && scopedUserIds.Contains(v.SubdealerId.Value))
-                    || (!v.SubdealerId.HasValue
-                        && v.PurchaseOrderId.HasValue
-                        && orders.TryGetValue(v.PurchaseOrderId.Value, out var po)
-                        && scopedUserIds.Contains(po.SubdealerId)));
+                    v.SubdealerId.HasValue && scopedOrgIds.Contains(v.SubdealerId.Value));
             }
 
             if (!string.IsNullOrWhiteSpace(request.DealershipLocation))
             {
                 var location = request.DealershipLocation.Trim();
-                var dealershipIds = dealerships.Values
-                    .Where(d => d.IsActive
-                        && string.Equals(d.Location?.Trim(), location, StringComparison.OrdinalIgnoreCase))
-                    .Select(d => d.DealershipId)
+                var locationOrgIds = orgs.Values
+                    .Where(o => o.IsActive
+                        && dealerships.TryGetValue(o.DealershipId, out var dealer)
+                        && string.Equals(dealer.Location?.Trim(), location, StringComparison.OrdinalIgnoreCase))
+                    .Select(o => o.SubDealerId)
                     .ToHashSet();
-                var locationUserIds = userOrgRoles
-                    .Where(a => a.IsActive && a.DealershipId.HasValue && dealershipIds.Contains(a.DealershipId.Value))
-                    .Select(a => a.UserId)
-                    .ToHashSet();
-                result = result.Where(v => v.SubdealerId.HasValue && locationUserIds.Contains(v.SubdealerId.Value));
+                result = result.Where(v => v.SubdealerId.HasValue && locationOrgIds.Contains(v.SubdealerId.Value));
             }
 
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))

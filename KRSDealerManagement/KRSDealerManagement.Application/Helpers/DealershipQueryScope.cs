@@ -38,5 +38,27 @@ namespace KRSDealerManagement.Application.Helpers
 
         public static bool IsSubdealerInScope(int subdealerUserId, HashSet<int>? scopedSubdealerUserIds)
             => scopedSubdealerUserIds == null || scopedSubdealerUserIds.Contains(subdealerUserId);
+
+        /// <summary>Distinct business org ids for subdealer logins in scope.</summary>
+        public static HashSet<int> GetScopedSubdealerOrgIds(
+            IEnumerable<UserOrgRole> orgRoles,
+            HashSet<int>? dealershipFilter,
+            int? subdealerRoleId = null)
+        {
+            var query = orgRoles.Where(a => a.IsActive && a.SubDealerId.HasValue);
+            if (subdealerRoleId.HasValue)
+                query = query.Where(a => a.RoleId == subdealerRoleId.Value);
+
+            if (dealershipFilter != null)
+            {
+                query = query.Where(a =>
+                    a.DealershipId.HasValue && dealershipFilter.Contains(a.DealershipId.Value));
+            }
+
+            return query.Select(a => a.SubDealerId!.Value).ToHashSet();
+        }
+
+        public static bool IsSubdealerOrgInScope(int subDealerOrgId, HashSet<int>? scopedOrgIds)
+            => scopedOrgIds == null || scopedOrgIds.Contains(subDealerOrgId);
     }
 }

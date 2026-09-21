@@ -11,14 +11,16 @@ namespace KRSDealerManagement.Web.Helpers
     public static class AccountHelper
     {
         /// <summary>Org wallet used for orders, payments, and statements.</summary>
-        public static async Task<SubdealerAccountDto?> GetWalletAccountAsync(IMediator mediator, int loginUserId)
+        public static async Task<SubdealerAccountDto?> GetWalletAccountAsync(IMediator mediator, int subdealerOrgOrUserId)
         {
-            var primaryUserId = await ResolveWalletUserIdAsync(mediator, loginUserId);
-            if (!primaryUserId.HasValue) return null;
+            var detail = await mediator.Send(new GetSubdealerDetailQuery { SubDealerId = subdealerOrgOrUserId });
+            if (detail == null)
+                detail = await mediator.Send(new GetSubdealerDetailQuery { UserId = subdealerOrgOrUserId });
 
+            var walletOrgId = detail?.SubDealerId ?? subdealerOrgOrUserId;
             var accounts = await mediator.Send(new GetSubdealerAccountsQuery
             {
-                SubdealerId = primaryUserId.Value,
+                SubdealerId = walletOrgId,
                 IsActive = true
             });
 
@@ -32,13 +34,7 @@ namespace KRSDealerManagement.Web.Helpers
         }
 
         /// <summary>Backward-compatible alias — returns org wallet account.</summary>
-        public static Task<SubdealerAccountDto?> GetPrimaryAccountAsync(IMediator mediator, int loginUserId)
-            => GetWalletAccountAsync(mediator, loginUserId);
-
-        private static async Task<int?> ResolveWalletUserIdAsync(IMediator mediator, int loginUserId)
-        {
-            var detail = await mediator.Send(new GetSubdealerDetailQuery { UserId = loginUserId });
-            return detail?.PrimaryUserId ?? loginUserId;
-        }
+        public static Task<SubdealerAccountDto?> GetPrimaryAccountAsync(IMediator mediator, int subdealerOrgOrUserId)
+            => GetWalletAccountAsync(mediator, subdealerOrgOrUserId);
     }
 }

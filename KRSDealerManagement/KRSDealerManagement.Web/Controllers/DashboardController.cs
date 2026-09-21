@@ -62,7 +62,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             if (isSubdealer)
             {
-                query.SubdealerId = userId.Value;
+                query.SubdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId.Value;
             }
             else if (!isAdmin)
             {

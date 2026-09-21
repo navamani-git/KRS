@@ -199,6 +199,8 @@ namespace KRSDealerManagement.Web.Controllers
             var bookings = (await _unitOfWork.VehicleBookings.GetAllAsync()).ToList();
             var vehicles = (await _unitOfWork.Vehicles.GetAllAsync()).ToDictionary(v => v.VehicleId);
             var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
+            var userOrgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync()).ToList();
+            var orgs = (await _unitOfWork.SubDealers.GetAllAsync()).ToDictionary(o => o.SubDealerId);
             var warrantyOnlyVehicleIds = await WarrantyOnlyVehicleFlowHelper.GetWarrantyOnlyVehicleIdsAsync(_unitOfWork);
 
             var rows = new List<VehicleBookingGridRowDto>();
@@ -206,7 +208,6 @@ namespace KRSDealerManagement.Web.Controllers
                 scopedIds.Contains(b.SubdealerId) && !warrantyOnlyVehicleIds.Contains(b.VehicleId)))
             {
                 vehicles.TryGetValue(b.VehicleId, out var v);
-                users.TryGetValue(b.SubdealerId, out var u);
                 var vehicleStatus = v?.Status ?? b.BookingStatus;
                 var statusName = await _statuses.GetNameAsync(StatusCategories.Vehicle, vehicleStatus);
                 rows.Add(new VehicleBookingGridRowDto
@@ -214,7 +215,7 @@ namespace KRSDealerManagement.Web.Controllers
                     Booking = b,
                     VehicleId = b.VehicleId,
                     Chassis = v?.ChassisNumber ?? "-",
-                    Subdealer = u?.GetFullName() ?? "Unknown",
+                    Subdealer = SubdealerOrgService.ResolveOrgDisplayName(b.SubdealerId, orgs),
                     StatusName = statusName,
                     VehicleStatus = vehicleStatus,
                     RegistrationNumber = v?.RegistrationNumber
@@ -274,7 +275,10 @@ namespace KRSDealerManagement.Web.Controllers
                         x.Booking.RegistrationDate,
                         x.Booking.SubsidyId)));
             if (subdealerId.HasValue)
-                list = list.Where(x => x.Booking.SubdealerId == subdealerId.Value);
+            {
+                var filterOrgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, subdealerId.Value);
+                list = list.Where(x => x.Booking.SubdealerId == filterOrgId);
+            }
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
                 var t = searchTerm.Trim();
@@ -346,6 +350,8 @@ namespace KRSDealerManagement.Web.Controllers
             var bookings = (await _unitOfWork.VehicleBookings.GetAllAsync()).ToList();
             var vehicles = (await _unitOfWork.Vehicles.GetAllAsync()).ToDictionary(v => v.VehicleId);
             var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
+            var userOrgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync()).ToList();
+            var orgs = (await _unitOfWork.SubDealers.GetAllAsync()).ToDictionary(o => o.SubDealerId);
             var statusMap = (await _statuses.GetActiveByCategoryAsync(StatusCategories.Vehicle))
                 .ToDictionary(s => s.StatusValue, s => s.StatusName);
             var warrantyOnlyVehicleIds = await WarrantyOnlyVehicleFlowHelper.GetWarrantyOnlyVehicleIdsAsync(_unitOfWork);
@@ -355,8 +361,7 @@ namespace KRSDealerManagement.Web.Controllers
                 .Select(b =>
                 {
                     vehicles.TryGetValue(b.VehicleId, out var v);
-                    users.TryGetValue(b.SubdealerId, out var u);
-                    return new { Booking = b, Chassis = v?.ChassisNumber ?? "-", Subdealer = u?.GetFullName() ?? "Unknown", VehicleStatus = v?.Status ?? b.BookingStatus };
+                    return new { Booking = b, Chassis = v?.ChassisNumber ?? "-", Subdealer = SubdealerOrgService.ResolveOrgDisplayName(b.SubdealerId, orgs), VehicleStatus = v?.Status ?? b.BookingStatus };
                 });
 
             if (status.HasValue)
@@ -379,7 +384,11 @@ namespace KRSDealerManagement.Web.Controllers
                         x.Booking.AgentDate,
                         x.Booking.RegistrationDate,
                         x.Booking.SubsidyId)));
-            if (subdealerId.HasValue) list = list.Where(x => x.Booking.SubdealerId == subdealerId.Value);
+            if (subdealerId.HasValue)
+            {
+                var filterOrgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, subdealerId.Value);
+                list = list.Where(x => x.Booking.SubdealerId == filterOrgId);
+            }
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
                 var t = searchTerm.Trim();
@@ -418,7 +427,7 @@ namespace KRSDealerManagement.Web.Controllers
                 subdealersQuery.DealershipId = dealershipId;
             var subdealers = await _mediator.Send(subdealersQuery);
 
-            return Json(subdealers.Select(s => new { id = s.UserId, name = s.GetFullName() }));
+            return Json(subdealers.Select(s => new { id = s.SubDealerId, name = s.GetFullName() }));
         }
 
         [AuthorizeRole(2)]
@@ -528,10 +537,11 @@ namespace KRSDealerManagement.Web.Controllers
             try
             {
                 var root = _env;
+                var orgId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId.Value;
                 var booking = new VehicleBooking
                 {
                     VehicleId = vehicleId,
-                    SubdealerId = userId.Value,
+                    SubdealerId = orgId,
                     BookingStatus = UnifiedVehicleStatus.BookedToCustomer,
                     CustomerName = customerName,
                     IsCompanyBooking = isCompanyBooking,
@@ -610,7 +620,7 @@ namespace KRSDealerManagement.Web.Controllers
                 if (!await CanAccessBooking(booking))
                     return RedirectToAction("AccessDenied", "Account");
             }
-            else if (booking.SubdealerId != userId)
+            else if (!await CanAccessBookingOrgAsync(booking))
             {
                 TempData["Error"] = "Booking not found.";
                 return RedirectToAction("Index", "Vehicles");
@@ -621,7 +631,7 @@ namespace KRSDealerManagement.Web.Controllers
                 return this.RedirectEncrypted(nameof(Manage), new { id });
             }
 
-            var vehicle = await LoadBookingVehicleAsync(booking, userId.Value);
+            var vehicle = await LoadBookingVehicleAsync(booking, booking.SubdealerId);
             if (vehicle == null) { TempData["Error"] = "Vehicle not found."; return RedirectToAction("Index", "Vehicles"); }
 
             await LoadBookingFormViewBags(booking.RtoLocationId);
@@ -656,7 +666,7 @@ namespace KRSDealerManagement.Web.Controllers
                 if (!await CanAccessBooking(booking))
                     return RedirectToAction("AccessDenied", "Account");
             }
-            else if (booking.SubdealerId != userId)
+            else if (!await CanAccessBookingOrgAsync(booking))
             {
                 TempData["Error"] = "Booking not found.";
                 return RedirectToAction("Index", "Vehicles");
@@ -667,7 +677,7 @@ namespace KRSDealerManagement.Web.Controllers
                 return this.RedirectEncrypted(nameof(Manage), new { id });
             }
 
-            var vehicle = await LoadBookingVehicleAsync(booking, userId.Value);
+            var vehicle = await LoadBookingVehicleAsync(booking, booking.SubdealerId);
 
             var validationError = BookingFormValidationHelper.ValidateEditBooking(
                 customerName, customerMobile, alternativeMobile, customerEmail, eAadhaarPassword,
@@ -1043,7 +1053,7 @@ namespace KRSDealerManagement.Web.Controllers
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
             var booking = await _unitOfWork.VehicleBookings.GetByIdAsync(id);
-            if (booking == null || booking.SubdealerId != userId.Value)
+            if (booking == null || !await CanAccessBookingOrgAsync(booking))
             {
                 TempData["Error"] = "Booking not found.";
                 return RedirectToAction("Index", "Vehicles");
@@ -1083,7 +1093,7 @@ namespace KRSDealerManagement.Web.Controllers
                 if (!await CanAccessBooking(booking))
                     return RedirectToAction("AccessDenied", "Account");
             }
-            else if (booking.SubdealerId != userId)
+            else if (!await CanAccessBookingOrgAsync(booking))
             {
                 TempData["Error"] = "Not found.";
                 return RedirectToAction("Index", "Vehicles");
@@ -1115,7 +1125,7 @@ namespace KRSDealerManagement.Web.Controllers
                 if (!await CanAccessBooking(booking))
                     return RedirectToAction("AccessDenied", "Account");
             }
-            else if (booking.SubdealerId != userId)
+            else if (!await CanAccessBookingOrgAsync(booking))
             {
                 TempData["Error"] = "Not found.";
                 return RedirectToAction("Index", "Vehicles");
@@ -1216,7 +1226,8 @@ namespace KRSDealerManagement.Web.Controllers
                 if (!await CanAccessBooking(booking))
                     return RedirectToAction("AccessDenied", "Account");
             }
-            else if (!SessionHelper.IsSubdealer(HttpContext.Session) || booking.SubdealerId != userId)
+            else if (!SessionHelper.IsSubdealer(HttpContext.Session)
+                     || !await CanAccessBookingOrgAsync(booking))
             {
                 TempData["Error"] = "Booking not found.";
                 return RedirectToAction("Index", "Vehicles");
@@ -1397,18 +1408,32 @@ namespace KRSDealerManagement.Web.Controllers
             return PhysicalFile(full, contentType);
         }
 
+        private Task<bool> CanAccessBookingOrgAsync(VehicleBooking booking)
+        {
+            if (SessionHelper.IsSubdealer(HttpContext.Session))
+            {
+                var orgId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session);
+                return Task.FromResult(orgId.HasValue && booking.SubdealerId == orgId.Value);
+            }
+
+            return CanAccessBookingStaffAsync(booking);
+        }
+
+        private async Task<bool> CanAccessBookingStaffAsync(VehicleBooking booking)
+        {
+            var subdealersQuery = new GetSubdealersQuery();
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, subdealersQuery);
+            var scoped = await _mediator.Send(subdealersQuery);
+            return scoped.Any(s => s.SubDealerId == booking.SubdealerId);
+        }
+
         private async Task<bool> CanAccessBooking(VehicleBooking booking)
         {
             var warrantyOnlyVehicleIds = await WarrantyOnlyVehicleFlowHelper.GetWarrantyOnlyVehicleIdsAsync(_unitOfWork);
             if (warrantyOnlyVehicleIds.Contains(booking.VehicleId))
                 return false;
 
-            if (SessionHelper.IsSubdealer(HttpContext.Session))
-                return booking.SubdealerId == SessionHelper.GetUserId(HttpContext.Session);
-            var subdealersQuery = new GetSubdealersQuery();
-            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, subdealersQuery);
-            var scoped = await _mediator.Send(subdealersQuery);
-            return scoped.Any(s => s.UserId == booking.SubdealerId);
+            return await CanAccessBookingOrgAsync(booking);
         }
 
         private async Task<bool> CanAccessBookingFileAsync(string? path)
@@ -1579,10 +1604,11 @@ namespace KRSDealerManagement.Web.Controllers
 
             if (SessionHelper.IsSubdealer(HttpContext.Session))
             {
-                var userId = SessionHelper.GetUserId(HttpContext.Session);
-                return userId.HasValue
-                    ? (new HashSet<int> { userId.Value }, SessionHelper.GetDealershipId(HttpContext.Session), false)
-                    : (new HashSet<int>(), effectiveDealershipId, false);
+                var orgId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session);
+                if (!orgId.HasValue)
+                    return (new HashSet<int>(), effectiveDealershipId, false);
+
+                return (new HashSet<int> { orgId.Value }, SessionHelper.GetDealershipId(HttpContext.Session), false);
             }
 
             var roles = (await _unitOfWork.Roles.GetAllAsync()).ToList();
@@ -1595,7 +1621,8 @@ namespace KRSDealerManagement.Web.Controllers
             if (effectiveDealershipId.HasValue)
                 assignments = assignments.Where(a => a.DealershipId == effectiveDealershipId.Value);
 
-            var scopedIds = assignments.Select(a => a.UserId).ToHashSet();
+            var scopedIds = DealershipQueryScope.GetScopedSubdealerOrgIds(
+                assignments, effectiveDealershipId.HasValue ? new HashSet<int> { effectiveDealershipId.Value } : null, subRole?.RoleId);
             return (scopedIds, effectiveDealershipId, isAdmin);
         }
 

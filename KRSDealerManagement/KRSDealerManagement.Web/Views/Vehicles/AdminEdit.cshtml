@@ -89,7 +89,7 @@
                                 <option value="">— Dealer showroom —</option>
                                 @foreach (var s in subdealers.OrderBy(x => x.GetFullName()))
                                 {
-                                    <option value="@s.UserId" selected="@(Model.SubdealerId == s.UserId)">@s.GetFullName()</option>
+                                    <option value="@s.SubDealerId" selected="@(Model.SubdealerId == s.SubDealerId)">@s.GetFullName()</option>
                                 }
                             </select>
                         </div>

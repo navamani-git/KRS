@@ -50,7 +50,7 @@ namespace KRSDealerManagement.Web.Controllers
             };
 
             if (SessionHelper.IsSubdealer(HttpContext.Session))
-                query.SubdealerId = userId;
+                query.SubdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId;
             else
             {
                 DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, query);
@@ -124,13 +124,11 @@ namespace KRSDealerManagement.Web.Controllers
                         .Where(d => string.Equals(d.Location?.Trim(), dealershipLocation.Trim(), StringComparison.OrdinalIgnoreCase))
                         .Select(d => d.DealershipId)
                         .ToHashSet();
-                    var orgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync())
-                        .Where(r => r.IsActive && r.DealershipId.HasValue && locDealershipIds.Contains(r.DealershipId.Value))
-                        .Select(r => r.UserId)
-                        .ToHashSet();
-                    ViewBag.Subdealers = allSubdealers.Where(s => orgRoles.Contains(s.UserId)).ToList();
+                    ViewBag.Subdealers = allSubdealers
+                        .Where(s => locDealershipIds.Contains(s.DealershipId))
+                        .ToList();
                     if (ViewBag.Subdealers is List<UserDto> filtered && filtered.Count == 1 && !subdealerId.HasValue)
-                        ViewBag.SelectedSubdealerId = filtered[0].UserId;
+                        ViewBag.SelectedSubdealerId = filtered[0].SubDealerId;
                 }
                 else
                 {
@@ -230,7 +228,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             var query = new GetVehiclesQuery();
             if (SessionHelper.IsSubdealer(HttpContext.Session))
-                query.SubdealerId = userId.Value;
+                query.SubdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId.Value;
             else
                 DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, query);
 
@@ -340,7 +338,7 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var vehicle = (await _mediator.Send(new GetVehiclesQuery { SubdealerId = userId.Value }))
+            var vehicle = (await _mediator.Send(new GetVehiclesQuery { SubdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId.Value }))
                 .FirstOrDefault(v => v.VehicleId == vehicleId);
             if (vehicle == null || !vehicle.CanRequestReturn)
             {

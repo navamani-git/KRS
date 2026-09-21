@@ -29,18 +29,27 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             if (vehicle.SubdealerId.HasValue)
                 throw new InvalidOperationException("Vehicle is already assigned to a subdealer.");
 
-            if (vehicle.Status != UnifiedVehicleStatus.ApprovedByDealer)
-                throw new InvalidOperationException("Only approved showroom stock can be allocated to a subdealer.");
+            if (!VehicleLifecycleHelper.IsAtDealerStock(vehicle))
+                throw new InvalidOperationException("Only dealer showroom stock can be allocated to a subdealer.");
+
+            if (VehicleLifecycleHelper.IsSuperseded(vehicle.Status))
+                throw new InvalidOperationException("This vehicle record is no longer active.");
+
+            var orgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, request.SubdealerId);
+            if (vehicle.VehicleMasterId > 0)
+            {
+                var master = await _unitOfWork.VehicleMasters.GetByIdAsync(vehicle.VehicleMasterId)
+                    ?? throw new InvalidOperationException("Vehicle master record not found.");
+                await VehicleLifecycleHelper.EnsureCanAllocateToSubdealerAsync(_unitOfWork, master, orgId);
+            }
 
             var hasBooking = (await _unitOfWork.VehicleBookings.GetAllAsync())
                 .Any(b => b.VehicleId == vehicle.VehicleId);
             if (hasBooking)
                 throw new InvalidOperationException("Vehicle has an active booking and cannot be re-allocated.");
 
-            var orgId = await SubdealerOrgService.GetOrgIdForUserAsync(_unitOfWork, request.SubdealerId);
-            var walletUserId = orgId.HasValue
-                ? await SubdealerOrgService.GetPrimaryUserIdForOrgAsync(_unitOfWork, orgId.Value) ?? request.SubdealerId
-                : request.SubdealerId;
+            var walletUserId = await SubdealerOrgService.GetPrimaryUserIdForOrgAsync(_unitOfWork, orgId)
+                ?? throw new InvalidOperationException("Subdealer org has no primary login for wallet.");
 
             var accounts = (await _unitOfWork.SubdealerAccounts.GetAllAsync())
                 .Where(a => a.SubdealerId == walletUserId && a.IsActive)
@@ -67,9 +76,15 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 balance.ModifiedDate = DateTime.UtcNow;
                 await _unitOfWork.AccountBalances.UpdateAsync(balance);
 
-                vehicle.SubdealerId = walletUserId;
+                vehicle.SubdealerId = orgId;
+                vehicle.Status = UnifiedVehicleStatus.ApprovedByDealer;
+                vehicle.ModifiedBy = request.AllocatedBy;
                 vehicle.ModifiedDate = DateTime.UtcNow;
                 await _unitOfWork.Vehicles.UpdateAsync(vehicle);
+
+                if (vehicle.VehicleMasterId > 0)
+                    await _unitOfWork.VehicleMasters.SetAllocatedAsync(
+                        vehicle.VehicleMasterId, true, request.AllocatedBy);
 
                 await VehicleAllocationHelper.LogSubdealerEventAsync(
                     _unitOfWork, vehicle.VehicleId, "AllocatedToSubdealer", request.AllocatedBy, request.Remarks);
@@ -77,8 +92,10 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
-                var targetUser = await _unitOfWork.Users.GetByIdAsync(walletUserId);
-                var subdealerLabel = targetUser?.GetFullName() ?? $"Subdealer #{walletUserId}";
+                var org = await _unitOfWork.SubDealers.GetByIdAsync(orgId);
+                var subdealerLabel = org != null
+                    ? $"{org.SubDealerName}{(string.IsNullOrWhiteSpace(org.Location) ? "" : $" ({org.Location})")}"
+                    : $"Subdealer #{orgId}";
 
                 await _auditService.LogTransactionAsync(
                     accountId: walletAccount.AccountId,
@@ -100,7 +117,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                     newValue: JsonSerializer.Serialize(new
                     {
                         ChassisNumber = TransactionReasonHelper.FormatChassis(vehicle.ChassisNumber),
-                        SubdealerId = walletUserId,
+                        SubDealerId = orgId,
                         SubdealerName = subdealerLabel,
                         Amount = vehicle.CurrentPrice,
                         ReturnRequestId = request.ReturnRequestId

@@ -24,8 +24,12 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             if (booking == null)
                 return false;
 
-            if (!request.AllowAdminOverride && booking.SubdealerId != request.SubdealerId)
-                return false;
+            if (!request.AllowAdminOverride)
+            {
+                var actorOrgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, request.SubdealerId);
+                if (booking.SubdealerId != actorOrgId)
+                    return false;
+            }
 
             if (!request.AllowAdminOverride && booking.InvoiceDate.HasValue)
                 throw new InvalidOperationException("Booking cannot be edited after the vehicle has been invoiced.");

@@ -274,6 +274,34 @@ samp,
     width: var(--krs-sidebar-width) !important;
 }
 
+/* Collapsed menu: fully off-screen (no AdminLTE mini strip / left gap) */
+body.sidebar-collapse:not(.sidebar-open) .content-wrapper,
+body.sidebar-collapse:not(.sidebar-open) .main-footer,
+body.sidebar-collapse:not(.sidebar-open) .main-header,
+body.sidebar-mini.sidebar-collapse .content-wrapper,
+body.sidebar-mini.sidebar-collapse .main-footer,
+body.sidebar-mini.sidebar-collapse .main-header {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+body.sidebar-collapse:not(.sidebar-open) .main-sidebar,
+body.sidebar-collapse:not(.sidebar-open) .main-sidebar::before {
+    left: 0 !important;
+    margin-left: 0 !important;
+    transform: translateX(-100%) !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+body.sidebar-collapse.sidebar-open .main-sidebar,
+body.sidebar-collapse.sidebar-open .main-sidebar::before {
+    transform: translateX(0) !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+}
+
 @media (min-width: 992px) {
     body:not(.sidebar-collapse) .content-wrapper,
     body:not(.sidebar-collapse) .main-footer,
@@ -286,22 +314,46 @@ samp,
     body.sidebar-collapse .main-header {
         margin-left: 0 !important;
     }
-}
 
-.sidebar-mini.sidebar-collapse .main-sidebar:hover,
-.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-focused,
-.sidebar-mini.sidebar-collapse .main-sidebar:hover::before,
-.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-focused::before {
-    width: var(--krs-sidebar-width);
-}
+    body.sidebar-collapse.sidebar-open .main-sidebar,
+    body.sidebar-collapse.sidebar-open .main-sidebar::before {
+        left: 0 !important;
+        margin-left: 0 !important;
+        z-index: 1040;
+        box-shadow: 0 0 24px rgba(0, 0, 0, 0.35);
+        transition: transform 0.3s ease-in-out;
+    }
 
-.sidebar-mini.sidebar-collapse .main-sidebar:hover ~ .content-wrapper,
-.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-focused ~ .content-wrapper,
-.sidebar-mini.sidebar-collapse .main-sidebar:hover ~ .main-footer,
-.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-focused ~ .main-footer,
-.sidebar-mini.sidebar-collapse .main-sidebar:hover ~ .main-header,
-.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-focused ~ .main-header {
-    margin-left: var(--krs-sidebar-width) !important;
+    body.sidebar-collapse:not(.sidebar-open) .main-sidebar,
+    body.sidebar-collapse:not(.sidebar-open) .main-sidebar::before {
+        transition: transform 0.3s ease-in-out;
+    }
+
+    body.sidebar-collapse.sidebar-open .main-sidebar {
+        height: 100vh !important;
+        max-height: 100vh !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    body.sidebar-collapse.sidebar-open::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.35);
+        z-index: 1035;
+        pointer-events: auto;
+    }
+
+    body.sidebar-collapse.sidebar-open .main-sidebar .sidebar {
+        height: auto !important;
+        max-height: none !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        padding-bottom: calc(8rem + env(safe-area-inset-bottom, 0px));
+    }
+
 }
 
 /* Dashboard / stat cards — keep numbers inside boxes at all font sizes */
@@ -1930,17 +1982,19 @@ table.grid-excel-table td.grid-sticky-col-2 {
         width: 100% !important;
     }
 
-    /* Fully hide sidebar off-screen when closed (AdminLTE uses -250px but sidebar is 300px) */
     .main-sidebar,
     .main-sidebar::before {
-        margin-left: calc(-1 * min(var(--krs-sidebar-width), 88vw)) !important;
         width: min(var(--krs-sidebar-width), 88vw) !important;
-        transition: margin-left 0.3s ease-in-out;
+        transition: transform 0.3s ease-in-out;
     }
 
     body.sidebar-open .main-sidebar,
     body.sidebar-open .main-sidebar::before {
+        left: 0 !important;
         margin-left: 0 !important;
+        transform: translateX(0) !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
     }
 
     .layout-fixed .main-sidebar {
@@ -2186,7 +2240,55 @@ table.grid-excel-table td.grid-sticky-col-2 {
     }
 
     .grid-scroll-hint {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.65rem;
+        padding: 0.65rem 0.75rem;
         font-size: 0.8125rem;
+    }
+
+    .grid-scroll-hint .grid-scroll-hint-text {
+        display: flex;
+        flex: none;
+        width: 100%;
+        min-width: 0;
+        align-items: flex-start;
+        white-space: normal;
+        word-break: break-word;
+        line-height: 1.5;
+    }
+
+    .grid-scroll-hint-actions {
+        width: 100%;
+        margin-left: 0;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: 0.5rem;
+    }
+
+    .grid-scroll-hint .grid-clear-column-filters {
+        flex: 1 1 auto;
+        min-width: 9.5rem;
+        white-space: normal;
+        text-align: left;
+    }
+
+    .grid-scroll-hint .scroll-arrow {
+        flex: 0 0 auto;
+        align-self: center;
+    }
+
+    .grid-column-toolbar {
+        flex-wrap: wrap;
+        justify-content: flex-start !important;
+        gap: 0.5rem !important;
+        padding: 0.65rem 0.75rem !important;
+    }
+
+    .grid-column-toolbar .dropdown,
+    .grid-column-toolbar .grid-clear-column-filters {
+        flex: 1 1 auto;
+        min-width: 0;
     }
 }
 
@@ -2704,7 +2806,14 @@ select[name="colorIds"] {
 
     body.hold-transition .content-wrapper > .content,
     body.layout-fixed .content-wrapper > .content {
-        padding-bottom: calc(8rem + env(safe-area-inset-bottom, 0px));
+        padding-bottom: calc(10rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    body:not(.sidebar-open) .wrapper,
+    body:not(.sidebar-open) .content-wrapper {
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
     }
 
     body.hold-transition .content form:last-child,
@@ -2829,4 +2938,10 @@ select[name="colorIds"] {
         min-width: 8.5rem;
         z-index: 1055;
     }
+}
+
+.notification-bell-badge {
+    font-size: 0.65rem;
+    min-width: 1.1rem;
+    padding: 0.2em 0.35em;
 }

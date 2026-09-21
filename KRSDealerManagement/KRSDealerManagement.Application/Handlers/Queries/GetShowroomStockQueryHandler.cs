@@ -2,6 +2,7 @@ using MediatR;
 using KRSDealerManagement.Application.DTOs;
 using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Queries;
+using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
 using KRSDealerManagement.Shared.Helpers;
@@ -19,13 +20,14 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
         public async Task<IEnumerable<ShowroomStockRowDto>> Handle(GetShowroomStockQuery request, CancellationToken cancellationToken)
         {
-            var vehicles = (await _unitOfWork.Vehicles.GetAllAsync()).ToList();
+            var vehicles = VehicleLifecycleHelper.FilterActiveLifecycle(await _unitOfWork.Vehicles.GetAllAsync()).ToList();
             var bookingsByVehicle = (await _unitOfWork.VehicleBookings.GetAllAsync())
                 .GroupBy(b => b.VehicleId)
                 .ToDictionary(g => g.Key, g => g.OrderByDescending(b => b.SubmittedDate).First());
             var models = (await _unitOfWork.VehicleModels.GetAllAsync()).ToDictionary(m => m.ModelId);
             var colors = (await _unitOfWork.VehicleColors.GetAllAsync()).ToDictionary(c => c.ColorId);
             var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
+            var orgs = (await _unitOfWork.SubDealers.GetAllAsync()).ToDictionary(o => o.SubDealerId);
             var orders = (await _unitOfWork.PurchaseOrders.GetAllAsync()).ToDictionary(o => o.OrderId);
             var orderItems = (await _unitOfWork.PurchaseOrderItems.GetAllAsync())
                 .Where(i => i.VehicleId.HasValue)
@@ -33,15 +35,11 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 .ToDictionary(g => g.Key, g => g.OrderByDescending(i => i.ApprovedDate ?? i.CreatedDate).First());
             var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToDictionary(d => d.DealershipId);
             var allOrgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync()).ToList();
-            var orgRoles = allOrgRoles
-                .Where(a => a.IsActive)
-                .GroupBy(a => a.UserId)
-                .ToDictionary(g => g.Key, g => g.OrderByDescending(a => a.IsPrimary).First());
             var warrantyOnlyVehicleIds = await WarrantyOnlyVehicleFlowHelper.GetWarrantyOnlyVehicleIdsAsync(_unitOfWork);
 
             var dealershipFilter = DealershipQueryScope.ResolveDealershipIds(request.DealershipId, request.DealershipIds);
             HashSet<int>? scopedSubdealerIds = dealershipFilter != null
-                ? DealershipQueryScope.GetScopedSubdealerUserIds(allOrgRoles, dealershipFilter)
+                ? DealershipQueryScope.GetScopedSubdealerOrgIds(allOrgRoles, dealershipFilter)
                 : null;
 
             if (!string.IsNullOrWhiteSpace(request.DealershipLocation))
@@ -52,9 +50,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         && string.Equals(d.Location?.Trim(), location, StringComparison.OrdinalIgnoreCase))
                     .Select(d => d.DealershipId)
                     .ToHashSet();
-                var locationSubdealerIds = orgRoles.Values
-                    .Where(a => a.DealershipId.HasValue && locationDealershipIds.Contains(a.DealershipId.Value))
-                    .Select(a => a.UserId)
+                var locationSubdealerIds = orgs.Values
+                    .Where(o => o.IsActive && locationDealershipIds.Contains(o.DealershipId))
+                    .Select(o => o.SubDealerId)
                     .ToHashSet();
                 scopedSubdealerIds = scopedSubdealerIds == null
                     ? locationSubdealerIds
@@ -77,7 +75,6 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 .Select(v =>
                 {
                     bookingsByVehicle.TryGetValue(v.VehicleId, out var booking);
-                    users.TryGetValue(v.SubdealerId ?? 0, out var user);
                     models.TryGetValue(v.ModelId, out var model);
                     colors.TryGetValue(v.ColorId, out var color);
                     orders.TryGetValue(v.PurchaseOrderId ?? 0, out var order);
@@ -86,9 +83,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     string? location = null;
                     string? dealershipName = null;
                     if (v.SubdealerId.HasValue
-                        && orgRoles.TryGetValue(v.SubdealerId.Value, out var org)
-                        && org.DealershipId.HasValue
-                        && dealerships.TryGetValue(org.DealershipId.Value, out var dealer))
+                        && orgs.TryGetValue(v.SubdealerId.Value, out var subDealerOrg)
+                        && dealerships.TryGetValue(subDealerOrg.DealershipId, out var dealer))
                     {
                         location = dealer.Location?.Trim();
                         dealershipName = dealer.DealershipName;
@@ -106,7 +102,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         ModelName = model?.ModelName ?? $"Model #{v.ModelId}",
                         ColorName = color?.ColorName ?? $"Color #{v.ColorId}",
                         SubdealerId = v.SubdealerId!.Value,
-                        SubdealerName = user?.GetFullName() ?? "Unknown",
+                        SubdealerName = SubdealerOrgService.ResolveOrgDisplayName(v.SubdealerId, orgs),
                         DealershipLocation = location,
                         DealershipName = dealershipName,
                         OrderNumber = order?.OrderNumber,
@@ -120,7 +116,10 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 rows = rows.Where(r => scopedSubdealerIds.Contains(r.SubdealerId));
 
             if (request.SubdealerId.HasValue)
-                rows = rows.Where(r => r.SubdealerId == request.SubdealerId.Value);
+            {
+                var orgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, request.SubdealerId.Value);
+                rows = rows.Where(r => r.SubdealerId == orgId);
+            }
 
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {

@@ -127,6 +127,8 @@ namespace KRSDealerManagement.Domain.Repositories
         IRepository<Notification> Notifications { get; }
         IRepository<NotificationTarget> NotificationTargets { get; }
         IRepository<NotificationRecipient> NotificationRecipients { get; }
+        IRepository<PriceUpdateRun> PriceUpdateRuns { get; }
+        IRepository<PriceUpdateRunDetail> PriceUpdateRunDetails { get; }
 
         Task UpdateVehicleBookingStatusAsync(int bookingId, int bookingStatus, int? modifiedBy);
 

@@ -24,10 +24,11 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
         public async Task<int> Handle(CreatePaymentCommand request, CancellationToken cancellationToken)
         {
+            var orgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, request.SubdealerId);
             var payment = new Payment
             {
                 AccountId = request.AccountId,
-                SubdealerId = request.SubdealerId,
+                SubdealerId = orgId,
                 Amount = request.Amount,
                 PaymentType = request.PaymentType,
                 PaymentTypeId = request.PaymentTypeId,
@@ -112,13 +113,21 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 var isCreditRequest = CreditRequestHelper.IsCreditRequestType(paymentTypeCode)
                     || payment.PaymentType.Contains("Credit Request", StringComparison.OrdinalIgnoreCase);
 
+                string? financeLabel = null;
+                if (payment.FinanceNameId.HasValue)
+                {
+                    var financeNames = (await _unitOfWork.FinanceNames.GetAllAsync()).ToDictionary(f => f.FinanceNameId);
+                    if (financeNames.TryGetValue(payment.FinanceNameId.Value, out var fn))
+                        financeLabel = fn.FinanceName;
+                }
+
                 var txnReason = isCreditRequest
                     ? CreditRequestHelper.FormatStatementReason(
                         payment.PaymentId,
                         payment.VinNumber,
                         payment.CreditRequestModelName,
                         payment.CreditRequestColorName)
-                    : $"Payment #{payment.PaymentId} approved — customer {payment.CustomerName ?? "N/A"}";
+                    : PaymentStatementDescriptionHelper.FormatApprovalDescription(payment, financeLabel);
 
                 // Always credit on approval (ApplyToBalance defaults true; keep as safety flag)
                 var shouldApply = request.ApplyToBalance;

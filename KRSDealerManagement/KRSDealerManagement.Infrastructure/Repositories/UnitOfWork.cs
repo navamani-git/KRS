@@ -57,6 +57,8 @@ namespace KRSDealerManagement.Infrastructure.Repositories
         private IRepository<Notification> _notifications;
         private IRepository<NotificationTarget> _notificationTargets;
         private IRepository<NotificationRecipient> _notificationRecipients;
+        private IRepository<PriceUpdateRun> _priceUpdateRuns;
+        private IRepository<PriceUpdateRunDetail> _priceUpdateRunDetails;
 
         public UnitOfWork(ApplicationDbContext context)
         {
@@ -106,6 +108,8 @@ namespace KRSDealerManagement.Infrastructure.Repositories
         public IRepository<Notification> Notifications => _notifications ??= new Repository<Notification>(_context, "Notifications", "NotificationId");
         public IRepository<NotificationTarget> NotificationTargets => _notificationTargets ??= new Repository<NotificationTarget>(_context, "NotificationTargets", "NotificationTargetId");
         public IRepository<NotificationRecipient> NotificationRecipients => _notificationRecipients ??= new Repository<NotificationRecipient>(_context, "NotificationRecipients", "NotificationRecipientId");
+        public IRepository<PriceUpdateRun> PriceUpdateRuns => _priceUpdateRuns ??= new Repository<PriceUpdateRun>(_context, "PriceUpdateRuns", "RunId");
+        public IRepository<PriceUpdateRunDetail> PriceUpdateRunDetails => _priceUpdateRunDetails ??= new Repository<PriceUpdateRunDetail>(_context, "PriceUpdateRunDetails", "DetailId");
 
         public async Task UpdateVehicleBookingStatusAsync(int bookingId, int vehicleStatus, int? modifiedBy)
         {

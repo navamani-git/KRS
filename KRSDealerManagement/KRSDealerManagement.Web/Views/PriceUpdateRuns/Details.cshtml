@@ -1,0 +1,117 @@
+@model KRSDealerManagement.Application.DTOs.PriceUpdateRunDetailDto
+@using KRSDealerManagement.Shared.Helpers
+@{
+    ViewData["Title"] = $"Price update run #{Model.RunId}";
+    var started = IstTime.ToIst(Model.StartedAt);
+    var completed = IstTime.ToIst(Model.CompletedAt);
+    var filterDate = ViewBag.FilterDate as string ?? Model.AsOfDate.ToString("yyyy-MM-dd");
+    var filterStatus = ViewBag.FilterStatus as string ?? "Updated";
+    var statusOptions = new[]
+    {
+        new { Value = "Updated", Text = "Price increased" },
+        new { Value = "Error", Text = "Error" },
+        new { Value = "All", Text = "All logged" }
+    };
+}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1 class="m-0">Run #@Model.RunId</h1>
+        <p class="text-muted">@Model.SummaryMessage</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="@Url.Action("Index")" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-3"><strong>Started:</strong> @(started?.ToString("dd-MMM-yyyy HH:mm") ?? "—")</div>
+    <div class="col-md-3"><strong>Completed:</strong> @(completed?.ToString("dd-MMM-yyyy HH:mm") ?? "—")</div>
+    <div class="col-md-3"><strong>Trigger:</strong> @Model.TriggerSource @(Model.TriggeredByName != null ? $"({Model.TriggeredByName})" : "")</div>
+    <div class="col-md-3"><strong>Catalogue date:</strong> @Model.AsOfDate.ToString("dd-MMM-yyyy")</div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" asp-action="Details" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label" for="filterDate">Catalogue date</label>
+                <input type="date" id="filterDate" name="date" class="form-control" value="@filterDate" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="filterStatus">Status</label>
+                <select id="filterStatus" name="status" class="form-select">
+                    @foreach (var option in statusOptions)
+                    {
+                        if (string.Equals(filterStatus, option.Value, StringComparison.OrdinalIgnoreCase))
+                        {
+                            <option value="@option.Value" selected>@option.Text</option>
+                        }
+                        else
+                        {
+                            <option value="@option.Value">@option.Text</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+            </div>
+        </form>
+        <p class="text-muted small mb-0 mt-2">
+            Pick a catalogue date to view vehicles processed for that day's price update run.
+            Use <strong>Price increased</strong> to see only vehicles whose price went up.
+        </p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">Vehicles (@Model.Lines.Count)</h3>
+        @if (filterStatus == "Updated")
+        {
+            <span class="badge bg-success">Price increased only</span>
+        }
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Chassis</th>
+                        <th>Stock</th>
+                        <th>Status</th>
+                        <th>Old price</th>
+                        <th>New price</th>
+                        <th>Delta</th>
+                        <th>Account</th>
+                        <th>Txn</th>
+                        <th>Message</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var line in Model.Lines)
+                    {
+                        <tr class="@(line.Status == "Updated" ? "table-success" : line.Status == "Error" ? "table-danger" : "")">
+                            <td><strong>@line.ChassisNumber</strong></td>
+                            <td>@(line.IsDealerStock ? "Dealer" : "Subdealer")</td>
+                            <td>@line.Status</td>
+                            <td>₹@line.OldPrice.ToString("N2")</td>
+                            <td>₹@line.NewPrice.ToString("N2")</td>
+                            <td>@(line.Delta > 0 ? $"₹{line.Delta:N2}" : "—")</td>
+                            <td>@(line.AccountId?.ToString() ?? "—")</td>
+                            <td>@(line.TransactionLogged ? "Yes" : "No")</td>
+                            <td><small class="text-muted">@line.Message</small></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (!Model.Lines.Any())
+        {
+            <div class="p-3 text-muted">No vehicles match the selected date and status filter.</div>
+        }
+    </div>
+</div>

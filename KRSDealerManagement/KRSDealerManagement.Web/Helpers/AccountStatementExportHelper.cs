@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using KRSDealerManagement.Application.DTOs;
+using KRSDealerManagement.Shared.Helpers;
 using KRSDealerManagement.Web.Helpers;
 
 namespace KRSDealerManagement.Web.Helpers
@@ -22,7 +23,7 @@ namespace KRSDealerManagement.Web.Helpers
                 yield return new List<object?>
                 {
                     sr++,
-                    t.StatementDate.ToString("yyyy-MM-dd HH:mm"),
+                    FormatStatementDateTime(t),
                     t.CategoryLabel,
                     t.Reason,
                     t.CustomerName ?? "",
@@ -59,6 +60,14 @@ namespace KRSDealerManagement.Web.Helpers
                 "", "", "",
                 $"Net (Credit - Debit): {net:N2}"
             };
+        }
+
+        private static string FormatStatementDateTime(AccountTransactionDto transaction)
+        {
+            var time = IstTime.ToIst(transaction.CreatedDate);
+            return time.HasValue
+                ? $"{transaction.StatementDate:yyyy-MM-dd} {time.Value:HH:mm}"
+                : transaction.StatementDate.ToString("yyyy-MM-dd");
         }
 
         public static IActionResult ToFileResult(

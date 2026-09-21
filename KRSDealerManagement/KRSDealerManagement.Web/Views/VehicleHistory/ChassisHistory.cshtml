@@ -43,6 +43,12 @@
             <span class="badge bg-primary">@(history.CurrentStatusName ?? history.CurrentStatus.ToString())</span>
         </div>
         <div class="card-body">
+            @if (!string.IsNullOrWhiteSpace(history.CurrentSummary))
+            {
+                <div class="alert alert-info py-2 mb-3">
+                    <i class="bi bi-info-circle"></i> <strong>Current:</strong> @history.CurrentSummary
+                </div>
+            }
             <div class="row g-3 mb-4">
                 <div class="col-sm-6 col-md-3">
                     <div class="border rounded p-2 h-100 bg-light">
@@ -64,8 +70,8 @@
                 </div>
                 <div class="col-sm-6 col-md-3">
                     <div class="border rounded p-2 h-100 bg-light">
-                        <div class="text-muted small">Total events</div>
-                        <div class="fw-semibold">@history.Events.Count</div>
+                        <div class="text-muted small">Current location</div>
+                        <div class="fw-semibold">@(history.CurrentLocation ?? "—")</div>
                     </div>
                 </div>
             </div>

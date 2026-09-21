@@ -32,11 +32,12 @@ namespace KRSDealerManagement.Application.Helpers
 
         public static string ResolveShowroomLabel(
             Vehicle? vehicle,
-            int? orderSubdealerUserId,
+            int? orderSubdealerOrgOrUserId,
             int? accountSubdealerUserId,
             IReadOnlyDictionary<int, VehicleMaster> masters,
             IReadOnlyDictionary<int, Dealership> dealerships,
-            IEnumerable<UserOrgRole> orgRoles)
+            IEnumerable<UserOrgRole> orgRoles,
+            IReadOnlyDictionary<int, SubDealer>? orgs = null)
         {
             int? dealershipId = null;
             if (vehicle?.VehicleMasterId > 0
@@ -45,15 +46,45 @@ namespace KRSDealerManagement.Application.Helpers
                 dealershipId = master.DealershipId;
             }
 
+            if (!dealershipId.HasValue
+                && vehicle?.SubdealerId is int vehicleOrgId
+                && orgs != null
+                && orgs.TryGetValue(vehicleOrgId, out var vehicleOrg))
+            {
+                dealershipId = vehicleOrg.DealershipId;
+            }
+
+            if (!dealershipId.HasValue)
+            {
+                dealershipId = ResolveDealershipIdFromSubdealerOrgOrUser(
+                    vehicle?.SubdealerId ?? orderSubdealerOrgOrUserId,
+                    orgs,
+                    orgRoles);
+            }
+
             if (!dealershipId.HasValue)
             {
                 dealershipId = ResolveDealershipIdFromSubdealerUser(
-                    vehicle?.SubdealerId ?? orderSubdealerUserId ?? accountSubdealerUserId,
+                    accountSubdealerUserId,
                     orgRoles);
             }
 
             dealerships.TryGetValue(dealershipId ?? 0, out var dealer);
             return GetLocationLabel(dealer);
+        }
+
+        public static int? ResolveDealershipIdFromSubdealerOrgOrUser(
+            int? subdealerOrgOrUserId,
+            IReadOnlyDictionary<int, SubDealer>? orgs,
+            IEnumerable<UserOrgRole> orgRoles)
+        {
+            if (!subdealerOrgOrUserId.HasValue || subdealerOrgOrUserId.Value <= 0)
+                return null;
+
+            if (orgs != null && orgs.TryGetValue(subdealerOrgOrUserId.Value, out var org))
+                return org.DealershipId;
+
+            return ResolveDealershipIdFromSubdealerUser(subdealerOrgOrUserId, orgRoles);
         }
     }
 }

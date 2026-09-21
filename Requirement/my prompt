@@ -1,8 +1,6 @@
-I need a new screen to sent notification for all the sub dealers
+ you want subdealer logins to view warranty-only stock read-only (not just apply by chassis), say so and we can add a subdealer menu entry for that.
 
-1) In top of the screen i need a notification count 
-2) Admin can post the notification and each subdealer can see and read the notification once read the notification count get reduced and the ntification should be read by all users, For example a single subdealers have two login means both the used read notification
+ Not required 
 
-Admin can create notification and subdealer have view the notification
-
-Dont implement explain how you are going to implement - Table structure and everything
+ 1) They upload a vehicle as they sold in their own showroom by dealers
+ 2) Then the subdealer can apply warranty by choosing the chasis

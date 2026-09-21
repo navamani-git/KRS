@@ -136,24 +136,26 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
                 if (request.ReassignToSubdealerId.HasValue)
                 {
-                    var target = await _unitOfWork.Users.GetByIdAsync(request.ReassignToSubdealerId.Value);
-                    if (target == null || !target.IsActive)
+                    var targetOrgId = await SubdealerOrgService.ResolveOrgIdAsync(
+                        _unitOfWork, request.ReassignToSubdealerId.Value);
+                    var targetOrg = await _unitOfWork.SubDealers.GetByIdAsync(targetOrgId);
+                    if (targetOrg == null || !targetOrg.IsActive)
                         throw new InvalidOperationException("Selected subdealer is not available for reassignment.");
 
-                    if (vehicle.SubdealerId == request.ReassignToSubdealerId.Value)
+                    if (vehicle.SubdealerId == targetOrgId)
                         throw new InvalidOperationException("Vehicle is already assigned to this subdealer.");
 
-                    vehicle.SubdealerId = request.ReassignToSubdealerId.Value;
+                    vehicle.SubdealerId = targetOrgId;
+                    vehicle.Status = UnifiedVehicleStatus.ApprovedByDealer;
                 }
                 else
                 {
                     vehicle.SubdealerId = null;
+                    vehicle.Status = UnifiedVehicleStatus.ReturnApproved;
                     if (vehicle.VehicleMasterId > 0)
                         await VehicleAllocationHelper.ReleaseMasterAsync(
                             _unitOfWork, vehicle.VehicleMasterId, request.ApprovedBy, request.Remarks);
                 }
-
-                vehicle.Status = UnifiedVehicleStatus.ApprovedByDealer;
                 vehicle.ModifiedDate = DateTime.UtcNow;
                 await _unitOfWork.Vehicles.UpdateAsync(vehicle);
 
@@ -190,8 +192,12 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
                 if (request.ReassignToSubdealerId.HasValue)
                 {
+                    var targetOrgId = await SubdealerOrgService.ResolveOrgIdAsync(
+                        _unitOfWork, request.ReassignToSubdealerId.Value);
+                    var walletUserId = await SubdealerOrgService.GetPrimaryUserIdForOrgAsync(_unitOfWork, targetOrgId)
+                        ?? throw new InvalidOperationException("Selected subdealer has no primary login for wallet.");
                     var accounts = (await _unitOfWork.SubdealerAccounts.GetAllAsync())
-                        .Where(a => a.SubdealerId == request.ReassignToSubdealerId.Value && a.IsActive)
+                        .Where(a => a.SubdealerId == walletUserId && a.IsActive)
                         .ToList();
                     var targetAccount = accounts.FirstOrDefault()
                         ?? throw new InvalidOperationException("Selected subdealer has no active account.");

@@ -207,15 +207,26 @@
     if (window.fetch) {
         var nativeFetch = window.fetch.bind(window);
         window.fetch = function (input, init) {
+            var request = nativeFetch(input, init).then(function (response) {
+                if (response.status !== 401) return response;
+                return response.clone().json().then(function (body) {
+                    if (body && body.loginRequired) {
+                        nativeAssign(body.redirectUrl || '/Account/Login');
+                    }
+                    return response;
+                }).catch(function () {
+                    return response;
+                });
+            });
+
             if (shouldSkipFetchLoader(input, init)) {
-                return nativeFetch(input, init);
+                return request;
             }
 
             showLoader('Loading...', 'async');
-            return nativeFetch(input, init)
-                .finally(function () {
-                    hideLoader('async');
-                });
+            return request.finally(function () {
+                hideLoader('async');
+            });
         };
     }
 

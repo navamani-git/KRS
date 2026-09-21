@@ -3,6 +3,7 @@ using KRSDealerManagement.Application.Commands;
 using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Domain.Entities;
 using KRSDealerManagement.Domain.Repositories;
+using KRSDealerManagement.Shared.Constants;
 
 namespace KRSDealerManagement.Application.Handlers.Commands
 {
@@ -390,7 +391,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
         public async Task<int> Handle(CreateWarrantyOnlyVehicleMasterCommand request, CancellationToken cancellationToken)
         {
             await WarrantyOnlyVehicleFlowHelper.EnsureOwnShowroomExistsAsync(_unitOfWork, request.DealershipId);
-            var (_, subdealerUserId) = await WarrantyOnlyVehicleFlowHelper.ResolveOwnShowroomAsync(
+            await WarrantyOnlyVehicleFlowHelper.ValidateOwnShowroomOrgAsync(
                 _unitOfWork, request.DealershipId, request.SubDealerId);
 
             await ModelColorValidation.EnsureMappedAsync(_unitOfWork, request.ModelId, request.ColorId);
@@ -438,7 +439,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 await WarrantyOnlyVehicleFlowHelper.ProvisionSoldVehicleAsync(
                     _unitOfWork,
                     master,
-                    subdealerUserId,
+                    request.SubDealerId,
                     request.CreatedBy,
                     request.CustomerName,
                     request.CustomerMobile,
@@ -479,10 +480,9 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
             await _unitOfWork.VehicleMasters.UpdateAsync(master);
 
-            var vehicle = (await _unitOfWork.Vehicles.GetAllAsync())
-                .Where(v => v.VehicleMasterId == master.VehicleMasterId)
-                .OrderByDescending(v => v.CreatedDate)
-                .FirstOrDefault();
+            var vehicle = VehicleLifecycleHelper.GetActiveRowForMaster(
+                await _unitOfWork.Vehicles.GetAllAsync(),
+                master.VehicleMasterId);
             if (vehicle != null)
             {
                 vehicle.ModelId = request.ModelId;
@@ -516,6 +516,64 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             });
             await _unitOfWork.SaveChangesAsync();
             return true;
+        }
+    }
+
+    public class DeleteWarrantyOnlyVehicleMasterCommandHandler : IRequestHandler<DeleteWarrantyOnlyVehicleMasterCommand, bool>
+    {
+        private readonly IUnitOfWork _unitOfWork;
+
+        public DeleteWarrantyOnlyVehicleMasterCommandHandler(IUnitOfWork unitOfWork) => _unitOfWork = unitOfWork;
+
+        public async Task<bool> Handle(DeleteWarrantyOnlyVehicleMasterCommand request, CancellationToken cancellationToken)
+        {
+            var master = await _unitOfWork.VehicleMasters.GetByIdAsync(request.VehicleMasterId)
+                ?? throw new InvalidOperationException("Vehicle master record not found.");
+            if (!master.WarrantyOnly)
+                throw new InvalidOperationException("Only warranty-only vehicles can be deleted here.");
+
+            var chassis = master.ChassisNumber.Trim().ToUpperInvariant();
+            var hasClaims = (await _unitOfWork.WarrantyClaims.GetAllAsync())
+                .Any(c => c.ChassisNo.Equals(chassis, StringComparison.OrdinalIgnoreCase)
+                          && c.Status != WarrantyClaimStatus.Draft);
+            if (hasClaims)
+                throw new InvalidOperationException("Cannot delete: warranty claims exist for this chassis.");
+
+            var vehicles = (await _unitOfWork.Vehicles.GetAllAsync())
+                .Where(v => v.VehicleMasterId == master.VehicleMasterId)
+                .ToList();
+            var bookings = (await _unitOfWork.VehicleBookings.GetAllAsync()).ToList();
+
+            await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                foreach (var vehicle in vehicles)
+                {
+                    var booking = bookings.FirstOrDefault(b => b.VehicleId == vehicle.VehicleId);
+                    if (booking != null)
+                        await _unitOfWork.VehicleBookings.DeleteAsync(booking.VehicleBookingId);
+
+                    await _unitOfWork.SubdealerVehicleHistories.DeleteBySubdealerVehicleIdAsync(vehicle.VehicleId);
+                    await _unitOfWork.Vehicles.DeleteAsync(vehicle.VehicleId);
+                }
+
+                await _unitOfWork.VehicleMasters.AddHistoryAsync(new VehicleMasterHistory
+                {
+                    VehicleMasterId = master.VehicleMasterId,
+                    Action = "WarrantyOnlyDeleted",
+                    Remarks = request.Remarks,
+                    UserId = request.DeletedBy
+                });
+                await _unitOfWork.VehicleMasters.DeleteAsync(master.VehicleMasterId);
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+                return true;
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
         }
     }
 
@@ -655,7 +713,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
                     var chassis = row.ChassisNumber.Trim().ToUpperInvariant();
                     var dealershipId = row.DealershipId > 0 ? row.DealershipId : request.DefaultDealershipId;
-                    var (_, subdealerUserId) = await WarrantyOnlyVehicleFlowHelper.ResolveOwnShowroomAsync(
+                    await WarrantyOnlyVehicleFlowHelper.ValidateOwnShowroomOrgAsync(
                         _unitOfWork, dealershipId, row.SubDealerId);
 
                     var master = new VehicleMaster
@@ -694,7 +752,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                     await WarrantyOnlyVehicleFlowHelper.ProvisionSoldVehicleAsync(
                         _unitOfWork,
                         master,
-                        subdealerUserId,
+                        row.SubDealerId,
                         request.ImportedBy,
                         row.CustomerName,
                         row.CustomerMobile,

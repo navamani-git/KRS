@@ -1,6 +1,7 @@
 using KRSDealerManagement.Domain.Entities;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
+using KRSDealerManagement.Shared.Helpers;
 
 namespace KRSDealerManagement.Application.Services
 {
@@ -20,19 +21,107 @@ namespace KRSDealerManagement.Application.Services
         public static async Task<int?> GetOrgIdForUserAsync(IUnitOfWork unitOfWork, int userId)
             => (await GetAssignmentAsync(unitOfWork, userId))?.SubDealerId;
 
-        /// <summary>All login user IDs for the subdealer org of <paramref name="loginUserId"/> (includes the user).</summary>
-        public static async Task<HashSet<int>> GetOrgLoginUserIdsAsync(IUnitOfWork unitOfWork, int loginUserId)
+        /// <summary>
+        /// Normalizes a value that may be org SubDealerId or legacy login UserId to org SubDealerId.
+        /// </summary>
+        public static async Task<int> ResolveOrgIdAsync(IUnitOfWork unitOfWork, int subdealerIdOrLoginUserId)
         {
-            var orgId = await GetOrgIdForUserAsync(unitOfWork, loginUserId);
+            if (subdealerIdOrLoginUserId <= 0)
+                throw new ArgumentOutOfRangeException(nameof(subdealerIdOrLoginUserId));
+
+            var org = await unitOfWork.SubDealers.GetByIdAsync(subdealerIdOrLoginUserId);
+            if (org != null)
+                return subdealerIdOrLoginUserId;
+
+            var mapped = await GetOrgIdForUserAsync(unitOfWork, subdealerIdOrLoginUserId);
+            if (mapped.HasValue)
+                return mapped.Value;
+
+            return subdealerIdOrLoginUserId;
+        }
+
+        public static async Task<bool> IsSameOrgAsync(IUnitOfWork unitOfWork, int loginUserId, int targetSubdealerOrgOrUserId)
+        {
+            var loginOrgId = await ResolveOrgIdAsync(unitOfWork, loginUserId);
+            var targetOrgId = await ResolveOrgIdAsync(unitOfWork, targetSubdealerOrgOrUserId);
+            return loginOrgId == targetOrgId;
+        }
+
+        public static bool MatchesOrgId(int? storedSubdealerId, int orgId)
+            => storedSubdealerId.HasValue && storedSubdealerId.Value == orgId;
+
+        public static bool MatchesOrgId(int? storedSubdealerId, IReadOnlySet<int> orgIds)
+            => storedSubdealerId.HasValue && orgIds.Contains(storedSubdealerId.Value);
+
+        /// <summary>Display label when SubdealerId column stores SubDealers.SubDealerId.</summary>
+        public static string ResolveOrgDisplayName(int? subDealerOrgId, IReadOnlyDictionary<int, SubDealer> orgs)
+        {
+            if (!subDealerOrgId.HasValue || subDealerOrgId.Value <= 0)
+                return "Unknown";
+
+            if (orgs.TryGetValue(subDealerOrgId.Value, out var org))
+            {
+                var location = string.IsNullOrWhiteSpace(org.Location) ? "" : $" ({org.Location})";
+                return $"{org.SubDealerName}{location}";
+            }
+
+            return $"Subdealer #{subDealerOrgId}";
+        }
+
+        /// <summary>Backward-compatible: accepts org id or legacy login user id.</summary>
+        public static string ResolveDisplayName(
+            int? subdealerIdOrUserId,
+            IReadOnlyList<UserOrgRole> userOrgRoles,
+            IReadOnlyDictionary<int, SubDealer> orgs,
+            IReadOnlyDictionary<int, User> users)
+        {
+            if (!subdealerIdOrUserId.HasValue || subdealerIdOrUserId.Value <= 0)
+                return "Unknown";
+
+            if (orgs.TryGetValue(subdealerIdOrUserId.Value, out var directOrg))
+            {
+                var location = string.IsNullOrWhiteSpace(directOrg.Location) ? "" : $" ({directOrg.Location})";
+                return $"{directOrg.SubDealerName}{location}";
+            }
+
+            var assignment = userOrgRoles
+                .Where(a => a.UserId == subdealerIdOrUserId.Value && a.IsActive)
+                .OrderByDescending(a => a.IsPrimary)
+                .FirstOrDefault();
+            if (assignment?.SubDealerId is int orgId && orgs.TryGetValue(orgId, out var org))
+            {
+                var location = string.IsNullOrWhiteSpace(org.Location) ? "" : $" ({org.Location})";
+                return $"{org.SubDealerName}{location}";
+            }
+
+            return users.TryGetValue(subdealerIdOrUserId.Value, out var user)
+                ? user.GetFullName()
+                : "Unknown";
+        }
+
+        /// <summary>All login user IDs for the subdealer org (accepts org SubDealerId or login UserId).</summary>
+        public static async Task<HashSet<int>> GetOrgLoginUserIdsAsync(IUnitOfWork unitOfWork, int loginUserIdOrOrgId)
+        {
+            var directOrg = await unitOfWork.SubDealers.GetByIdAsync(loginUserIdOrOrgId);
+            if (directOrg != null)
+            {
+                var directIds = (await GetLoginsForOrgAsync(unitOfWork, loginUserIdOrOrgId))
+                    .Where(a => a.IsActive)
+                    .Select(a => a.UserId)
+                    .ToHashSet();
+                return directIds.Count > 0 ? directIds : new HashSet<int>();
+            }
+
+            var orgId = await GetOrgIdForUserAsync(unitOfWork, loginUserIdOrOrgId);
             if (!orgId.HasValue)
-                return new HashSet<int> { loginUserId };
+                return new HashSet<int> { loginUserIdOrOrgId };
 
             var ids = (await GetLoginsForOrgAsync(unitOfWork, orgId.Value))
                 .Select(a => a.UserId)
                 .ToHashSet();
 
             if (ids.Count == 0)
-                ids.Add(loginUserId);
+                ids.Add(loginUserIdOrOrgId);
 
             return ids;
         }

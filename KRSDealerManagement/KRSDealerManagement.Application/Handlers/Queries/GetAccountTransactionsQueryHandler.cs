@@ -111,6 +111,12 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                             financeName = fn.FinanceName;
                             financeNameId = pay.FinanceNameId;
                         }
+
+                        reason = PaymentStatementDescriptionHelper.FormatApprovalDescription(pay, financeName);
+                    }
+                    else if (!string.IsNullOrWhiteSpace(reason))
+                    {
+                        reason = PaymentStatementDescriptionHelper.NormalizeStoredReason(reason);
                     }
 
                     var category = AccountStatementCategoryHelper.Resolve(
@@ -194,7 +200,10 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 mapped = mapped.Where(t => t.StatementDate < toExclusive).ToList();
             }
 
-            return mapped.OrderByDescending(t => t.StatementDate).ToList();
+            return mapped
+                .OrderByDescending(t => t.StatementDate.Date)
+                .ThenByDescending(t => t.CreatedDate)
+                .ToList();
         }
 
         private static string? ResolveChassis(

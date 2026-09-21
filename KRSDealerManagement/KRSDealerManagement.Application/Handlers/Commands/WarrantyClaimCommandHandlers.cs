@@ -188,6 +188,13 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             claim.ModelName = model?.ModelName;
             claim.ColorId = master.ColorId;
             claim.ColorName = color?.ColorName;
+
+            var vehicle = VehicleLifecycleHelper.GetActiveRowForMaster(
+                await _unitOfWork.Vehicles.GetAllAsync(),
+                master.VehicleMasterId);
+            if (vehicle != null)
+                claim.SubdealerVehicleId = vehicle.VehicleId;
+
             await ModelColorValidation.EnsureMappedAsync(_unitOfWork, master.ModelId, master.ColorId);
         }
 

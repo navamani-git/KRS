@@ -88,7 +88,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
 
 
-            if (!vehicle.SubdealerId.HasValue || vehicle.SubdealerId.Value != request.SubdealerId)
+            var orgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, request.SubdealerId);
+            if (!vehicle.SubdealerId.HasValue || vehicle.SubdealerId.Value != orgId)
 
                 throw new InvalidOperationException("This chassis is not allocated to your account.");
 
@@ -137,7 +138,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
                     && c.Year == commissionYear
 
-                    && c.SubdealerId == request.SubdealerId
+                    && c.SubdealerId == orgId
 
                     && c.Status != (int)CommissionStatusEnum.Rejected);
 
@@ -151,7 +152,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
             {
 
-                SubdealerId = request.SubdealerId,
+                SubdealerId = orgId,
 
                 IsActive = true
 
@@ -201,7 +202,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
 
                 AccountId = account.AccountId,
 
-                SubdealerId = request.SubdealerId,
+                SubdealerId = orgId,
 
                 VehicleId = vehicle.VehicleId,
 

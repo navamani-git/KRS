@@ -47,6 +47,53 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             return TimeZoneInfo.ConvertTimeFromUtc(utc, IndiaTimeZone);
         }
 
+        private static string FormatSubdealerHistoryDescription(string action, string? remarks)
+        {
+            var note = remarks?.Trim();
+            return action switch
+            {
+                "ReturnApproved" => string.IsNullOrWhiteSpace(note)
+                    ? "Returned to dealer stock."
+                    : $"Returned to dealer stock — {note}",
+                "ReturnRequested" => string.IsNullOrWhiteSpace(note)
+                    ? "Return requested by subdealer."
+                    : $"Return requested — {note}",
+                "Allocated" => string.IsNullOrWhiteSpace(note)
+                    ? "Allocated to subdealer."
+                    : $"Allocated — {note}",
+                _ => string.IsNullOrWhiteSpace(note) ? action : $"{action} — {note}"
+            };
+        }
+
+        private static List<RawEvent> DeduplicateRawEvents(List<RawEvent> events)
+        {
+            return events
+                .GroupBy(e => (
+                    new DateTime(
+                        e.OccurredAt.Year,
+                        e.OccurredAt.Month,
+                        e.OccurredAt.Day,
+                        e.OccurredAt.Hour,
+                        e.OccurredAt.Minute,
+                        0,
+                        e.OccurredAt.Kind),
+                    e.StatusValue))
+                .Select(g => g.OrderByDescending(ScoreRawEvent).First())
+                .ToList();
+        }
+
+        private static int ScoreRawEvent(RawEvent e)
+        {
+            var description = e.Description ?? "";
+            var score = description.Length;
+            if (description.Contains("Chassis ", StringComparison.OrdinalIgnoreCase)) score += 100;
+            if (description.Contains("order ORD-", StringComparison.OrdinalIgnoreCase)) score += 80;
+            if (description.StartsWith("Returned to dealer stock", StringComparison.OrdinalIgnoreCase)) score += 60;
+            if (description.StartsWith("Order ORD-", StringComparison.OrdinalIgnoreCase)) score += 40;
+            if (!string.IsNullOrWhiteSpace(e.OrderNumber)) score += 20;
+            return score;
+        }
+
         public GetVehicleChassisHistoryQueryHandler(IUnitOfWork unitOfWork, IStatusLookupService statuses)
         {
             _unitOfWork = unitOfWork;
@@ -60,16 +107,34 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 return null;
 
             var vehicles = (await _unitOfWork.Vehicles.GetAllAsync()).ToList();
-            var vehicle = vehicles
-                .Where(v => !UnifiedVehicleStatus.IsPlaceholderChassis(v.ChassisNumber))
-                .FirstOrDefault(v => string.Equals(v.ChassisNumber?.Trim(), chassis, StringComparison.OrdinalIgnoreCase));
+            var master = await _unitOfWork.VehicleMasters.GetByChassisAsync(chassis);
 
-            var master = vehicle?.VehicleMasterId > 0
-                ? await _unitOfWork.VehicleMasters.GetByIdAsync(vehicle.VehicleMasterId)
-                : await _unitOfWork.VehicleMasters.GetByChassisAsync(chassis);
+            var relatedVehicles = vehicles
+                .Where(v =>
+                    (master != null && v.VehicleMasterId == master.VehicleMasterId)
+                    || (!UnifiedVehicleStatus.IsPlaceholderChassis(v.ChassisNumber)
+                        && string.Equals(v.ChassisNumber?.Trim(), chassis, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+
+            // Active lifecycle row = current truth; superseded rows remain in timeline only.
+            var vehicle = master != null
+                ? VehicleLifecycleHelper.GetActiveRowForMaster(relatedVehicles, master.VehicleMasterId)
+                : VehicleLifecycleHelper.FilterActiveLifecycle(relatedVehicles)
+                    .OrderByDescending(v => v.ModifiedDate)
+                    .ThenByDescending(v => v.VehicleId)
+                    .FirstOrDefault()
+                ?? relatedVehicles
+                    .OrderByDescending(v => v.ModifiedDate)
+                    .ThenByDescending(v => v.VehicleId)
+                    .FirstOrDefault();
 
             if (vehicle == null && master == null)
                 return null;
+
+            if (master == null && vehicle?.VehicleMasterId > 0)
+                master = await _unitOfWork.VehicleMasters.GetByIdAsync(vehicle.VehicleMasterId);
+
+            var relatedVehicleIds = relatedVehicles.Select(v => v.VehicleId).ToHashSet();
 
             var models = (await _unitOfWork.VehicleModels.GetAllAsync()).ToDictionary(m => m.ModelId);
             var colors = (await _unitOfWork.VehicleColors.GetAllAsync()).ToDictionary(c => c.ColorId);
@@ -83,16 +148,19 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var raw = new List<RawEvent>();
             var subdealerHistoryActions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            string ResolveShowroomLabel(int? orderSubdealerUserId = null, int? accountSubdealerUserId = null)
+            var masterMap = master != null
+                ? new Dictionary<int, VehicleMaster> { [master.VehicleMasterId] = master }
+                : new Dictionary<int, VehicleMaster>();
+
+            string ResolveShowroomLabel(int? orderSubdealerOrgOrUserId = null, int? accountSubdealerUserId = null)
                 => DealershipLocationHelper.ResolveShowroomLabel(
                     vehicle,
-                    orderSubdealerUserId,
+                    orderSubdealerOrgOrUserId,
                     accountSubdealerUserId,
-                    master != null
-                        ? new Dictionary<int, VehicleMaster> { [master.VehicleMasterId] = master }
-                        : new Dictionary<int, VehicleMaster>(),
+                    masterMap,
                     dealerships,
-                    userOrgRoles);
+                    userOrgRoles,
+                    orgs);
 
             string ResolveOwnShowroomLabel()
             {
@@ -112,28 +180,18 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     : "Own Showroom";
             }
 
-            string ResolveSubdealerName(int? userId)
+            string ResolveSubdealerName(int? subdealerOrgOrUserId)
             {
                 if (master?.WarrantyOnly == true)
                     return ResolveOwnShowroomLabel();
 
-                if (!userId.HasValue || userId.Value <= 0) return ResolveShowroomLabel();
-                var assignment = userOrgRoles
-                    .Where(a => a.UserId == userId.Value && a.IsActive)
-                    .OrderByDescending(a => a.IsPrimary)
-                    .FirstOrDefault();
-                if (assignment?.SubDealerId is int orgId && orgs.TryGetValue(orgId, out var org))
-                {
-                    var location = string.IsNullOrWhiteSpace(org.Location) ? "" : $" ({org.Location})";
-                    return $"{org.SubDealerName}{location}";
-                }
+                if (!subdealerOrgOrUserId.HasValue || subdealerOrgOrUserId.Value <= 0)
+                    return "Dealer Stock";
 
-                return users.TryGetValue(userId.Value, out var user)
-                    ? user.GetFullName()
-                    : $"Subdealer #{userId}";
+                return SubdealerOrgService.ResolveDisplayName(subdealerOrgOrUserId, userOrgRoles, orgs, users);
             }
 
-            string ResolveDealershipName(int? userId)
+            string ResolveDealershipName(int? subdealerOrgOrUserId)
             {
                 if (master?.WarrantyOnly == true
                     && dealerships.TryGetValue(master.DealershipId, out var masterDealer))
@@ -141,11 +199,12 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     return masterDealer.DealershipName;
                 }
 
-                if (!userId.HasValue) return ResolveShowroomLabel();
-                var assignment = userOrgRoles.FirstOrDefault(a => a.UserId == userId.Value && a.IsActive);
-                if (assignment?.DealershipId is int dealerId && dealerships.TryGetValue(dealerId, out var dealer))
+                var dealershipId = DealershipLocationHelper.ResolveDealershipIdFromSubdealerOrgOrUser(
+                    subdealerOrgOrUserId, orgs, userOrgRoles);
+                if (dealershipId.HasValue && dealerships.TryGetValue(dealershipId.Value, out var dealer))
                     return dealer.DealershipName;
-                return "Dealership";
+
+                return ResolveShowroomLabel();
             }
 
             string StatusName(int statusValue) =>
@@ -167,75 +226,107 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 });
             }
 
-            if (master != null)
-            {
-                foreach (var h in await _unitOfWork.VehicleMasters.GetHistoryAsync(master.VehicleMasterId))
-                {
-                    var actor = h.UserId.HasValue && users.TryGetValue(h.UserId.Value, out var u)
-                        ? u.GetFullName()
-                        : "Staff";
-                    var status = VehicleHistoryHelper.ActionToStatus(h.Action) ?? UnifiedVehicleStatus.Submitted;
-                    var location = master.WarrantyOnly
-                        ? ResolveDealershipName(null)
-                        : "Dealer Stock";
-                    Add(h.CreatedDate, status,
-                        string.IsNullOrWhiteSpace(h.Remarks) ? h.Action : $"{h.Action} — {h.Remarks}",
-                        actor, location, null);
-                }
-            }
+            string? primaryOrderNumber = vehicle?.PurchaseOrderId is int primaryPoId
+                && ordersById.TryGetValue(primaryPoId, out var primaryOrder)
+                ? primaryOrder.OrderNumber
+                : null;
 
-            if (vehicle != null)
-            {
-                foreach (var h in await _unitOfWork.SubdealerVehicleHistories.GetBySubdealerVehicleIdAsync(vehicle.VehicleId))
-                {
-                    subdealerHistoryActions.Add(h.Action);
-                    var actor = h.UserId.HasValue && users.TryGetValue(h.UserId.Value, out var u)
-                        ? u.GetFullName()
-                        : "Staff";
-                    var status = VehicleHistoryHelper.ActionToStatus(h.Action) ?? vehicle.Status;
-                    Add(h.CreatedDate, status,
-                        string.IsNullOrWhiteSpace(h.Remarks) ? h.Action : $"{h.Action} — {h.Remarks}",
-                        actor, ResolveSubdealerName(vehicle.SubdealerId), null);
-                }
-            }
+            var orderItems = (await _unitOfWork.PurchaseOrderItems.GetAllAsync()).ToList();
+            var approvedPoVehicleIds = orderItems
+                .Where(i => i.Status == 1
+                    && i.VehicleId.HasValue
+                    && relatedVehicleIds.Contains(i.VehicleId.Value))
+                .Select(i => i.VehicleId!.Value)
+                .ToHashSet();
 
-            string? primaryOrderNumber = null;
-
-            if (vehicle?.PurchaseOrderId is int poId && ordersById.TryGetValue(poId, out var order))
+            foreach (var related in relatedVehicles.Where(rv => rv.PurchaseOrderId.HasValue))
             {
-                primaryOrderNumber = order.OrderNumber;
+                if (!ordersById.TryGetValue(related.PurchaseOrderId!.Value, out var order))
+                    continue;
+
                 var subdealer = ResolveSubdealerName(order.SubdealerId);
+                var cyclePrefix = relatedVehicles.Count > 1 ? $"[Cycle #{related.VehicleId}] " : "";
 
                 Add(
                     order.CreatedDate,
                     UnifiedVehicleStatus.Submitted,
-                    $"Order {order.OrderNumber} — {subdealer}.",
+                    $"{cyclePrefix}Order {order.OrderNumber} — {subdealer}.",
                     subdealer,
                     ResolveDealershipName(order.SubdealerId),
                     order.OrderNumber);
 
-                var item = (await _unitOfWork.PurchaseOrderItems.GetAllAsync())
-                    .Where(i => i.PurchaseOrderId == order.OrderId && i.VehicleId == vehicle.VehicleId)
+                var item = orderItems
+                    .Where(i => i.PurchaseOrderId == order.OrderId && i.VehicleId == related.VehicleId)
                     .OrderByDescending(i => i.ApprovedDate ?? i.CreatedDate)
                     .FirstOrDefault();
 
-                if (item != null && item.Status == 1
-                    && !subdealerHistoryActions.Contains("Allocated"))
+                if (item != null && item.Status == 1)
                 {
                     Add(
                         item.ApprovedDate ?? order.ApprovedDate ?? order.CreatedDate,
                         UnifiedVehicleStatus.ApprovedByDealer,
-                        $"Chassis {chassis} allocated to {subdealer} (order {order.OrderNumber}).",
+                        $"{cyclePrefix}Chassis {chassis} allocated to {subdealer} (order {order.OrderNumber}).",
                         "Dealer",
                         ResolveDealershipName(order.SubdealerId),
                         order.OrderNumber);
                 }
             }
 
-            if (vehicle != null)
+            var seenSubdealerHistoryKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var related in relatedVehicles)
+            {
+                foreach (var h in await _unitOfWork.SubdealerVehicleHistories.GetBySubdealerVehicleIdAsync(related.VehicleId))
+                {
+                    if (h.Action.Equals("Allocated", StringComparison.OrdinalIgnoreCase)
+                        && approvedPoVehicleIds.Contains(related.VehicleId))
+                        continue;
+
+                    var dedupeKey = $"{related.VehicleId}|{h.Action}|{h.CreatedDate:yyyy-MM-dd HH:mm:ss}|{h.Remarks}";
+                    if (!seenSubdealerHistoryKeys.Add(dedupeKey))
+                        continue;
+
+                    subdealerHistoryActions.Add(h.Action);
+                    var actor = h.UserId.HasValue && users.TryGetValue(h.UserId.Value, out var u)
+                        ? u.GetFullName()
+                        : "Staff";
+                    var status = VehicleHistoryHelper.ActionToStatus(h.Action) ?? related.Status;
+                    var holderAtTime = ResolveSubdealerName(related.SubdealerId);
+                    var detail = FormatSubdealerHistoryDescription(h.Action, h.Remarks);
+                    if (relatedVehicles.Count > 1)
+                        detail = $"[Cycle #{related.VehicleId}] {detail}";
+                    Add(h.CreatedDate, status, detail, actor, holderAtTime, null);
+                }
+            }
+
+            if (master != null)
+            {
+                foreach (var h in await _unitOfWork.VehicleMasters.GetHistoryAsync(master.VehicleMasterId))
+                {
+                    if (h.Action.Equals("Allocated", StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    if (h.Action.Equals("Returned", StringComparison.OrdinalIgnoreCase)
+                        && subdealerHistoryActions.Contains("ReturnApproved"))
+                        continue;
+
+                    var actor = h.UserId.HasValue && users.TryGetValue(h.UserId.Value, out var u)
+                        ? u.GetFullName()
+                        : "Staff";
+                    var status = VehicleHistoryHelper.ActionToStatus(h.Action) ?? UnifiedVehicleStatus.Submitted;
+                    var isReturnedToStock = h.Action.Equals("Returned", StringComparison.OrdinalIgnoreCase);
+                    var location = master.WarrantyOnly
+                        ? ResolveDealershipName(null)
+                        : isReturnedToStock ? ResolveShowroomLabel() : "Dealer Stock";
+                    var description = isReturnedToStock
+                        ? FormatSubdealerHistoryDescription("ReturnApproved", h.Remarks)
+                        : (string.IsNullOrWhiteSpace(h.Remarks) ? h.Action : $"{h.Action} — {h.Remarks}");
+                    Add(h.CreatedDate, status, description, actor, location, null);
+                }
+            }
+
+            if (vehicle != null && relatedVehicleIds.Count > 0)
             {
             var returns = (await _unitOfWork.ReturnRequests.GetAllAsync())
-                .Where(r => r.VehicleId == vehicle.VehicleId)
+                .Where(r => relatedVehicleIds.Contains(r.VehicleId))
                 .OrderBy(r => r.CreatedDate);
 
             foreach (var ret in returns)
@@ -289,7 +380,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             }
 
             var auditLogs = (await _unitOfWork.AuditLogs.GetAllAsync())
-                .Where(a => a.EntityType == "Vehicle" && a.EntityId == vehicle.VehicleId)
+                .Where(a => a.EntityType == "Vehicle" && relatedVehicleIds.Contains(a.EntityId))
                 .OrderBy(a => a.CreatedDate);
 
             if (!subdealerHistoryActions.Contains("Allocated") && !subdealerHistoryActions.Contains("Reassigned"))
@@ -447,7 +538,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 Add(date.Value, status, detail ?? string.Empty, subdealer, subdealer, order);
             }
 
-            var combined = raw
+            var combined = DeduplicateRawEvents(raw)
                 .OrderBy(r => r.OccurredAt)
                 .ThenBy(r => StatusSort(r.StatusValue))
                 .Select((r, index) =>
@@ -476,6 +567,53 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var currentStatusValue = vehicle?.Status ?? UnifiedVehicleStatus.Submitted;
             statusMap.TryGetValue(currentStatusValue, out var currentStatus);
 
+            var currentBooking = vehicle != null
+                ? (await _unitOfWork.VehicleBookings.GetAllAsync())
+                    .FirstOrDefault(b => b.VehicleId == vehicle.VehicleId)
+                : null;
+
+            var currentHolder = vehicle?.SubdealerId.HasValue == true
+                ? ResolveSubdealerName(vehicle.SubdealerId)
+                : currentStatusValue == UnifiedVehicleStatus.Delivered
+                    ? ResolveSubdealerName(currentBooking?.SubdealerId)
+                    : master?.IsAllocated == true ? "Allocated" : "Dealer Stock";
+
+            var currentLocation = currentStatusValue == UnifiedVehicleStatus.Delivered
+                ? currentHolder
+                : vehicle?.SubdealerId.HasValue == true
+                    ? currentHolder
+                    : ResolveShowroomLabel();
+
+            string? currentSummary;
+            if (vehicle == null)
+            {
+                currentSummary = master?.IsAllocated == true
+                    ? "On dealer master stock."
+                    : "Master record only — not allocated.";
+            }
+            else if (currentStatusValue == UnifiedVehicleStatus.Delivered)
+            {
+                var customer = WarrantyOnlyVehicleFlowHelper.DisplayCustomerValue(currentBooking?.CustomerName)
+                    ?? "customer";
+                var deliveredOn = vehicle.DeliveryDate?.ToString("dd-MMM-yyyy") ?? "—";
+                currentSummary = $"Delivered to {customer} on {deliveredOn} under {currentHolder}.";
+            }
+            else if (!vehicle.SubdealerId.HasValue)
+            {
+                currentSummary = currentStatusValue == UnifiedVehicleStatus.ReturnApproved
+                    ? $"At dealer stock (returned) — available for re-allocation at {currentLocation}."
+                    : $"At dealer stock — {currentStatus?.StatusName ?? currentStatusValue.ToString()} at {currentLocation}.";
+            }
+            else
+            {
+                currentSummary = $"With {currentHolder} — status: {currentStatus?.StatusName ?? currentStatusValue.ToString()}.";
+            }
+
+            if (relatedVehicles.Count > 1)
+            {
+                currentSummary += $" Showing {relatedVehicles.Count} lifecycle cycle(s); current record #{vehicle!.VehicleId}.";
+            }
+
             return new VehicleChassisHistoryDto
             {
                 VehicleId = vehicle?.VehicleId ?? 0,
@@ -484,9 +622,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 ColorName = colors.TryGetValue(colorId, out var color) ? color.ColorName : $"Color #{colorId}",
                 CurrentStatus = currentStatusValue,
                 CurrentStatusName = currentStatus?.StatusName,
-                CurrentHolder = vehicle?.SubdealerId.HasValue == true
-                    ? ResolveSubdealerName(vehicle.SubdealerId)
-                    : master?.IsAllocated == true ? "Allocated" : "Dealer Stock",
+                CurrentHolder = currentHolder,
+                CurrentLocation = currentLocation,
+                CurrentSummary = currentSummary,
                 Events = combined
             };
         }

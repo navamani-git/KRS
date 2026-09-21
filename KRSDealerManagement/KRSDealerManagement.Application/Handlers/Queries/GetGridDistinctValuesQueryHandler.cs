@@ -158,8 +158,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var accounts = new List<SubdealerAccountDto>();
             foreach (var s in subdealers)
             {
-                if (request.SubdealerId.HasValue && s.UserId != request.SubdealerId.Value) continue;
-                accounts.AddRange(await _mediator.Send(new GetSubdealerAccountsQuery { SubdealerId = s.UserId }));
+                if (request.SubdealerId.HasValue && s.SubDealerId != request.SubdealerId.Value) continue;
+                accounts.AddRange(await _mediator.Send(new GetSubdealerAccountsQuery { SubdealerId = s.SubDealerId }));
             }
             return DistinctSync(accounts.Cast<object>(), column, request, AccountProjections);
         }
@@ -188,13 +188,19 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var warrantyOnlyVehicleIds = await WarrantyOnlyVehicleFlowHelper.GetWarrantyOnlyVehicleIdsAsync(_unitOfWork);
 
             var rows = new List<VehicleBookingGridRowDto>();
+            HashSet<int>? orgUserIds = null;
+            if (request.SubdealerId.HasValue)
+                orgUserIds = await SubdealerOrgService.GetOrgLoginUserIdsAsync(_unitOfWork, request.SubdealerId.Value);
+
+            var userOrgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync()).ToList();
+            var orgs = (await _unitOfWork.SubDealers.GetAllAsync()).ToDictionary(o => o.SubDealerId);
+
             foreach (var b in bookings.Where(b =>
                          scopedIds.Contains(b.SubdealerId)
                          && !warrantyOnlyVehicleIds.Contains(b.VehicleId)
-                         && (!request.SubdealerId.HasValue || b.SubdealerId == request.SubdealerId.Value)))
+                         && (orgUserIds == null || orgUserIds.Contains(b.SubdealerId))))
             {
                 vehicles.TryGetValue(b.VehicleId, out var v);
-                users.TryGetValue(b.SubdealerId, out var u);
                 var vehicleStatus = v?.Status ?? b.BookingStatus;
                 var statusName = await _statuses.GetNameAsync(StatusCategories.Vehicle, vehicleStatus);
                 rows.Add(new VehicleBookingGridRowDto
@@ -202,7 +208,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     Booking = b,
                     VehicleId = b.VehicleId,
                     Chassis = v?.ChassisNumber ?? "-",
-                    Subdealer = u?.GetFullName() ?? "Unknown",
+                    Subdealer = SubdealerOrgService.ResolveDisplayName(b.SubdealerId, userOrgRoles, orgs, users),
                     StatusName = statusName,
                     VehicleStatus = vehicleStatus,
                     RegistrationNumber = v?.RegistrationNumber

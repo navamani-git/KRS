@@ -1,0 +1,90 @@
+@model IReadOnlyList<KRSDealerManagement.Application.DTOs.PriceUpdateRunListItemDto>
+@using KRSDealerManagement.Shared.Helpers
+@{
+    ViewData["Title"] = "Price Update Job";
+    var schedulerUrl = ViewBag.SchedulerUrl as string ?? "";
+}
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1 class="m-0"><i class="bi bi-arrow-up-circle"></i> Price Update Job</h1>
+        <p class="text-muted">Increase catalogue prices for non-invoiced subdealer stock and dealer stock ready to allocate. Only vehicles with a price change are logged.</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <form method="post" action="/Jobs/PriceUpdate" class="d-inline">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-play-fill"></i> Run price update now
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <h5 class="card-title">Scheduler URL</h5>
+        <p class="text-muted mb-2">Configure Plesk scheduled task to call this URL twice nightly (GET or POST):</p>
+        <code class="d-block user-select-all">@schedulerUrl</code>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h3 class="card-title">Run history</h3></div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover table-striped mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>Started</th>
+                        <th>Trigger</th>
+                        <th>As of</th>
+                        <th>Scanned</th>
+                        <th>Updated</th>
+                        <th>Skipped</th>
+                        <th>Errors</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ var i = 1; }
+                    @foreach (var run in Model)
+                    {
+                        var started = IstTime.ToIst(run.StartedAt);
+                        <tr>
+                            <td>@(i++)</td>
+                            <td><small>@(started?.ToString("dd-MMM-yyyy HH:mm") ?? "—")</small></td>
+                            <td>
+                                @run.TriggerSource
+                                @if (!string.IsNullOrWhiteSpace(run.TriggeredByName))
+                                {
+                                    <small class="text-muted d-block">@run.TriggeredByName</small>
+                                }
+                            </td>
+                            <td>@run.AsOfDate.ToString("dd-MMM-yyyy")</td>
+                            <td>@run.TotalScanned</td>
+                            <td>@run.TotalUpdated</td>
+                            <td>@run.TotalSkipped</td>
+                            <td>@run.TotalErrors</td>
+                            <td>
+                                <span class="badge @(run.Status == "Completed" ? "bg-success" : run.Status == "Failed" ? "bg-danger" : "bg-secondary")">
+                                    @run.Status
+                                </span>
+                            </td>
+                            <td>
+                                <a href="@Url.Action("Details", new { id = run.RunId })" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> Details
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (!Model.Any())
+        {
+            <div class="p-3 text-muted">No runs yet.</div>
+        }
+    </div>
+</div>

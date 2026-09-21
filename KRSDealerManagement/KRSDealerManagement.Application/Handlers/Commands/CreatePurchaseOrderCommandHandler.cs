@@ -57,7 +57,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                         throw new InvalidOperationException(priceError);
                 }
 
-                var dealershipId = await ResolveDealershipIdAsync(request.SubdealerId);
+                var orgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, request.SubdealerId);
+                var dealershipId = await ResolveDealershipIdAsync(orgId);
 
                 var allOrders = await _unitOfWork.PurchaseOrders.GetAllAsync();
                 string orderNumber = $"ORD-{DateTime.UtcNow.Year}-{(allOrders.Count() + 1):D5}";
@@ -65,7 +66,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 var order = new PurchaseOrder
                 {
                     AccountId = request.AccountId,
-                    SubdealerId = request.SubdealerId,
+                    SubdealerId = orgId,
                     OrderNumber = orderNumber,
                     TotalQuantity = totalQty,
                     TotalAmount = totalAmount,
@@ -197,15 +198,11 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             }
         }
 
-        private async Task<int> ResolveDealershipIdAsync(int subdealerId)
+        private async Task<int> ResolveDealershipIdAsync(int subDealerOrgId)
         {
-            var orgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync())
-                .Where(a => a.UserId == subdealerId && a.IsActive)
-                .OrderByDescending(a => a.IsPrimary)
-                .FirstOrDefault();
-            if (orgRoles?.DealershipId == null)
-                throw new InvalidOperationException("Subdealer is not linked to a dealership.");
-            return orgRoles.DealershipId.Value;
+            var org = await _unitOfWork.SubDealers.GetByIdAsync(subDealerOrgId)
+                ?? throw new InvalidOperationException("Subdealer org not found.");
+            return org.DealershipId;
         }
     }
 }

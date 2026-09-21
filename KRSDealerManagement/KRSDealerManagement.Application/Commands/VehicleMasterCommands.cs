@@ -99,6 +99,13 @@ namespace KRSDealerManagement.Application.Commands
         public int CreatedBy { get; set; }
     }
 
+    public class DeleteWarrantyOnlyVehicleMasterCommand : IRequest<bool>
+    {
+        public int VehicleMasterId { get; set; }
+        public int DeletedBy { get; set; }
+        public string? Remarks { get; set; }
+    }
+
     public class UpdateWarrantyOnlyVehicleMasterCommand : IRequest<bool>
     {
         public int VehicleMasterId { get; set; }

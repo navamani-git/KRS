@@ -60,7 +60,7 @@ namespace KRSDealerManagement.Web.Controllers
             var subdealersQuery = new GetSubdealersQuery { IsActive = true };
             DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, subdealersQuery);
             ViewBag.Subdealers = (await _mediator.Send(subdealersQuery))
-                .Where(s => s.UserId > 0)
+                .Where(s => s.SubDealerId > 0)
                 .OrderBy(s => s.GetFullName())
                 .ToList();
 
@@ -87,7 +87,7 @@ namespace KRSDealerManagement.Web.Controllers
             var subdealersQuery = new GetSubdealersQuery { IsActive = true };
             DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, subdealersQuery);
             ViewBag.Subdealers = (await _mediator.Send(subdealersQuery))
-                .Where(s => s.UserId > 0)
+                .Where(s => s.SubDealerId > 0)
                 .OrderBy(s => s.GetFullName())
                 .ToList();
             ViewBag.SelectedSubdealerUserId = subdealerUserId;
@@ -250,14 +250,16 @@ namespace KRSDealerManagement.Web.Controllers
                     if (!model.TargetSubdealerUserId.HasValue || model.TargetSubdealerUserId.Value <= 0)
                         throw new InvalidOperationException("Please select a subdealer.");
 
-                    targetSubdealerId = model.TargetSubdealerUserId.Value;
-                    var account = await SubdealerOrgService.GetPermissionAccountAsync(_unitOfWork, targetSubdealerId)
+                    var orgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, model.TargetSubdealerUserId.Value);
+                    targetSubdealerId = orgId;
+                    var primaryUserId = await SubdealerOrgService.GetPrimaryUserIdForOrgAsync(_unitOfWork, orgId);
+                    var accountUserId = primaryUserId ?? model.TargetSubdealerUserId.Value;
+                    var account = await SubdealerOrgService.GetPermissionAccountAsync(_unitOfWork, accountUserId)
                         ?? throw new InvalidOperationException("Subdealer account not found.");
                     accountId = account.AccountId;
 
-                    var org = (await _unitOfWork.UserOrgRoles.GetAllAsync())
-                        .FirstOrDefault(o => o.UserId == targetSubdealerId && o.IsActive);
-                    dealershipId = org?.DealershipId;
+                    var orgEntity = await _unitOfWork.SubDealers.GetByIdAsync(orgId);
+                    dealershipId = orgEntity?.DealershipId;
                 }
                 else
                 {
@@ -268,7 +270,8 @@ namespace KRSDealerManagement.Web.Controllers
                         return RedirectToAction(nameof(MyClaims));
                     }
 
-                    targetSubdealerId = userId.Value;
+                    targetSubdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session)
+                        ?? await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, userId.Value);
                     accountId = account.AccountId;
                     var org = (await _unitOfWork.UserOrgRoles.GetAllAsync())
                         .FirstOrDefault(o => o.UserId == userId.Value && o.IsActive);
@@ -649,7 +652,7 @@ namespace KRSDealerManagement.Web.Controllers
                 var subdealersQuery = new GetSubdealersQuery { IsActive = true };
                 DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, subdealersQuery);
                 ViewBag.Subdealers = (await _mediator.Send(subdealersQuery))
-                    .Where(s => s.UserId > 0)
+                    .Where(s => s.SubDealerId > 0)
                     .OrderBy(s => s.GetFullName())
                     .ToList();
             }

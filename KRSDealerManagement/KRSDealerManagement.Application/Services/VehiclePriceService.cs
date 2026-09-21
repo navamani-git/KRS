@@ -89,21 +89,195 @@ namespace KRSDealerManagement.Application.Services
                 throw new InvalidOperationException(
                     $"No catalogue price found for this model/color effective on {invoice:yyyy-MM-dd}.");
 
-            return await ApplyVehiclePriceChangeAsync(
+            var delta = catalogPrice.Value - vehicle.CurrentPrice;
+            var auditReason = delta > 0
+                ? $"Price increased for chassis {vehicle.ChassisNumber} on {invoice:yyyy-MM-dd}"
+                : $"Price decreased for chassis {vehicle.ChassisNumber} on {invoice:yyyy-MM-dd}";
+
+            var (applied, _) = await ApplyVehiclePriceChangeAsync(
                 vehicle,
                 catalogPrice.Value,
                 invoice,
                 changedBy,
                 reasonLabel: "invoiced",
-                auditReason: $"Invoice price applied for chassis {vehicle.ChassisNumber} on {invoice:yyyy-MM-dd}",
+                auditReason: auditReason,
                 requireAccountAdjustment: true);
+            return applied;
+        }
+
+        public async Task<PriceIncreaseApplyResult> TryApplyCatalogPriceIncreaseForMasterAsync(
+            int vehicleMasterId,
+            DateTime asOfDate,
+            int changedBy)
+        {
+            var master = await _unitOfWork.VehicleMasters.GetByIdAsync(vehicleMasterId);
+            if (master == null)
+            {
+                return new PriceIncreaseApplyResult
+                {
+                    Status = PriceUpdateLineStatuses.Error,
+                    Message = "Dealer stock vehicle not found."
+                };
+            }
+
+            if (master.WarrantyOnly)
+            {
+                return new PriceIncreaseApplyResult
+                {
+                    Status = PriceUpdateLineStatuses.Skipped,
+                    Message = "Warranty-only dealer stock is excluded."
+                };
+            }
+
+            if (master.IsAllocated)
+            {
+                return new PriceIncreaseApplyResult
+                {
+                    Status = PriceUpdateLineStatuses.Skipped,
+                    Message = "Vehicle is already allocated to a subdealer."
+                };
+            }
+
+            var asOf = asOfDate.Date;
+            var catalogToday = await GetPriceAsOfAsync(master.ModelId, master.ColorId, asOf);
+            if (!catalogToday.HasValue)
+            {
+                return new PriceIncreaseApplyResult
+                {
+                    Status = PriceUpdateLineStatuses.Skipped,
+                    Message = $"No catalogue price for {asOf:yyyy-MM-dd}."
+                };
+            }
+
+            var catalogYesterday = await GetPriceAsOfAsync(master.ModelId, master.ColorId, asOf.AddDays(-1));
+            if (!catalogYesterday.HasValue)
+            {
+                return new PriceIncreaseApplyResult
+                {
+                    Status = PriceUpdateLineStatuses.Skipped,
+                    Message = $"No catalogue price for {(asOf.AddDays(-1)):yyyy-MM-dd}."
+                };
+            }
+
+            if (catalogToday.Value <= catalogYesterday.Value)
+            {
+                return new PriceIncreaseApplyResult
+                {
+                    Status = PriceUpdateLineStatuses.Skipped,
+                    Message = catalogToday.Value == catalogYesterday.Value
+                        ? "Catalogue price unchanged."
+                        : "Catalogue price is not higher than previous day.",
+                    OldPrice = catalogYesterday.Value,
+                    NewPrice = catalogToday.Value
+                };
+            }
+
+            return new PriceIncreaseApplyResult
+            {
+                Applied = true,
+                Status = PriceUpdateLineStatuses.Updated,
+                Message = "Catalogue price increased for dealer stock (ready to allocate).",
+                OldPrice = catalogYesterday.Value,
+                NewPrice = catalogToday.Value,
+                Delta = catalogToday.Value - catalogYesterday.Value,
+                TransactionLogged = false
+            };
+        }
+
+        public async Task<PriceIncreaseApplyResult> TryApplyCatalogPriceIncreaseAsync(int vehicleId, DateTime asOfDate, int changedBy)
+        {
+            var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(vehicleId);
+            if (vehicle == null)
+            {
+                return new PriceIncreaseApplyResult
+                {
+                    Status = PriceUpdateLineStatuses.Error,
+                    Message = "Vehicle not found."
+                };
+            }
+
+            if (!vehicle.SubdealerId.HasValue)
+            {
+                return new PriceIncreaseApplyResult
+                {
+                    Status = PriceUpdateLineStatuses.Skipped,
+                    Message = "Vehicle is not allocated to a subdealer.",
+                    OldPrice = vehicle.CurrentPrice,
+                    NewPrice = vehicle.CurrentPrice
+                };
+            }
+
+            var asOf = asOfDate.Date;
+            var catalogPrice = await GetPriceAsOfAsync(vehicle.ModelId, vehicle.ColorId, asOf);
+            if (!catalogPrice.HasValue)
+            {
+                return new PriceIncreaseApplyResult
+                {
+                    Status = PriceUpdateLineStatuses.Skipped,
+                    Message = $"No catalogue price for {asOf:yyyy-MM-dd}.",
+                    OldPrice = vehicle.CurrentPrice,
+                    NewPrice = vehicle.CurrentPrice
+                };
+            }
+
+            if (catalogPrice.Value <= vehicle.CurrentPrice)
+            {
+                return new PriceIncreaseApplyResult
+                {
+                    Status = PriceUpdateLineStatuses.Skipped,
+                    Message = catalogPrice.Value == vehicle.CurrentPrice
+                        ? "Already at catalogue price."
+                        : "Catalogue price is not higher than current price.",
+                    OldPrice = vehicle.CurrentPrice,
+                    NewPrice = vehicle.CurrentPrice
+                };
+            }
+
+            var auditReason = $"Price increased for chassis {vehicle.ChassisNumber} on {asOf:yyyy-MM-dd}";
+            var oldPrice = vehicle.CurrentPrice;
+            try
+            {
+                var (applied, accountId) = await ApplyVehiclePriceChangeAsync(
+                    vehicle,
+                    catalogPrice.Value,
+                    asOf,
+                    changedBy,
+                    reasonLabel: $"scheduled {asOf:yyyy-MM-dd}",
+                    auditReason: auditReason,
+                    requireAccountAdjustment: true);
+
+                return new PriceIncreaseApplyResult
+                {
+                    Applied = applied,
+                    Status = applied ? PriceUpdateLineStatuses.Updated : PriceUpdateLineStatuses.Skipped,
+                    Message = applied ? "Price increased and account debited." : "No change applied.",
+                    OldPrice = oldPrice,
+                    NewPrice = applied ? catalogPrice.Value : oldPrice,
+                    Delta = applied ? catalogPrice.Value - oldPrice : 0,
+                    AccountId = accountId,
+                    TransactionLogged = applied
+                };
+            }
+            catch (Exception ex)
+            {
+                return new PriceIncreaseApplyResult
+                {
+                    Status = PriceUpdateLineStatuses.Error,
+                    Message = ex.Message,
+                    OldPrice = oldPrice,
+                    NewPrice = catalogPrice.Value,
+                    Delta = catalogPrice.Value - oldPrice
+                };
+            }
         }
 
         public async Task ApplyCatalogPriceRevisionAsync(int modelId, int colorId, decimal newPrice, DateTime effectiveFrom, int changedBy)
         {
             var effective = effectiveFrom.Date;
-            var vehicles = (await _unitOfWork.Vehicles.GetAllAsync())
+            var warrantyOnlyVehicleIds = await WarrantyOnlyVehicleFlowHelper.GetWarrantyOnlyVehicleIdsAsync(_unitOfWork);
+            var vehicles = VehicleLifecycleHelper.FilterActiveLifecycle(await _unitOfWork.Vehicles.GetAllAsync())
                 .Where(v => v.ModelId == modelId && v.ColorId == colorId && v.SubdealerId.HasValue)
+                .Where(v => !warrantyOnlyVehicleIds.Contains(v.VehicleId))
                 .ToList();
             if (vehicles.Count == 0) return;
 
@@ -127,7 +301,7 @@ namespace KRSDealerManagement.Application.Services
             }
         }
 
-        private async Task<bool> ApplyVehiclePriceChangeAsync(
+        private async Task<(bool Applied, int? AccountId)> ApplyVehiclePriceChangeAsync(
             Vehicle vehicle,
             decimal newPrice,
             DateTime referenceDate,
@@ -137,7 +311,7 @@ namespace KRSDealerManagement.Application.Services
             bool requireAccountAdjustment = false)
         {
             var oldPrice = vehicle.CurrentPrice;
-            if (oldPrice == newPrice) return false;
+            if (oldPrice == newPrice) return (false, null);
 
             var delta = newPrice - oldPrice;
             var direction = delta > 0 ? "increased" : "decreased";
@@ -151,7 +325,7 @@ namespace KRSDealerManagement.Application.Services
             {
                 if (requireAccountAdjustment)
                     throw new InvalidOperationException("Vehicle is not allocated to a subdealer.");
-                return true;
+                return (true, null);
             }
 
             var accounts = (await _unitOfWork.SubdealerAccounts.GetAllAsync()).ToList();
@@ -160,7 +334,7 @@ namespace KRSDealerManagement.Application.Services
             {
                 if (requireAccountAdjustment)
                     throw new InvalidOperationException("No active account found for the subdealer.");
-                return true;
+                return (true, null);
             }
 
             var balances = (await _unitOfWork.AccountBalances.GetAllAsync()).ToList();
@@ -169,7 +343,7 @@ namespace KRSDealerManagement.Application.Services
             {
                 if (requireAccountAdjustment)
                     throw new InvalidOperationException("Account balance record not found.");
-                return true;
+                return (true, account.AccountId);
             }
 
             if (delta > 0)
@@ -197,7 +371,7 @@ namespace KRSDealerManagement.Application.Services
                 remarks: note,
                 initiatedBy: changedBy);
 
-            return true;
+            return (true, account.AccountId);
         }
     }
 }

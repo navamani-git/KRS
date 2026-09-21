@@ -1,6 +1,7 @@
 using MediatR;
 using KRSDealerManagement.Application.Commands;
 using KRSDealerManagement.Application.Helpers;
+using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
 using KRSDealerManagement.Shared.Helpers;
@@ -28,7 +29,8 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             if (vehicle.Status == UnifiedVehicleStatus.RejectedByDealer)
                 throw new InvalidOperationException("This vehicle was rejected by the dealer and cannot be marked as delivered.");
 
-            if (!vehicle.SubdealerId.HasValue || vehicle.SubdealerId.Value != request.MarkedBy)
+            var actorOrgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, request.MarkedBy);
+            if (!vehicle.SubdealerId.HasValue || vehicle.SubdealerId.Value != actorOrgId)
                 throw new InvalidOperationException("You can only mark delivery for your own vehicles.");
 
             var deliveryAt = request.DeliveryDate;

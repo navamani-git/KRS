@@ -23,7 +23,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
             var orgs = (await _unitOfWork.SubDealers.GetAllAsync()).ToDictionary(o => o.SubDealerId);
             var userOrgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync()).ToList();
-            var allocationByMasterId = (await _unitOfWork.Vehicles.GetAllAsync())
+            var allocationByMasterId = VehicleLifecycleHelper.FilterActiveLifecycle(await _unitOfWork.Vehicles.GetAllAsync())
                 .Where(v => v.VehicleMasterId > 0 && v.SubdealerId.HasValue && v.SubdealerId.Value > 0)
                 .GroupBy(v => v.VehicleMasterId)
                 .ToDictionary(
@@ -148,10 +148,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             if (dealershipFilter != null && !DealershipQueryScope.MatchesDealership(master.DealershipId, dealershipFilter))
                 return null;
 
-            var vehicle = (await _unitOfWork.Vehicles.GetAllAsync())
-                .Where(v => v.VehicleMasterId == master.VehicleMasterId)
-                .OrderByDescending(v => v.CreatedDate)
-                .FirstOrDefault();
+            var vehicle = VehicleLifecycleHelper.GetActiveRowForMaster(
+                await _unitOfWork.Vehicles.GetAllAsync(),
+                master.VehicleMasterId);
 
             VehicleBooking? booking = null;
             if (vehicle != null)

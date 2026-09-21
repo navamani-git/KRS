@@ -23,16 +23,16 @@ namespace KRSDealerManagement.Application.Handlers.Queries
         {
             var orders = await _unitOfWork.PurchaseOrders.GetAllAsync();
             var accounts = await _unitOfWork.SubdealerAccounts.GetAllAsync();
-            var users = await _unitOfWork.Users.GetAllAsync();
+            var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
+            var userOrgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync()).ToList();
+            var orgs = (await _unitOfWork.SubDealers.GetAllAsync()).ToDictionary(o => o.SubDealerId);
             var allItems = (await _unitOfWork.PurchaseOrderItems.GetAllAsync()).ToList();
-            var allVehicles = (await _unitOfWork.Vehicles.GetAllAsync()).ToList();
+            var allVehicles = VehicleLifecycleHelper.FilterActiveLifecycle(await _unitOfWork.Vehicles.GetAllAsync()).ToList();
             var statusMap = await _statuses.GetMapAsync(StatusCategories.Vehicle);
 
             var result = from o in orders
                          join a in accounts on o.AccountId equals a.AccountId into accGroup
                          from acc in accGroup.DefaultIfEmpty()
-                         join u in users on o.SubdealerId equals u.UserId into userGroup
-                         from user in userGroup.DefaultIfEmpty()
                          let orderVehicles = allVehicles.Where(v => v.PurchaseOrderId == o.OrderId).ToList()
                          let orderItems = allItems.Where(i => i.PurchaseOrderId == o.OrderId).ToList()
                          let displayStatus = VehicleStatusResolver.ResolveOrderDisplayStatus(orderVehicles, orderItems)
@@ -42,7 +42,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                              AccountId = o.AccountId,
                              AccountName = acc != null ? acc.AccountName : "Unknown",
                              SubdealerId = o.SubdealerId,
-                             SubdealerName = user != null ? user.GetFullName() : "Unknown",
+                             SubdealerName = SubdealerOrgService.ResolveDisplayName(o.SubdealerId, userOrgRoles, orgs, users),
                              OrderNumber = o.OrderNumber,
                              TotalQuantity = o.TotalQuantity,
                              TotalAmount = o.TotalAmount,
@@ -63,14 +63,17 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                          };
 
             if (request.SubdealerId.HasValue)
-                result = result.Where(o => o.SubdealerId == request.SubdealerId.Value);
+            {
+                var orgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, request.SubdealerId.Value);
+                result = result.Where(o => o.SubdealerId == orgId);
+            }
 
             var dealershipFilter = DealershipQueryScope.ResolveDealershipIds(request.DealershipId, request.DealershipIds);
             if (dealershipFilter != null)
             {
                 var orgRoles = await _unitOfWork.UserOrgRoles.GetAllAsync();
-                var scopedUserIds = DealershipQueryScope.GetScopedSubdealerUserIds(orgRoles, dealershipFilter);
-                result = result.Where(o => scopedUserIds.Contains(o.SubdealerId));
+                var scopedOrgIds = DealershipQueryScope.GetScopedSubdealerOrgIds(orgRoles, dealershipFilter);
+                result = result.Where(o => scopedOrgIds.Contains(o.SubdealerId));
             }
 
             if (request.AccountId.HasValue)

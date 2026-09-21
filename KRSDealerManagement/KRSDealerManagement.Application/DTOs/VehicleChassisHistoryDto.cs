@@ -9,6 +9,8 @@ namespace KRSDealerManagement.Application.DTOs
         public int CurrentStatus { get; set; }
         public string? CurrentStatusName { get; set; }
         public string? CurrentHolder { get; set; }
+        public string? CurrentLocation { get; set; }
+        public string? CurrentSummary { get; set; }
         public List<VehicleChassisHistoryEventDto> Events { get; set; } = new();
     }
 

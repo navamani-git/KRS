@@ -20,9 +20,11 @@ namespace KRSDealerManagement.Shared.Constants
         public const int Registered = 12;
         public const int SubsidyIdCreated = 13;
         public const int Delivered = 14;
+        /// <summary>Prior lifecycle row kept for audit; hidden from operational stock/vehicle lists.</summary>
+        public const int LifecycleSuperseded = 15;
 
         public static bool IsTerminal(int status) =>
-            status is RejectedByDealer or ReturnApproved or Delivered;
+            status is RejectedByDealer or ReturnApproved or Delivered or LifecycleSuperseded;
 
         /// <summary>
         /// Subdealer may return an allocated vehicle before customer booking and before invoice.

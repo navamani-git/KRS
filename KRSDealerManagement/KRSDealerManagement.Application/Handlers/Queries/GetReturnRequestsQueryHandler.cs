@@ -104,9 +104,10 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
             if (request.SubdealerId.HasValue)
             {
-                var orgUserIds = await SubdealerOrgService.GetOrgLoginUserIdsAsync(_unitOfWork, request.SubdealerId.Value);
+                var orgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, request.SubdealerId.Value);
+                var orgLoginIds = await SubdealerOrgService.GetOrgLoginUserIdsAsync(_unitOfWork, orgId);
                 var subdealerAccountIds = accounts
-                    .Where(a => orgUserIds.Contains(a.SubdealerId))
+                    .Where(a => orgLoginIds.Contains(a.SubdealerId))
                     .Select(a => a.AccountId)
                     .ToHashSet();
                 var vehicleSubdealerById = vehicles.ToDictionary(v => v.VehicleId, v => v.SubdealerId);
@@ -116,10 +117,10 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     subdealerAccountIds.Contains(r.AccountId)
                     || (vehicleSubdealerById.TryGetValue(r.VehicleId, out var vehicleSubdealerId)
                         && vehicleSubdealerId.HasValue
-                        && orgUserIds.Contains(vehicleSubdealerId.Value))
+                        && vehicleSubdealerId.Value == orgId)
                     || (orderSubdealerById.TryGetValue(r.OrderId, out var orderSubdealerId)
-                        && orgUserIds.Contains(orderSubdealerId))
-                    || (r.SubdealerUserId.HasValue && orgUserIds.Contains(r.SubdealerUserId.Value)));
+                        && orderSubdealerId == orgId)
+                    || (r.SubdealerUserId.HasValue && orgLoginIds.Contains(r.SubdealerUserId.Value)));
             }
 
             if (scopedUserIds != null)

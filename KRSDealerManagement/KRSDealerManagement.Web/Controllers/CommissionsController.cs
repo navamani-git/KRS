@@ -263,7 +263,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             var pending = await _mediator.Send(new GetCommissionPreviewQuery
             {
-                SubdealerId = userId.Value,
+                SubdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId.Value,
                 PendingOnly = true
             });
 
@@ -290,7 +290,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             var rows = await _mediator.Send(new GetCommissionPreviewQuery
             {
-                SubdealerId = userId.Value
+                SubdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId.Value
             });
 
             return View(rows);
@@ -307,7 +307,7 @@ namespace KRSDealerManagement.Web.Controllers
             if (string.IsNullOrWhiteSpace(chassis))
                 return Json(new { success = false, message = "Enter chassis number." });
 
-            var vehicles = await _mediator.Send(new GetVehiclesQuery { SubdealerId = userId.Value });
+            var vehicles = await _mediator.Send(new GetVehiclesQuery { SubdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId.Value });
             var vehicle = vehicles.FirstOrDefault(v =>
                 string.Equals(v.ChassisNumber?.Trim(), chassis, StringComparison.OrdinalIgnoreCase));
 
@@ -387,7 +387,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             var rows = await _mediator.Send(new GetCommissionPreviewQuery
             {
-                SubdealerId = userId.Value,
+                SubdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId.Value,
                 FromDate = from,
                 ToDate = to
             });
@@ -417,7 +417,10 @@ namespace KRSDealerManagement.Web.Controllers
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
             var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(vehicleId);
-            if (vehicle == null || vehicle.SubdealerId != userId.Value)
+            var orgId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId.Value;
+            if (vehicle == null
+                || !vehicle.SubdealerId.HasValue
+                || vehicle.SubdealerId.Value != orgId)
             {
                 TempData["Error"] = "Vehicle not found or not allocated to your account.";
                 return RedirectToAction(nameof(Submit));
@@ -449,7 +452,7 @@ namespace KRSDealerManagement.Web.Controllers
             {
                 await _mediator.Send(new SubmitCommissionCommand
                 {
-                    SubdealerId = userId.Value,
+                    SubdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId.Value,
                     ChassisNumber = vehicle.ChassisNumber ?? "",
                     ModelId = vehicle.ModelId,
                     ColorId = vehicle.ColorId,
@@ -594,7 +597,7 @@ namespace KRSDealerManagement.Web.Controllers
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
-            var commissions = await _mediator.Send(new GetCommissionsQuery { SubdealerId = userId.Value });
+            var commissions = await _mediator.Send(new GetCommissionsQuery { SubdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId.Value });
             return View(commissions);
         }
     }

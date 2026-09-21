@@ -23,7 +23,7 @@
                     <option value="">All subdealers</option>
                     @foreach (var s in subdealers)
                     {
-                        <option value="@s.UserId" selected="@(ViewBag.SelectedSubdealerUserId as int? == s.UserId)">@s.GetFullName()</option>
+                        <option value="@s.SubDealerId" selected="@(ViewBag.SelectedSubdealerUserId as int? == s.SubDealerId)">@s.GetFullName()</option>
                     }
                 </select>
             </div>

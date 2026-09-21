@@ -23,16 +23,16 @@ namespace KRSDealerManagement.Application.Handlers.Queries
         {
             var payments = await _unitOfWork.Payments.GetAllAsync();
             var accounts = await _unitOfWork.SubdealerAccounts.GetAllAsync();
-            var users = await _unitOfWork.Users.GetAllAsync();
+            var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
+            var userOrgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync()).ToList();
+            var orgs = (await _unitOfWork.SubDealers.GetAllAsync()).ToDictionary(o => o.SubDealerId);
             var financeNames = (await _unitOfWork.FinanceNames.GetAllAsync()).ToDictionary(f => f.FinanceNameId);
             var statusMap = await _statuses.GetMapAsync(StatusCategories.Payment);
 
             var result = from p in payments
                          join a in accounts on p.AccountId equals a.AccountId into accGroup
                          from acc in accGroup.DefaultIfEmpty()
-                         join u in users on p.SubdealerId equals u.UserId into userGroup
-                         from user in userGroup.DefaultIfEmpty()
-                         join pu in users on p.ProcessedBy equals pu.UserId into processedGroup
+                         join pu in users.Values on p.ProcessedBy equals pu.UserId into processedGroup
                          from processedBy in processedGroup.DefaultIfEmpty()
                          select new PaymentDto
                          {
@@ -40,7 +40,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                              AccountId = p.AccountId,
                              AccountName = acc != null ? acc.AccountName : "Unknown",
                              SubdealerId = p.SubdealerId,
-                             SubdealerName = user != null ? user.GetFullName() : "Unknown",
+                             SubdealerName = SubdealerOrgService.ResolveDisplayName(p.SubdealerId, userOrgRoles, orgs, users),
                              Amount = p.Amount,
                              ActualReceivedAmount = p.ActualReceivedAmount,
                              ActualReceivedDate = p.ActualReceivedDate,
@@ -71,7 +71,10 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                          };
 
             if (request.SubdealerId.HasValue)
-                result = result.Where(p => p.SubdealerId == request.SubdealerId.Value);
+            {
+                var orgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, request.SubdealerId.Value);
+                result = result.Where(p => p.SubdealerId == orgId);
+            }
 
             if (request.AccountId.HasValue)
                 result = result.Where(p => p.AccountId == request.AccountId.Value);

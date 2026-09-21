@@ -51,8 +51,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             return DealershipQueryScope.GetScopedSubdealerUserIds(await orgRolesTask, dealershipFilter, subRole?.RoleId);
         }
 
-        private static bool IsInScope(int subdealerId, HashSet<int>? scopedIds)
-            => scopedIds == null || scopedIds.Contains(subdealerId);
+        private static bool IsInScope(int subDealerOrgId, HashSet<int>? scopedOrgIds)
+            => scopedOrgIds == null || scopedOrgIds.Contains(subDealerOrgId);
 
         private async Task<HashSet<int>?> LoadAdminDashboard(DashboardSummary summary, GetDashboardSummaryQuery request)
         {
@@ -92,23 +92,24 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var orgRoles = (await orgRolesTask).ToList();
             var subRole = (await rolesTask).FirstOrDefault(r =>
                 r.RoleCode.Equals(RoleCodes.Subdealer, StringComparison.OrdinalIgnoreCase));
-            var scopedIds = DealershipQueryScope.GetScopedSubdealerUserIds(orgRoles, dealershipFilter, subRole?.RoleId);
+            var scopedOrgIds = DealershipQueryScope.GetScopedSubdealerOrgIds(orgRoles, dealershipFilter, subRole?.RoleId);
+            var scopedLoginIds = DealershipQueryScope.GetScopedSubdealerUserIds(orgRoles, dealershipFilter, subRole?.RoleId);
 
             var orgs = await orgsTask;
             summary.TotalSubdealers = orgs.Count(o =>
                 o.IsActive && DealershipQueryScope.MatchesDealership(o.DealershipId, dealershipFilter));
 
             var accounts = (await accountsTask).ToList();
-            summary.TotalAccounts = accounts.Count(a => a.IsActive && IsInScope(a.SubdealerId, scopedIds));
+            summary.TotalAccounts = accounts.Count(a => a.IsActive && IsInScope(a.SubdealerId, scopedLoginIds));
 
             var balances = await balancesTask;
-            var scopedBalances = balances.Where(b => IsInScope(b.SubdealerId, scopedIds));
+            var scopedBalances = balances.Where(b => IsInScope(b.SubdealerId, scopedLoginIds));
             summary.TotalBalance = scopedBalances.Sum(b => b.CurrentBalance);
             summary.TotalReservedAmount = scopedBalances.Sum(b => b.ReservedAmount);
 
             var orders = (await ordersTask).ToList();
             var allItems = (await itemsTask).ToList();
-            var allVehicles = (await vehiclesTask).ToList();
+            var allVehicles = VehicleLifecycleHelper.FilterActiveLifecycle(await vehiclesTask).ToList();
             var vehiclesByOrderId = allVehicles
                 .Where(v => v.PurchaseOrderId.HasValue)
                 .GroupBy(v => v.PurchaseOrderId!.Value)
@@ -119,7 +120,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
             summary.PendingPurchaseOrders = orders.Count(o =>
             {
-                if (!IsInScope(o.SubdealerId, scopedIds)) return false;
+                if (!IsInScope(o.SubdealerId, scopedOrgIds)) return false;
                 vehiclesByOrderId.TryGetValue(o.OrderId, out var orderVehicles);
                 itemsByOrderId.TryGetValue(o.OrderId, out var orderItems);
                 return VehicleStatusResolver.ResolveOrderDisplayStatus(
@@ -130,24 +131,23 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
             var commissions = await commissionsTask;
             summary.PendingCommissions = commissions.Count(c =>
-                c.CanBeApproved() && IsInScope(c.SubdealerId, scopedIds));
+                c.CanBeApproved() && IsInScope(c.SubdealerId, scopedOrgIds));
 
             var returns = (await returnsTask).ToList();
             var accountSubdealerById = accounts.ToDictionary(a => a.AccountId, a => a.SubdealerId);
             var vehicleSubdealerById = allVehicles.ToDictionary(v => v.VehicleId, v => v.SubdealerId);
             var orderSubdealerById = orders.ToDictionary(o => o.OrderId, o => o.SubdealerId);
-            summary.PendingReturnRequests = ReturnRequestScopeHelper.CountPending(
-                returns,
-                scopedIds,
-                accountSubdealerById,
-                vehicleSubdealerById,
-                orderSubdealerById);
+            summary.PendingReturnRequests = scopedOrgIds == null
+                ? returns.Count(r => r.Status == 0)
+                : returns.Count(r => r.Status == 0 && scopedOrgIds.Any(orgId =>
+                    ReturnRequestScopeHelper.BelongsToOrg(
+                        r, orgId, scopedLoginIds, accountSubdealerById, vehicleSubdealerById, orderSubdealerById)));
 
             if (request.IncludePaymentPending)
             {
                 var payments = await paymentsTask;
                 summary.PendingPayments = payments.Count(p =>
-                    p.Status == 0 && IsInScope(p.SubdealerId, scopedIds));
+                    p.Status == 0 && IsInScope(p.SubdealerId, scopedOrgIds));
             }
             else
             {
@@ -155,14 +155,14 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             }
 
             var allBookings = (await bookingsTask).ToList();
-            LoadBookingStatusCounts(summary, allVehicles, scopedIds, allBookings);
-            summary.ShowroomStockCount = CountShowroomStock(allVehicles, scopedIds, allBookings);
+            LoadBookingStatusCounts(summary, allVehicles, scopedOrgIds, allBookings);
+            summary.ShowroomStockCount = CountShowroomStock(allVehicles, scopedOrgIds, allBookings);
 
             var dealerStock = await dealerStockTask;
             summary.DealerStockCount = dealerStock.Count(m =>
                 !m.IsAllocated && DealershipQueryScope.MatchesDealership(m.DealershipId, dealershipFilter));
 
-            return scopedIds;
+            return scopedLoginIds;
         }
 
         private static int CountShowroomStock(
@@ -292,20 +292,32 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 orgUserIdsTask,
                 returnsTask);
 
+            var orgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, subdealerId);
+            var orgLoginIds = await orgUserIdsTask;
             var accounts = (await accountsTask).ToList();
-            var subdealerAccounts = accounts
-                .Where(a => a.SubdealerId == subdealerId && a.IsActive)
+            var orgAccounts = accounts
+                .Where(a => orgLoginIds.Contains(a.SubdealerId) && a.IsActive)
                 .ToList();
-            summary.TotalAccounts = subdealerAccounts.Count;
+            summary.TotalAccounts = orgAccounts.Count;
 
             var balances = await balancesTask;
-            var myBalances = balances.Where(b => b.SubdealerId == subdealerId).ToList();
-            summary.TotalBalance = myBalances.Sum(b => b.CurrentBalance);
-            summary.TotalReservedAmount = myBalances.Sum(b => b.ReservedAmount);
+            var walletAccount = await SubdealerOrgService.GetWalletAccountAsync(_unitOfWork, orgId);
+            if (walletAccount != null)
+            {
+                var walletBalance = balances.FirstOrDefault(b => b.SubdealerAccountId == walletAccount.AccountId);
+                summary.TotalBalance = walletBalance?.CurrentBalance ?? 0;
+                summary.TotalReservedAmount = walletBalance?.ReservedAmount ?? 0;
+            }
+            else
+            {
+                var orgBalances = balances.Where(b => orgLoginIds.Contains(b.SubdealerId)).ToList();
+                summary.TotalBalance = orgBalances.Sum(b => b.CurrentBalance);
+                summary.TotalReservedAmount = orgBalances.Sum(b => b.ReservedAmount);
+            }
 
             var orders = (await ordersTask).ToList();
             var allItems = (await itemsTask).ToList();
-            var allVehicles = (await vehiclesTask).ToList();
+            var allVehicles = VehicleLifecycleHelper.FilterActiveLifecycle(await vehiclesTask).ToList();
             var vehiclesByOrderId = allVehicles
                 .Where(v => v.PurchaseOrderId.HasValue)
                 .GroupBy(v => v.PurchaseOrderId!.Value)
@@ -316,7 +328,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
             summary.PendingPurchaseOrders = orders.Count(o =>
             {
-                if (o.SubdealerId != subdealerId) return false;
+                if (o.SubdealerId != orgId) return false;
                 vehiclesByOrderId.TryGetValue(o.OrderId, out var orderVehicles);
                 itemsByOrderId.TryGetValue(o.OrderId, out var orderItems);
                 return VehicleStatusResolver.ResolveOrderDisplayStatus(
@@ -326,25 +338,27 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             });
 
             var commissions = await commissionsTask;
-            summary.PendingCommissions = commissions.Count(c => c.SubdealerId == subdealerId && c.CanBeApproved());
+            summary.PendingCommissions = commissions.Count(c => c.SubdealerId == orgId && c.CanBeApproved());
 
-            var orgUserIds = await orgUserIdsTask;
             var returns = await returnsTask;
             var accountSubdealerById = accounts.ToDictionary(a => a.AccountId, a => a.SubdealerId);
             var vehicleSubdealerById = allVehicles.ToDictionary(v => v.VehicleId, v => v.SubdealerId);
             var orderSubdealerById = orders.ToDictionary(o => o.OrderId, o => o.SubdealerId);
             summary.PendingReturnRequests = ReturnRequestScopeHelper.CountPending(
                 returns,
-                orgUserIds,
+                orgId,
+                orgLoginIds,
                 accountSubdealerById,
                 vehicleSubdealerById,
                 orderSubdealerById);
 
             var payments = await paymentsTask;
-            summary.PendingPayments = payments.Count(p => p.SubdealerId == subdealerId && p.Status == 0);
+            summary.PendingPayments = payments.Count(p => p.SubdealerId == orgId && p.Status == 0);
 
-            var scopedIds = new HashSet<int> { subdealerId };
-            LoadBookingStatusCounts(summary, allVehicles, scopedIds, await bookingsTask);
+            var scopedOrgIds = new HashSet<int> { orgId };
+            var allBookings = (await bookingsTask).ToList();
+            LoadBookingStatusCounts(summary, allVehicles, scopedOrgIds, allBookings);
+            summary.ShowroomStockCount = CountShowroomStock(allVehicles, scopedOrgIds, allBookings);
         }
 
         private async Task LoadRecentActivities(
@@ -358,7 +372,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
             if (subdealerId.HasValue)
             {
-                userFilter = new HashSet<int> { subdealerId.Value };
+                userFilter = await SubdealerOrgService.GetOrgLoginUserIdsAsync(
+                    _unitOfWork, await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, subdealerId.Value));
             }
             else if (scopedIds != null)
             {
@@ -371,17 +386,45 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
             var sinceUtc = DateTime.UtcNow.AddDays(-30);
             var auditLogs = await _unitOfWork.AuditLogs.GetRecentAsync(sinceUtc, 50, userFilter?.ToList());
+            var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
 
             summary.RecentActivities = auditLogs
-                .Select(a => new RecentActivityItem
-                {
-                    ActivityId = a.AuditLogId,
-                    ActivityType = a.Action,
-                    Description = $"{a.EntityType} — {a.Action}",
-                    CreatedDate = a.CreatedDate,
-                    UserName = a.UserRole
-                })
+                .Select(a => MapRecentActivity(a, users))
                 .ToList();
+        }
+
+        private static RecentActivityItem MapRecentActivity(
+            AuditLog audit,
+            Dictionary<int, Domain.Entities.User> users)
+        {
+            users.TryGetValue(audit.UserId, out var user);
+            var displayName = user?.GetFullName();
+            if (string.IsNullOrWhiteSpace(displayName))
+                displayName = user?.Username ?? $"User #{audit.UserId}";
+
+            var activityType = audit.Action;
+            var description = $"{audit.EntityType} — {audit.Action}";
+
+            if (audit.Action.Equals("Login_Success", StringComparison.OrdinalIgnoreCase))
+            {
+                activityType = "Login";
+                description = $"{displayName} logged in";
+            }
+            else if (audit.Action.Equals("Login_Failed", StringComparison.OrdinalIgnoreCase))
+            {
+                activityType = "Login Failed";
+                description = $"Failed login attempt ({user?.Username ?? displayName})";
+            }
+
+            return new RecentActivityItem
+            {
+                ActivityId = audit.AuditLogId,
+                ActivityType = activityType,
+                Description = description,
+                CreatedDate = audit.CreatedDate,
+                UserName = displayName,
+                UserRole = audit.UserRole ?? user?.GetRole().ToString() ?? ""
+            };
         }
     }
 }

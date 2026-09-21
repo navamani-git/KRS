@@ -19,6 +19,7 @@ namespace KRSDealerManagement.Application.Helpers
             UnifiedVehicleStatus.Registered => "Registered",
             UnifiedVehicleStatus.SubsidyIdCreated => "SubsidyIdCreated",
             UnifiedVehicleStatus.Delivered => "Delivered",
+            UnifiedVehicleStatus.LifecycleSuperseded => "LifecycleSuperseded",
             _ => null
         };
 
@@ -45,7 +46,8 @@ namespace KRSDealerManagement.Application.Helpers
             "Imported" => UnifiedVehicleStatus.Submitted,
             "Edited" => UnifiedVehicleStatus.Submitted,
             "Deleted" => UnifiedVehicleStatus.Submitted,
-            "Returned" => UnifiedVehicleStatus.Submitted,
+            "Returned" => UnifiedVehicleStatus.ReturnApproved,
+            "LifecycleSuperseded" => UnifiedVehicleStatus.LifecycleSuperseded,
             "BranchTransfer" => UnifiedVehicleStatus.Submitted,
             _ => null
         };

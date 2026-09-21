@@ -18,7 +18,7 @@ namespace KRSDealerManagement.Application.Helpers
             if (await unitOfWork.VehicleMasters.ChassisExistsAsync(chassis, excludeVehicleMasterId))
                 throw new InvalidOperationException($"Chassis '{chassis}' already exists.");
 
-            var vehicles = await unitOfWork.Vehicles.GetAllAsync();
+            var vehicles = VehicleLifecycleHelper.FilterActiveLifecycle(await unitOfWork.Vehicles.GetAllAsync());
             if (vehicles.Any(v =>
                     v.VehicleId != (excludeVehicleId ?? 0)
                     && !UnifiedVehicleStatus.IsPlaceholderChassis(v.ChassisNumber)

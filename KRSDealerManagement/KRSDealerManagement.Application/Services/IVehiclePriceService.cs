@@ -10,5 +10,7 @@ namespace KRSDealerManagement.Application.Services
         Task ApplyCatalogPriceRevisionAsync(int modelId, int colorId, decimal newPrice, DateTime effectiveFrom, int changedBy);
         /// <returns>True if vehicle price or dealer account balance was actually changed.</returns>
         Task<bool> ApplyPriceOnInvoiceAsync(int vehicleId, DateTime invoiceDate, int changedBy);
+        Task<PriceIncreaseApplyResult> TryApplyCatalogPriceIncreaseAsync(int vehicleId, DateTime asOfDate, int changedBy);
+        Task<PriceIncreaseApplyResult> TryApplyCatalogPriceIncreaseForMasterAsync(int vehicleMasterId, DateTime asOfDate, int changedBy);
     }
 }

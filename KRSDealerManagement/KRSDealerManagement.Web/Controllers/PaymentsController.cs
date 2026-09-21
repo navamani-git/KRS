@@ -39,7 +39,7 @@ namespace KRSDealerManagement.Web.Controllers
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.MyPayments);
             var payments = await _mediator.Send(new GetPaymentsQuery
             {
-                SubdealerId = userId.Value,
+                SubdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId.Value,
                 Status = status,
                 FromDate = from,
                 ToDate = to,
@@ -70,7 +70,7 @@ namespace KRSDealerManagement.Web.Controllers
             var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
             var payments = (await _mediator.Send(new GetPaymentsQuery
             {
-                SubdealerId = userId.Value,
+                SubdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId.Value,
                 Status = status,
                 FromDate = from,
                 ToDate = to
@@ -187,7 +187,7 @@ namespace KRSDealerManagement.Web.Controllers
                 var paymentId = await _mediator.Send(new CreatePaymentCommand
                 {
                     AccountId = account.AccountId,
-                    SubdealerId = userId.Value,
+                    SubdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId.Value,
                     Amount = amount,
                     PaymentTypeId = type.PaymentTypeId,
                     PaymentType = typeLabel,
@@ -262,7 +262,7 @@ namespace KRSDealerManagement.Web.Controllers
                 var paymentId = await _mediator.Send(new CreatePaymentCommand
                 {
                     AccountId = account.AccountId,
-                    SubdealerId = userId.Value,
+                    SubdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId.Value,
                     Amount = amount.Value,
                     PaymentTypeId = creditType.PaymentTypeId,
                     PaymentType = creditType.TypeName,
@@ -343,7 +343,7 @@ namespace KRSDealerManagement.Web.Controllers
             var subdealers = (await _mediator.Send(subdealersQuery)).ToList();
             if (subdealersQuery.DealershipId.HasValue)
             {
-                var allowed = subdealers.Select(s => s.UserId).ToHashSet();
+                var allowed = subdealers.Select(s => s.SubDealerId).ToHashSet();
                 payments = payments.Where(p => allowed.Contains(p.SubdealerId));
             }
 
@@ -381,7 +381,7 @@ namespace KRSDealerManagement.Web.Controllers
             var subdealers = (await _mediator.Send(subdealersQuery)).ToList();
             if (subdealersQuery.DealershipId.HasValue)
             {
-                var allowed = subdealers.Select(s => s.UserId).ToHashSet();
+                var allowed = subdealers.Select(s => s.SubDealerId).ToHashSet();
                 payments = payments.Where(p => allowed.Contains(p.SubdealerId));
             }
 
@@ -479,7 +479,7 @@ namespace KRSDealerManagement.Web.Controllers
             if (payment == null) { TempData["Error"] = "Payment not found."; return RedirectToAction(nameof(Index)); }
 
             var subdealers = await _mediator.Send(new GetSubdealersQuery { IsActive = true });
-            ViewBag.SubdealerName = subdealers.FirstOrDefault(s => s.UserId == payment.SubdealerId)?.GetFullName()
+            ViewBag.SubdealerName = subdealers.FirstOrDefault(s => s.SubDealerId == payment.SubdealerId)?.GetFullName()
                 ?? $"Subdealer #{payment.SubdealerId}";
             ViewBag.PaymentTypes = (await _unitOfWork.PaymentTypes.GetAllAsync())
                 .Where(t => t.IsActive).OrderBy(t => t.SortOrder).ToList();
@@ -566,7 +566,10 @@ namespace KRSDealerManagement.Web.Controllers
             if (matching.Count == 0) return false;
 
             if (SessionHelper.IsSubdealer(HttpContext.Session))
-                return matching.Any(p => p.SubdealerId == userId.Value);
+            {
+                var orgId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId.Value;
+                return matching.Any(p => p.SubdealerId == orgId);
+            }
 
             if (SessionHelper.IsSystemAdmin(HttpContext.Session))
                 return true;
@@ -576,7 +579,7 @@ namespace KRSDealerManagement.Web.Controllers
             if (!subdealersQuery.DealershipId.HasValue) return true;
 
             var allowed = (await _mediator.Send(subdealersQuery))
-                .Select(s => s.UserId)
+                .Select(s => s.SubDealerId)
                 .ToHashSet();
             return matching.Any(p => allowed.Contains(p.SubdealerId));
         }

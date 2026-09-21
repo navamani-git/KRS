@@ -3,6 +3,18 @@
   "WorkspaceRootPath": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|d:\\krsgit\\krs\\krsdealermanagement\\krsdealermanagement.web\\views\\priceupdateruns\\details.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|solutionrelative:krsdealermanagement.web\\views\\priceupdateruns\\details.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|d:\\krsgit\\krs\\krsdealermanagement\\krsdealermanagement.web\\appsettings.production.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|solutionrelative:krsdealermanagement.web\\appsettings.production.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|d:\\krsgit\\krs\\krsdealermanagement\\krsdealermanagement.web\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|solutionrelative:krsdealermanagement.web\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|d:\\krsgit\\krs\\krsdealermanagement\\krsdealermanagement.web\\filters\\antiforgeryloginredirectfilter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|solutionrelative:krsdealermanagement.web\\filters\\antiforgeryloginredirectfilter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -54,32 +66,67 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "AntiforgeryLoginRedirectFilter.cs",
-              "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Filters\\AntiforgeryLoginRedirectFilter.cs",
-              "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Filters\\AntiforgeryLoginRedirectFilter.cs",
-              "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Filters\\AntiforgeryLoginRedirectFilter.cs",
-              "RelativeToolTip": "KRSDealerManagement.Web\\Filters\\AntiforgeryLoginRedirectFilter.cs",
-              "ViewState": "AgIAAAcAAAAAAAAAAAAmwA8AAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-20T07:49:45.12Z",
+              "Title": "Details.cshtml",
+              "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\PriceUpdateRuns\\Details.cshtml",
+              "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Views\\PriceUpdateRuns\\Details.cshtml",
+              "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\PriceUpdateRuns\\Details.cshtml",
+              "RelativeToolTip": "KRSDealerManagement.Web\\Views\\PriceUpdateRuns\\Details.cshtml",
+              "ViewState": "AgIAACwAAAAAAAAAAAAcwCsAAAAoAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-09-20T10:32:09.31Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 1,
+              "Title": "appsettings.Production.json",
+              "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\appsettings.Production.json",
+              "RelativeDocumentMoniker": "KRSDealerManagement.Web\\appsettings.Production.json",
+              "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\appsettings.Production.json",
+              "RelativeToolTip": "KRSDealerManagement.Web\\appsettings.Production.json",
+              "ViewState": "AgIAAAgAAAAAAAAAAAAAAAUAAAAdAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-09-20T09:33:08.309Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\appsettings.json",
+              "RelativeDocumentMoniker": "KRSDealerManagement.Web\\appsettings.json",
+              "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\appsettings.json",
+              "RelativeToolTip": "KRSDealerManagement.Web\\appsettings.json",
+              "ViewState": "AgIAAAYAAAAAAAAAAADwvwwAAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-09-20T09:32:42.181Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "AntiforgeryLoginRedirectFilter.cs",
+              "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Filters\\AntiforgeryLoginRedirectFilter.cs",
+              "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Filters\\AntiforgeryLoginRedirectFilter.cs",
+              "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Filters\\AntiforgeryLoginRedirectFilter.cs",
+              "RelativeToolTip": "KRSDealerManagement.Web\\Filters\\AntiforgeryLoginRedirectFilter.cs",
+              "ViewState": "AgIAAAcAAAAAAAAAAAAqwBMAAAAhAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-20T07:49:45.12Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
               "Title": "StaffMenuAccess.cs",
               "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Shared\\Constants\\StaffMenuAccess.cs",
               "RelativeDocumentMoniker": "KRSDealerManagement.Shared\\Constants\\StaffMenuAccess.cs",
               "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Shared\\Constants\\StaffMenuAccess.cs",
               "RelativeToolTip": "KRSDealerManagement.Shared\\Constants\\StaffMenuAccess.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAK8AAABHAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAALMAAABHAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-04T19:08:56.139Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-09-04T19:08:56.139Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 5,
               "Title": "CreateForSubdealer.cshtml",
               "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Orders\\CreateForSubdealer.cshtml",
               "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Views\\Orders\\CreateForSubdealer.cshtml",
@@ -91,7 +138,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 6,
               "Title": "_BookingCustomerFormFields.cshtml",
               "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Shared\\_BookingCustomerFormFields.cshtml",
               "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Views\\Shared\\_BookingCustomerFormFields.cshtml",
@@ -103,7 +150,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 7,
               "Title": "_Layout.cshtml",
               "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Shared\\_Layout.cshtml",
               "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Views\\Shared\\_Layout.cshtml",
@@ -115,7 +162,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 8,
               "Title": "Login.cshtml",
               "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Account\\Login.cshtml",
               "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Views\\Account\\Login.cshtml",
@@ -127,7 +174,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 9,
               "Title": "Microsoft.Common.CurrentVersion.targets",
               "DocumentMoniker": "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\amd64\\Microsoft.Common.CurrentVersion.targets",
               "ToolTip": "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\amd64\\Microsoft.Common.CurrentVersion.targets",
@@ -137,7 +184,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 10,
               "Title": "Manage.cshtml",
               "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\VehicleBookings\\Manage.cshtml",
               "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Views\\VehicleBookings\\Manage.cshtml",
@@ -149,7 +196,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 12,
               "Title": "_GridColumnFilters.cshtml",
               "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Shared\\_GridColumnFilters.cshtml",
               "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Views\\Shared\\_GridColumnFilters.cshtml",
@@ -161,7 +208,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 11,
               "Title": "ReturnsController.cs",
               "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Controllers\\ReturnsController.cs",
               "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Controllers\\ReturnsController.cs",

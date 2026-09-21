@@ -53,5 +53,6 @@ namespace KRSDealerManagement.Application.Queries
         public string Description { get; set; }
         public DateTime CreatedDate { get; set; }
         public string UserName { get; set; }
+        public string UserRole { get; set; } = "";
     }
 }

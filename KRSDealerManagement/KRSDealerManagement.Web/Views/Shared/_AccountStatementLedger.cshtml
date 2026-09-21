@@ -1,5 +1,6 @@
 @model IEnumerable<KRSDealerManagement.Application.DTOs.AccountTransactionDto>
 @using KRSDealerManagement.Application.DTOs
+@using KRSDealerManagement.Shared.Helpers
 @using KRSDealerManagement.Web.Helpers
 @using KRSDealerManagement.Web.Models
 @using System.Text.Json
@@ -40,6 +41,7 @@
                 @{ var sr = rowOffset + 1; }
                 @foreach (var t in Model)
                 {
+                    var statementTime = IstTime.ToIst(t.CreatedDate);
                     var isOpeningRow = t.TransactionId <= 0;
                     var rowClass = isOpeningRow
                         ? "table-secondary"
@@ -57,7 +59,7 @@
                         <td class="grid-col-rownum">@(sr++)</td>
                         <td>
                             <small>@t.StatementDate.ToString("yyyy-MM-dd")</small><br />
-                            <small class="text-muted">@t.StatementDate.ToString("HH:mm")</small>
+                            <small class="text-muted">@(statementTime?.ToString("HH:mm") ?? "—")</small>
                         </td>
                         <td><span class="badge bg-secondary">@t.CategoryLabel</span></td>
                         <td>
@@ -65,9 +67,9 @@
                             {
                                 @Html.Raw(System.Net.WebUtility.HtmlEncode(t.Reason).Replace("\n", "<br />"))
                             }
-                            else if (t.IsPaymentTransaction() && t.ReferenceId.HasValue)
+                            else
                             {
-                                <small class="text-muted">Payment #@t.ReferenceId</small>
+                                <small class="text-muted">—</small>
                             }
                         </td>
                         <td><small>@(t.CustomerName ?? "-")</small></td>

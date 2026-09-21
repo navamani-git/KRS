@@ -160,11 +160,7 @@ namespace KRSDealerManagement.Web.Controllers
                     .Where(d => string.Equals(d.Location?.Trim(), dealershipLocation.Trim(), StringComparison.OrdinalIgnoreCase))
                     .Select(d => d.DealershipId)
                     .ToHashSet();
-                var orgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync())
-                    .Where(r => r.IsActive && r.DealershipId.HasValue && locDealershipIds.Contains(r.DealershipId.Value))
-                    .Select(r => r.UserId)
-                    .ToHashSet();
-                allSubdealers = allSubdealers.Where(s => orgRoles.Contains(s.UserId));
+                allSubdealers = allSubdealers.Where(s => locDealershipIds.Contains(s.DealershipId));
             }
 
             ViewBag.Subdealers = allSubdealers.OrderBy(s => s.GetFullName()).ToList();

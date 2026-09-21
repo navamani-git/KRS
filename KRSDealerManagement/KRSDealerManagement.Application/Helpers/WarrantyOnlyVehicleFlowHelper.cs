@@ -21,7 +21,7 @@ namespace KRSDealerManagement.Application.Helpers
                 throw new InvalidOperationException("Create Own Showroom subdealer first.");
         }
 
-        public static async Task<(SubDealer Org, int SubdealerUserId)> ResolveOwnShowroomAsync(
+        public static async Task<SubDealer> ValidateOwnShowroomOrgAsync(
             IUnitOfWork unitOfWork,
             int dealershipId,
             int subDealerOrgId)
@@ -38,15 +38,14 @@ namespace KRSDealerManagement.Application.Helpers
             if (!org.IsActive)
                 throw new InvalidOperationException("Own Showroom subdealer is inactive.");
 
-            var subdealerUserId = await SubdealerOrgService.GetPrimaryUserIdForOrgAsync(unitOfWork, subDealerOrgId);
-            if (!subdealerUserId.HasValue)
-            {
-                throw new InvalidOperationException(
-                    "Own Showroom has no login yet. Add a subdealer login to the Own Showroom before uploading warranty-only vehicles.");
-            }
-
-            return (org, subdealerUserId.Value);
+            return org;
         }
+
+        public static Task<SubDealer> ResolveOwnShowroomAsync(
+            IUnitOfWork unitOfWork,
+            int dealershipId,
+            int subDealerOrgId)
+            => ValidateOwnShowroomOrgAsync(unitOfWork, dealershipId, subDealerOrgId);
 
         public static async Task<HashSet<int>> GetWarrantyOnlyVehicleIdsAsync(IUnitOfWork unitOfWork)
         {
@@ -70,26 +69,10 @@ namespace KRSDealerManagement.Application.Helpers
             Vehicle vehicle,
             VehicleBooking? booking)
         {
-            var ownShowroom = (await unitOfWork.SubDealers.GetAllAsync())
-                .FirstOrDefault(o => o.DealershipId == master.DealershipId && o.OwnShowroom && o.IsActive)
-                ?? throw new InvalidOperationException("Own Showroom subdealer not found for this dealership.");
+            if (!vehicle.SubdealerId.HasValue)
+                throw new InvalidOperationException("Warranty-only vehicle is not linked to an Own Showroom.");
 
-            var (_, subdealerUserId) = await ResolveOwnShowroomAsync(
-                unitOfWork, master.DealershipId, ownShowroom.SubDealerId);
-
-            if (vehicle.SubdealerId != subdealerUserId)
-            {
-                vehicle.SubdealerId = subdealerUserId;
-                vehicle.ModifiedDate = DateTime.UtcNow;
-                await unitOfWork.Vehicles.UpdateAsync(vehicle);
-            }
-
-            if (booking != null && booking.SubdealerId != subdealerUserId)
-            {
-                booking.SubdealerId = subdealerUserId;
-                booking.ModifiedDate = DateTime.UtcNow;
-                await unitOfWork.VehicleBookings.UpdateAsync(booking);
-            }
+            await ValidateOwnShowroomOrgAsync(unitOfWork, master.DealershipId, vehicle.SubdealerId.Value);
 
             ApplyTerminalSoldStatus(vehicle, booking, booking?.SubmittedDate ?? vehicle.DeliveryDate);
             await unitOfWork.Vehicles.UpdateAsync(vehicle);
@@ -140,7 +123,7 @@ namespace KRSDealerManagement.Application.Helpers
         public static async Task ProvisionSoldVehicleAsync(
             IUnitOfWork unitOfWork,
             VehicleMaster master,
-            int subdealerUserId,
+            int subDealerOrgId,
             int createdBy,
             string? customerName,
             string? customerMobile,
@@ -159,7 +142,7 @@ namespace KRSDealerManagement.Application.Helpers
                 ChassisNumber = master.ChassisNumber,
                 Status = UnifiedVehicleStatus.Delivered,
                 PurchaseOrderId = null,
-                SubdealerId = subdealerUserId,
+                SubdealerId = subDealerOrgId,
                 CurrentPrice = 0,
                 OriginalPrice = 0,
                 MotorNo = master.MotorNo,
@@ -187,7 +170,7 @@ namespace KRSDealerManagement.Application.Helpers
             await unitOfWork.VehicleBookings.AddAsync(new VehicleBooking
             {
                 VehicleId = vehicleId,
-                SubdealerId = subdealerUserId,
+                SubdealerId = subDealerOrgId,
                 BookingStatus = UnifiedVehicleStatus.Delivered,
                 CustomerName = name,
                 CustomerMobile = mobile,

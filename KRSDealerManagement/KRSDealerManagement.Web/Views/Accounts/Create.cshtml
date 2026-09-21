@@ -35,8 +35,8 @@
                             {
                                 @foreach (var s in subdealers)
                                 {
-                                    <option value="@s.UserId"
-                                            selected="@(selectedSubdealerId == s.UserId)">
+                                    <option value="@s.SubDealerId"
+                                            selected="@(selectedSubdealerId == s.SubDealerId)">
                                         @s.GetFullName() — @s.LastName
                                     </option>
                                 }

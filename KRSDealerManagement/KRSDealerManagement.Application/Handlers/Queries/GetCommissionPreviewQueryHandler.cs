@@ -1,6 +1,7 @@
 using MediatR;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Application.DTOs;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
@@ -26,8 +27,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
         public async Task<IEnumerable<CommissionPreviewRowDto>> Handle(GetCommissionPreviewQuery request, CancellationToken cancellationToken)
         {
-            var vehicles = (await _unitOfWork.Vehicles.GetAllAsync())
-                .Where(v => v.SubdealerId == request.SubdealerId)
+            var orgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, request.SubdealerId);
+            var vehicles = VehicleLifecycleHelper.FilterActiveLifecycle(await _unitOfWork.Vehicles.GetAllAsync())
+                .Where(v => v.SubdealerId.HasValue && v.SubdealerId.Value == orgId)
                 .ToList();
             var bookings = (await _unitOfWork.VehicleBookings.GetAllAsync())
                 .Where(b => b.InvoiceDate.HasValue)
@@ -35,7 +37,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var models = (await _unitOfWork.VehicleModels.GetAllAsync()).ToDictionary(m => m.ModelId);
             var colors = (await _unitOfWork.VehicleColors.GetAllAsync()).ToDictionary(c => c.ColorId);
             var commissions = (await _unitOfWork.Commissions.GetAllAsync())
-                .Where(c => c.SubdealerId == request.SubdealerId)
+                .Where(c => c.SubdealerId == orgId)
                 .ToList();
             var statusMap = await _statuses.GetMapAsync(StatusCategories.Commission);
 

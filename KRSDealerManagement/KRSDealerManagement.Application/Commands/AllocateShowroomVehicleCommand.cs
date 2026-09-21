@@ -8,7 +8,7 @@ namespace KRSDealerManagement.Application.Commands
     public class AllocateShowroomVehicleCommand : IRequest<bool>
     {
         public int VehicleId { get; set; }
-        /// <summary>Primary subdealer login / wallet user id.</summary>
+        /// <summary>SubDealers.SubDealerId (org). Wallet debited via primary login.</summary>
         public int SubdealerId { get; set; }
         public int AllocatedBy { get; set; }
         public string Remarks { get; set; } = "";

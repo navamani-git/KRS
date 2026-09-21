@@ -52,6 +52,7 @@ namespace KRSDealerManagement.Shared.Constants
         public const string WarrantyOnlyStock = "admin_warranty_only_stock";
         public const string WarrantyParts = "admin_warranty_parts";
         public const string Notifications = "admin_notifications";
+        public const string PriceUpdateJob = "admin_price_update_job";
 
         public static IReadOnlyList<(string Key, string Name)> AllAdminMenus() => new List<(string, string)>
         {
@@ -96,7 +97,8 @@ namespace KRSDealerManagement.Shared.Constants
             (Reports, "Reports"),
             (StaffUsers, "Staff Users"),
             (StaffRoles, "Staff Roles"),
-            (Notifications, "Notifications")
+            (Notifications, "Notifications"),
+            (PriceUpdateJob, "Price Update Job")
         };
 
         public static bool CanAccess(int userRole, string menuKey)
@@ -219,6 +221,12 @@ namespace KRSDealerManagement.Shared.Constants
                             Key = Notifications, Name = "Notifications",
                             Controller = "AdminNotifications", Action = "Index", Icon = "bi-bell",
                             Actions = new[] { "Index", "Create", "Edit", "Details", "Delete", "PreviewCount" }
+                        },
+                        new MenuItemDefinition
+                        {
+                            Key = PriceUpdateJob, Name = "Price Update Job",
+                            Controller = "PriceUpdateRuns", Action = "Index", Icon = "bi-arrow-up-circle",
+                            Actions = new[] { "Index", "Details" }
                         },
                         new MenuItemDefinition
                         {

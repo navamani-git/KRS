@@ -73,7 +73,7 @@ namespace KRSDealerManagement.Web.Controllers
             var returns = GridScreenFilterHelper.ApplyReturns(
                 await _mediator.Send(new GetReturnRequestsQuery
                 {
-                    SubdealerId = userId.Value,
+                    SubdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId.Value,
                     Status = status,
                     FromDate = from,
                     ToDate = to
@@ -105,7 +105,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             var returns = (await _mediator.Send(new GetReturnRequestsQuery
             {
-                SubdealerId = userId.Value,
+                SubdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId.Value,
                 Status = status,
                 FromDate = from,
                 ToDate = to

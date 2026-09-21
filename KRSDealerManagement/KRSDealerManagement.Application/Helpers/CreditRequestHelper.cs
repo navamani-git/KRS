@@ -22,8 +22,8 @@ namespace KRSDealerManagement.Application.Helpers
                 detail.Add(modelColor);
 
             return detail.Count == 0
-                ? $"Credit Request #{paymentId}"
-                : $"Credit Request #{paymentId} — {string.Join(" / ", detail)}";
+                ? "Credit Request"
+                : $"Credit Request — {string.Join(" / ", detail)}";
         }
     }
 }

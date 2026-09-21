@@ -191,15 +191,12 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             }
         }
 
-        private static async Task<int> ResolveDealershipIdAsync(int subdealerId, IUnitOfWork unitOfWork)
+        private static async Task<int> ResolveDealershipIdAsync(int subdealerIdOrOrgId, IUnitOfWork unitOfWork)
         {
-            var orgRole = (await unitOfWork.UserOrgRoles.GetAllAsync())
-                .Where(a => a.UserId == subdealerId && a.IsActive)
-                .OrderByDescending(a => a.IsPrimary)
-                .FirstOrDefault();
-            if (orgRole?.DealershipId == null)
-                throw new InvalidOperationException("Subdealer is not linked to a dealership.");
-            return orgRole.DealershipId.Value;
+            var orgId = await SubdealerOrgService.ResolveOrgIdAsync(unitOfWork, subdealerIdOrOrgId);
+            var org = await unitOfWork.SubDealers.GetByIdAsync(orgId)
+                ?? throw new InvalidOperationException("Subdealer org not found.");
+            return org.DealershipId;
         }
 
         private async Task<int> ResolveDealershipIdAsync(int subdealerId)

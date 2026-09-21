@@ -26,7 +26,7 @@
             }
             else
             {
-                @:Vehicles under your dealership
+                @:Vehicles currently with subdealers. Units returned to dealer stock are listed under <strong>Dealer Stock</strong> only.
             }
         </p>
     </div>
@@ -68,7 +68,7 @@
                         {
                             @foreach (var s in subdealers)
                             {
-                                <option value="@s.UserId" selected="@(ViewBag.SelectedSubdealerId?.ToString() == s.UserId.ToString())">
+                                <option value="@s.SubDealerId" selected="@(ViewBag.SelectedSubdealerId?.ToString() == s.SubDealerId.ToString())">
                                     @s.GetFullName()
                                 </option>
                             }
