@@ -3,9 +3,14 @@
     var textEl = null;
     var asyncCount = 0;
     var navCount = 0;
-    var navFallbackTimer = null;
+    var initialLoadActive = document.readyState !== 'complete';
+    var pageLoadEventFired = document.readyState === 'complete';
+    var pageTitle = document.documentElement.dataset.krsPageTitle || document.title;
     var nativeAssign = window.location.assign.bind(window.location);
     var nativeReplace = window.location.replace.bind(window.location);
+
+    document.documentElement.classList.add('krs-page-loading');
+    setLoadingTitle();
 
     function getLoaderElements() {
         if (!loaderEl) {
@@ -13,6 +18,16 @@
             textEl = loaderEl ? loaderEl.querySelector('.krs-page-loader-text') : null;
         }
         return loaderEl;
+    }
+
+    function setLoadingTitle() {
+        if (document.title.indexOf('\u27F3 ') !== 0) {
+            document.title = '\u27F3 Loading...';
+        }
+    }
+
+    function restorePageTitle() {
+        document.title = pageTitle;
     }
 
     function setVisible(show) {
@@ -24,7 +39,24 @@
     }
 
     function syncVisible() {
-        setVisible(asyncCount > 0 || navCount > 0);
+        var show = initialLoadActive || asyncCount > 0 || navCount > 0;
+        setVisible(show);
+        if (show) {
+            document.documentElement.classList.add('krs-page-loading');
+            setLoadingTitle();
+        } else {
+            document.documentElement.classList.remove('krs-page-loading');
+            restorePageTitle();
+        }
+    }
+
+    function tryFinishInitialLoad() {
+        if (!initialLoadActive || !pageLoadEventFired || asyncCount > 0) {
+            return;
+        }
+
+        initialLoadActive = false;
+        syncVisible();
     }
 
     function showLoader(message, mode) {
@@ -49,25 +81,17 @@
     function hideLoader(mode) {
         if (mode === 'async') {
             asyncCount = Math.max(0, asyncCount - 1);
-        } else {
-            navCount = Math.max(0, navCount - 1);
         }
 
         syncVisible();
+        tryFinishInitialLoad();
     }
 
     function resetLoader() {
         asyncCount = 0;
         navCount = 0;
-        clearNavFallback();
+        initialLoadActive = false;
         syncVisible();
-    }
-
-    function clearNavFallback() {
-        if (navFallbackTimer) {
-            window.clearTimeout(navFallbackTimer);
-            navFallbackTimer = null;
-        }
     }
 
     function isSameOriginNavigation(href) {
@@ -103,29 +127,8 @@
         return enc.indexOf('multipart') >= 0;
     }
 
-    function scheduleNavLoaderFallback(skipFallback) {
-        clearNavFallback();
-        if (skipFallback) return;
-
-        var navigated = false;
-        function onPageHide() {
-            navigated = true;
-        }
-
-        window.addEventListener('pagehide', onPageHide, { once: true });
-        navFallbackTimer = window.setTimeout(function () {
-            navFallbackTimer = null;
-            window.removeEventListener('pagehide', onPageHide);
-            if (!navigated && navCount > 0) {
-                navCount = 0;
-                syncVisible();
-            }
-        }, 1200);
-    }
-
-    function beginNavLoader(message, skipFallback) {
+    function beginNavLoader(message) {
         showLoader(message || 'Loading...', 'nav');
-        scheduleNavLoaderFallback(!!skipFallback);
     }
 
     function shouldSkipFetchLoader(input, init) {
@@ -160,6 +163,17 @@
         return false;
     }
 
+    function bindJQueryAjax() {
+        if (!window.jQuery || window.jQuery.__krsLoaderBound) return;
+        window.jQuery.__krsLoaderBound = true;
+        window.jQuery(document).ajaxStart(function () {
+            showLoader('Loading...', 'async');
+        });
+        window.jQuery(document).ajaxStop(function () {
+            hideLoader('async');
+        });
+    }
+
     window.krsShowLoader = function (message) {
         showLoader(message || 'Please wait...', 'async');
     };
@@ -188,7 +202,7 @@
         if (shouldSkipForm(form)) return;
         if (e.defaultPrevented) return;
 
-        beginNavLoader(form.dataset.loaderMessage || 'Processing...', isLongRunningForm(form));
+        beginNavLoader(form.dataset.loaderMessage || 'Processing...');
     });
 
     document.addEventListener('click', function (e) {
@@ -251,15 +265,6 @@
         };
     }
 
-    if (window.jQuery) {
-        jQuery(document).ajaxStart(function () {
-            showLoader('Loading...', 'async');
-        });
-        jQuery(document).ajaxStop(function () {
-            hideLoader('async');
-        });
-    }
-
     window.location.assign = function (url) {
         if (isFileDownloadUrl(url)) {
             return nativeAssign(url);
@@ -278,11 +283,56 @@
         return nativeReplace(url);
     };
 
-    window.addEventListener('pageshow', function () {
-        resetLoader();
+    function initBackButton() {
+        var btn = document.getElementById('krsBackButton');
+        if (!btn || btn.dataset.krsBackInit === '1') return;
+        btn.dataset.krsBackInit = '1';
+
+        btn.addEventListener('click', function () {
+            var fallbackUrl = btn.getAttribute('data-fallback-url') || '/';
+            if (window.history.length > 1) {
+                beginNavLoader('Loading...');
+                window.history.back();
+                return;
+            }
+
+            if (window.krsNavigate) {
+                window.krsNavigate(fallbackUrl, 'Loading...');
+            } else {
+                nativeAssign(fallbackUrl);
+            }
+        });
+    }
+
+    function onPageFullyReady() {
+        pageLoadEventFired = true;
+        tryFinishInitialLoad();
+    }
+
+    syncVisible();
+
+    if (!pageLoadEventFired) {
+        window.addEventListener('load', onPageFullyReady, { once: true });
+    } else {
+        onPageFullyReady();
+    }
+
+    window.addEventListener('pageshow', function (e) {
+        if (e.persisted) {
+            pageLoadEventFired = true;
+            resetLoader();
+        }
     });
 
-    window.addEventListener('load', function () {
-        resetLoader();
-    });
+    bindJQueryAjax();
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () {
+            bindJQueryAjax();
+            initBackButton();
+        });
+    } else {
+        initBackButton();
+    }
+
+    window.setTimeout(bindJQueryAjax, 0);
 })();

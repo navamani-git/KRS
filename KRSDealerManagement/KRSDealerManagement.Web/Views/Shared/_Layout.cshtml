@@ -33,6 +33,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>@ViewData["Title"] - KRS Dealer Management</title>
     <script>
         (function () {
             var px = @fontOption.RootPx;
@@ -40,9 +41,11 @@
             document.documentElement.style.fontSize = px + 'px';
             document.documentElement.dataset.krsFontPreset = preset;
             document.documentElement.classList.add('krs-fs-' + preset);
+            document.documentElement.dataset.krsPageTitle = document.title;
+            document.documentElement.classList.add('krs-page-loading');
+            document.title = '\u27F3 Loading...';
         })();
     </script>
-    <title>@ViewData["Title"] - KRS Dealer Management</title>
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -58,6 +61,31 @@
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
     
     <style>
+        #krsPageLoader.krs-page-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 20000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(244, 246, 249, 0.72);
+            backdrop-filter: blur(2px);
+            pointer-events: all;
+        }
+
+        #krsPageLoader[hidden] {
+            display: none !important;
+        }
+
+        html.krs-page-loading {
+            overflow: hidden;
+        }
+
+        html.krs-page-loading body > .wrapper,
+        html.krs-page-loading #krsQuickActions {
+            visibility: hidden;
+        }
+
         .sidebar-dark-primary {
             background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
         }
@@ -84,6 +112,14 @@
     </style>
 </head>
 <body class="hold-transition layout-fixed sidebar-collapse">
+    <div id="krsPageLoader" class="krs-page-loader krs-page-loader-visible" aria-live="polite" aria-busy="true">
+        <div class="krs-page-loader-panel">
+            <div class="spinner-border krs-page-loader-spinner" role="status" aria-hidden="true"></div>
+            <div class="krs-page-loader-text">Loading...</div>
+        </div>
+    </div>
+    <script src="~/js/site-loader.js" asp-append-version="true"></script>
+
     <div class="wrapper">
         
         <!-- Navbar -->
@@ -134,8 +170,8 @@
                     </div>
                 </div>
 
-                <!-- Sidebar Menu -->
-                <nav class="mt-2">
+                <!-- Sidebar Menu (scrolls independently; user panel stays pinned above) -->
+                <nav class="mt-2 krs-sidebar-nav">
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
                         
                         <!-- Dashboard -->
@@ -286,6 +322,15 @@
             <!-- Content Header (Page header) -->
             <div class="content-header">
                 <div class="container-fluid">
+                    <div class="krs-content-header-bar">
+                        <button type="button"
+                                class="btn btn-outline-secondary btn-sm krs-back-btn"
+                                id="krsBackButton"
+                                data-fallback-url="@Url.Action("Index", "Dashboard")"
+                                title="Go back">
+                            <i class="bi bi-arrow-left"></i> Back
+                        </button>
+                    </div>
                     @if (TempData["Success"] != null)
                     {
                         <div class="alert alert-success alert-dismissible fade show">
@@ -325,16 +370,8 @@
         @await Component.InvokeAsync("QuickActions")
     }
 
-    <div id="krsPageLoader" class="krs-page-loader" hidden aria-live="polite" aria-busy="false">
-        <div class="krs-page-loader-panel">
-            <div class="spinner-border krs-page-loader-spinner" role="status" aria-hidden="true"></div>
-            <div class="krs-page-loader-text">Please wait...</div>
-        </div>
-    </div>
-
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="~/js/site-loader.js" asp-append-version="true"></script>
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>

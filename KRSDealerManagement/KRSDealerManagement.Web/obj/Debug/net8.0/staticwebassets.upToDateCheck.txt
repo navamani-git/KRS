@@ -6,6 +6,7 @@ wwwroot\images\amperenew.png
 wwwroot\images\amperenewone.png
 wwwroot\images\grevesampere.png
 wwwroot\images\krslogo.png
+wwwroot\js\account-statement-detail.js
 wwwroot\js\amount-format.js
 wwwroot\js\chassis-stock-select.js
 wwwroot\js\dashboard-widgets.js

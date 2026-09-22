@@ -155,7 +155,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             }
 
             var allBookings = (await bookingsTask).ToList();
-            LoadBookingStatusCounts(summary, allVehicles, scopedOrgIds, allBookings);
+            var warrantyOnlyVehicleIds = await WarrantyOnlyVehicleFlowHelper.GetWarrantyOnlyVehicleIdsAsync(_unitOfWork);
+            LoadBookingStatusCounts(summary, allVehicles, scopedOrgIds, allBookings, warrantyOnlyVehicleIds);
             summary.ShowroomStockCount = CountShowroomStock(allVehicles, scopedOrgIds, allBookings);
 
             var dealerStock = await dealerStockTask;
@@ -192,13 +193,17 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             DashboardSummary summary,
             IEnumerable<Vehicle> vehicles,
             HashSet<int>? scopedIds,
-            IEnumerable<VehicleBooking> bookings)
+            IEnumerable<VehicleBooking> bookings,
+            HashSet<int> warrantyOnlyVehicleIds)
         {
             var vehicleById = vehicles.ToDictionary(v => v.VehicleId);
 
             int Count(int stageStatus) => bookings.Count(b =>
             {
                 if (!IsInScope(b.SubdealerId, scopedIds))
+                    return false;
+
+                if (warrantyOnlyVehicleIds.Contains(b.VehicleId))
                     return false;
 
                 if (!vehicleById.TryGetValue(b.VehicleId, out var vehicle))
@@ -224,6 +229,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             {
                 if (!IsInScope(b.SubdealerId, scopedIds))
                     return false;
+                if (warrantyOnlyVehicleIds.Contains(b.VehicleId))
+                    return false;
                 if (!vehicleById.TryGetValue(b.VehicleId, out var vehicle))
                     return false;
                 return BookingStageFilter.IsRegisteredAwaitingNumberPlate(
@@ -242,6 +249,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             {
                 if (!IsInScope(b.SubdealerId, scopedIds))
                     return false;
+                if (warrantyOnlyVehicleIds.Contains(b.VehicleId))
+                    return false;
                 if (!vehicleById.TryGetValue(b.VehicleId, out var vehicle))
                     return false;
                 return BookingStageFilter.IsSubsidyIdPending(
@@ -254,6 +263,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             summary.SubsidyDocsPendingCount = bookings.Count(b =>
             {
                 if (!IsInScope(b.SubdealerId, scopedIds))
+                    return false;
+                if (warrantyOnlyVehicleIds.Contains(b.VehicleId))
                     return false;
                 if (!vehicleById.TryGetValue(b.VehicleId, out var vehicle))
                     return false;
@@ -357,7 +368,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
             var scopedOrgIds = new HashSet<int> { orgId };
             var allBookings = (await bookingsTask).ToList();
-            LoadBookingStatusCounts(summary, allVehicles, scopedOrgIds, allBookings);
+            var warrantyOnlyVehicleIds = await WarrantyOnlyVehicleFlowHelper.GetWarrantyOnlyVehicleIdsAsync(_unitOfWork);
+            LoadBookingStatusCounts(summary, allVehicles, scopedOrgIds, allBookings, warrantyOnlyVehicleIds);
             summary.ShowroomStockCount = CountShowroomStock(allVehicles, scopedOrgIds, allBookings);
         }
 

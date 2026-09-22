@@ -3,6 +3,7 @@
 @using KRSDealerManagement.Shared.Helpers
 @using KRSDealerManagement.Web.Helpers
 @using KRSDealerManagement.Web.Models
+@using System.Text
 @using System.Text.Json
 
 @{
@@ -12,6 +13,9 @@
     var pageSize = (int)(ViewBag.PageSize ?? ListPagingHelper.DefaultPageSize);
     var rowOffset = (currentPage - 1) * pageSize;
     var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+    string EncodeTxnDetail(object payload) =>
+        Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(payload, jsonOptions)));
 }
 
 @if (Model.Any())
@@ -46,15 +50,34 @@
                     var rowClass = isOpeningRow
                         ? "table-secondary"
                         : (t.IsDebit() ? "table-danger" : "table-success");
-                    var detailDatesJson = JsonSerializer.Serialize(
-                        t.DetailDates.Select(d => new
+                    var vin = t.VinNumber ?? t.ChassisNumber ?? "-";
+                    var txnDetailPayload = EncodeTxnDetail(new
+                    {
+                        subtitle = $"{t.StatementDate:yyyy-MM-dd HH:mm} · {t.CategoryLabel}",
+                        statementDate = t.StatementDate.ToString("yyyy-MM-dd HH:mm"),
+                        categoryLabel = t.CategoryLabel,
+                        description = string.IsNullOrWhiteSpace(t.Reason) ? null : t.Reason,
+                        customer = t.CustomerName,
+                        paymentType = t.PaymentType,
+                        finance = t.FinanceName,
+                        vin = vin == "-" ? null : vin,
+                        requestedAmount = t.RequestedAmount.HasValue ? $"₹{t.RequestedAmount.Value:N2}" : null,
+                        approvedAmount = t.ApprovedPaymentAmount.HasValue ? $"₹{t.ApprovedPaymentAmount.Value:N2}" : null,
+                        debit = t.IsDebit() ? $"₹{t.Amount:N2}" : null,
+                        credit = t.IsCredit() ? $"₹{t.Amount:N2}" : null,
+                        balanceAfter = $"₹{t.BalanceAfterTransaction:N2}",
+                        reference = string.IsNullOrWhiteSpace(t.ReferenceType)
+                            ? null
+                            : $"{t.ReferenceType}{(t.ReferenceId.HasValue ? $" #{t.ReferenceId}" : "")}",
+                        remarks = string.IsNullOrWhiteSpace(t.Remarks) ? null : t.Remarks,
+                        dates = t.DetailDates.Select(d => new
                         {
                             label = d.Label,
                             value = d.DateOnly
                                 ? d.Value.ToString("yyyy-MM-dd")
                                 : d.Value.ToString("yyyy-MM-dd HH:mm")
-                        }),
-                        jsonOptions);
+                        })
+                    });
                     <tr class="@rowClass bg-opacity-25">
                         <td class="grid-col-rownum">@(sr++)</td>
                         <td>
@@ -75,7 +98,7 @@
                         <td><small>@(t.CustomerName ?? "-")</small></td>
                         <td><small>@(t.PaymentType ?? "-")</small></td>
                         <td><small>@(t.FinanceName ?? "-")</small></td>
-                        <td><small><code>@(t.VinNumber ?? t.ChassisNumber ?? "-")</code></small></td>
+                        <td><small><code>@vin</code></small></td>
                         <td class="text-end">
                             @(t.RequestedAmount.HasValue ? $"₹{t.RequestedAmount.Value:N2}" : "-")
                         </td>
@@ -95,9 +118,7 @@
                                         class="btn btn-sm btn-outline-info statement-detail-btn"
                                         data-bs-toggle="modal"
                                         data-bs-target="#statementDetailModal"
-                                        data-txn-label="@t.StatementDate.ToString("yyyy-MM-dd HH:mm") · @t.CategoryLabel"
-                                        data-detail-dates="@System.Net.WebUtility.HtmlEncode(detailDatesJson)"
-                                        data-remarks="@(t.Remarks ?? "-")"
+                                        data-txn-detail="@txnDetailPayload"
                                         title="View full transaction details">
                                     <i class="bi bi-eye"></i> View
                                 </button>
@@ -136,7 +157,7 @@
     </div>
 
     <div class="modal fade" id="statementDetailModal" tabindex="-1" aria-labelledby="statementDetailModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="statementDetailModalLabel">Transaction Details</h5>
@@ -144,12 +165,59 @@
                 </div>
                 <div class="modal-body">
                     <p class="text-muted small mb-3" id="statementDetailSubtitle"></p>
+                    <div class="row g-2 mb-3 small">
+                        <div class="col-md-6">
+                            <div class="text-muted">Description</div>
+                            <div id="statementDetailDescription" class="text-break">—</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted">Reference</div>
+                            <div id="statementDetailReference">—</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-muted">Customer</div>
+                            <div id="statementDetailCustomer">—</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-muted">Pay Type</div>
+                            <div id="statementDetailPayType">—</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-muted">Finance</div>
+                            <div id="statementDetailFinance">—</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted">VIN / Chassis</div>
+                            <div id="statementDetailVin"><code>—</code></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted">Balance After</div>
+                            <div id="statementDetailBalance">—</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-muted">Requested</div>
+                            <div id="statementDetailRequested">—</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-muted">Approved</div>
+                            <div id="statementDetailApproved">—</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-muted">Debit</div>
+                            <div id="statementDetailDebit" class="text-danger">—</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-muted">Credit</div>
+                            <div id="statementDetailCredit" class="text-success">—</div>
+                        </div>
+                    </div>
+                    <h6 class="mb-2">Milestone dates</h6>
                     <table class="table table-sm table-borderless mb-0">
                         <tbody id="statementDetailDates"></tbody>
                     </table>
-                    <div class="mt-2">
+                    <div class="mt-3">
                         <span class="text-muted">Remarks</span>
-                        <div id="statementDetailRemarks" class="text-break">-</div>
+                        <div id="statementDetailRemarks" class="text-break">—</div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -158,37 +226,7 @@
             </div>
         </div>
     </div>
-    <script>
-        document.querySelectorAll('.statement-detail-btn').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                document.getElementById('statementDetailSubtitle').textContent = btn.dataset.txnLabel || '';
-                document.getElementById('statementDetailRemarks').textContent = btn.dataset.remarks || '-';
-
-                var tbody = document.getElementById('statementDetailDates');
-                tbody.innerHTML = '';
-                var raw = btn.dataset.detailDates || '[]';
-                try {
-                    var dates = JSON.parse(raw);
-                    dates.forEach(function (d) {
-                        var tr = document.createElement('tr');
-                        var label = document.createElement('td');
-                        label.className = 'text-muted';
-                        label.style.width = '40%';
-                        label.textContent = d.label || '-';
-                        var value = document.createElement('td');
-                        value.textContent = d.value || '-';
-                        tr.appendChild(label);
-                        tr.appendChild(value);
-                        tbody.appendChild(tr);
-                    });
-                } catch (e) {
-                    var tr = document.createElement('tr');
-                    tr.innerHTML = '<td class="text-muted" colspan="2">No date details available.</td>';
-                    tbody.appendChild(tr);
-                }
-            });
-        });
-    </script>
+    <script src="~/js/account-statement-detail.js" asp-append-version="true"></script>
 }
 else
 {

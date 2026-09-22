@@ -8,6 +8,8 @@ namespace KRSDealerManagement.Application.Helpers
     public static class WarrantyOnlyVehicleFlowHelper
     {
         public const string Placeholder = "-";
+        public const string ExternalSubsidyId = "WARRANTY-ONLY";
+        public const string ExternalSaleMarker = "External";
 
         public static string? DisplayCustomerValue(string? value)
             => string.IsNullOrWhiteSpace(value) || value == Placeholder ? null : value.Trim();
@@ -81,11 +83,40 @@ namespace KRSDealerManagement.Application.Helpers
         }
 
         /// <summary>
+        /// Warranty-only vehicles are externally sold before upload. Fill booking milestones with the sale date
+        /// and mark vehicle + booking delivered so they never appear in the sales pipeline.
+        /// </summary>
+        public static void ApplyExternalSaleMilestones(VehicleBooking booking, DateTime saleDate)
+        {
+            var soldOn = saleDate.Date;
+
+            booking.PaperReceivedDate = soldOn;
+            booking.InvoiceDate = soldOn;
+            booking.InsuranceDate = soldOn;
+            booking.AgentDate = soldOn;
+            booking.RegistrationDate = soldOn;
+            booking.SubsidyIdDate = soldOn;
+            booking.NumberPlateReceivedDate = soldOn;
+            booking.NumberPlateReceivedBy = ExternalSaleMarker;
+            booking.SubsidyId = ExternalSubsidyId;
+            booking.RtoNumber = Placeholder;
+            booking.InvoicePath = Placeholder;
+            booking.InsurancePath = Placeholder;
+            booking.FaceVerificationPath = Placeholder;
+            booking.RcImagePath = Placeholder;
+            booking.BoothPhotoPath = Placeholder;
+            booking.SubsidyUndertakingPath = Placeholder;
+            booking.SubsidyDocsSubmittedDate = soldOn;
+            booking.BookingStatus = UnifiedVehicleStatus.Delivered;
+            booking.ModifiedDate = DateTime.UtcNow;
+        }
+
+        /// <summary>
         /// Warranty-only vehicles are externally sold; mark them delivered so they cannot re-enter booking.
         /// </summary>
         public static void ApplyTerminalSoldStatus(Vehicle vehicle, VehicleBooking? booking, DateTime? saleDate)
         {
-            var deliveredOn = saleDate?.Date ?? vehicle.DeliveryDate?.Date ?? DateTime.UtcNow.Date;
+            var deliveredOn = saleDate?.Date ?? booking?.SubmittedDate.Date ?? vehicle.DeliveryDate?.Date ?? DateTime.UtcNow.Date;
 
             if (vehicle.Status != UnifiedVehicleStatus.Delivered)
             {
@@ -99,11 +130,11 @@ namespace KRSDealerManagement.Application.Helpers
                 vehicle.ModifiedDate = DateTime.UtcNow;
             }
 
-            if (booking != null && booking.BookingStatus != UnifiedVehicleStatus.Delivered)
-            {
-                booking.BookingStatus = UnifiedVehicleStatus.Delivered;
-                booking.ModifiedDate = DateTime.UtcNow;
-            }
+            if (string.IsNullOrWhiteSpace(vehicle.RegistrationNumber) || vehicle.RegistrationNumber == Placeholder)
+                vehicle.RegistrationNumber = Placeholder;
+
+            if (booking != null)
+                ApplyExternalSaleMilestones(booking, deliveredOn);
         }
 
         public static async Task EnsureNotWarrantyOnlyOperationalVehicleAsync(IUnitOfWork unitOfWork, int vehicleId)
@@ -151,6 +182,7 @@ namespace KRSDealerManagement.Application.Helpers
                 ControllerNo = master.ControllerNo,
                 ConverterNo = master.ConverterNo,
                 ManufacturingYear = 0,
+                RegistrationNumber = Placeholder,
                 AllocatedDate = submitted,
                 DeliveryDate = submitted,
                 CreatedBy = createdBy,
@@ -167,11 +199,10 @@ namespace KRSDealerManagement.Application.Helpers
                 UserId = createdBy
             });
 
-            await unitOfWork.VehicleBookings.AddAsync(new VehicleBooking
+            var booking = new VehicleBooking
             {
                 VehicleId = vehicleId,
                 SubdealerId = subDealerOrgId,
-                BookingStatus = UnifiedVehicleStatus.Delivered,
                 CustomerName = name,
                 CustomerMobile = mobile,
                 AlternativeMobile = Placeholder,
@@ -194,7 +225,9 @@ namespace KRSDealerManagement.Application.Helpers
                 CreatedBy = createdBy,
                 CreatedDate = DateTime.UtcNow,
                 ModifiedDate = DateTime.UtcNow
-            });
+            };
+            ApplyExternalSaleMilestones(booking, submitted);
+            await unitOfWork.VehicleBookings.AddAsync(booking);
 
             await unitOfWork.VehicleMasters.SetAllocatedAsync(master.VehicleMasterId, true, createdBy);
             await unitOfWork.VehicleMasters.AddHistoryAsync(new VehicleMasterHistory
