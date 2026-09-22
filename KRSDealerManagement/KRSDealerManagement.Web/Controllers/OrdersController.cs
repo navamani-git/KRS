@@ -576,13 +576,14 @@ namespace KRSDealerManagement.Web.Controllers
             return Json(new { success = true, price = price.Value, modelName, colorName, asOfDate = date.ToString("yyyy-MM-dd") });
         }
 
-        private async Task<int?> ResolveOrderDealershipIdAsync(int subdealerUserId)
+        private async Task<int?> ResolveOrderDealershipIdAsync(int subdealerOrgOrUserId)
         {
             var scope = SessionHelper.GetDealershipScope(HttpContext.Session);
             if (scope.HasValue)
                 return scope.Value;
 
-            var subdealer = await _mediator.Send(new GetSubdealerDetailQuery { UserId = subdealerUserId });
+            var subdealer = await _mediator.Send(new GetSubdealerDetailQuery { SubDealerId = subdealerOrgOrUserId })
+                ?? await _mediator.Send(new GetSubdealerDetailQuery { UserId = subdealerOrgOrUserId });
             return subdealer?.DealershipId;
         }
 

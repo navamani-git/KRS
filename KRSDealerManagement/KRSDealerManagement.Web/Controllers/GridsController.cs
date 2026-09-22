@@ -43,7 +43,7 @@ namespace KRSDealerManagement.Web.Controllers
                 GridId = grid.Trim(),
                 Column = column.Trim(),
                 Search = search,
-                SubdealerId = subdealerId,
+                SubdealerId = SubdealerScopeWebHelper.GetOrgIdForFilter(HttpContext.Session, subdealerId),
                 AccountId = accountId ?? id,
                 UserId = SessionHelper.GetUserId(HttpContext.Session),
                 Status = status,

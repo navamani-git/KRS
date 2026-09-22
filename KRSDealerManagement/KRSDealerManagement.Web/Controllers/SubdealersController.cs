@@ -162,14 +162,10 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            IEnumerable<KRSDealerManagement.Application.DTOs.SubdealerAccountDto> accounts = Array.Empty<KRSDealerManagement.Application.DTOs.SubdealerAccountDto>();
-            if (subdealer.PrimaryUserId.HasValue)
+            var accounts = await _mediator.Send(new GetSubdealerAccountsQuery
             {
-                accounts = await _mediator.Send(new GetSubdealerAccountsQuery
-                {
-                    SubdealerId = subdealer.PrimaryUserId.Value
-                });
-            }
+                SubdealerId = subdealer.SubDealerId
+            });
             ViewBag.Accounts = accounts;
 
             ViewBag.MenuGroups = MenuKeys.GetSubdealerMenuGroups();

@@ -1,4 +1,5 @@
 using MediatR;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Application.DTOs;
 using KRSDealerManagement.Domain.Repositories;
@@ -24,6 +25,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             if (model == null)
                 return null;
 
+            var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
             var mappedColorIds = (await _unitOfWork.VehicleModelColors.GetColorIdsByModelIdAsync(request.ModelId)).ToList();
             var allColors = await _unitOfWork.VehicleColors.GetAllAsync();
             var mappedColors = allColors
@@ -49,8 +51,10 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 Description = model.Description,
                 IsActive = model.IsActive,
                 CreatedBy = model.CreatedBy,
+                CreatedByName = AuditUserHelper.ResolveName(model.CreatedBy, users),
                 CreatedDate = model.CreatedDate,
                 ModifiedBy = model.ModifiedBy,
+                ModifiedByName = AuditUserHelper.ResolveName(model.ModifiedBy, users),
                 ModifiedDate = model.ModifiedDate,
                 MappedColorIds = mappedColorIds,
                 MappedColors = mappedColors

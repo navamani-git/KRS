@@ -109,14 +109,14 @@
                             <th>Order Date</th>
                             <th>Order #</th>
                             <th>Allocated</th>
-                            <th>Model</th>
-                            <th>Color</th>
-                            <th>Chassis</th>
+                            <th class="grid-col-flex">Model</th>
+                            <th class="grid-col-flex">Color</th>
+                            <th class="grid-col-chassis">Chassis</th>
                             @if (isSubdealer)
                             {
-                                <th title="Dealer = order created for you by the dealer. My order = order you placed yourself.">Source</th>
+                                <th class="grid-col-narrow" title="Dealer = order created for you by the dealer. My order = order you placed yourself.">Source</th>
                             }
-                            <th class="text-end">Price (₹)</th>
+                            <th class="text-end grid-col-price">Price (₹)</th>
                             <th>Delivery</th>
                             <th>Status</th>
                             <th class="grid-col-actions">Actions</th>
@@ -167,7 +167,7 @@
                                 </td>
                                 <td>@v.ModelName</td>
                                 <td>@v.ColorName</td>
-                                <td>
+                                <td class="grid-col-chassis">
                                     <partial name="_ChassisLink" view-data='new ViewDataDictionary(ViewData) {
                                         { "VehicleId", v.VehicleId }, { "Chassis", v.ChassisNumber } }' />
                                 </td>
@@ -184,7 +184,7 @@
                                         }
                                     </td>
                                 }
-                                <td class="text-end fw-bold">₹@v.CurrentPrice.ToString("N2")</td>
+                                <td class="text-end fw-bold grid-col-price">₹@v.CurrentPrice.ToString("N2")</td>
                                 <td>
                                     @if (v.IsDelivered)
                                     {

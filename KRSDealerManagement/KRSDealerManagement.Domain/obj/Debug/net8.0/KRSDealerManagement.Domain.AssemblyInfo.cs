@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("KRSDealerManagement.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5f0e25c5c49a5f1a3e7cd87fcc5a4b55546834c2")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8ddf0cd3e21b9dc8fdc94d45a0e78a6f8f063b83")]
 [assembly: System.Reflection.AssemblyProductAttribute("KRSDealerManagement.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("KRSDealerManagement.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

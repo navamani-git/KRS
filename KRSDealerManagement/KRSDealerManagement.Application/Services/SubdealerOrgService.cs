@@ -31,13 +31,42 @@ namespace KRSDealerManagement.Application.Services
 
             var org = await unitOfWork.SubDealers.GetByIdAsync(subdealerIdOrLoginUserId);
             if (org != null)
-                return subdealerIdOrLoginUserId;
+            {
+                // Collision: login UserId can equal another org's SubDealerId (e.g. user 22 = THANGAM, org 22 = KPN).
+                // When this id is an org key and its primary login is a different user, treat as org SubDealerId.
+                var primaryUserId = await GetPrimaryUserIdForOrgAsync(unitOfWork, subdealerIdOrLoginUserId);
+                if (primaryUserId.HasValue && primaryUserId.Value != subdealerIdOrLoginUserId)
+                    return subdealerIdOrLoginUserId;
 
-            var mapped = await GetOrgIdForUserAsync(unitOfWork, subdealerIdOrLoginUserId);
+                var mapped = await GetOrgIdForUserAsync(unitOfWork, subdealerIdOrLoginUserId);
+                if (mapped.HasValue)
+                    return mapped.Value;
+
+                return subdealerIdOrLoginUserId;
+            }
+
+            var mappedOnly = await GetOrgIdForUserAsync(unitOfWork, subdealerIdOrLoginUserId);
+            if (mappedOnly.HasValue)
+                return mappedOnly.Value;
+
+            return subdealerIdOrLoginUserId;
+        }
+
+        /// <summary>Resolve org SubDealerId from a wallet row's login UserId (SubdealerAccounts.SubdealerId).</summary>
+        public static async Task<int> ResolveOrgIdFromWalletUserIdAsync(IUnitOfWork unitOfWork, int walletUserId)
+        {
+            if (walletUserId <= 0)
+                throw new ArgumentOutOfRangeException(nameof(walletUserId));
+
+            var mapped = await GetOrgIdForUserAsync(unitOfWork, walletUserId);
             if (mapped.HasValue)
                 return mapped.Value;
 
-            return subdealerIdOrLoginUserId;
+            var org = await unitOfWork.SubDealers.GetByIdAsync(walletUserId);
+            if (org != null)
+                return walletUserId;
+
+            return walletUserId;
         }
 
         public static async Task<bool> IsSameOrgAsync(IUnitOfWork unitOfWork, int loginUserId, int targetSubdealerOrgOrUserId)
@@ -169,6 +198,13 @@ namespace KRSDealerManagement.Application.Services
             return accounts.FirstOrDefault(a => string.Equals(a.AccountType, "Login", StringComparison.OrdinalIgnoreCase))
                    ?? accounts.FirstOrDefault(IsMainAccount)
                    ?? accounts.FirstOrDefault();
+        }
+
+        public static async Task<SubdealerAccount?> GetOrgWalletAccountAsync(IUnitOfWork unitOfWork, int orgId)
+        {
+            var primaryUserId = await GetPrimaryUserIdForOrgAsync(unitOfWork, orgId);
+            if (!primaryUserId.HasValue) return null;
+            return await GetWalletAccountAsync(unitOfWork, primaryUserId.Value);
         }
 
         public static async Task<SubdealerAccount?> GetWalletAccountAsync(IUnitOfWork unitOfWork, int userId)

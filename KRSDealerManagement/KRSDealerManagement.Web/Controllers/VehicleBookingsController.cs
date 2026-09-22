@@ -188,11 +188,7 @@ namespace KRSDealerManagement.Web.Controllers
         {
             var (scopedIds, effectiveDealershipId, isAdmin) = await GetBookingScopeAsync(dealershipId);
             if (subdealerView)
-            {
-                var currentUserId = SessionHelper.GetUserId(HttpContext.Session);
-                if (currentUserId.HasValue)
-                    subdealerId = currentUserId;
-            }
+                subdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session);
             else if (subdealerId.HasValue && !scopedIds.Contains(subdealerId.Value))
                 subdealerId = null;
 

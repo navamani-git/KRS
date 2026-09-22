@@ -453,9 +453,8 @@ body.hold-transition {
     height: 100vh;
     max-height: 100vh;
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: hidden;
     overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
 }
 
 .layout-fixed .wrapper,
@@ -499,13 +498,28 @@ body.hold-transition {
 }
 
 .main-sidebar .sidebar {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: contain;
+}
+
+.main-sidebar .sidebar > .user-panel {
+    flex: 0 0 auto;
+}
+
+.main-sidebar .krs-sidebar-nav {
     flex: 1 1 auto;
     min-height: 0;
     overflow-x: hidden;
+    overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
     scrollbar-gutter: stable;
-    padding-bottom: 6rem;
+    padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
 }
 
 .sidebar {
@@ -712,9 +726,29 @@ body.hold-transition {
 /* Content Header */
 .content-header {
     background: white;
-    padding: 20px;
+    padding: 10px 20px;
     border-bottom: 1px solid #e9ecef;
     margin-bottom: 20px;
+}
+
+.krs-content-header-bar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    min-height: 2rem;
+    margin-bottom: 0.25rem;
+}
+
+.content-header .alert {
+    margin-bottom: 0;
+}
+
+.content-header .alert + .alert {
+    margin-top: 0.75rem;
+}
+
+.content-header .krs-content-header-bar + .alert {
+    margin-top: 0.75rem;
 }
 
 .content-header h1 {
@@ -1133,6 +1167,18 @@ table.grid-excel-table .grid-col-actions,
 .grid-scroll-panel table.grid-excel-table .grid-col-actions {
     width: auto;
     max-width: none;
+}
+
+table.grid-excel-table .grid-col-chassis,
+.grid-scroll-panel table.grid-excel-table .grid-col-chassis {
+    max-width: 176px;
+    white-space: nowrap;
+}
+
+table.grid-excel-table .grid-col-price,
+.grid-scroll-panel table.grid-excel-table .grid-col-price {
+    max-width: 108px;
+    white-space: nowrap;
 }
 
 table.grid-excel-table thead tr:not(.grid-column-filters) th,
@@ -1929,9 +1975,14 @@ table.grid-excel-table td.grid-sticky-col-2 {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(244, 246, 249, 0.72);
-    backdrop-filter: blur(2px);
+    background: rgba(244, 246, 249, 0.94);
+    backdrop-filter: blur(3px);
     pointer-events: all;
+}
+
+html.krs-page-loading body > .wrapper,
+html.krs-page-loading #krsQuickActions {
+    visibility: hidden;
 }
 
 .krs-page-loader[hidden] {
@@ -1966,6 +2017,13 @@ table.grid-excel-table td.grid-sticky-col-2 {
     text-align: center;
 }
 
+.krs-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: 500;
+}
+
 /* AdminLTE mobile sidebar: overlay layout, full labels, expandable submenus */
 @media (max-width: 991.98px) {
     .wrapper,
@@ -1998,12 +2056,12 @@ table.grid-excel-table td.grid-sticky-col-2 {
     }
 
     .layout-fixed .main-sidebar {
-        display: block;
+        display: flex;
+        flex-direction: column;
         height: 100dvh !important;
         max-height: 100dvh !important;
         overflow-x: hidden !important;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch;
+        overflow-y: hidden !important;
         overscroll-behavior: contain;
         touch-action: pan-y;
         z-index: 1040;
@@ -2024,16 +2082,23 @@ table.grid-excel-table td.grid-sticky-col-2 {
 
     .main-sidebar .sidebar {
         margin-left: 0 !important;
-        height: auto !important;
-        max-height: none !important;
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100% !important;
+        max-height: 100% !important;
         min-height: 0 !important;
-        overflow: visible !important;
+        overflow: hidden !important;
         padding-top: 0.25rem;
-        padding-bottom: calc(8rem + env(safe-area-inset-bottom, 0px));
+        padding-bottom: 0 !important;
     }
 
-    .main-sidebar .nav-sidebar {
-        padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+    .main-sidebar .krs-sidebar-nav {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px)) !important;
     }
 
     .main-sidebar .nav-sidebar > .nav-item,
@@ -2844,14 +2909,14 @@ select[name="colorIds"] {
     }
 
     body.sidebar-open .main-sidebar .sidebar {
-        height: auto !important;
-        min-height: 100%;
-        max-height: none !important;
-        overflow: visible !important;
-        padding-bottom: calc(10rem + env(safe-area-inset-bottom, 0px)) !important;
+        height: 100% !important;
+        min-height: 0 !important;
+        max-height: 100% !important;
+        overflow: hidden !important;
+        padding-bottom: 0 !important;
     }
 
-    body.sidebar-open .main-sidebar .nav-sidebar {
+    body.sidebar-open .main-sidebar .krs-sidebar-nav {
         padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px)) !important;
     }
 }
@@ -2867,21 +2932,27 @@ select[name="colorIds"] {
         height: 100vh !important;
         max-height: 100vh !important;
         overflow-x: hidden !important;
-        overflow-y: auto !important;
+        overflow-y: hidden !important;
         overscroll-behavior: contain;
-        -webkit-overflow-scrolling: touch;
         z-index: 1030;
     }
 
     body.hold-transition.layout-fixed .wrapper .main-sidebar .sidebar {
-        height: auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100% !important;
         min-height: 0 !important;
-        max-height: none !important;
-        overflow: visible !important;
-        padding-bottom: 2rem;
+        max-height: 100% !important;
+        overflow: hidden !important;
+        padding-bottom: 0 !important;
     }
 
-    body.hold-transition.layout-fixed .wrapper .main-sidebar .nav-sidebar {
+    body.hold-transition.layout-fixed .wrapper .main-sidebar .krs-sidebar-nav {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
         padding-bottom: 1.5rem;
     }
 }

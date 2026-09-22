@@ -10,8 +10,10 @@ namespace KRSDealerManagement.Application.DTOs
         public string? Description { get; set; }
         public bool IsActive { get; set; }
         public int CreatedBy { get; set; }
+        public string? CreatedByName { get; set; }
         public DateTime CreatedDate { get; set; }
         public int? ModifiedBy { get; set; }
+        public string? ModifiedByName { get; set; }
         public DateTime ModifiedDate { get; set; }
         public List<int> MappedColorIds { get; set; } = new();
         public List<VehicleColorDto> MappedColors { get; set; } = new();

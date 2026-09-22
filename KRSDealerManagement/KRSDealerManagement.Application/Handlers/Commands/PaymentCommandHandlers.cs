@@ -189,37 +189,30 @@ namespace KRSDealerManagement.Application.Handlers.Commands
         private async Task<AccountBalance> GetOrCreateBalanceAsync(Payment payment)
         {
             var balances = (await _unitOfWork.AccountBalances.GetAllAsync()).ToList();
-            var balance = balances.FirstOrDefault(b => b.SubdealerAccountId == payment.AccountId)
-                       ?? balances.FirstOrDefault(b => b.SubdealerId == payment.SubdealerId);
-
+            var balance = balances.FirstOrDefault(b => b.SubdealerAccountId == payment.AccountId);
             if (balance != null)
                 return balance;
 
-            // Ensure account exists
-            var accounts = await _unitOfWork.SubdealerAccounts.GetAllAsync();
-            var account = accounts.FirstOrDefault(a => a.AccountId == payment.AccountId)
-                       ?? accounts.FirstOrDefault(a => a.SubdealerId == payment.SubdealerId);
+            var orgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, payment.SubdealerId);
+            var account = await SubdealerOrgService.GetOrgWalletAccountAsync(_unitOfWork, orgId);
+            if (account == null && payment.AccountId > 0)
+            {
+                account = (await _unitOfWork.SubdealerAccounts.GetAllAsync())
+                    .FirstOrDefault(a => a.AccountId == payment.AccountId);
+            }
 
             if (account == null)
-            {
-                account = new SubdealerAccount
-                {
-                    SubdealerId = payment.SubdealerId,
-                    AccountName = "Main Account",
-                    AccountType = "Main",
-                    Description = "Auto-created on payment approval",
-                    IsActive = true,
-                    CreatedDate = DateTime.UtcNow,
-                    ModifiedDate = DateTime.UtcNow
-                };
-                account.AccountId = await _unitOfWork.SubdealerAccounts.AddAsync(account);
-                payment.AccountId = account.AccountId;
-            }
+                throw new InvalidOperationException("No wallet account found for the subdealer.");
+
+            payment.AccountId = account.AccountId;
+            balance = balances.FirstOrDefault(b => b.SubdealerAccountId == account.AccountId);
+            if (balance != null)
+                return balance;
 
             balance = new AccountBalance
             {
                 SubdealerAccountId = account.AccountId,
-                SubdealerId = payment.SubdealerId,
+                SubdealerId = account.SubdealerId,
                 CurrentBalance = 0,
                 ReservedAmount = 0,
                 AvailableBalance = 0,

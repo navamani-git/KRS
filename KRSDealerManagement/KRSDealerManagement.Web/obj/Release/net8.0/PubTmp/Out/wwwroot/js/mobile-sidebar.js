@@ -158,6 +158,29 @@
         });
     }
 
+    function getSidebarNavScroller() {
+        return document.querySelector('.main-sidebar .krs-sidebar-nav')
+            || document.querySelector('.main-sidebar .sidebar > nav');
+    }
+
+    /** Keep the expanded section header near the top of the menu scroller (not the page bottom). */
+    function scrollTreeviewOnExpand(item) {
+        var scroller = getSidebarNavScroller();
+        if (!scroller || !item) return;
+
+        window.requestAnimationFrame(function () {
+            var anchor = item.querySelector(':scope > a.nav-link') || item;
+            var scrollerRect = scroller.getBoundingClientRect();
+            var anchorRect = anchor.getBoundingClientRect();
+            var nextTop = scroller.scrollTop + (anchorRect.top - scrollerRect.top) - 8;
+
+            scroller.scrollTo({
+                top: Math.max(0, nextTop),
+                behavior: 'smooth'
+            });
+        });
+    }
+
     function bindMobileTreeview() {
         document.querySelectorAll('.main-sidebar .has-treeview > a.nav-link').forEach(function (link) {
             if (link.dataset.krsTreeBound === '1') return;
@@ -186,17 +209,48 @@
                 item.classList.toggle('menu-open', willOpen);
 
                 if (willOpen) {
-                    window.setTimeout(function () {
-                        var sidebar = document.querySelector('.main-sidebar');
-                        if (!sidebar) return;
-                        var itemBottom = item.getBoundingClientRect().bottom;
-                        var sidebarBottom = sidebar.getBoundingClientRect().bottom;
-                        if (itemBottom > sidebarBottom - 24) {
-                            sidebar.scrollTop += itemBottom - sidebarBottom + 64;
-                        }
-                    }, 100);
+                    scrollTreeviewOnExpand(item);
                 }
             }, true);
+        });
+    }
+
+    function bindTreeviewScrollObserver() {
+        var nav = getSidebarNavScroller();
+        if (!nav || nav.dataset.krsTreeScrollObs === '1') return;
+        nav.dataset.krsTreeScrollObs = '1';
+
+        var scrollFromUser = false;
+
+        nav.addEventListener('click', function (event) {
+            if (isMobileNav() || isDesktopCollapsed()) return;
+
+            var link = event.target.closest('.has-treeview > a.nav-link');
+            if (!link) return;
+            var href = link.getAttribute('href');
+            if (href && href !== '#') return;
+            scrollFromUser = true;
+        }, true);
+
+        new MutationObserver(function (mutations) {
+            if (isMobileNav() || isDesktopCollapsed()) return;
+
+            mutations.forEach(function (mutation) {
+                if (mutation.attributeName !== 'class') return;
+                if (!scrollFromUser) return;
+
+                var item = mutation.target;
+                if (!(item instanceof HTMLElement)) return;
+                if (!item.classList.contains('has-treeview')) return;
+                if (!item.classList.contains('menu-open')) return;
+
+                scrollFromUser = false;
+                scrollTreeviewOnExpand(item);
+            });
+        }).observe(nav, {
+            attributes: true,
+            attributeFilter: ['class'],
+            subtree: true
         });
     }
 
@@ -283,6 +337,7 @@
         observeBodyClasses();
         syncMobileNavMode();
         bindMobileTreeview();
+        bindTreeviewScrollObserver();
         bindNavLinkClose();
         bindDesktopCollapseFlyout();
         bindPushmenuSync();

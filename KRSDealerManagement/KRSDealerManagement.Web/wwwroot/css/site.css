@@ -1169,6 +1169,18 @@ table.grid-excel-table .grid-col-actions,
     max-width: none;
 }
 
+table.grid-excel-table .grid-col-chassis,
+.grid-scroll-panel table.grid-excel-table .grid-col-chassis {
+    max-width: 176px;
+    white-space: nowrap;
+}
+
+table.grid-excel-table .grid-col-price,
+.grid-scroll-panel table.grid-excel-table .grid-col-price {
+    max-width: 108px;
+    white-space: nowrap;
+}
+
 table.grid-excel-table thead tr:not(.grid-column-filters) th,
 .grid-scroll-panel table.grid-excel-table thead tr:not(.grid-column-filters) th {
     overflow: hidden;

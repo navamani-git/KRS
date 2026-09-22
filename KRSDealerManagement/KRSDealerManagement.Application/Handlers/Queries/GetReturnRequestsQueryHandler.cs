@@ -40,9 +40,13 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var masters = (await _unitOfWork.VehicleMasters.GetAllAsync()).ToDictionary(m => m.VehicleMasterId);
             var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToDictionary(d => d.DealershipId);
             var orgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync()).ToList();
+            var orgs = (await _unitOfWork.SubDealers.GetAllAsync()).ToDictionary(o => o.SubDealerId);
 
             var dealershipFilter = DealershipQueryScope.ResolveDealershipIds(request.DealershipId, request.DealershipIds);
-            var scopedUserIds = dealershipFilter != null
+            var scopedOrgIds = dealershipFilter != null
+                ? DealershipQueryScope.GetScopedSubdealerOrgIds(orgRoles, dealershipFilter)
+                : null;
+            var scopedLoginIds = dealershipFilter != null
                 ? DealershipQueryScope.GetScopedSubdealerUserIds(orgRoles, dealershipFilter)
                 : null;
 
@@ -55,16 +59,19 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                          from veh in vehicleGroup.DefaultIfEmpty()
                          join u in users.Values on r.ProcessedBy equals u.UserId into userGroup
                          from processedUser in userGroup.DefaultIfEmpty()
-                         let subdealerUserId = veh?.SubdealerId ?? ord?.SubdealerId ?? acc?.SubdealerId
+                         let subdealerOrgId = veh?.SubdealerId ?? ord?.SubdealerId
+                         let accountLoginUserId = acc?.SubdealerId
                          let displayStatus = VehicleStatusResolver.ResolveReturnDisplayStatus(r, veh)
                          select new ReturnRequestDto
                          {
                              ReturnRequestId = r.ReturnRequestId,
                              AccountId = r.AccountId,
                              AccountName = acc != null ? acc.AccountName : "Unknown",
-                             SubdealerName = subdealerUserId.HasValue && users.TryGetValue(subdealerUserId.Value, out var subdealerUser)
-                                 ? subdealerUser.GetFullName()
-                                 : "Unknown",
+                             SubdealerName = SubdealerOrgService.ResolveDisplayName(
+                                 subdealerOrgId ?? accountLoginUserId,
+                                 orgRoles,
+                                 orgs,
+                                 users),
                              DealershipLocation = DealershipLocationHelper.ResolveShowroomLabel(
                                  veh,
                                  ord?.SubdealerId,
@@ -76,7 +83,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                              OrderNumber = ord != null ? ord.OrderNumber : $"Order #{r.OrderId}",
                              VehicleId = r.VehicleId,
                              VehicleChassisNumber = veh != null ? veh.ChassisNumber : "Unknown",
-                             SubdealerUserId = subdealerUserId,
+                             SubdealerUserId = subdealerOrgId ?? accountLoginUserId,
                              RefundAmount = r.RefundAmount,
                              Status = displayStatus,
                              StatusName = statusMap.TryGetValue(displayStatus, out var st) ? st.StatusName : null,
@@ -123,7 +130,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     || (r.SubdealerUserId.HasValue && orgLoginIds.Contains(r.SubdealerUserId.Value)));
             }
 
-            if (scopedUserIds != null)
+            if (scopedOrgIds != null)
             {
                 var vehicleSubdealerById = vehicles.ToDictionary(v => v.VehicleId, v => v.SubdealerId);
                 var orderSubdealerById = orders.ToDictionary(o => o.OrderId, o => o.SubdealerId);
@@ -132,12 +139,15 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 result = result.Where(r =>
                     (vehicleSubdealerById.TryGetValue(r.VehicleId, out var vehicleSubdealerId)
                         && vehicleSubdealerId.HasValue
-                        && scopedUserIds.Contains(vehicleSubdealerId.Value))
+                        && scopedOrgIds.Contains(vehicleSubdealerId.Value))
                     || (orderSubdealerById.TryGetValue(r.OrderId, out var orderSubdealerId)
-                        && scopedUserIds.Contains(orderSubdealerId))
-                    || (accountSubdealerById.TryGetValue(r.AccountId, out var accountSubdealerId)
-                        && scopedUserIds.Contains(accountSubdealerId))
-                    || (r.SubdealerUserId.HasValue && scopedUserIds.Contains(r.SubdealerUserId.Value)));
+                        && scopedOrgIds.Contains(orderSubdealerId))
+                    || (scopedLoginIds != null
+                        && accountSubdealerById.TryGetValue(r.AccountId, out var accountSubdealerId)
+                        && scopedLoginIds.Contains(accountSubdealerId))
+                    || (r.SubdealerUserId.HasValue
+                        && (scopedOrgIds.Contains(r.SubdealerUserId.Value)
+                            || (scopedLoginIds?.Contains(r.SubdealerUserId.Value) ?? false))));
             }
 
             if (request.Status.HasValue)

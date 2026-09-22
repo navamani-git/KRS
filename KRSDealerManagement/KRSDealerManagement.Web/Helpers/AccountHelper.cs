@@ -24,13 +24,7 @@ namespace KRSDealerManagement.Web.Helpers
                 IsActive = true
             });
 
-            var list = accounts?.ToList() ?? new List<SubdealerAccountDto>();
-            if (list.Count == 0) return null;
-
-            return list.FirstOrDefault(a =>
-                       string.Equals(a.AccountType, "Main", StringComparison.OrdinalIgnoreCase)
-                       || string.Equals(a.AccountName, "Main Account", StringComparison.OrdinalIgnoreCase))
-                   ?? list.First();
+            return accounts?.FirstOrDefault();
         }
 
         /// <summary>Backward-compatible alias — returns org wallet account.</summary>

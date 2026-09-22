@@ -100,7 +100,10 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 o.IsActive && DealershipQueryScope.MatchesDealership(o.DealershipId, dealershipFilter));
 
             var accounts = (await accountsTask).ToList();
-            summary.TotalAccounts = accounts.Count(a => a.IsActive && IsInScope(a.SubdealerId, scopedLoginIds));
+            summary.TotalAccounts = accounts.Count(a =>
+                a.IsActive
+                && SubdealerOrgService.IsMainAccount(a)
+                && IsInScope(a.SubdealerId, scopedLoginIds));
 
             var balances = await balancesTask;
             var scopedBalances = balances.Where(b => IsInScope(b.SubdealerId, scopedLoginIds));
@@ -306,13 +309,10 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var orgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, subdealerId);
             var orgLoginIds = await orgUserIdsTask;
             var accounts = (await accountsTask).ToList();
-            var orgAccounts = accounts
-                .Where(a => orgLoginIds.Contains(a.SubdealerId) && a.IsActive)
-                .ToList();
-            summary.TotalAccounts = orgAccounts.Count;
+            var walletAccount = await SubdealerOrgService.GetOrgWalletAccountAsync(_unitOfWork, orgId);
+            summary.TotalAccounts = walletAccount != null ? 1 : 0;
 
             var balances = await balancesTask;
-            var walletAccount = await SubdealerOrgService.GetWalletAccountAsync(_unitOfWork, orgId);
             if (walletAccount != null)
             {
                 var walletBalance = balances.FirstOrDefault(b => b.SubdealerAccountId == walletAccount.AccountId);

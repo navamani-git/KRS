@@ -52,7 +52,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
                 GridScreenIds.Payments or GridScreenIds.MyPayments => await DistinctFrom(await _mediator.Send(new GetPaymentsQuery
                 {
-                    SubdealerId = grid == GridScreenIds.MyPayments ? request.UserId : request.SubdealerId,
+                    SubdealerId = request.SubdealerId,
                     Status = request.Status,
                     FromDate = request.FromDate,
                     ToDate = request.ToDate
@@ -71,14 +71,14 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
                 GridScreenIds.MyOrders => await DistinctFrom(await _mediator.Send(new GetPurchaseOrdersQuery
                 {
-                    SubdealerId = request.UserId,
+                    SubdealerId = request.SubdealerId,
                     FromDate = request.FromDate,
                     ToDate = request.ToDate
                 }), column, request, MyOrderProjections),
 
                 GridScreenIds.Returns or GridScreenIds.MyReturns => await DistinctFrom(await _mediator.Send(new GetReturnRequestsQuery
                 {
-                    SubdealerId = grid == GridScreenIds.MyReturns ? request.UserId : request.SubdealerId
+                    SubdealerId = request.SubdealerId
                 }), column, request, grid == GridScreenIds.MyReturns ? MyReturnProjections : ReturnProjections),
 
                 GridScreenIds.CommissionApprovals => await DistinctFrom(await _mediator.Send(new GetCommissionsQuery()), column, request, CommissionApprovalProjections),
@@ -188,9 +188,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var warrantyOnlyVehicleIds = await WarrantyOnlyVehicleFlowHelper.GetWarrantyOnlyVehicleIdsAsync(_unitOfWork);
 
             var rows = new List<VehicleBookingGridRowDto>();
-            HashSet<int>? orgUserIds = null;
+            int? filterOrgId = null;
             if (request.SubdealerId.HasValue)
-                orgUserIds = await SubdealerOrgService.GetOrgLoginUserIdsAsync(_unitOfWork, request.SubdealerId.Value);
+                filterOrgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, request.SubdealerId.Value);
 
             var userOrgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync()).ToList();
             var orgs = (await _unitOfWork.SubDealers.GetAllAsync()).ToDictionary(o => o.SubDealerId);
@@ -198,7 +198,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             foreach (var b in bookings.Where(b =>
                          scopedIds.Contains(b.SubdealerId)
                          && !warrantyOnlyVehicleIds.Contains(b.VehicleId)
-                         && (orgUserIds == null || orgUserIds.Contains(b.SubdealerId))))
+                         && (!filterOrgId.HasValue || b.SubdealerId == filterOrgId.Value)))
             {
                 vehicles.TryGetValue(b.VehicleId, out var v);
                 var vehicleStatus = v?.Status ?? b.BookingStatus;
@@ -306,9 +306,12 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 .Where(a => a.IsActive && (subRole == null || a.RoleId == subRole.RoleId));
 
             if (dealershipFilter != null)
-                return DealershipQueryScope.GetScopedSubdealerUserIds(orgRoles, dealershipFilter, subRole?.RoleId);
+                return DealershipQueryScope.GetScopedSubdealerOrgIds(orgRoles, dealershipFilter, subRole?.RoleId);
 
-            return orgRoles.Select(a => a.UserId).ToHashSet();
+            return orgRoles
+                .Where(a => a.SubDealerId.HasValue && a.SubDealerId.Value > 0)
+                .Select(a => a.SubDealerId!.Value)
+                .ToHashSet();
         }
 
         private async Task<IReadOnlyList<string>> DistinctStatusLookups(string column, GetGridDistinctValuesQuery request)

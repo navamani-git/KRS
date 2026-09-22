@@ -328,8 +328,7 @@ namespace KRSDealerManagement.Application.Services
                 return (true, null);
             }
 
-            var accounts = (await _unitOfWork.SubdealerAccounts.GetAllAsync()).ToList();
-            var account = accounts.FirstOrDefault(a => a.SubdealerId == vehicle.SubdealerId.Value && a.IsActive);
+            var account = await SubdealerOrgService.GetOrgWalletAccountAsync(_unitOfWork, vehicle.SubdealerId.Value);
             if (account == null)
             {
                 if (requireAccountAdjustment)

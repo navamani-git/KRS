@@ -1,13 +1,15 @@
 (function () {
-    var WIDTH_STORAGE = 'krs-grid-widths:v8:';
+    var WIDTH_STORAGE = 'krs-grid-widths:v9:';
     var MIN_WIDTH = 28;
     var MAX_WIDTH = 480;
     var AUTO_FILL_MAX = 200;
 
     // ID, Chassis, Subdealer, Customer, Mobile, Status, dates×4, Inv/Ins doc, Registered, Actions
     var DEFAULT_WIDTHS = {
-        vehicle_bookings: [52, 110, 160, 120, 100, 100, 82, 82, 82, 82, 64, 64, 82, 58],
-        showroom_stock: [44, 90, 130, 110, 100, 90, 90, 88, 72, 88]
+        vehicle_bookings: [52, 200, 160, 120, 100, 100, 82, 82, 82, 82, 64, 64, 82, 58],
+        showroom_stock: [44, 90, 200, 100, 90, 90, 88, 72, 88],
+        vehicles_12: [42, 88, 96, 104, 132, 112, 168, 88, 96, 88, 96, 58],
+        vehicles_13: [42, 120, 88, 96, 104, 132, 112, 168, 88, 96, 88, 96, 58]
     };
 
     var fillTimer;
@@ -116,18 +118,12 @@
             extra = panelWidth - total;
         }
 
-        if (extra > 0) {
-            result = distributeExtraWidth(result, extra, visibleIndexes, AUTO_FILL_MAX + 40);
-            total = sumIndexes(result, visibleIndexes);
-            extra = panelWidth - total;
-        }
-
         if (extra > 0 && flexIndexes.length) {
             result = distributeExtraWidth(result, extra, flexIndexes, MAX_WIDTH);
             total = sumIndexes(result, visibleIndexes);
         }
 
-        return { widths: result, tableWidth: Math.max(total, panelWidth) };
+        return { widths: result, tableWidth: total };
     }
 
     function fitVisibleColumnsToPanel(table, widths) {
@@ -146,6 +142,10 @@
         var flexIndexes = getFlexColumnIndexes(table).filter(function (i) {
             return visibleIndexes.indexOf(i) >= 0;
         });
+        if (!flexIndexes.length) {
+            return { widths: widths.slice(), tableWidth: visibleTotal, needsRefit: false };
+        }
+
         var expanded = expandToPanelWidth(widths, visibleIndexes, panelWidth, flexIndexes);
         return { widths: expanded.widths, tableWidth: expanded.tableWidth, needsRefit: false };
     }
@@ -191,6 +191,10 @@
         if (gridId === 'showroom_stock' || gridId.indexOf('showroom_stock') >= 0) {
             var stockPreset = DEFAULT_WIDTHS.showroom_stock;
             if (stockPreset.length === count) return stockPreset.slice();
+        }
+        if (gridId === 'vehicles' || gridId.indexOf('vehicles') >= 0) {
+            if (count === 12) return DEFAULT_WIDTHS.vehicles_12.slice();
+            if (count === 13) return DEFAULT_WIDTHS.vehicles_13.slice();
         }
         return Array.from({ length: count }, function (_, i) {
             return i === 0 ? 42 : (i === count - 1 ? 58 : 78);
@@ -401,6 +405,45 @@
         return widths[colIndex] > defaults[colIndex] + 1;
     }
 
+    function isChassisHeaderLabel(label) {
+        if (!label) return false;
+        var text = label.replace(/\s+/g, ' ').trim();
+        if (!text) return false;
+        return /^chassis(\b|\.|#|\s)/i.test(text)
+            || /^chassis$/i.test(text)
+            || /^chassis\s*no\.?$/i.test(text)
+            || /^vin$/i.test(text);
+    }
+
+    function findChassisColumnIndexes(table) {
+        var indexes = new Set();
+        var filterRow = table.querySelector('thead tr.grid-column-filters');
+        if (filterRow) {
+            filterRow.querySelectorAll('th[data-filter-key="chassis"], th[data-filter-key="vin"]').forEach(function (th) {
+                var idx = parseInt(th.getAttribute('data-grid-col-index') || '', 10);
+                if (!isNaN(idx)) indexes.add(idx);
+            });
+        }
+
+        var headerRow = getHeaderRow(table);
+        if (headerRow) {
+            Array.from(headerRow.cells).forEach(function (th, index) {
+                var labelEl = th.querySelector('.grid-col-header-text');
+                var label = labelEl ? labelEl.textContent : th.textContent;
+                if (isChassisHeaderLabel(label)) indexes.add(index);
+            });
+        }
+
+        return Array.from(indexes).filter(function (i) { return i >= 0; }).sort(function (a, b) { return a - b; });
+    }
+
+    function autoExpandChassisColumns(table, colgroup, widths, defaults) {
+        findChassisColumnIndexes(table).forEach(function (colIndex) {
+            if (!isColumnVisible(table, colIndex)) return;
+            autoFitColumn(table, colIndex, colgroup, widths, defaults);
+        });
+    }
+
     function shrinkColumn(table, colIndex, colgroup, widths, defaults) {
         widths[colIndex] = defaults[colIndex];
         var headerRow = getHeaderRow(table);
@@ -488,6 +531,7 @@
             applyWidths(table, colgroup, widths);
             saveWidths(table, widths);
             updateAllExpandButtons(table, widths, defaults);
+            autoExpandChassisColumns(table, colgroup, widths, defaults);
             notifyLayoutChanged();
         });
         toolbar.appendChild(btn);
@@ -582,6 +626,10 @@
         applyWidths(table, colgroup, widths);
         addToolbarButton(table, defaults, colgroup, widths);
         updateAllExpandButtons(table, widths, defaults);
+
+        window.requestAnimationFrame(function () {
+            autoExpandChassisColumns(table, colgroup, widths, defaults);
+        });
 
         if (table.dataset.gridResizeInit === '1') {
             notifyLayoutChanged();

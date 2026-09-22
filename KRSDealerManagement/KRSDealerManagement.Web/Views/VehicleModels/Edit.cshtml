@@ -107,7 +107,7 @@
                     </tr>
                     <tr>
                         <td><strong>Created By:</strong></td>
-                        <td>User #@Model.CreatedBy</td>
+                        <td>@(Model.CreatedByName ?? $"User #{Model.CreatedBy}")</td>
                     </tr>
                     <tr>
                         <td><strong>Created Date:</strong></td>

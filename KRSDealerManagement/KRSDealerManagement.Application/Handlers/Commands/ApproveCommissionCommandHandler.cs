@@ -62,9 +62,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                 }
 
                 var balance = (await _unitOfWork.AccountBalances.GetAllAsync())
-                    .FirstOrDefault(b => b.SubdealerAccountId == account.AccountId)
-                    ?? (await _unitOfWork.AccountBalances.GetAllAsync())
-                        .FirstOrDefault(b => b.SubdealerId == commission.SubdealerId);
+                    .FirstOrDefault(b => b.SubdealerAccountId == account.AccountId);
 
                 if (balance == null)
                     throw new InvalidOperationException("Account balance record not found.");

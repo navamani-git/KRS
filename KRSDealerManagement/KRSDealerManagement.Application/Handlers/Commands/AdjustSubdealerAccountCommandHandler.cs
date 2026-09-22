@@ -32,12 +32,12 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             if (string.IsNullOrWhiteSpace(description))
                 throw new InvalidOperationException("Description is required.");
 
-            var account = await SubdealerOrgService.GetPermissionAccountAsync(_unitOfWork, request.SubdealerId)
-                ?? throw new InvalidOperationException("Subdealer account not found.");
+            var orgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, request.SubdealerId);
+            var account = await SubdealerOrgService.GetOrgWalletAccountAsync(_unitOfWork, orgId)
+                ?? throw new InvalidOperationException("Subdealer wallet account not found.");
 
-            var balance = await _unitOfWork.AccountBalances.GetByIdAsync(account.AccountId)
-                ?? (await _unitOfWork.AccountBalances.GetAllAsync())
-                    .FirstOrDefault(b => b.SubdealerId == request.SubdealerId)
+            var balance = (await _unitOfWork.AccountBalances.GetAllAsync())
+                    .FirstOrDefault(b => b.SubdealerAccountId == account.AccountId)
                 ?? throw new InvalidOperationException("Account balance not found.");
 
             if (isCredit)

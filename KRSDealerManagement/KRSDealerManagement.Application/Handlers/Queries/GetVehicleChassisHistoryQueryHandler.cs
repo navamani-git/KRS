@@ -61,6 +61,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 "Allocated" => string.IsNullOrWhiteSpace(note)
                     ? "Allocated to subdealer."
                     : $"Allocated — {note}",
+                "GoLiveAllocated" => string.IsNullOrWhiteSpace(note)
+                    ? "Opening stock allocated from go-live import."
+                    : note,
                 _ => string.IsNullOrWhiteSpace(note) ? action : $"{action} — {note}"
             };
         }

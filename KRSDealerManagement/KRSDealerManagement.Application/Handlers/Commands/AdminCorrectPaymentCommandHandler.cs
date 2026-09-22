@@ -146,9 +146,17 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             if (delta == 0) return;
 
             var balance = (await _unitOfWork.AccountBalances.GetAllAsync())
-                .FirstOrDefault(b => b.SubdealerAccountId == payment.AccountId)
-                ?? (await _unitOfWork.AccountBalances.GetAllAsync())
-                    .FirstOrDefault(b => b.SubdealerId == payment.SubdealerId);
+                .FirstOrDefault(b => b.SubdealerAccountId == payment.AccountId);
+            if (balance == null)
+            {
+                var orgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, payment.SubdealerId);
+                var wallet = await SubdealerOrgService.GetOrgWalletAccountAsync(_unitOfWork, orgId);
+                if (wallet != null)
+                {
+                    balance = (await _unitOfWork.AccountBalances.GetAllAsync())
+                        .FirstOrDefault(b => b.SubdealerAccountId == wallet.AccountId);
+                }
+            }
             if (balance == null) return;
 
             balance.CurrentBalance += delta;

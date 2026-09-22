@@ -116,7 +116,7 @@ namespace KRSDealerManagement.Web.Controllers
                 DealershipLocation = isSubdealer ? null : dealershipLocation
             };
             if (isSubdealer)
-                query.SubdealerId = SessionHelper.GetUserId(HttpContext.Session);
+                query.SubdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session);
             else
             {
                 DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, query);

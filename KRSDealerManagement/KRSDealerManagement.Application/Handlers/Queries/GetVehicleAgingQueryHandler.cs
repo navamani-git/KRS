@@ -30,15 +30,11 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var orgs = (await _unitOfWork.SubDealers.GetAllAsync()).ToDictionary(o => o.SubDealerId);
             var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToDictionary(d => d.DealershipId);
             var allOrgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync()).ToList();
-            var orgRoles = allOrgRoles
-                .Where(a => a.IsActive)
-                .GroupBy(a => a.UserId)
-                .ToDictionary(g => g.Key, g => g.OrderByDescending(a => a.IsPrimary).First());
             var warrantyOnlyVehicleIds = await WarrantyOnlyVehicleFlowHelper.GetWarrantyOnlyVehicleIdsAsync(_unitOfWork);
 
             var dealershipFilter = DealershipQueryScope.ResolveDealershipIds(request.DealershipId, request.DealershipIds);
             HashSet<int>? scopedSubdealerIds = dealershipFilter != null
-                ? DealershipQueryScope.GetScopedSubdealerUserIds(allOrgRoles, dealershipFilter)
+                ? DealershipQueryScope.GetScopedSubdealerOrgIds(allOrgRoles, dealershipFilter)
                 : null;
 
             if (!string.IsNullOrWhiteSpace(request.DealershipLocation))
@@ -49,9 +45,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         && string.Equals(d.Location?.Trim(), location, StringComparison.OrdinalIgnoreCase))
                     .Select(d => d.DealershipId)
                     .ToHashSet();
-                var locationSubdealerIds = orgRoles.Values
-                    .Where(a => a.DealershipId.HasValue && locationDealershipIds.Contains(a.DealershipId.Value))
-                    .Select(a => a.UserId)
+                var locationSubdealerIds = orgs.Values
+                    .Where(o => o.IsActive && locationDealershipIds.Contains(o.DealershipId))
+                    .Select(o => o.SubDealerId)
                     .ToHashSet();
                 scopedSubdealerIds = scopedSubdealerIds == null
                     ? locationSubdealerIds

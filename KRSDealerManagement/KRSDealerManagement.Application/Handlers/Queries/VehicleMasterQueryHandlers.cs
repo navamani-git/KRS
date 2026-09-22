@@ -3,6 +3,7 @@ using KRSDealerManagement.Application.Commands;
 using KRSDealerManagement.Application.DTOs;
 using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Queries;
+using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Entities;
 using KRSDealerManagement.Domain.Repositories;
 
@@ -30,26 +31,6 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     g => g.Key,
                     g => g.OrderByDescending(v => v.CreatedDate).First());
 
-            string ResolveAllocatedToName(int? subdealerUserId)
-            {
-                if (!subdealerUserId.HasValue || subdealerUserId.Value <= 0)
-                    return "";
-
-                var assignment = userOrgRoles
-                    .Where(a => a.UserId == subdealerUserId.Value && a.IsActive)
-                    .OrderByDescending(a => a.IsPrimary)
-                    .FirstOrDefault();
-                if (assignment?.SubDealerId is int orgId && orgs.TryGetValue(orgId, out var org))
-                {
-                    var location = string.IsNullOrWhiteSpace(org.Location) ? "" : $" ({org.Location})";
-                    return $"{org.SubDealerName}{location}";
-                }
-
-                return users.TryGetValue(subdealerUserId.Value, out var user)
-                    ? user.GetFullName()
-                    : $"Subdealer #{subdealerUserId}";
-            }
-
             var dealershipFilter = DealershipQueryScope.ResolveDealershipIds(request.DealershipId, request.DealershipIds);
             if (dealershipFilter != null)
                 masters = masters.Where(m => dealershipFilter.Contains(m.DealershipId));
@@ -76,7 +57,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     if (m.IsAllocated
                         && allocationByMasterId.TryGetValue(m.VehicleMasterId, out var vehicle))
                     {
-                        allocatedTo = ResolveAllocatedToName(vehicle.SubdealerId);
+                        allocatedTo = SubdealerOrgService.ResolveDisplayName(
+                            vehicle.SubdealerId, userOrgRoles, orgs, users);
                     }
 
                     return new VehicleMasterDto

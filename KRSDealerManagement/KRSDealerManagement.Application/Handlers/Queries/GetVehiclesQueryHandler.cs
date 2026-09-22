@@ -42,6 +42,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var userOrgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync()).ToList();
             var orgs = (await _unitOfWork.SubDealers.GetAllAsync()).ToDictionary(o => o.SubDealerId);
             var warrantyOnlyVehicleIds = await WarrantyOnlyVehicleFlowHelper.GetWarrantyOnlyVehicleIdsAsync(_unitOfWork);
+            var priceHistory = (await _unitOfWork.VehiclePriceHistories.GetAllAsync()).ToList();
 
             // Only vehicles currently held by a subdealer. Returned dealer-stock units live on Dealer Stock.
             var result = vehicles
@@ -56,6 +57,16 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     orderItemByVehicleId.TryGetValue(v.VehicleId, out var orderItem);
                     statusMap.TryGetValue(v.Status, out var st);
                     bookings.TryGetValue(v.VehicleId, out var booking);
+                    var unitPrice = v.CurrentPrice;
+                    if (unitPrice <= 0)
+                    {
+                        var asOf = (orderItem?.ApprovedDate ?? v.AllocatedDate ?? v.CreatedDate).Date;
+                        unitPrice = VehiclePriceCoverageHelper.FindActivePrice(
+                                priceHistory, v.ModelId, v.ColorId, asOf)?.Price
+                            ?? VehiclePriceCoverageHelper.FindActivePrice(
+                                priceHistory, v.ModelId, v.ColorId, DateTime.UtcNow.Date)?.Price
+                            ?? 0;
+                    }
 
                     return new VehicleDto
                     {
@@ -83,7 +94,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         OrderDate = order?.CreatedDate,
                         AllocatedDate = orderItem?.ApprovedDate,
                         CreatedByDealer = order?.CreatedByDealer ?? false,
-                        CurrentPrice = v.CurrentPrice,
+                        CurrentPrice = unitPrice,
                         MotorNo = v.MotorNo,
                         BatteryNo = v.BatteryNo,
                         ChargerNo = v.ChargerNo,

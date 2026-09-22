@@ -1,5 +1,5 @@
 (function () {
-    var WIDTH_STORAGE = 'krs-grid-widths:v8:';
+    var WIDTH_STORAGE = 'krs-grid-widths:v9:';
     var MIN_WIDTH = 28;
     var MAX_WIDTH = 480;
     var AUTO_FILL_MAX = 200;
@@ -7,7 +7,9 @@
     // ID, Chassis, Subdealer, Customer, Mobile, Status, dates×4, Inv/Ins doc, Registered, Actions
     var DEFAULT_WIDTHS = {
         vehicle_bookings: [52, 200, 160, 120, 100, 100, 82, 82, 82, 82, 64, 64, 82, 58],
-        showroom_stock: [44, 90, 200, 100, 90, 90, 88, 72, 88]
+        showroom_stock: [44, 90, 200, 100, 90, 90, 88, 72, 88],
+        vehicles_12: [42, 88, 96, 104, 132, 112, 168, 88, 96, 88, 96, 58],
+        vehicles_13: [42, 120, 88, 96, 104, 132, 112, 168, 88, 96, 88, 96, 58]
     };
 
     var fillTimer;
@@ -116,18 +118,12 @@
             extra = panelWidth - total;
         }
 
-        if (extra > 0) {
-            result = distributeExtraWidth(result, extra, visibleIndexes, AUTO_FILL_MAX + 40);
-            total = sumIndexes(result, visibleIndexes);
-            extra = panelWidth - total;
-        }
-
         if (extra > 0 && flexIndexes.length) {
             result = distributeExtraWidth(result, extra, flexIndexes, MAX_WIDTH);
             total = sumIndexes(result, visibleIndexes);
         }
 
-        return { widths: result, tableWidth: Math.max(total, panelWidth) };
+        return { widths: result, tableWidth: total };
     }
 
     function fitVisibleColumnsToPanel(table, widths) {
@@ -146,6 +142,10 @@
         var flexIndexes = getFlexColumnIndexes(table).filter(function (i) {
             return visibleIndexes.indexOf(i) >= 0;
         });
+        if (!flexIndexes.length) {
+            return { widths: widths.slice(), tableWidth: visibleTotal, needsRefit: false };
+        }
+
         var expanded = expandToPanelWidth(widths, visibleIndexes, panelWidth, flexIndexes);
         return { widths: expanded.widths, tableWidth: expanded.tableWidth, needsRefit: false };
     }
@@ -191,6 +191,10 @@
         if (gridId === 'showroom_stock' || gridId.indexOf('showroom_stock') >= 0) {
             var stockPreset = DEFAULT_WIDTHS.showroom_stock;
             if (stockPreset.length === count) return stockPreset.slice();
+        }
+        if (gridId === 'vehicles' || gridId.indexOf('vehicles') >= 0) {
+            if (count === 12) return DEFAULT_WIDTHS.vehicles_12.slice();
+            if (count === 13) return DEFAULT_WIDTHS.vehicles_13.slice();
         }
         return Array.from({ length: count }, function (_, i) {
             return i === 0 ? 42 : (i === count - 1 ? 58 : 78);

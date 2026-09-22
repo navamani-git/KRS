@@ -49,6 +49,8 @@ namespace KRSDealerManagement.Application.Helpers
             "Returned" => UnifiedVehicleStatus.ReturnApproved,
             "LifecycleSuperseded" => UnifiedVehicleStatus.LifecycleSuperseded,
             "BranchTransfer" => UnifiedVehicleStatus.Submitted,
+            "GoLiveOpeningStock" => UnifiedVehicleStatus.Submitted,
+            "GoLiveAllocated" => UnifiedVehicleStatus.ApprovedByDealer,
             _ => null
         };
 

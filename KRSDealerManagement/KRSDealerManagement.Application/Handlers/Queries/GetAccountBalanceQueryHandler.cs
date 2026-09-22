@@ -1,6 +1,7 @@
 using MediatR;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Application.DTOs;
+using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Repositories;
 
 namespace KRSDealerManagement.Application.Handlers.Queries
@@ -35,15 +36,15 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             // Get account and user for display
             var accounts = await _unitOfWork.SubdealerAccounts.GetAllAsync();
             var account = accounts.FirstOrDefault(a => a.AccountId == balance.SubdealerAccountId);
-            var users = await _unitOfWork.Users.GetAllAsync();
-            var user = users.FirstOrDefault(u => u.UserId == balance.SubdealerId);
+            var orgs = (await _unitOfWork.SubDealers.GetAllAsync()).ToDictionary(o => o.SubDealerId);
+            var orgId = await SubdealerOrgService.ResolveOrgIdFromWalletUserIdAsync(_unitOfWork, balance.SubdealerId);
 
             return new AccountBalanceDto
             {
                 BalanceId = balance.BalanceId,
                 SubdealerAccountId = balance.SubdealerAccountId,
-                SubdealerId = balance.SubdealerId,
-                SubdealerName = user?.GetFullName() ?? "Unknown",
+                SubdealerId = orgId,
+                SubdealerName = SubdealerOrgService.ResolveOrgDisplayName(orgId, orgs),
                 AccountName = account?.AccountName ?? "Unknown",
                 CurrentBalance = balance.CurrentBalance,
                 ReservedAmount = balance.ReservedAmount,
