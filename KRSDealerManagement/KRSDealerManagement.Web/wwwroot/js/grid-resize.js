@@ -1,7 +1,7 @@
 (function () {
-    var WIDTH_STORAGE = 'krs-grid-widths:v12:';
+    var WIDTH_STORAGE = 'krs-grid-widths:v14:';
     var MIN_WIDTH = 28;
-    var MAX_WIDTH = 480;
+    var MAX_WIDTH = 760;
     var AUTO_FILL_MAX = 160;
 
     // ID, Chassis, Subdealer, Customer, Mobile, Status, dates×4, Inv/Ins doc, Registered, Actions
@@ -146,18 +146,125 @@
         return Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, Math.ceil(width)));
     }
 
+    function isActionColumn(table, colIndex) {
+        var headerRow = getHeaderRow(table);
+        var th = headerRow && headerRow.cells[colIndex];
+        if (!th) return false;
+        if (th.classList.contains('grid-col-actions')) return true;
+        var labelEl = th.querySelector('.grid-col-header-text');
+        var label = (labelEl ? labelEl.textContent : th.textContent).replace(/\s+/g, ' ').trim();
+        return /^actions?$/i.test(label);
+    }
+
+    function isRownumColumn(table, colIndex) {
+        var headerRow = getHeaderRow(table);
+        var th = headerRow && headerRow.cells[colIndex];
+        return !!(th && th.classList.contains('grid-col-rownum'));
+    }
+
+    function headerLabel(table, colIndex) {
+        var headerRow = getHeaderRow(table);
+        var th = headerRow && headerRow.cells[colIndex];
+        if (!th) return '';
+        var labelEl = th.querySelector('.grid-col-header-text');
+        return (labelEl ? labelEl.textContent : th.textContent).replace(/\s+/g, ' ').trim();
+    }
+
+    function headerCompactWidth(table, colIndex) {
+        var headerRow = getHeaderRow(table);
+        var th = headerRow && headerRow.cells[colIndex];
+        var label = headerLabel(table, colIndex);
+        var font = th ? window.getComputedStyle(th).font : '';
+        var textWidth = label ? measureText(label, font) : 48;
+        // Sort icon, expand icon, and resize handle sit inside the header.
+        return Math.max(72, Math.min(132, Math.ceil(textWidth) + 52));
+    }
+
+    function measureCellOuterWidth(cell) {
+        if (!cell) return 0;
+        var probe = document.createElement('div');
+        probe.setAttribute('aria-hidden', 'true');
+        probe.style.cssText = 'position:absolute;left:0;top:-9999px;visibility:hidden;white-space:nowrap;width:max-content;pointer-events:none;';
+        var cs = window.getComputedStyle(cell);
+        probe.style.font = cs.font;
+        probe.style.paddingLeft = cs.paddingLeft;
+        probe.style.paddingRight = cs.paddingRight;
+        probe.innerHTML = cell.innerHTML;
+        document.body.appendChild(probe);
+        var width = probe.offsetWidth;
+        probe.remove();
+        return width;
+    }
+
+    function naturalColumnWidth(table, colIndex) {
+        var maxW = 0;
+        var headerRow = getHeaderRow(table);
+        if (headerRow && headerRow.cells[colIndex]) {
+            var label = headerLabel(table, colIndex);
+            var font = window.getComputedStyle(headerRow.cells[colIndex]).font;
+            maxW = Math.max(maxW, measureText(label, font) + 52);
+        }
+        table.querySelectorAll('tbody tr').forEach(function (row) {
+            if (!row.cells[colIndex]) return;
+            maxW = Math.max(maxW, measureCellOuterWidth(row.cells[colIndex]));
+        });
+        return Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, Math.ceil(maxW + 8)));
+    }
+
     function ensureContentWidths(table, fallback) {
         if (table._krsContentWidths && table._krsContentWidths.length === fallback.length) {
             return table._krsContentWidths.slice();
         }
 
-        var measured = fallback.slice();
-        fitColumnsToContent(table, measured);
-        findChassisColumnIndexes(table).forEach(function (index) {
-            measured[index] = Math.max(measured[index], 176);
-        });
-        table._krsContentWidths = measured.slice();
-        return measured;
+        var compact = [];
+        var caps = [];
+        var chassisReady = true;
+        for (var i = 0; i < fallback.length; i++) {
+            var content = columnContentWidth(table, i);
+            if (isChassisColumn(table, i) || isActionColumn(table, i)) {
+                var natural = naturalColumnWidth(table, i);
+                if (natural > content) content = natural;
+            }
+            caps[i] = content;
+            if (isChassisColumn(table, i)) {
+                compact[i] = content;
+                if (content < 160) chassisReady = false;
+            } else if (isRownumColumn(table, i)) {
+                compact[i] = 42;
+            } else {
+                compact[i] = Math.min(content, headerCompactWidth(table, i));
+            }
+        }
+
+        table._krsHeaderFloors = compact.slice();
+        table._krsContentCaps = caps;
+        if (chassisReady && document.readyState === 'complete') {
+            table._krsContentWidths = compact.slice();
+        }
+        return compact;
+    }
+
+    function distributeUpToCaps(widths, extra, indexes, caps) {
+        var result = widths.slice();
+        var remaining = extra;
+        var guard = 0;
+        while (remaining > 0 && guard < 200) {
+            guard += 1;
+            var active = indexes.filter(function (i) { return result[i] < caps[i]; });
+            if (!active.length) break;
+            var share = Math.max(1, Math.floor(remaining / active.length));
+            var progressed = false;
+            active.forEach(function (i) {
+                if (remaining <= 0) return;
+                var add = Math.min(share, caps[i] - result[i], remaining);
+                if (add <= 0) return;
+                result[i] += add;
+                remaining -= add;
+                progressed = true;
+            });
+            if (!progressed) break;
+        }
+        return result;
     }
 
     function shrinkFlexibleColumns(widths, flexible, floors, overflow) {
@@ -192,11 +299,14 @@
         var panelWidth = getPanelWidth(table);
         var widths = contentWidths.slice();
         var visible = getVisibleColumnIndexes(table, widths);
-        var floors = widths.map(function (_, index) { return headerContentWidth(table, index); });
+        var caps = table._krsContentCaps && table._krsContentCaps.length === widths.length
+            ? table._krsContentCaps
+            : widths.slice();
+        var floors = widths.map(function () { return MIN_WIDTH; });
 
         findChassisColumnIndexes(table).forEach(function (index) {
             if (visible.indexOf(index) < 0) return;
-            widths[index] = Math.max(widths[index], 176);
+            widths[index] = Math.max(widths[index], caps[index] || widths[index]);
         });
 
         var total = sumIndexes(widths, visible);
@@ -204,18 +314,35 @@
             return { widths: widths, tableWidth: total, needsRefit: true };
         }
 
-        var locked = visible.filter(function (index) { return isLockedColumn(table, index); });
-        var flexible = visible.filter(function (index) { return locked.indexOf(index) < 0; });
+        var flexible = visible.filter(function (index) {
+            return !isChassisColumn(table, index) && !isRownumColumn(table, index);
+        });
 
-        if (total < panelWidth && flexible.length) {
-            widths = distributeExtraWidth(widths, panelWidth - total, flexible, 100000);
-        } else if (total > panelWidth && flexible.length) {
+        if (total > panelWidth && flexible.length) {
             widths = shrinkFlexibleColumns(widths, flexible, floors, total - panelWidth);
+            return {
+                widths: widths,
+                tableWidth: sumIndexes(widths, visible),
+                needsRefit: false
+            };
+        }
+
+        var extra = panelWidth - total;
+        if (extra > 0 && flexible.length) {
+            var growable = flexible.filter(function (index) { return widths[index] < caps[index]; });
+            widths = distributeUpToCaps(widths, extra, growable, caps);
+            total = sumIndexes(widths, visible);
+            extra = panelWidth - total;
+        }
+
+        if (extra > 0) {
+            var shareTargets = visible.filter(function (index) { return !isRownumColumn(table, index); });
+            widths = distributeExtraWidth(widths, extra, shareTargets.length ? shareTargets : visible, 4000);
         }
 
         return {
             widths: widths,
-            tableWidth: sumIndexes(widths, visible),
+            tableWidth: panelWidth,
             needsRefit: false
         };
     }
@@ -239,51 +366,45 @@
             return { widths: result, tableWidth: sumIndexes(result, visible), needsRefit: true };
         }
 
-        var headerFloors = result.map(function (_, index) { return headerContentWidth(table, index); });
+        var headerFloors = table._krsHeaderFloors && table._krsHeaderFloors.length === result.length
+            ? table._krsHeaderFloors
+            : result.map(function (_, index) { return Math.min(result[index], 96); });
         var minFloors = result.map(function () { return MIN_WIDTH; });
         var donors = visible.filter(function (index) {
-            return pinned.indexOf(index) < 0 && !isLockedColumn(table, index);
+            return pinned.indexOf(index) < 0 && !isChassisColumn(table, index) && !isRownumColumn(table, index);
+        });
+
+        findChassisColumnIndexes(table).forEach(function (index) {
+            if (visible.indexOf(index) < 0 || pinned.indexOf(index) >= 0) return;
+            var floor = table._krsContentCaps && table._krsContentCaps[index]
+                ? table._krsContentCaps[index]
+                : result[index];
+            result[index] = Math.max(result[index], floor);
         });
 
         var total = sumIndexes(result, visible);
-        if (total < panelWidth && donors.length) {
-            result = distributeExtraWidth(result, panelWidth - total, donors, 100000);
-        } else if (total > panelWidth && donors.length) {
+        if (total > panelWidth && donors.length) {
             result = shrinkFlexibleColumns(result, donors, headerFloors, total - panelWidth);
             total = sumIndexes(result, visible);
             if (total > panelWidth) {
                 result = shrinkFlexibleColumns(result, donors, minFloors, total - panelWidth);
+                total = sumIndexes(result, visible);
             }
         }
 
-        total = sumIndexes(result, visible);
-        if (total > panelWidth) {
-            var chassisDonors = visible.filter(function (index) {
-                return pinned.indexOf(index) < 0 && isChassisColumn(table, index);
+        if (total < panelWidth) {
+            var shareTargets = visible.filter(function (index) {
+                return pinned.indexOf(index) < 0 && !isRownumColumn(table, index);
             });
-            result = shrinkFlexibleColumns(result, chassisDonors, minFloors, total - panelWidth);
+            result = distributeExtraWidth(result, panelWidth - total, shareTargets.length ? shareTargets : visible, 4000);
+            total = panelWidth;
         }
 
-        total = sumIndexes(result, visible);
-        if (total > panelWidth && pinned.length) {
-            result = shrinkFlexibleColumns(result, pinned, minFloors, total - panelWidth);
-        }
-
-        total = sumIndexes(result, visible);
-        var diff = panelWidth - total;
-        if (diff !== 0 && visible.length) {
-            var adjustIndex = -1;
-            for (var i = visible.length - 1; i >= 0; i--) {
-                if (pinned.indexOf(visible[i]) < 0) {
-                    adjustIndex = visible[i];
-                    break;
-                }
-            }
-            if (adjustIndex < 0) adjustIndex = visible[visible.length - 1];
-            result[adjustIndex] = Math.max(MIN_WIDTH, result[adjustIndex] + diff);
-        }
-
-        return { widths: result, tableWidth: panelWidth, needsRefit: false };
+        return {
+            widths: result,
+            tableWidth: total,
+            needsRefit: false
+        };
     }
 
     function fitVisibleColumnsToPanel(table, widths) {
@@ -554,20 +675,43 @@
         return getPanelWidth(table) <= 0;
     }
 
+    var textProbe;
+
+    function measureText(text, font) {
+        if (!textProbe) {
+            textProbe = document.createElement('span');
+            textProbe.setAttribute('aria-hidden', 'true');
+            textProbe.style.cssText = 'position:absolute;left:0;top:-9999px;visibility:hidden;white-space:nowrap;pointer-events:none;';
+            document.body.appendChild(textProbe);
+        }
+        if (font && textProbe.style.font !== font) textProbe.style.font = font;
+        textProbe.textContent = text || '';
+        return textProbe.offsetWidth;
+    }
+
+    function cellMeasureText(cell) {
+        if (!cell) return '';
+        var input = cell.querySelector('input, select, textarea');
+        var text = input
+            ? (input.value || input.getAttribute('placeholder') || '')
+            : (cell.innerText || '');
+        return text.replace(/\s+/g, ' ').trim();
+    }
+
     function measureCellContentWidth(cell) {
         if (!cell || cell.style.display === 'none') return 0;
-        var clone = cell.cloneNode(true);
-        clone.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;'
-            + 'white-space:nowrap;width:auto;min-width:0;max-width:none;overflow:visible;'
-            + 'height:auto;display:inline-block;box-sizing:border-box;';
-        document.body.appendChild(clone);
-        var width = clone.getBoundingClientRect().width;
-        document.body.removeChild(clone);
-        return width;
+        var text = cellMeasureText(cell);
+        if (!text) return MIN_WIDTH;
+        var font = window.getComputedStyle(cell).font;
+        return measureText(text, font) + 8;
     }
 
     function isColumnExpanded(table, colIndex) {
-        return !!(table._krsWidthOverrides && table._krsWidthOverrides[colIndex] != null);
+        if (table._krsExpanded && table._krsExpanded[colIndex]) return true;
+        if (table._krsShrunk && table._krsShrunk[colIndex]) return false;
+        var cap = table._krsContentCaps && table._krsContentCaps[colIndex];
+        if (!cap) return false;
+        return displayedColumnWidth(table, colIndex, 0) >= cap - 6;
     }
 
     function isChassisHeaderLabel(label) {
@@ -607,21 +751,23 @@
     }
 
     function columnContentWidth(table, colIndex) {
-        var maxW = MIN_WIDTH;
         var headerRow = getHeaderRow(table);
-        if (headerRow && headerRow.cells[colIndex]) {
-            maxW = Math.max(maxW, measureCellContentWidth(headerRow.cells[colIndex]));
-        }
+        var headerCell = headerRow && headerRow.cells[colIndex];
+        var font = headerCell ? window.getComputedStyle(headerCell).font : '';
+        var longest = cellMeasureText(headerCell);
+
         var filterRow = table.querySelector('thead tr.grid-column-filters');
-        if (filterRow && filterRow.cells[colIndex]) {
-            maxW = Math.max(maxW, measureCellContentWidth(filterRow.cells[colIndex]));
-        }
+        var filterText = filterRow && filterRow.cells[colIndex] ? cellMeasureText(filterRow.cells[colIndex]) : '';
+        if (filterText.length > longest.length) longest = filterText;
+
         table.querySelectorAll('tbody tr').forEach(function (row) {
-            if (!row.cells[colIndex]) return;
-            maxW = Math.max(maxW, measureCellContentWidth(row.cells[colIndex]));
+            var text = row.cells[colIndex] ? cellMeasureText(row.cells[colIndex]) : '';
+            if (text.length > longest.length) longest = text;
         });
-        var pad = isChassisColumn(table, colIndex) ? 20 : 12;
-        return Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, Math.ceil(maxW) + pad));
+
+        var pad = isChassisColumn(table, colIndex) ? 28 : 18;
+        var width = longest ? measureText(longest, font) + pad : MIN_WIDTH;
+        return Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, Math.ceil(width)));
     }
 
     function fitColumnsToContent(table, widths) {
@@ -639,14 +785,22 @@
     }
 
     function shrinkColumn(table, colIndex, colgroup, widths, defaults) {
-        if (table._krsWidthOverrides) delete table._krsWidthOverrides[colIndex];
+        var floor = table._krsHeaderFloors && table._krsHeaderFloors[colIndex]
+            ? table._krsHeaderFloors[colIndex]
+            : headerCompactWidth(table, colIndex);
+        table._krsWidthOverrides = table._krsWidthOverrides || {};
+        table._krsWidthOverrides[colIndex] = floor;
+        table._krsShrunk = table._krsShrunk || {};
+        table._krsShrunk[colIndex] = true;
+        if (table._krsExpanded) delete table._krsExpanded[colIndex];
+        widths[colIndex] = floor;
         var headerRow = getHeaderRow(table);
         if (headerRow && headerRow.cells[colIndex]) {
             delete headerRow.cells[colIndex].dataset.gridColExpanded;
         }
         applyWidths(table, colgroup, widths);
         saveWidths(table, widths);
-        updateExpandButton(table, colIndex, widths, defaults);
+        updateAllExpandButtons(table, widths, defaults);
         notifyLayoutChanged();
     }
 
@@ -674,30 +828,23 @@
     }
 
     function autoFitColumn(table, colIndex, colgroup, widths, defaults) {
-        var maxW = MIN_WIDTH;
         var headerRow = getHeaderRow(table);
-        if (headerRow && headerRow.cells[colIndex]) {
-            maxW = Math.max(maxW, measureCellContentWidth(headerRow.cells[colIndex]));
+        var fitted = naturalColumnWidth(table, colIndex);
+        if (table._krsContentCaps && table._krsContentCaps[colIndex] > fitted) {
+            fitted = table._krsContentCaps[colIndex];
         }
-        var filterRow = table.querySelector('thead tr.grid-column-filters');
-        if (filterRow && filterRow.cells[colIndex]) {
-            maxW = Math.max(maxW, measureCellContentWidth(filterRow.cells[colIndex]));
-        }
-        table.querySelectorAll('tbody tr').forEach(function (row) {
-            if (!row.cells[colIndex]) return;
-            maxW = Math.max(maxW, measureCellContentWidth(row.cells[colIndex]));
-        });
-        var pad = isChassisColumn(table, colIndex) ? 20 : 12;
-        var fitted = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, Math.ceil(maxW) + pad));
         table._krsWidthOverrides = table._krsWidthOverrides || {};
         table._krsWidthOverrides[colIndex] = fitted;
+        table._krsExpanded = table._krsExpanded || {};
+        table._krsExpanded[colIndex] = true;
+        if (table._krsShrunk) delete table._krsShrunk[colIndex];
         widths[colIndex] = fitted;
         if (headerRow && headerRow.cells[colIndex]) {
             headerRow.cells[colIndex].dataset.gridColExpanded = '1';
         }
         applyWidths(table, colgroup, widths);
         saveWidths(table, widths);
-        updateExpandButton(table, colIndex, widths, defaults);
+        updateAllExpandButtons(table, widths, defaults);
         notifyLayoutChanged();
     }
 
@@ -725,6 +872,8 @@
         btn.addEventListener('click', function () {
             table._krsUserSized = false;
             table._krsWidthOverrides = {};
+            table._krsExpanded = {};
+            table._krsShrunk = {};
             table._krsContentWidths = null;
             try { sessionStorage.removeItem(getStorageKey(table)); } catch (e) { }
             for (var i = 0; i < defaults.length; i++) widths[i] = defaults[i];
@@ -783,8 +932,19 @@
 
         function onUp() {
             document.body.classList.remove('grid-col-resizing');
+            var cap = table._krsContentCaps && table._krsContentCaps[colIndex];
+            var shown = table._krsWidthOverrides ? table._krsWidthOverrides[colIndex] : 0;
+            table._krsExpanded = table._krsExpanded || {};
+            table._krsShrunk = table._krsShrunk || {};
+            if (cap && shown >= cap - 6) {
+                table._krsExpanded[colIndex] = true;
+                delete table._krsShrunk[colIndex];
+            } else {
+                table._krsShrunk[colIndex] = true;
+                delete table._krsExpanded[colIndex];
+            }
             saveWidths(table, widths);
-            updateExpandButton(table, colIndex, widths, defaults);
+            updateAllExpandButtons(table, widths, defaults);
             document.removeEventListener('mousemove', onMove);
             document.removeEventListener('mouseup', onUp);
         }
@@ -834,13 +994,6 @@
         applyWidths(table, colgroup, widths);
         addToolbarButton(table, defaults, colgroup, widths);
         updateAllExpandButtons(table, widths, defaults);
-
-        window.requestAnimationFrame(function () {
-            if (!table._krsUserSized) {
-                table._krsContentWidths = null;
-                applyWidths(table, colgroup, widths);
-            }
-        });
 
         if (table.dataset.gridResizeInit === '1') {
             notifyLayoutChanged();
@@ -903,7 +1056,6 @@
 
     window.addEventListener('load', function () {
         initAll();
-        setTimeout(initAll, 150);
     });
     window.addEventListener('resize', function () {
         clearTimeout(fillTimer);
