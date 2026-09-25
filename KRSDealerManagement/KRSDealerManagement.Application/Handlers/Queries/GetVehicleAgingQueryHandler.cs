@@ -111,7 +111,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         ModelName = model?.ModelName ?? $"Model #{v.ModelId}",
                         ColorName = color?.ColorName ?? $"Color #{v.ColorId}",
                         SubdealerId = v.SubdealerId!.Value,
-                        SubdealerName = SubdealerOrgService.ResolveDisplayName(v.SubdealerId, allOrgRoles, orgs, users),
+                        SubdealerName = SubdealerOrgService.ResolveOrgDisplayName(v.SubdealerId, orgs),
                         PurchaseDate = purchase,
                         BookedDate = booked,
                         BookedAging = aging.BookedAging,

@@ -189,8 +189,11 @@ namespace KRSDealerManagement.Web.Controllers
             var (scopedIds, effectiveDealershipId, isAdmin) = await GetBookingScopeAsync(dealershipId);
             if (subdealerView)
                 subdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session);
-            else if (subdealerId.HasValue && !scopedIds.Contains(subdealerId.Value))
-                subdealerId = null;
+            else if (subdealerId.HasValue)
+            {
+                var filterOrgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, subdealerId.Value);
+                subdealerId = scopedIds.Contains(filterOrgId) ? filterOrgId : null;
+            }
 
             var bookings = (await _unitOfWork.VehicleBookings.GetAllAsync()).ToList();
             var vehicles = (await _unitOfWork.Vehicles.GetAllAsync()).ToDictionary(v => v.VehicleId);
@@ -271,10 +274,7 @@ namespace KRSDealerManagement.Web.Controllers
                         x.Booking.RegistrationDate,
                         x.Booking.SubsidyId)));
             if (subdealerId.HasValue)
-            {
-                var filterOrgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, subdealerId.Value);
-                list = list.Where(x => x.Booking.SubdealerId == filterOrgId);
-            }
+                list = list.Where(x => x.Booking.SubdealerId == subdealerId.Value);
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
                 var t = searchTerm.Trim();
@@ -343,6 +343,11 @@ namespace KRSDealerManagement.Web.Controllers
         public async Task<IActionResult> Export(int? status, int? subdealerId, int? dealershipId, string? searchTerm)
         {
             var (scopedIds, _, _) = await GetBookingScopeAsync(dealershipId);
+            if (subdealerId.HasValue)
+            {
+                var filterOrgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, subdealerId.Value);
+                subdealerId = scopedIds.Contains(filterOrgId) ? filterOrgId : null;
+            }
             var bookings = (await _unitOfWork.VehicleBookings.GetAllAsync()).ToList();
             var vehicles = (await _unitOfWork.Vehicles.GetAllAsync()).ToDictionary(v => v.VehicleId);
             var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
@@ -381,10 +386,7 @@ namespace KRSDealerManagement.Web.Controllers
                         x.Booking.RegistrationDate,
                         x.Booking.SubsidyId)));
             if (subdealerId.HasValue)
-            {
-                var filterOrgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, subdealerId.Value);
-                list = list.Where(x => x.Booking.SubdealerId == filterOrgId);
-            }
+                list = list.Where(x => x.Booking.SubdealerId == subdealerId.Value);
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
                 var t = searchTerm.Trim();
@@ -703,7 +705,9 @@ namespace KRSDealerManagement.Web.Controllers
                 var cmd = new UpdateSubdealerBookingCommand
                 {
                     VehicleBookingId = id,
-                    SubdealerId = booking.SubdealerId,
+                    SubdealerId = isAdmin
+                        ? booking.SubdealerId
+                        : SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId.Value,
                     AllowAdminOverride = isAdmin,
                     CustomerName = customerName,
                     IsCompanyBooking = isCompanyBooking,
@@ -1687,8 +1691,10 @@ namespace KRSDealerManagement.Web.Controllers
 
         private async Task<IActionResult> ReturnEditFormViewAsync(VehicleBooking booking, VehicleDto? vehicle, bool isAdmin, BookingFormInput form)
         {
-            var userId = SessionHelper.GetUserId(HttpContext.Session) ?? booking.SubdealerId;
-            vehicle ??= await LoadBookingVehicleAsync(booking, userId);
+            var scopeId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session)
+                ?? SessionHelper.GetUserId(HttpContext.Session)
+                ?? booking.SubdealerId;
+            vehicle ??= await LoadBookingVehicleAsync(booking, scopeId);
             await LoadBookingFormViewBags(form.RtoLocationId);
             await ApplyRtoDistrictFromForm(form);
             ViewBag.Vehicle = vehicle;

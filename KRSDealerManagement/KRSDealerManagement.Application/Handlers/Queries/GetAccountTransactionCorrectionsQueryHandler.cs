@@ -1,6 +1,7 @@
 using MediatR;
 using KRSDealerManagement.Application.DTOs;
 using KRSDealerManagement.Application.Queries;
+using KRSDealerManagement.Application.Services;
 using KRSDealerManagement.Domain.Repositories;
 
 namespace KRSDealerManagement.Application.Handlers.Queries
@@ -22,6 +23,14 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             var corrections = (await _unitOfWork.AccountTransactionCorrections.GetAllAsync()).AsEnumerable();
             var accounts = (await _unitOfWork.SubdealerAccounts.GetAllAsync()).ToDictionary(a => a.AccountId);
             var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
+            var orgs = (await _unitOfWork.SubDealers.GetAllAsync()).ToDictionary(o => o.SubDealerId);
+
+            var walletOrgNames = new Dictionary<int, string>();
+            foreach (var walletUserId in accounts.Values.Select(a => a.SubdealerId).Distinct())
+            {
+                var orgId = await SubdealerOrgService.ResolveOrgIdFromWalletUserIdAsync(_unitOfWork, walletUserId);
+                walletOrgNames[walletUserId] = SubdealerOrgService.ResolveOrgDisplayName(orgId, orgs);
+            }
 
             if (request.AccountId.HasValue)
                 corrections = corrections.Where(c => c.AccountId == request.AccountId.Value);
@@ -44,8 +53,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 {
                     accounts.TryGetValue(c.AccountId, out var account);
                     string? subdealerName = null;
-                    if (account != null && users.TryGetValue(account.SubdealerId, out var user))
-                        subdealerName = user.GetFullName();
+                    if (account != null && walletOrgNames.TryGetValue(account.SubdealerId, out var orgName))
+                        subdealerName = orgName;
 
                     return new AccountTransactionCorrectionDto
                     {

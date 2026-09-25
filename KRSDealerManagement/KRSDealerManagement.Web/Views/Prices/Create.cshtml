@@ -150,7 +150,7 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/price-color-picker.js"></script>
+    <script src="~/js/price-color-picker.js" asp-append-version="true"></script>
     <script>
         KrsPriceColors.init({ availableUrl: '@Url.Action("AvailableColors")' });
 

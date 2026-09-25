@@ -1118,8 +1118,8 @@ table.grid-excel-table,
     table-layout: fixed !important;
     border-collapse: separate;
     border-spacing: 0;
-    width: 100%;
-    min-width: 100% !important;
+    width: max-content;
+    min-width: max-content;
     max-width: none;
     font-size: 1rem;
 }
@@ -1169,15 +1169,12 @@ table.grid-excel-table .grid-col-actions,
     max-width: none;
 }
 
+table.grid-excel-table .grid-col-color,
+.grid-scroll-panel table.grid-excel-table .grid-col-color,
 table.grid-excel-table .grid-col-chassis,
-.grid-scroll-panel table.grid-excel-table .grid-col-chassis {
-    max-width: 176px;
-    white-space: nowrap;
-}
-
+.grid-scroll-panel table.grid-excel-table .grid-col-chassis,
 table.grid-excel-table .grid-col-price,
 .grid-scroll-panel table.grid-excel-table .grid-col-price {
-    max-width: 108px;
     white-space: nowrap;
 }
 

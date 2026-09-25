@@ -57,8 +57,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     if (m.IsAllocated
                         && allocationByMasterId.TryGetValue(m.VehicleMasterId, out var vehicle))
                     {
-                        allocatedTo = SubdealerOrgService.ResolveDisplayName(
-                            vehicle.SubdealerId, userOrgRoles, orgs, users);
+                        allocatedTo = SubdealerOrgService.ResolveOrgDisplayName(
+                            vehicle.SubdealerId, orgs);
                     }
 
                     return new VehicleMasterDto

@@ -155,10 +155,14 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 DealershipId = request.DealershipId,
                 DealershipIds = request.DealershipIds
             });
+            int? filterOrgId = null;
+            if (request.SubdealerId.HasValue)
+                filterOrgId = await SubdealerOrgService.ResolveOrgIdAsync(_unitOfWork, request.SubdealerId.Value);
+
             var accounts = new List<SubdealerAccountDto>();
             foreach (var s in subdealers)
             {
-                if (request.SubdealerId.HasValue && s.SubDealerId != request.SubdealerId.Value) continue;
+                if (filterOrgId.HasValue && s.SubDealerId != filterOrgId.Value) continue;
                 accounts.AddRange(await _mediator.Send(new GetSubdealerAccountsQuery { SubdealerId = s.SubDealerId }));
             }
             return DistinctSync(accounts.Cast<object>(), column, request, AccountProjections);
@@ -208,7 +212,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     Booking = b,
                     VehicleId = b.VehicleId,
                     Chassis = v?.ChassisNumber ?? "-",
-                    Subdealer = SubdealerOrgService.ResolveDisplayName(b.SubdealerId, userOrgRoles, orgs, users),
+                    Subdealer = SubdealerOrgService.ResolveOrgDisplayName(b.SubdealerId, orgs),
                     StatusName = statusName,
                     VehicleStatus = vehicleStatus,
                     RegistrationNumber = v?.RegistrationNumber

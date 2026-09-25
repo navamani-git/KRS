@@ -136,14 +136,9 @@ namespace KRSDealerManagement.Application.Handlers.Commands
         {
             if (amount <= 0) return;
 
-            var orgId = await SubdealerOrgService.GetOrgIdForUserAsync(_unitOfWork, subdealerId);
-            var walletUserId = orgId.HasValue
-                ? await SubdealerOrgService.GetPrimaryUserIdForOrgAsync(_unitOfWork, orgId.Value) ?? subdealerId
-                : subdealerId;
-
             var accounts = await _mediator.Send(new GetSubdealerAccountsQuery
             {
-                SubdealerId = walletUserId,
+                SubdealerId = subdealerId,
                 IsActive = true
             });
 

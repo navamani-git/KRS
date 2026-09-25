@@ -109,8 +109,8 @@
                             <th>Order Date</th>
                             <th>Order #</th>
                             <th>Allocated</th>
-                            <th class="grid-col-flex">Model</th>
-                            <th class="grid-col-flex">Color</th>
+                            <th>Model</th>
+                            <th class="grid-col-color">Color</th>
                             <th class="grid-col-chassis">Chassis</th>
                             @if (isSubdealer)
                             {
@@ -166,7 +166,7 @@
                                     }
                                 </td>
                                 <td>@v.ModelName</td>
-                                <td>@v.ColorName</td>
+                                <td class="grid-col-color">@v.ColorName</td>
                                 <td class="grid-col-chassis">
                                     <partial name="_ChassisLink" view-data='new ViewDataDictionary(ViewData) {
                                         { "VehicleId", v.VehicleId }, { "Chassis", v.ChassisNumber } }' />

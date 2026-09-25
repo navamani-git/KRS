@@ -40,7 +40,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                              AccountId = p.AccountId,
                              AccountName = acc != null ? acc.AccountName : "Unknown",
                              SubdealerId = p.SubdealerId,
-                             SubdealerName = SubdealerOrgService.ResolveDisplayName(p.SubdealerId, userOrgRoles, orgs, users),
+                             SubdealerName = SubdealerOrgService.ResolveOrgDisplayName(p.SubdealerId, orgs),
                              Amount = p.Amount,
                              ActualReceivedAmount = p.ActualReceivedAmount,
                              ActualReceivedDate = p.ActualReceivedDate,

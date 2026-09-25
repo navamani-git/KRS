@@ -1,15 +1,18 @@
 (function () {
-    var WIDTH_STORAGE = 'krs-grid-widths:v9:';
+    var WIDTH_STORAGE = 'krs-grid-widths:v12:';
     var MIN_WIDTH = 28;
     var MAX_WIDTH = 480;
-    var AUTO_FILL_MAX = 200;
+    var AUTO_FILL_MAX = 160;
 
     // ID, Chassis, Subdealer, Customer, Mobile, Status, dates×4, Inv/Ins doc, Registered, Actions
     var DEFAULT_WIDTHS = {
         vehicle_bookings: [52, 200, 160, 120, 100, 100, 82, 82, 82, 82, 64, 64, 82, 58],
         showroom_stock: [44, 90, 200, 100, 90, 90, 88, 72, 88],
-        vehicles_12: [42, 88, 96, 104, 132, 112, 168, 88, 96, 88, 96, 58],
-        vehicles_13: [42, 120, 88, 96, 104, 132, 112, 168, 88, 96, 88, 96, 58]
+        // Admin: #, Subdealer, Order Date, Order #, Allocated, Model, Color, Chassis, Price, Delivery, Status, Actions
+        vehicles_admin_12: [42, 120, 94, 100, 138, 168, 100, 158, 104, 92, 100, 58],
+        // Subdealer: #, Order Date, Order #, Allocated, Model, Color, Chassis, Source, Price, Delivery, Status, Actions
+        vehicles_subdealer_12: [42, 94, 100, 138, 168, 100, 158, 84, 104, 92, 100, 58],
+        vehicles_13: [42, 120, 94, 100, 138, 168, 100, 158, 84, 104, 92, 100, 58]
     };
 
     var fillTimer;
@@ -126,28 +129,167 @@
         return { widths: result, tableWidth: total };
     }
 
-    function fitVisibleColumnsToPanel(table, widths) {
+    function isLockedColumn(table, index) {
+        if (isChassisColumn(table, index)) return true;
+        var headerRow = getHeaderRow(table);
+        var th = headerRow && headerRow.cells[index];
+        if (!th) return false;
+        return th.classList.contains('grid-col-actions') || th.classList.contains('grid-col-rownum');
+    }
+
+    function headerContentWidth(table, colIndex) {
+        var headerRow = getHeaderRow(table);
+        var width = MIN_WIDTH;
+        if (headerRow && headerRow.cells[colIndex]) {
+            width = Math.max(width, measureCellContentWidth(headerRow.cells[colIndex]) + 18);
+        }
+        return Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, Math.ceil(width)));
+    }
+
+    function ensureContentWidths(table, fallback) {
+        if (table._krsContentWidths && table._krsContentWidths.length === fallback.length) {
+            return table._krsContentWidths.slice();
+        }
+
+        var measured = fallback.slice();
+        fitColumnsToContent(table, measured);
+        findChassisColumnIndexes(table).forEach(function (index) {
+            measured[index] = Math.max(measured[index], 176);
+        });
+        table._krsContentWidths = measured.slice();
+        return measured;
+    }
+
+    function shrinkFlexibleColumns(widths, flexible, floors, overflow) {
+        var result = widths.slice();
+        var room = 0;
+        flexible.forEach(function (index) {
+            room += Math.max(0, result[index] - floors[index]);
+        });
+        if (room <= 0 || overflow <= 0) return result;
+
+        var cut = Math.min(overflow, room);
+        var remaining = cut;
+        flexible.forEach(function (index) {
+            var can = Math.max(0, result[index] - floors[index]);
+            if (can <= 0 || remaining <= 0) return;
+            var delta = Math.min(can, remaining, Math.max(1, Math.round(cut * can / room)));
+            result[index] -= delta;
+            remaining -= delta;
+        });
+        flexible.forEach(function (index) {
+            if (remaining <= 0) return;
+            var can = result[index] - floors[index];
+            if (can <= 0) return;
+            var delta = Math.min(can, remaining);
+            result[index] -= delta;
+            remaining -= delta;
+        });
+        return result;
+    }
+
+    function fitGridToScreen(table, contentWidths) {
         var panelWidth = getPanelWidth(table);
-        var visibleIndexes = getVisibleColumnIndexes(table, widths);
-        var visibleTotal = sumVisibleWidths(table, widths);
+        var widths = contentWidths.slice();
+        var visible = getVisibleColumnIndexes(table, widths);
+        var floors = widths.map(function (_, index) { return headerContentWidth(table, index); });
+
+        findChassisColumnIndexes(table).forEach(function (index) {
+            if (visible.indexOf(index) < 0) return;
+            widths[index] = Math.max(widths[index], 176);
+        });
+
+        var total = sumIndexes(widths, visible);
+        if (panelWidth <= 0) {
+            return { widths: widths, tableWidth: total, needsRefit: true };
+        }
+
+        var locked = visible.filter(function (index) { return isLockedColumn(table, index); });
+        var flexible = visible.filter(function (index) { return locked.indexOf(index) < 0; });
+
+        if (total < panelWidth && flexible.length) {
+            widths = distributeExtraWidth(widths, panelWidth - total, flexible, 100000);
+        } else if (total > panelWidth && flexible.length) {
+            widths = shrinkFlexibleColumns(widths, flexible, floors, total - panelWidth);
+        }
+
+        return {
+            widths: widths,
+            tableWidth: sumIndexes(widths, visible),
+            needsRefit: false
+        };
+    }
+
+    function pinWidthsToPanel(table, widths) {
+        var panelWidth = getPanelWidth(table);
+        var visible = getVisibleColumnIndexes(table, widths);
+        var result = widths.slice();
+        var overrides = table._krsWidthOverrides || {};
+        var pinned = [];
+
+        Object.keys(overrides).forEach(function (key) {
+            var index = parseInt(key, 10);
+            var width = parseInt(overrides[key], 10);
+            if (isNaN(index) || isNaN(width) || visible.indexOf(index) < 0) return;
+            result[index] = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, width));
+            pinned.push(index);
+        });
 
         if (panelWidth <= 0) {
-            return { widths: widths.slice(), tableWidth: visibleTotal, needsRefit: true };
+            return { widths: result, tableWidth: sumIndexes(result, visible), needsRefit: true };
         }
 
-        if (visibleTotal >= panelWidth) {
-            return { widths: widths.slice(), tableWidth: visibleTotal, needsRefit: false };
-        }
-
-        var flexIndexes = getFlexColumnIndexes(table).filter(function (i) {
-            return visibleIndexes.indexOf(i) >= 0;
+        var headerFloors = result.map(function (_, index) { return headerContentWidth(table, index); });
+        var minFloors = result.map(function () { return MIN_WIDTH; });
+        var donors = visible.filter(function (index) {
+            return pinned.indexOf(index) < 0 && !isLockedColumn(table, index);
         });
-        if (!flexIndexes.length) {
-            return { widths: widths.slice(), tableWidth: visibleTotal, needsRefit: false };
+
+        var total = sumIndexes(result, visible);
+        if (total < panelWidth && donors.length) {
+            result = distributeExtraWidth(result, panelWidth - total, donors, 100000);
+        } else if (total > panelWidth && donors.length) {
+            result = shrinkFlexibleColumns(result, donors, headerFloors, total - panelWidth);
+            total = sumIndexes(result, visible);
+            if (total > panelWidth) {
+                result = shrinkFlexibleColumns(result, donors, minFloors, total - panelWidth);
+            }
         }
 
-        var expanded = expandToPanelWidth(widths, visibleIndexes, panelWidth, flexIndexes);
-        return { widths: expanded.widths, tableWidth: expanded.tableWidth, needsRefit: false };
+        total = sumIndexes(result, visible);
+        if (total > panelWidth) {
+            var chassisDonors = visible.filter(function (index) {
+                return pinned.indexOf(index) < 0 && isChassisColumn(table, index);
+            });
+            result = shrinkFlexibleColumns(result, chassisDonors, minFloors, total - panelWidth);
+        }
+
+        total = sumIndexes(result, visible);
+        if (total > panelWidth && pinned.length) {
+            result = shrinkFlexibleColumns(result, pinned, minFloors, total - panelWidth);
+        }
+
+        total = sumIndexes(result, visible);
+        var diff = panelWidth - total;
+        if (diff !== 0 && visible.length) {
+            var adjustIndex = -1;
+            for (var i = visible.length - 1; i >= 0; i--) {
+                if (pinned.indexOf(visible[i]) < 0) {
+                    adjustIndex = visible[i];
+                    break;
+                }
+            }
+            if (adjustIndex < 0) adjustIndex = visible[visible.length - 1];
+            result[adjustIndex] = Math.max(MIN_WIDTH, result[adjustIndex] + diff);
+        }
+
+        return { widths: result, tableWidth: panelWidth, needsRefit: false };
+    }
+
+    function fitVisibleColumnsToPanel(table, widths) {
+        var contentWidths = ensureContentWidths(table, widths);
+        var fitted = fitGridToScreen(table, contentWidths);
+        return pinWidthsToPanel(table, fitted.widths);
     }
 
     function scheduleWidthRefit(table) {
@@ -182,6 +324,29 @@
         return WIDTH_STORAGE + window.location.pathname + ':' + resolveGridId(table);
     }
 
+    function getHeaderLabels(table) {
+        var headerRow = getHeaderRow(table);
+        if (!headerRow) return [];
+        return Array.from(headerRow.cells).map(function (th) {
+            var labelEl = th.querySelector('.grid-col-header-text');
+            return (labelEl ? labelEl.textContent : th.textContent).replace(/\s+/g, ' ').trim().toLowerCase();
+        });
+    }
+
+    function getVehiclesPreset(table, count) {
+        var labels = getHeaderLabels(table);
+        var hasSubdealerCol = labels.indexOf('subdealer') >= 0;
+        var hasSourceCol = labels.indexOf('source') >= 0;
+        if (count === 12 && hasSubdealerCol && !hasSourceCol) {
+            return DEFAULT_WIDTHS.vehicles_admin_12.slice();
+        }
+        if (count === 12 && hasSourceCol) {
+            return DEFAULT_WIDTHS.vehicles_subdealer_12.slice();
+        }
+        if (count === 13) return DEFAULT_WIDTHS.vehicles_13.slice();
+        return null;
+    }
+
     function getDefaultWidths(table, count) {
         var gridId = resolveGridId(table);
         if (gridId === 'vehicle_bookings' || gridId.indexOf('vehicle_bookings') >= 0) {
@@ -193,8 +358,8 @@
             if (stockPreset.length === count) return stockPreset.slice();
         }
         if (gridId === 'vehicles' || gridId.indexOf('vehicles') >= 0) {
-            if (count === 12) return DEFAULT_WIDTHS.vehicles_12.slice();
-            if (count === 13) return DEFAULT_WIDTHS.vehicles_13.slice();
+            var vehiclesPreset = getVehiclesPreset(table, count);
+            if (vehiclesPreset) return vehiclesPreset;
         }
         return Array.from({ length: count }, function (_, i) {
             return i === 0 ? 42 : (i === count - 1 ? 58 : 78);
@@ -371,9 +536,9 @@
         });
 
         table.style.tableLayout = 'fixed';
-        table.style.width = resolved.tableWidth + 'px';
-        table.style.minWidth = resolved.tableWidth + 'px';
-        table.style.maxWidth = 'none';
+        table.style.setProperty('width', resolved.tableWidth + 'px', 'important');
+        table.style.setProperty('min-width', '0', 'important');
+        table.style.setProperty('max-width', resolved.tableWidth + 'px', 'important');
 
         syncStickyColumns(table, effective);
 
@@ -401,8 +566,8 @@
         return width;
     }
 
-    function isColumnExpanded(widths, defaults, colIndex) {
-        return widths[colIndex] > defaults[colIndex] + 1;
+    function isColumnExpanded(table, colIndex) {
+        return !!(table._krsWidthOverrides && table._krsWidthOverrides[colIndex] != null);
     }
 
     function isChassisHeaderLabel(label) {
@@ -413,6 +578,10 @@
             || /^chassis$/i.test(text)
             || /^chassis\s*no\.?$/i.test(text)
             || /^vin$/i.test(text);
+    }
+
+    function isChassisColumn(table, colIndex) {
+        return findChassisColumnIndexes(table).indexOf(colIndex) >= 0;
     }
 
     function findChassisColumnIndexes(table) {
@@ -437,6 +606,31 @@
         return Array.from(indexes).filter(function (i) { return i >= 0; }).sort(function (a, b) { return a - b; });
     }
 
+    function columnContentWidth(table, colIndex) {
+        var maxW = MIN_WIDTH;
+        var headerRow = getHeaderRow(table);
+        if (headerRow && headerRow.cells[colIndex]) {
+            maxW = Math.max(maxW, measureCellContentWidth(headerRow.cells[colIndex]));
+        }
+        var filterRow = table.querySelector('thead tr.grid-column-filters');
+        if (filterRow && filterRow.cells[colIndex]) {
+            maxW = Math.max(maxW, measureCellContentWidth(filterRow.cells[colIndex]));
+        }
+        table.querySelectorAll('tbody tr').forEach(function (row) {
+            if (!row.cells[colIndex]) return;
+            maxW = Math.max(maxW, measureCellContentWidth(row.cells[colIndex]));
+        });
+        var pad = isChassisColumn(table, colIndex) ? 20 : 12;
+        return Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, Math.ceil(maxW) + pad));
+    }
+
+    function fitColumnsToContent(table, widths) {
+        for (var i = 0; i < widths.length; i++) {
+            if (!isColumnVisible(table, i)) continue;
+            widths[i] = columnContentWidth(table, i);
+        }
+    }
+
     function autoExpandChassisColumns(table, colgroup, widths, defaults) {
         findChassisColumnIndexes(table).forEach(function (colIndex) {
             if (!isColumnVisible(table, colIndex)) return;
@@ -445,7 +639,7 @@
     }
 
     function shrinkColumn(table, colIndex, colgroup, widths, defaults) {
-        widths[colIndex] = defaults[colIndex];
+        if (table._krsWidthOverrides) delete table._krsWidthOverrides[colIndex];
         var headerRow = getHeaderRow(table);
         if (headerRow && headerRow.cells[colIndex]) {
             delete headerRow.cells[colIndex].dataset.gridColExpanded;
@@ -463,7 +657,7 @@
         var btn = headerRow.cells[colIndex].querySelector('.grid-col-expand-btn');
         if (!btn) return;
 
-        var expanded = isColumnExpanded(widths, defaults, colIndex);
+        var expanded = isColumnExpanded(table, colIndex);
         var icon = btn.querySelector('i');
         if (icon) {
             icon.className = expanded ? 'bi bi-arrows-angle-contract' : 'bi bi-arrows-angle-expand';
@@ -493,7 +687,11 @@
             if (!row.cells[colIndex]) return;
             maxW = Math.max(maxW, measureCellContentWidth(row.cells[colIndex]));
         });
-        widths[colIndex] = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, Math.ceil(maxW) + 10));
+        var pad = isChassisColumn(table, colIndex) ? 20 : 12;
+        var fitted = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, Math.ceil(maxW) + pad));
+        table._krsWidthOverrides = table._krsWidthOverrides || {};
+        table._krsWidthOverrides[colIndex] = fitted;
+        widths[colIndex] = fitted;
         if (headerRow && headerRow.cells[colIndex]) {
             headerRow.cells[colIndex].dataset.gridColExpanded = '1';
         }
@@ -525,13 +723,13 @@
         btn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i> Reset widths';
         btn.title = 'Reset all column widths to compact defaults';
         btn.addEventListener('click', function () {
-            for (var i = 0; i < defaults.length; i++) {
-                widths[i] = defaults[i];
-            }
+            table._krsUserSized = false;
+            table._krsWidthOverrides = {};
+            table._krsContentWidths = null;
+            try { sessionStorage.removeItem(getStorageKey(table)); } catch (e) { }
+            for (var i = 0; i < defaults.length; i++) widths[i] = defaults[i];
             applyWidths(table, colgroup, widths);
-            saveWidths(table, widths);
             updateAllExpandButtons(table, widths, defaults);
-            autoExpandChassisColumns(table, colgroup, widths, defaults);
             notifyLayoutChanged();
         });
         toolbar.appendChild(btn);
@@ -552,7 +750,7 @@
         btn.addEventListener('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
-            if (isColumnExpanded(widths, defaults, colIndex)) {
+            if (isColumnExpanded(table, colIndex)) {
                 shrinkColumn(table, colIndex, colgroup, widths, defaults);
             } else {
                 autoFitColumn(table, colIndex, colgroup, widths, defaults);
@@ -562,13 +760,23 @@
         updateExpandButton(table, colIndex, widths, defaults);
     }
 
+    function displayedColumnWidth(table, colIndex, fallback) {
+        var headerRow = getHeaderRow(table);
+        var cell = headerRow && headerRow.cells[colIndex];
+        var parsed = cell ? parseInt(cell.style.width, 10) : 0;
+        return parsed > 0 ? parsed : fallback;
+    }
+
     function startResize(table, colIndex, colgroup, widths, defaults, startX) {
-        var startWidth = widths[colIndex];
+        var startWidth = displayedColumnWidth(table, colIndex, widths[colIndex]);
+        table._krsWidthOverrides = table._krsWidthOverrides || {};
         document.body.classList.add('grid-col-resizing');
 
         function onMove(e) {
             var delta = e.clientX - startX;
-            widths[colIndex] = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startWidth + delta));
+            var next = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startWidth + delta));
+            table._krsWidthOverrides[colIndex] = next;
+            widths[colIndex] = next;
             applyWidths(table, colgroup, widths);
             notifyLayoutChanged();
         }
@@ -628,7 +836,10 @@
         updateAllExpandButtons(table, widths, defaults);
 
         window.requestAnimationFrame(function () {
-            autoExpandChassisColumns(table, colgroup, widths, defaults);
+            if (!table._krsUserSized) {
+                table._krsContentWidths = null;
+                applyWidths(table, colgroup, widths);
+            }
         });
 
         if (table.dataset.gridResizeInit === '1') {
@@ -651,7 +862,7 @@
             th.addEventListener('dblclick', function (e) {
                 if (e.target.closest('.grid-col-resize-handle, .grid-col-expand-btn')) return;
                 e.preventDefault();
-                if (isColumnExpanded(widths, defaults, index)) {
+                if (isColumnExpanded(table, index)) {
                     shrinkColumn(table, index, colgroup, widths, defaults);
                 } else {
                     autoFitColumn(table, index, colgroup, widths, defaults);

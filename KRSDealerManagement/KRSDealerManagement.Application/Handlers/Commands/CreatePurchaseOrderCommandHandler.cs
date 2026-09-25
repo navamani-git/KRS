@@ -118,7 +118,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
                                 group.VehicleMasterId.Value,
                                 item,
                                 orderId,
-                                request.SubdealerId,
+                                orgId,
                                 request.CreatedBy,
                                 UnifiedVehicleStatus.ApprovedByDealer,
                                 item.UnitPrice,

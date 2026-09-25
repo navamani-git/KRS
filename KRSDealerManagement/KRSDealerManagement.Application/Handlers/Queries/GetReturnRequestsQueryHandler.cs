@@ -67,11 +67,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                              ReturnRequestId = r.ReturnRequestId,
                              AccountId = r.AccountId,
                              AccountName = acc != null ? acc.AccountName : "Unknown",
-                             SubdealerName = SubdealerOrgService.ResolveDisplayName(
-                                 subdealerOrgId ?? accountLoginUserId,
-                                 orgRoles,
-                                 orgs,
-                                 users),
+                             SubdealerName = subdealerOrgId.HasValue
+                                 ? SubdealerOrgService.ResolveOrgDisplayName(subdealerOrgId, orgs)
+                                 : SubdealerOrgService.ResolveDisplayName(accountLoginUserId, orgRoles, orgs, users),
                              DealershipLocation = DealershipLocationHelper.ResolveShowroomLabel(
                                  veh,
                                  ord?.SubdealerId,

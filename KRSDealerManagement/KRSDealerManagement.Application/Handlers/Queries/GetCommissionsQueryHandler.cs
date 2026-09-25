@@ -39,7 +39,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                              AccountId = acc != null ? acc.AccountId : c.AccountId,
                              AccountName = acc != null ? acc.AccountName : "Unknown",
                              SubdealerId = c.SubdealerId,
-                             SubdealerName = SubdealerOrgService.ResolveDisplayName(c.SubdealerId, userOrgRoles, orgs, users),
+                             SubdealerName = SubdealerOrgService.ResolveOrgDisplayName(c.SubdealerId, orgs),
                              VehicleId = c.VehicleId,
                              VehicleChassisNumber = vehicle != null ? vehicle.ChassisNumber : "Unknown",
                              Month = c.Month,

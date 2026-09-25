@@ -23,8 +23,6 @@ namespace KRSDealerManagement.Application.Handlers.Queries
         {
             var statusMap = await _statuses.GetMapAsync(StatusCategories.Warranty);
             var accounts = (await _unitOfWork.SubdealerAccounts.GetAllAsync()).ToDictionary(a => a.AccountId);
-            var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
-            var userOrgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync()).ToList();
             var orgs = (await _unitOfWork.SubDealers.GetAllAsync()).ToDictionary(o => o.SubDealerId);
             var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToDictionary(d => d.DealershipId);
             var parts = (await _unitOfWork.WarrantyParts.GetAllAsync()).ToDictionary(p => p.WarrantyPartId);
@@ -86,7 +84,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         StatusName = st?.StatusName,
                         StatusBadgeClass = st?.BadgeClass,
                         AccountId = c.AccountId,
-                        AccountName = SubdealerOrgService.ResolveDisplayName(c.SubdealerId, userOrgRoles, orgs, users)
+                        AccountName = SubdealerOrgService.ResolveOrgDisplayName(c.SubdealerId, orgs)
                             ?? account?.AccountName,
                         SubdealerId = c.SubdealerId,
                         DealershipId = c.DealershipId,
@@ -134,12 +132,12 @@ namespace KRSDealerManagement.Application.Handlers.Queries
 
             var statusMap = await _statuses.GetMapAsync(StatusCategories.Warranty);
             var users = (await _unitOfWork.Users.GetAllAsync()).ToDictionary(u => u.UserId);
+            var orgs = (await _unitOfWork.SubDealers.GetAllAsync()).ToDictionary(o => o.SubDealerId);
             var accounts = (await _unitOfWork.SubdealerAccounts.GetAllAsync()).ToDictionary(a => a.AccountId);
             var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToDictionary(d => d.DealershipId);
             var parts = (await _unitOfWork.WarrantyParts.GetAllAsync()).ToDictionary(p => p.WarrantyPartId);
 
             accounts.TryGetValue(claim.AccountId, out var account);
-            users.TryGetValue(claim.SubdealerId, out var subUser);
             statusMap.TryGetValue(claim.Status, out var st);
             dealerships.TryGetValue(claim.DealershipId ?? 0, out var dealer);
             parts.TryGetValue(claim.WarrantyPartId ?? 0, out var part);
@@ -156,7 +154,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 StatusName = st?.StatusName,
                 StatusBadgeClass = st?.BadgeClass,
                 AccountId = claim.AccountId,
-                AccountName = subUser?.GetFullName() ?? account?.AccountName,
+                AccountName = SubdealerOrgService.ResolveOrgDisplayName(claim.SubdealerId, orgs)
+                    ?? account?.AccountName,
                 SubdealerId = claim.SubdealerId,
                 DealershipId = claim.DealershipId,
                 DealershipName = dealer?.DealershipName,
