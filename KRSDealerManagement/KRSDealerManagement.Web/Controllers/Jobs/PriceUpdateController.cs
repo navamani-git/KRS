@@ -21,6 +21,7 @@ namespace KRSDealerManagement.Web.Controllers.Jobs
 
         [HttpGet("PriceUpdate")]
         [HttpPost("PriceUpdate")]
+        [IgnoreAntiforgeryToken]
         public async Task<IActionResult> PriceUpdate(string? token)
         {
             if (!IsAuthorized(token, out var isSchedulerCall, out var userId))

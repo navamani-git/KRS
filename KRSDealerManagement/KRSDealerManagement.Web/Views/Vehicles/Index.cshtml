@@ -35,6 +35,166 @@
     </div>
 </div>
 
+@{
+    var ownShowroomStock = ViewBag.OwnShowroomStock as IEnumerable<VehicleMasterDto>;
+    var ownShowroomLocation = ViewBag.OwnShowroomLocation as string;
+}
+@if (ownShowroomStock != null)
+{
+    var stockList = ownShowroomStock.ToList();
+    var stockModels = stockList.Select(s => s.ModelName).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(n => n).ToList();
+    <div class="card mb-3">
+        <div class="card-header">
+            <h3 class="card-title mb-0">Available stock@(string.IsNullOrWhiteSpace(ownShowroomLocation) ? "" : $" — {ownShowroomLocation}") (<span id="ownShowroomStockCount">@stockList.Count</span><span id="ownShowroomStockTotal" hidden> of @stockList.Count</span>)</h3>
+        </div>
+        @if (!stockList.Any())
+        {
+            <div class="card-body">
+                <p class="text-muted mb-0">No unallocated vehicles in this location.</p>
+            </div>
+        }
+        else
+        {
+            <div class="card-body border-bottom py-2">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label form-label-sm mb-0" for="stockModelFilter">Model</label>
+                        <select id="stockModelFilter" class="form-select form-select-sm">
+                            <option value="">All models</option>
+                            @foreach (var modelName in stockModels)
+                            {
+                                <option value="@modelName">@modelName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label form-label-sm mb-0" for="stockColorFilter">Color</label>
+                        <select id="stockColorFilter" class="form-select form-select-sm">
+                            <option value="">All colors</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label form-label-sm mb-0" for="stockChassisFilter">Chassis / motor</label>
+                        <input id="stockChassisFilter" type="search" class="form-control form-control-sm" placeholder="Type chassis or motor number" autocomplete="off" />
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" id="stockFilterClear" class="btn btn-sm btn-outline-secondary">Clear</button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <p id="ownShowroomStockEmpty" class="text-muted mb-0 p-3" hidden>No vehicles match this filter.</p>
+                <div class="table-responsive order-details-lines">
+                    <table class="table table-sm table-hover mb-0 order-line-items-table" id="ownShowroomStockTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Model</th>
+                                <th>Color</th>
+                                <th>Chassis</th>
+                                <th>Motor</th>
+                                <th>Received</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var stock in stockList)
+                            {
+                                <tr data-stock="1" data-model="@stock.ModelName" data-color="@stock.ColorName" data-chassis="@stock.ChassisNumber" data-motor="@stock.MotorNo">
+                                    <td>@stock.ModelName</td>
+                                    <td>@stock.ColorName</td>
+                                    <td>@stock.ChassisNumber</td>
+                                    <td>@stock.MotorNo</td>
+                                    <td>@stock.ReceivedDate.ToString("yyyy-MM-dd")</td>
+                                    <td>
+                                        <a href="@Url.EAction(QueryCrypto, "BookFromStock", new { vehicleMasterId = stock.VehicleMasterId }, "VehicleBookings")" class="btn btn-sm btn-primary">Book</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <script>
+                (function () {
+                    var table = document.getElementById('ownShowroomStockTable');
+                    var modelSel = document.getElementById('stockModelFilter');
+                    var colorSel = document.getElementById('stockColorFilter');
+                    var search = document.getElementById('stockChassisFilter');
+                    var clearBtn = document.getElementById('stockFilterClear');
+                    var countEl = document.getElementById('ownShowroomStockCount');
+                    var totalEl = document.getElementById('ownShowroomStockTotal');
+                    var empty = document.getElementById('ownShowroomStockEmpty');
+                    if (!table || !modelSel || !colorSel || !search) return;
+                    var rows = Array.from(table.tBodies[0].rows).filter(function (r) { return r.dataset.stock === '1'; });
+                    var total = rows.length;
+
+                    function colorsFor(model) {
+                        var set = [];
+                        rows.forEach(function (r) {
+                            var color = r.dataset.color || '';
+                            if (!color) return;
+                            if (model && r.dataset.model !== model) return;
+                            if (set.indexOf(color) < 0) set.push(color);
+                        });
+                        set.sort(function (a, b) { return a.localeCompare(b); });
+                        return set;
+                    }
+
+                    function refillColors() {
+                        var current = colorSel.value;
+                        var colors = colorsFor(modelSel.value);
+                        colorSel.innerHTML = '';
+                        var all = document.createElement('option');
+                        all.value = '';
+                        all.textContent = 'All colors';
+                        colorSel.appendChild(all);
+                        colors.forEach(function (c) {
+                            var opt = document.createElement('option');
+                            opt.value = c;
+                            opt.textContent = c;
+                            colorSel.appendChild(opt);
+                        });
+                        colorSel.value = colors.indexOf(current) >= 0 ? current : '';
+                    }
+
+                    function apply() {
+                        var model = modelSel.value;
+                        var color = colorSel.value;
+                        var q = (search.value || '').trim().toLowerCase();
+                        var shown = 0;
+                        rows.forEach(function (r) {
+                            var chassis = (r.dataset.chassis || '').toLowerCase();
+                            var motor = (r.dataset.motor || '').toLowerCase();
+                            var ok = (!model || r.dataset.model === model)
+                                && (!color || r.dataset.color === color)
+                                && (!q || chassis.indexOf(q) >= 0 || motor.indexOf(q) >= 0);
+                            r.hidden = !ok;
+                            if (ok) shown++;
+                        });
+                        if (countEl) countEl.textContent = String(shown);
+                        if (totalEl) totalEl.hidden = shown === total;
+                        if (empty) empty.hidden = shown !== 0;
+                        table.hidden = shown === 0;
+                    }
+
+                    modelSel.addEventListener('change', function () { refillColors(); apply(); });
+                    colorSel.addEventListener('change', apply);
+                    search.addEventListener('input', apply);
+                    if (clearBtn) {
+                        clearBtn.addEventListener('click', function () {
+                            modelSel.value = '';
+                            search.value = '';
+                            refillColors();
+                            apply();
+                        });
+                    }
+                    refillColors();
+                })();
+            </script>
+        }
+    </div>
+}
+
 <div class="card mb-3">
     <div class="card-body py-2">
         <form method="get" action="@Url.Action(isRejectedView ? "Rejected" : "Index")" class="row g-2 align-items-end" id="gridFilterForm">

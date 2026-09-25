@@ -602,6 +602,172 @@ namespace KRSDealerManagement.Web.Controllers
             }
         }
 
+        [AuthorizeRole(2)]
+        [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
+        public async Task<IActionResult> BookFromStock(int vehicleMasterId)
+        {
+            var userId = SessionHelper.GetUserId(HttpContext.Session);
+            if (!userId.HasValue) return RedirectToAction("Login", "Account");
+
+            var org = await GetOwnShowroomOrgAsync();
+            if (org == null)
+            {
+                TempData["Error"] = "Only an Own Showroom subdealer can book dealer stock.";
+                return RedirectToAction("Index", "Vehicles");
+            }
+
+            var master = await LoadOwnShowroomStockOrNull(org, vehicleMasterId);
+            if (master == null)
+            {
+                TempData["Error"] = "That vehicle is not available in your location stock.";
+                return RedirectToAction("Index", "Vehicles");
+            }
+
+            await LoadBookingFormViewBags();
+            ViewBag.BookFromStock = true;
+            ViewBag.StockMasterId = master.VehicleMasterId;
+            ViewBag.Vehicle = await ToStockPreviewAsync(master);
+            return View("Book");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AuthorizeRole(2)]
+        [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
+        public async Task<IActionResult> BookFromStock(int vehicleMasterId, string customerName, bool isCompanyBooking,
+            string customerMobile, string alternativeMobile, string customerEmail,
+            string eAadhaarPassword, int documentTypeId, int rtoLocationId, bool? fancyNumber,
+            string paymentMode, int? financeNameId, string nomineeName, DateTime nomineeDob, string nomineeRelationship,
+            IFormFile eAadhaarFile, IFormFile documentFile, IFormFile? gstCertificateFile,
+            IFormFile customerPhoto, IFormFile chassisPhoto, IFormFile customerSign)
+        {
+            var userId = SessionHelper.GetUserId(HttpContext.Session);
+            if (!userId.HasValue) return RedirectToAction("Login", "Account");
+
+            var org = await GetOwnShowroomOrgAsync();
+            if (org == null)
+            {
+                TempData["Error"] = "Only an Own Showroom subdealer can book dealer stock.";
+                return RedirectToAction("Index", "Vehicles");
+            }
+
+            var master = await LoadOwnShowroomStockOrNull(org, vehicleMasterId);
+            if (master == null)
+            {
+                TempData["Error"] = "That vehicle is not available in your location stock.";
+                return RedirectToAction("Index", "Vehicles");
+            }
+
+            var preview = await ToStockPreviewAsync(master);
+            var validationError = BookingFormValidationHelper.ValidateCreateBooking(
+                customerName, customerMobile, alternativeMobile, customerEmail, eAadhaarPassword,
+                nomineeName, nomineeDob, nomineeRelationship, isCompanyBooking, eAadhaarFile, documentFile, gstCertificateFile,
+                customerPhoto, chassisPhoto, customerSign)
+                ?? BookingFormValidationHelper.ValidateBookingChoiceFields(fancyNumber, paymentMode, financeNameId);
+            if (validationError != null)
+            {
+                TempData["Error"] = validationError;
+                return await ReturnStockBookingFormAsync(preview, master.VehicleMasterId, BuildFormInput(
+                    customerName, isCompanyBooking, customerMobile, alternativeMobile, customerEmail, eAadhaarPassword,
+                    documentTypeId, rtoLocationId, fancyNumber, paymentMode, financeNameId,
+                    nomineeName, nomineeDob, nomineeRelationship));
+            }
+
+            customerName = BookingFormValidationHelper.NormalizeCustomerName(customerName);
+            customerEmail = BookingFormValidationHelper.NormalizeEmail(customerEmail);
+            customerMobile = customerMobile.Trim();
+            alternativeMobile = alternativeMobile.Trim();
+            eAadhaarPassword = eAadhaarPassword.Trim();
+            nomineeRelationship = nomineeRelationship.Trim();
+            nomineeName = BookingFormValidationHelper.NormalizeNomineeName(nomineeName);
+
+            var priceError = await _priceService.ValidatePriceForVehicleCreateAsync(master.ModelId, master.ColorId, IstTime.Today);
+            if (priceError != null)
+            {
+                TempData["Error"] = priceError;
+                return await ReturnStockBookingFormAsync(preview, master.VehicleMasterId, BuildFormInput(
+                    customerName, isCompanyBooking, customerMobile, alternativeMobile, customerEmail, eAadhaarPassword,
+                    documentTypeId, rtoLocationId, fancyNumber, paymentMode, financeNameId,
+                    nomineeName, nomineeDob, nomineeRelationship));
+            }
+
+            var price = await _priceService.GetPriceAsOfAsync(master.ModelId, master.ColorId, IstTime.Today) ?? 0m;
+
+            try
+            {
+                var root = _env;
+                var eAadhaarPath = await BookingFileHelper.SaveEAadhaarPdfAsync(eAadhaarFile, root);
+                var documentPath = await BookingFileHelper.SaveIdentityDocumentPdfAsync(documentFile, root);
+                var gstPath = isCompanyBooking ? await BookingFileHelper.SaveGstCertificatePdfAsync(gstCertificateFile!, root) : null;
+                var customerPhotoPath = await BookingFileHelper.SaveImageAsync(customerPhoto, root);
+                var chassisPhotoPath = await BookingFileHelper.SaveImageAsync(chassisPhoto, root);
+                var customerSignPath = await BookingFileHelper.SaveImageAsync(customerSign, root);
+
+                await _unitOfWork.BeginTransactionAsync();
+                var vehicleId = await VehicleAllocationHelper.AllocateOwnShowroomFromStockAsync(
+                    _unitOfWork, master.VehicleMasterId, org.SubDealerId, userId.Value, price);
+
+                var booking = new VehicleBooking
+                {
+                    VehicleId = vehicleId,
+                    SubdealerId = org.SubDealerId,
+                    BookingStatus = UnifiedVehicleStatus.BookedToCustomer,
+                    CustomerName = customerName,
+                    IsCompanyBooking = isCompanyBooking,
+                    CustomerMobile = customerMobile,
+                    AlternativeMobile = alternativeMobile,
+                    CustomerEmail = customerEmail,
+                    EAadhaarPassword = eAadhaarPassword,
+                    DocumentTypeId = documentTypeId,
+                    RtoLocationId = rtoLocationId,
+                    FancyNumber = fancyNumber!.Value,
+                    PaymentMode = paymentMode,
+                    FinanceNameId = financeNameId!.Value,
+                    NomineeName = nomineeName,
+                    NomineeDob = nomineeDob.Date,
+                    NomineeRelationship = nomineeRelationship,
+                    EAadhaarPath = eAadhaarPath,
+                    DocumentPath = documentPath,
+                    GstCertificatePath = gstPath,
+                    CustomerPhotoPath = customerPhotoPath,
+                    ChassisPhotoPath = chassisPhotoPath,
+                    CustomerSignPath = customerSignPath,
+                    SubmittedDate = DateTime.UtcNow,
+                    CreatedBy = userId.Value,
+                    CreatedDate = DateTime.UtcNow,
+                    ModifiedDate = DateTime.UtcNow
+                };
+
+                var id = await _unitOfWork.VehicleBookings.AddAsync(booking);
+                var vehicleEntity = await _unitOfWork.Vehicles.GetByIdAsync(vehicleId)
+                    ?? throw new InvalidOperationException("Vehicle record not found after allocation.");
+                vehicleEntity.Status = UnifiedVehicleStatus.BookedToCustomer;
+                vehicleEntity.DeliveryDate = null;
+                vehicleEntity.ModifiedDate = DateTime.UtcNow;
+                if (!await _unitOfWork.Vehicles.UpdateAsync(vehicleEntity))
+                    throw new InvalidOperationException("Failed to update vehicle status after booking.");
+
+                await VehicleHistoryHelper.LogSubdealerEventAsync(
+                    _unitOfWork, vehicleId, "BookedToCustomer", userId,
+                    $"Customer {customerName} ({customerMobile}). Own showroom stock.");
+
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                TempData["Success"] = "Vehicle allocated from your location stock and booked.";
+                return this.RedirectEncrypted(nameof(Manage), new { id });
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                TempData["Error"] = ex.Message;
+                return await ReturnStockBookingFormAsync(preview, master.VehicleMasterId, BuildFormInput(
+                    customerName, isCompanyBooking, customerMobile, alternativeMobile, customerEmail, eAadhaarPassword,
+                    documentTypeId, rtoLocationId, fancyNumber, paymentMode, financeNameId,
+                    nomineeName, nomineeDob, nomineeRelationship));
+            }
+        }
+
         [AuthorizeRole(1, 2)]
         [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public async Task<IActionResult> Edit(int id)
@@ -1447,6 +1613,53 @@ namespace KRSDealerManagement.Web.Controllers
                     .FirstOrDefault(b => BookingFileHelper.BookingContainsFilePath(b, path!));
 
             return booking != null && await CanAccessBooking(booking);
+        }
+
+        private async Task<SubDealer?> GetOwnShowroomOrgAsync()
+        {
+            if (!SessionHelper.IsSubdealer(HttpContext.Session))
+                return null;
+
+            var orgId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session);
+            if (!orgId.HasValue)
+                return null;
+
+            var org = await _unitOfWork.SubDealers.GetByIdAsync(orgId.Value);
+            if (org == null || !org.IsActive || !org.OwnShowroom)
+                return null;
+
+            return org;
+        }
+
+        private async Task<VehicleMaster?> LoadOwnShowroomStockOrNull(SubDealer org, int vehicleMasterId)
+        {
+            var master = await _unitOfWork.VehicleMasters.GetByIdAsync(vehicleMasterId);
+            if (master == null || master.WarrantyOnly || master.IsAllocated || master.DealershipId != org.DealershipId)
+                return null;
+            return master;
+        }
+
+        private async Task<VehicleDto> ToStockPreviewAsync(VehicleMaster master)
+        {
+            var model = await _unitOfWork.VehicleModels.GetByIdAsync(master.ModelId);
+            var color = await _unitOfWork.VehicleColors.GetByIdAsync(master.ColorId);
+            var price = await _priceService.GetPriceAsOfAsync(master.ModelId, master.ColorId, IstTime.Today) ?? 0m;
+            return new VehicleDto
+            {
+                ModelName = model?.ModelName ?? "",
+                ColorName = color?.ColorName ?? "",
+                ChassisNumber = master.ChassisNumber,
+                ModelId = master.ModelId,
+                ColorId = master.ColorId,
+                CurrentPrice = price
+            };
+        }
+
+        private async Task<IActionResult> ReturnStockBookingFormAsync(VehicleDto preview, int vehicleMasterId, BookingFormInput form)
+        {
+            ViewBag.BookFromStock = true;
+            ViewBag.StockMasterId = vehicleMasterId;
+            return await ReturnBookingFormViewAsync(preview, form);
         }
 
         private async Task<KRSDealerManagement.Application.DTOs.VehicleDto?> LoadVehicleOrNull(int vehicleId, int subdealerId)

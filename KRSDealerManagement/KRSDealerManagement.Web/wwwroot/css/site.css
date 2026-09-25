@@ -2247,6 +2247,44 @@ html.krs-page-loading #krsQuickActions {
         vertical-align: middle;
     }
 
+    /* Order details line items: keep Model and Color on one line and scroll, instead of overlapping */
+    .content .order-details-lines {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .content .order-line-items-table {
+        width: max-content !important;
+        min-width: max-content !important;
+        table-layout: auto !important;
+    }
+
+    .content .order-line-items-table th,
+    .content .order-line-items-table td {
+        width: auto !important;
+        max-width: none !important;
+        min-width: max-content;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+
+    .content .order-line-items-table .form-select,
+    .content .order-line-items-table .form-control,
+    .content .order-line-items-table .ts-wrapper {
+        width: 14rem;
+        min-width: 14rem;
+        max-width: 14rem;
+    }
+
+    .content .order-line-items-table .ts-wrapper.ts-single .ts-control .item {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
     .content .table .text-wrap,
     .content .table td.allow-wrap {
         white-space: normal;

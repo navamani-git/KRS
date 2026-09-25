@@ -144,7 +144,18 @@
         url = url.toLowerCase();
         if (!url) return false;
 
-        return url.indexOf('/grids/distinctvalues') >= 0;
+        return url.indexOf('/grids/distinctvalues') >= 0
+            || isDevConnection(url);
+    }
+
+    function isDevConnection(url) {
+        if (!url) return false;
+        return url.indexOf('aspnetcore-browser-refresh') >= 0
+            || url.indexOf('browserlink') >= 0
+            || url.indexOf('browser-refresh') >= 0
+            || url.indexOf('/negotiate') >= 0
+            || url.indexOf('/_framework/') >= 0
+            || url.indexOf('/_vs/') >= 0;
     }
 
     function shouldSkipLink(el) {
@@ -250,7 +261,9 @@
         var nativeSend = xhrProto.send;
 
         xhrProto.open = function (method, url) {
-            this._krsSkipLoader = ((url || '') + '').toLowerCase().indexOf('/grids/distinctvalues') >= 0;
+            var requestUrl = ((url || '') + '').toLowerCase();
+            this._krsSkipLoader = requestUrl.indexOf('/grids/distinctvalues') >= 0
+                || isDevConnection(requestUrl);
             return nativeOpen.apply(this, arguments);
         };
 

@@ -18,8 +18,12 @@ namespace KRSDealerManagement.Application.Validators
             RuleForEach(x => x.Items).ChildRules(item =>
             {
                 item.RuleFor(i => i.OrderItemId).GreaterThanOrEqualTo(0);
-                item.RuleFor(i => i.VehicleMasterId).NotNull().GreaterThan(0).When(i => i.Approve)
-                    .WithMessage("Select a chassis from dealer stock for approval");
+                item.When(i => i.Approve, () =>
+                {
+                    item.RuleFor(i => i.VehicleMasterId)
+                        .NotNull().WithMessage("Select a chassis from dealer stock for approval")
+                        .GreaterThan(0).WithMessage("Select a chassis from dealer stock for approval");
+                });
             });
         }
     }

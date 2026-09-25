@@ -17,6 +17,33 @@ namespace KRSDealerManagement.Web.Controllers
         private readonly IStatusLookupService _statuses;
         private readonly IVehiclePriceService _priceService;
 
+        private string FormField(string key) => Request.Form[key].ToString();
+
+        private static string? NullIfEmpty(string? value)
+            => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+        private async Task<Dictionary<int, List<PurchaseOrderItemDto>>> LoadItemsByOrderAsync(IReadOnlyList<PurchaseOrderDto> orders)
+        {
+            var map = orders.ToDictionary(o => o.OrderId, _ => new List<PurchaseOrderItemDto>());
+            if (orders.Count == 0)
+                return map;
+
+            var items = await _mediator.Send(new GetPurchaseOrderItemsQuery
+            {
+                OrderIds = orders.Select(o => o.OrderId).ToList()
+            });
+            foreach (var item in items)
+            {
+                if (!map.TryGetValue(item.PurchaseOrderId, out var list))
+                {
+                    list = new List<PurchaseOrderItemDto>();
+                    map[item.PurchaseOrderId] = list;
+                }
+                list.Add(item);
+            }
+            return map;
+        }
+
         public OrdersController(IMediator mediator, IStatusLookupService statuses, IVehiclePriceService priceService)
         {
             _mediator = mediator;
@@ -121,31 +148,30 @@ namespace KRSDealerManagement.Web.Controllers
 
             var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.MyOrders);
-            var orders = await _mediator.Send(new GetPurchaseOrdersQuery
+            var ordersPage = await _mediator.Send(new GetPurchaseOrdersPageQuery
             {
                 SubdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId.Value,
                 Status = status,
                 FromDate = from,
                 ToDate = to,
-                ColumnFilters = columnFilters
+                ColumnFilters = columnFilters,
+                Page = page ?? 1,
+                PageSize = ListPagingHelper.ResolvePageSize(pageSize)
             });
 
-            var (pageItems, pageInfo) = ListPagingHelper.Paginate(orders, page, pageSize);
-            ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
-
-            var itemsByOrder = new Dictionary<int, List<PurchaseOrderItemDto>>();
-            foreach (var o in pageItems)
+            ListPagingHelper.ApplyToViewBag(ViewBag, new ListPageInfo
             {
-                var items = (await _mediator.Send(new GetPurchaseOrderItemsQuery { OrderId = o.OrderId })).ToList();
-                itemsByOrder[o.OrderId] = items;
-            }
-            ViewBag.ItemsByOrder = itemsByOrder;
+                Page = ordersPage.Page,
+                PageSize = ordersPage.PageSize,
+                TotalItems = ordersPage.TotalItems
+            });
+            ViewBag.ItemsByOrder = await LoadItemsByOrderAsync(ordersPage.Items);
 
             ViewBag.SelectedStatus = status;
             ViewBag.FromDate = from.ToString("yyyy-MM-dd");
             ViewBag.ToDate = to.ToString("yyyy-MM-dd");
             ViewBag.Statuses = await _statuses.GetActiveByCategoryAsync(StatusCategories.Vehicle);
-            return View(pageItems);
+            return View(ordersPage.Items);
         }
 
         [AuthorizeRole(2)]
@@ -156,13 +182,14 @@ namespace KRSDealerManagement.Web.Controllers
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
             var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
-            var orders = (await _mediator.Send(new GetPurchaseOrdersQuery
+            var orders = (await _mediator.Send(new GetPurchaseOrdersPageQuery
             {
                 SubdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId.Value,
                 Status = status,
                 FromDate = from,
-                ToDate = to
-            })).ToList();
+                ToDate = to,
+                IncludeAll = true
+            })).Items;
 
             var headers = new[] { "Order #", "Qty", "Amount", "Status", "Pending", "Approved", "Created", "Last Allocation", "Notes" };
             var rows = orders.Select(o => (IReadOnlyList<object?>)new List<object?>
@@ -181,14 +208,13 @@ namespace KRSDealerManagement.Web.Controllers
             var userRole = SessionHelper.GetUserRole(HttpContext.Session);
             var isSubdealer = userRole == 2;
 
-            var orderQuery = new GetPurchaseOrdersQuery();
+            var orderQuery = new GetPurchaseOrdersPageQuery { OrderId = id, Page = 1, PageSize = 1 };
             if (isSubdealer && userId.HasValue)
                 orderQuery.SubdealerId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session) ?? userId.Value;
             else if (SessionHelper.IsStaff(HttpContext.Session))
                 DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, orderQuery);
 
-            var orders = await _mediator.Send(orderQuery);
-            var order = orders.FirstOrDefault(o => o.OrderId == id);
+            var order = (await _mediator.Send(orderQuery)).Items.FirstOrDefault();
 
             if (order == null)
             {
@@ -212,10 +238,9 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeRole(1, 4)]
         public async Task<IActionResult> Allocate(int id)
         {
-            var ordersQuery = new GetPurchaseOrdersQuery();
+            var ordersQuery = new GetPurchaseOrdersPageQuery { OrderId = id, Page = 1, PageSize = 1 };
             DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, ordersQuery);
-            var orders = await _mediator.Send(ordersQuery);
-            var order = orders.FirstOrDefault(o => o.OrderId == id);
+            var order = (await _mediator.Send(ordersQuery)).Items.FirstOrDefault();
             if (order == null)
             {
                 TempData["Error"] = "Order not found.";
@@ -246,10 +271,10 @@ namespace KRSDealerManagement.Web.Controllers
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
 
-            var scopedOrdersQuery = new GetPurchaseOrdersQuery();
+            var scopedOrdersQuery = new GetPurchaseOrdersPageQuery { OrderId = orderId, Page = 1, PageSize = 1 };
             DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, scopedOrdersQuery);
             var scopedOrders = await _mediator.Send(scopedOrdersQuery);
-            if (!scopedOrders.Any(o => o.OrderId == orderId))
+            if (scopedOrders.Items.Count == 0)
             {
                 TempData["Error"] = "Order not found or outside your branch scope.";
                 return RedirectToAction(nameof(Index));
@@ -264,25 +289,27 @@ namespace KRSDealerManagement.Web.Controllers
             var items = new List<AllocateOrderItemDto>();
             for (int i = 0; i < orderItemIds.Count; i++)
             {
-                var action = actionFlags != null && i < actionFlags.Count
-                    ? (actionFlags[i] ?? "pending").Trim().ToLowerInvariant()
-                    : "pending";
+                var action = FormField($"actionFlags[{i}]");
+                if (string.IsNullOrWhiteSpace(action) && actionFlags != null && i < actionFlags.Count)
+                    action = actionFlags[i];
+                action = (action ?? "pending").Trim().ToLowerInvariant();
                 if (action is not ("approve" or "reject"))
                     continue;
+
+                var masterRaw = FormField($"vehicleMasterIds[{i}]");
+                int.TryParse(masterRaw, out var masterId);
 
                 items.Add(new AllocateOrderItemDto
                 {
                     OrderItemId = orderItemIds[i],
                     Approve = action == "approve",
-                    VehicleMasterId = vehicleMasterIds != null && i < vehicleMasterIds.Count && vehicleMasterIds[i] > 0
-                        ? vehicleMasterIds[i]
-                        : null,
-                    ChassisNumber = chassisNumbers != null && i < chassisNumbers.Count ? chassisNumbers[i] : null,
-                    MotorNo = motorNos != null && i < motorNos.Count ? motorNos[i] : null,
-                    BatteryNo = batteryNos != null && i < batteryNos.Count ? batteryNos[i] : null,
-                    ChargerNo = chargerNos != null && i < chargerNos.Count ? chargerNos[i] : null,
-                    ControllerNo = controllerNos != null && i < controllerNos.Count ? controllerNos[i] : null,
-                    ConverterNo = converterNos != null && i < converterNos.Count ? converterNos[i] : null
+                    VehicleMasterId = masterId > 0 ? masterId : null,
+                    ChassisNumber = NullIfEmpty(FormField($"chassisNumbers[{i}]")),
+                    MotorNo = NullIfEmpty(FormField($"motorNos[{i}]")),
+                    BatteryNo = NullIfEmpty(FormField($"batteryNos[{i}]")),
+                    ChargerNo = NullIfEmpty(FormField($"chargerNos[{i}]")),
+                    ControllerNo = NullIfEmpty(FormField($"controllerNos[{i}]")),
+                    ConverterNo = NullIfEmpty(FormField($"converterNos[{i}]"))
                 });
             }
 
@@ -323,7 +350,7 @@ namespace KRSDealerManagement.Web.Controllers
         {
             var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Orders);
-            var ordersQuery = new GetPurchaseOrdersQuery
+            var ordersQuery = new GetPurchaseOrdersPageQuery
             {
                 Status = status,
                 SubdealerId = subdealerId,
@@ -333,18 +360,17 @@ namespace KRSDealerManagement.Web.Controllers
                 ColumnFilters = columnFilters
             };
             DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, ordersQuery);
+            ordersQuery.Page = page ?? 1;
+            ordersQuery.PageSize = ListPagingHelper.ResolvePageSize(pageSize);
             var orders = await _mediator.Send(ordersQuery);
 
-            var (pageItems, pageInfo) = ListPagingHelper.Paginate(orders, page, pageSize);
-            ListPagingHelper.ApplyToViewBag(ViewBag, pageInfo);
-
-            var itemsByOrder = new Dictionary<int, List<PurchaseOrderItemDto>>();
-            foreach (var o in pageItems)
+            ListPagingHelper.ApplyToViewBag(ViewBag, new ListPageInfo
             {
-                var items = (await _mediator.Send(new GetPurchaseOrderItemsQuery { OrderId = o.OrderId })).ToList();
-                itemsByOrder[o.OrderId] = items;
-            }
-            ViewBag.ItemsByOrder = itemsByOrder;
+                Page = orders.Page,
+                PageSize = orders.PageSize,
+                TotalItems = orders.TotalItems
+            });
+            ViewBag.ItemsByOrder = await LoadItemsByOrderAsync(orders.Items);
 
             var subdealersQuery = new GetSubdealersQuery { IsActive = true };
             DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, subdealersQuery);
@@ -355,11 +381,11 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.SearchTerm = searchTerm;
             ViewBag.FromDate = from.ToString("yyyy-MM-dd");
             ViewBag.ToDate = to.ToString("yyyy-MM-dd");
-            ViewBag.FilteredTotal = pageInfo.TotalItems;
-            ViewBag.PendingCount = orders.Count(o => o.PendingItemCount > 0);
+            ViewBag.FilteredTotal = orders.TotalItems;
+            ViewBag.PendingCount = orders.PendingCount;
             ViewBag.Statuses = await _statuses.GetActiveByCategoryAsync(StatusCategories.Vehicle);
 
-            return View(pageItems);
+            return View(orders.Items);
         }
 
         [AuthorizeRole(1, 4)]
@@ -367,17 +393,18 @@ namespace KRSDealerManagement.Web.Controllers
         {
             var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Orders);
-            var ordersQuery = new GetPurchaseOrdersQuery
+            var ordersQuery = new GetPurchaseOrdersPageQuery
             {
                 Status = status,
                 SubdealerId = subdealerId,
                 SearchTerm = searchTerm,
                 FromDate = from,
                 ToDate = to,
-                ColumnFilters = columnFilters
+                ColumnFilters = columnFilters,
+                IncludeAll = true
             };
             DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, ordersQuery);
-            var orders = (await _mediator.Send(ordersQuery)).ToList();
+            var orders = (await _mediator.Send(ordersQuery)).Items;
 
             var headers = new[] { "Order #", "Subdealer", "Qty", "Amount", "Status", "Pending", "Approved", "Created", "Last Allocation" };
             var rows = orders.Select(o => (IReadOnlyList<object?>)new List<object?>

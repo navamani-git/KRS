@@ -1,5 +1,6 @@
 using Dapper;
 using KRSDealerManagement.Domain.Entities;
+using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Infrastructure.Data;
 
 namespace KRSDealerManagement.Infrastructure.Repositories
@@ -7,7 +8,7 @@ namespace KRSDealerManagement.Infrastructure.Repositories
     /// <summary>
     /// Maps Vehicle entity to SubdealerVehicles + VehicleMasters join.
     /// </summary>
-    public class VehicleRepository : Repository<Vehicle>
+    public class VehicleRepository : Repository<Vehicle>, IVehicleRepository
     {
         public VehicleRepository(ApplicationDbContext context)
             : base(context, "SubdealerVehicles", "SubdealerVehicleId") { }
@@ -66,6 +67,24 @@ SELECT CAST(SCOPE_IDENTITY() AS int);";
                     SelectSql + " WHERE sv.SubdealerVehicleId = @Id",
                     new { Id = id },
                     transaction));
+        }
+
+        public async Task<IEnumerable<Vehicle>> GetByIdsAsync(IReadOnlyCollection<int> ids)
+        {
+            if (ids == null || ids.Count == 0)
+                return Array.Empty<Vehicle>();
+
+            var list = new List<Vehicle>();
+            foreach (var chunk in ids.Distinct().Chunk(1000))
+            {
+                var rows = await WithConnectionAsync(async (connection, transaction) =>
+                    await connection.QueryAsync<Vehicle>(
+                        SelectSql + " WHERE sv.SubdealerVehicleId IN @Ids",
+                        new { Ids = chunk },
+                        transaction));
+                list.AddRange(rows);
+            }
+            return list;
         }
 
         public async Task<IEnumerable<Vehicle>> GetByPurchaseOrderIdAsync(int purchaseOrderId)

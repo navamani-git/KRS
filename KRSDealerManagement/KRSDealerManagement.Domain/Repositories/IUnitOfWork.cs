@@ -31,7 +31,7 @@ namespace KRSDealerManagement.Domain.Repositories
         /// <summary>
         /// Repository for Vehicle entities
         /// </summary>
-        IRepository<Vehicle> Vehicles { get; }
+        IVehicleRepository Vehicles { get; }
 
         /// <summary>
         /// Dealer OEM stock (VehicleMasters).
@@ -63,7 +63,7 @@ namespace KRSDealerManagement.Domain.Repositories
         /// <summary>
         /// Repository for PurchaseOrder entities
         /// </summary>
-        IRepository<PurchaseOrder> PurchaseOrders { get; }
+        IPurchaseOrderRepository PurchaseOrders { get; }
 
         /// <summary>
         /// Repository for purchase order line items (one per vehicle)

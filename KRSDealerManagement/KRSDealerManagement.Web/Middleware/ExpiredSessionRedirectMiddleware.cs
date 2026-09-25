@@ -48,7 +48,8 @@ namespace KRSDealerManagement.Web.Middleware
             return path.StartsWith("/Account/Login", StringComparison.OrdinalIgnoreCase)
                 || path.StartsWith("/Account/SetFontSize", StringComparison.OrdinalIgnoreCase)
                 || path.StartsWith("/Account/AccessDenied", StringComparison.OrdinalIgnoreCase)
-                || path.StartsWith("/Home/Error", StringComparison.OrdinalIgnoreCase);
+                || path.StartsWith("/Home/Error", StringComparison.OrdinalIgnoreCase)
+                || path.StartsWith("/Jobs/PriceUpdate", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool WantsJson(HttpContext context)

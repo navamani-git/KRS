@@ -3,6 +3,34 @@
   "WorkspaceRootPath": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|d:\\krsgit\\krs\\krsdealermanagement\\krsdealermanagement.web\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|solutionrelative:krsdealermanagement.web\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|d:\\krsgit\\krs\\krsdealermanagement\\krsdealermanagement.web\\appsettings.production.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|solutionrelative:krsdealermanagement.web\\appsettings.production.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|d:\\krsgit\\krs\\krsdealermanagement\\krsdealermanagement.web\\appsettings.development.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|solutionrelative:krsdealermanagement.web\\appsettings.development.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|d:\\krsgit\\krs\\krsdealermanagement\\krsdealermanagement.web\\web.config||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
+      "RelativeMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|solutionrelative:krsdealermanagement.web\\web.config||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{22222222-2222-2222-2222-222222222222}|KRSDealerManagement.Domain\\KRSDealerManagement.Domain.csproj|d:\\krsgit\\krs\\krsdealermanagement\\krsdealermanagement.domain\\queries\\purchaseorderlistcriteria.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{22222222-2222-2222-2222-222222222222}|KRSDealerManagement.Domain\\KRSDealerManagement.Domain.csproj|solutionrelative:krsdealermanagement.domain\\queries\\purchaseorderlistcriteria.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{33333333-3333-3333-3333-333333333333}|KRSDealerManagement.Application\\KRSDealerManagement.Application.csproj|d:\\krsgit\\krs\\krsdealermanagement\\krsdealermanagement.application\\queries\\getpurchaseorderspagequery.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{33333333-3333-3333-3333-333333333333}|KRSDealerManagement.Application\\KRSDealerManagement.Application.csproj|solutionrelative:krsdealermanagement.application\\queries\\getpurchaseorderspagequery.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{33333333-3333-3333-3333-333333333333}|KRSDealerManagement.Application\\KRSDealerManagement.Application.csproj|d:\\krsgit\\krs\\krsdealermanagement\\krsdealermanagement.application\\handlers\\queries\\getpurchaseorderspagequeryhandler.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{33333333-3333-3333-3333-333333333333}|KRSDealerManagement.Application\\KRSDealerManagement.Application.csproj|solutionrelative:krsdealermanagement.application\\handlers\\queries\\getpurchaseorderspagequeryhandler.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|d:\\krsgit\\krs\\krsdealermanagement\\krsdealermanagement.web\\views\\shared\\_layout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|KRSDealerManagement.Web\\KRSDealerManagement.Web.csproj|solutionrelative:krsdealermanagement.web\\views\\shared\\_layout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
@@ -23,6 +51,97 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\appsettings.json",
+              "RelativeDocumentMoniker": "KRSDealerManagement.Web\\appsettings.json",
+              "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\appsettings.json",
+              "RelativeToolTip": "KRSDealerManagement.Web\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAABVAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-09-25T08:41:37.253Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "appsettings.Production.json",
+              "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\appsettings.Production.json",
+              "RelativeDocumentMoniker": "KRSDealerManagement.Web\\appsettings.Production.json",
+              "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\appsettings.Production.json",
+              "RelativeToolTip": "KRSDealerManagement.Web\\appsettings.Production.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-09-25T08:41:35.24Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "appsettings.Development.json",
+              "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\appsettings.Development.json",
+              "RelativeDocumentMoniker": "KRSDealerManagement.Web\\appsettings.Development.json",
+              "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\appsettings.Development.json",
+              "RelativeToolTip": "KRSDealerManagement.Web\\appsettings.Development.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-09-25T08:41:32.733Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "web.config",
+              "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\web.config",
+              "RelativeDocumentMoniker": "KRSDealerManagement.Web\\web.config",
+              "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\web.config",
+              "RelativeToolTip": "KRSDealerManagement.Web\\web.config",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000601|",
+              "WhenOpened": "2026-09-25T08:41:21.276Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "PurchaseOrderListCriteria.cs",
+              "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Domain\\Queries\\PurchaseOrderListCriteria.cs",
+              "RelativeDocumentMoniker": "KRSDealerManagement.Domain\\Queries\\PurchaseOrderListCriteria.cs",
+              "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Domain\\Queries\\PurchaseOrderListCriteria.cs",
+              "RelativeToolTip": "KRSDealerManagement.Domain\\Queries\\PurchaseOrderListCriteria.cs",
+              "ViewState": "AgIAAAsAAAAAAAAAAAAuwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-25T07:36:55.174Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "GetPurchaseOrdersPageQuery.cs",
+              "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Application\\Queries\\GetPurchaseOrdersPageQuery.cs",
+              "RelativeDocumentMoniker": "KRSDealerManagement.Application\\Queries\\GetPurchaseOrdersPageQuery.cs",
+              "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Application\\Queries\\GetPurchaseOrdersPageQuery.cs",
+              "RelativeToolTip": "KRSDealerManagement.Application\\Queries\\GetPurchaseOrdersPageQuery.cs",
+              "ViewState": "AgIAAAoAAAAAAAAAAAA0wAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-25T07:36:22.567Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "GetPurchaseOrdersPageQueryHandler.cs",
+              "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Application\\Handlers\\Queries\\GetPurchaseOrdersPageQueryHandler.cs",
+              "RelativeDocumentMoniker": "KRSDealerManagement.Application\\Handlers\\Queries\\GetPurchaseOrdersPageQueryHandler.cs",
+              "ToolTip": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Application\\Handlers\\Queries\\GetPurchaseOrdersPageQueryHandler.cs",
+              "RelativeToolTip": "KRSDealerManagement.Application\\Handlers\\Queries\\GetPurchaseOrdersPageQueryHandler.cs",
+              "ViewState": "AgIAAFkAAAAAAAAAAAAwwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-25T07:35:53.599Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
               "Title": "_Layout.cshtml",
               "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\Views\\Shared\\_Layout.cshtml",
               "RelativeDocumentMoniker": "KRSDealerManagement.Web\\Views\\Shared\\_Layout.cshtml",
@@ -35,7 +154,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 8,
               "Title": "grid-columns.js",
               "DocumentMoniker": "D:\\KRSGIT\\KRS\\KRSDealerManagement\\KRSDealerManagement.Web\\wwwroot\\js\\grid-columns.js",
               "RelativeDocumentMoniker": "KRSDealerManagement.Web\\wwwroot\\js\\grid-columns.js",

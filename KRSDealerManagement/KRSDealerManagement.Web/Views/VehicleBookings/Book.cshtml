@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "Book Vehicle";
     var vehicle = ViewBag.Vehicle as VehicleDto;
+    var bookFromStock = ViewBag.BookFromStock as bool? == true;
 }
 
 <div class="row mb-3">
@@ -14,9 +15,16 @@
     </div>
 </div>
 
-<form method="post" enctype="multipart/form-data">
+<form method="post" enctype="multipart/form-data" asp-action="@(bookFromStock ? "BookFromStock" : "Book")">
     @Html.AntiForgeryToken()
-    <input type="hidden" name="vehicleId" value="@vehicle?.VehicleId" />
+    @if (bookFromStock)
+    {
+        <input type="hidden" name="vehicleMasterId" value="@ViewBag.StockMasterId" />
+    }
+    else
+    {
+        <input type="hidden" name="vehicleId" value="@vehicle?.VehicleId" />
+    }
 
     <partial name="_BookingCustomerFormFields" />
 

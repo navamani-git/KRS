@@ -102,6 +102,26 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.IsSubdealer = isSubdealer;
             ViewBag.IsAdmin = SessionHelper.IsAdmin(HttpContext.Session);
 
+            if (isSubdealer && SessionHelper.HasMenuAccess(HttpContext.Session, MenuKeys.VehiclesBookingStages))
+            {
+                var orgId = SubdealerScopeWebHelper.GetOrgId(HttpContext.Session);
+                if (orgId.HasValue)
+                {
+                    var org = await _unitOfWork.SubDealers.GetByIdAsync(orgId.Value);
+                    if (org is { IsActive: true, OwnShowroom: true })
+                    {
+                        var dealership = await _unitOfWork.Dealerships.GetByIdAsync(org.DealershipId);
+                        ViewBag.IsOwnShowroom = true;
+                        ViewBag.OwnShowroomLocation = dealership?.Location?.Trim();
+                        ViewBag.OwnShowroomStock = (await _mediator.Send(new GetVehicleMastersQuery
+                        {
+                            DealershipId = org.DealershipId,
+                            IsAllocated = false
+                        })).ToList();
+                    }
+                }
+            }
+
             if (!ViewBag.IsSubdealer)
             {
                 var subdealersQuery = new GetSubdealersQuery { IsActive = true };

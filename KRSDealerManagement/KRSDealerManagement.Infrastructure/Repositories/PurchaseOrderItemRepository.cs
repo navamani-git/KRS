@@ -32,6 +32,24 @@ namespace KRSDealerManagement.Infrastructure.Repositories
                     transaction));
         }
 
+        public async Task<IEnumerable<PurchaseOrderItem>> GetByOrderIdsAsync(IReadOnlyCollection<int> orderIds)
+        {
+            if (orderIds == null || orderIds.Count == 0)
+                return Array.Empty<PurchaseOrderItem>();
+
+            var list = new List<PurchaseOrderItem>();
+            foreach (var chunk in orderIds.Distinct().Chunk(1000))
+            {
+                var rows = await WithConnectionAsync(async (connection, transaction) =>
+                    await connection.QueryAsync<PurchaseOrderItem>(
+                        SelectSql + " WHERE PurchaseOrderId IN @Ids ORDER BY PurchaseOrderId, OrderItemId",
+                        new { Ids = chunk },
+                        transaction));
+                list.AddRange(rows);
+            }
+            return list;
+        }
+
         public async Task<IEnumerable<PurchaseOrderItem>> GetPendingByOrderIdAsync(int purchaseOrderId)
         {
             return await WithConnectionAsync(async (connection, transaction) =>

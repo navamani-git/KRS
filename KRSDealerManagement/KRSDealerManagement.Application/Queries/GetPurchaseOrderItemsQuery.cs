@@ -9,6 +9,7 @@ namespace KRSDealerManagement.Application.Queries
     public class GetPurchaseOrderItemsQuery : IRequest<IEnumerable<PurchaseOrderItemDto>>
     {
         public int OrderId { get; set; }
+        public IReadOnlyCollection<int>? OrderIds { get; set; }
     }
 
     public class GetPurchaseOrderItemsQueryHandler : IRequestHandler<GetPurchaseOrderItemsQuery, IEnumerable<PurchaseOrderItemDto>>
@@ -24,13 +25,21 @@ namespace KRSDealerManagement.Application.Queries
 
         public async Task<IEnumerable<PurchaseOrderItemDto>> Handle(GetPurchaseOrderItemsQuery request, CancellationToken cancellationToken)
         {
-            var items = await _unitOfWork.PurchaseOrderItems.GetByOrderIdAsync(request.OrderId);
+            var items = request.OrderIds != null
+                ? await _unitOfWork.PurchaseOrderItems.GetByOrderIdsAsync(request.OrderIds)
+                : await _unitOfWork.PurchaseOrderItems.GetByOrderIdAsync(request.OrderId);
+            var itemList = items.ToList();
             var models = (await _unitOfWork.VehicleModels.GetAllAsync()).ToDictionary(m => m.ModelId);
             var colors = (await _unitOfWork.VehicleColors.GetAllAsync()).ToDictionary(c => c.ColorId);
-            var vehicles = (await _unitOfWork.Vehicles.GetAllAsync()).ToDictionary(v => v.VehicleId);
+            var vehicleIds = itemList
+                .Where(i => i.VehicleId is > 0)
+                .Select(i => i.VehicleId!.Value)
+                .Distinct()
+                .ToList();
+            var vehicles = (await _unitOfWork.Vehicles.GetByIdsAsync(vehicleIds)).ToDictionary(v => v.VehicleId);
             var statusMap = await _statuses.GetMapAsync(StatusCategories.Vehicle);
 
-            return items.Select(i =>
+            return itemList.Select(i =>
             {
                 string? statusName;
                 string? statusBadgeClass;

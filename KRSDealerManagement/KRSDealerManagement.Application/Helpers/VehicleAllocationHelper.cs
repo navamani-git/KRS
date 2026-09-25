@@ -1,5 +1,6 @@
 using KRSDealerManagement.Domain.Entities;
 using KRSDealerManagement.Domain.Repositories;
+using KRSDealerManagement.Shared.Constants;
 
 namespace KRSDealerManagement.Application.Helpers
 {
@@ -75,6 +76,83 @@ namespace KRSDealerManagement.Application.Helpers
                 SubdealerVehicleId = subdealerVehicleId,
                 Action = "Allocated",
                 Remarks = remarks,
+                UserId = allocatedBy
+            });
+
+            return subdealerVehicleId;
+        }
+
+        /// <summary>
+        /// Own-showroom booking: move unallocated dealer stock onto that subdealer.
+        /// Does not read or update any account balance.
+        /// </summary>
+        public static async Task<int> AllocateOwnShowroomFromStockAsync(
+            IUnitOfWork unitOfWork,
+            int vehicleMasterId,
+            int subdealerOrgId,
+            int allocatedBy,
+            decimal price)
+        {
+            var master = await unitOfWork.VehicleMasters.GetByIdAsync(vehicleMasterId)
+                ?? throw new InvalidOperationException("Selected chassis was not found in dealer stock.");
+
+            if (master.WarrantyOnly)
+                throw new InvalidOperationException($"Chassis {master.ChassisNumber} is warranty-only and cannot be booked from stock.");
+
+            if (master.IsAllocated)
+                throw new InvalidOperationException($"Chassis {master.ChassisNumber} is already allocated.");
+
+            var org = await unitOfWork.SubDealers.GetByIdAsync(subdealerOrgId)
+                ?? throw new InvalidOperationException("Subdealer not found.");
+            if (!org.IsActive || !org.OwnShowroom)
+                throw new InvalidOperationException("Only an Own Showroom subdealer can book unallocated stock.");
+            if (master.DealershipId != org.DealershipId)
+                throw new InvalidOperationException("This chassis is not in your location's stock.");
+
+            await VehicleLifecycleHelper.EnsureCanAllocateToSubdealerAsync(unitOfWork, master, subdealerOrgId);
+            await VehicleLifecycleHelper.SupersedeActiveRowsForMasterAsync(
+                unitOfWork,
+                master.VehicleMasterId,
+                allocatedBy,
+                "Superseded when own showroom booked this chassis from dealer stock.");
+
+            var vehicle = new Vehicle
+            {
+                VehicleMasterId = master.VehicleMasterId,
+                ModelId = master.ModelId,
+                ColorId = master.ColorId,
+                ChassisNumber = master.ChassisNumber,
+                Status = UnifiedVehicleStatus.ApprovedByDealer,
+                PurchaseOrderId = null,
+                SubdealerId = subdealerOrgId,
+                CurrentPrice = price,
+                OriginalPrice = price,
+                MotorNo = master.MotorNo,
+                BatteryNo = master.BatteryNo,
+                ChargerNo = master.ChargerNo,
+                ControllerNo = master.ControllerNo,
+                ConverterNo = master.ConverterNo,
+                ManufacturingYear = 0,
+                AllocatedDate = DateTime.UtcNow,
+                CreatedBy = allocatedBy,
+                CreatedDate = DateTime.UtcNow,
+                ModifiedDate = DateTime.UtcNow
+            };
+
+            var subdealerVehicleId = await unitOfWork.Vehicles.AddAsync(vehicle);
+            await unitOfWork.VehicleMasters.SetAllocatedAsync(master.VehicleMasterId, true, allocatedBy);
+            await unitOfWork.VehicleMasters.AddHistoryAsync(new VehicleMasterHistory
+            {
+                VehicleMasterId = master.VehicleMasterId,
+                Action = "Allocated",
+                Remarks = "Own showroom booking from dealer stock.",
+                UserId = allocatedBy
+            });
+            await unitOfWork.SubdealerVehicleHistories.AddAsync(new SubdealerVehicleHistory
+            {
+                SubdealerVehicleId = subdealerVehicleId,
+                Action = "Allocated",
+                Remarks = "Own showroom booking from dealer stock.",
                 UserId = allocatedBy
             });
 

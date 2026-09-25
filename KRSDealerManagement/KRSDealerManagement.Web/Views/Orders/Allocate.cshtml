@@ -77,9 +77,9 @@ else
 
         <div class="card-body p-0">
 
-            <div class="table-responsive">
+            <div class="table-responsive order-details-lines">
 
-                <table class="table table-sm table-bordered mb-0 align-middle">
+                <table class="table table-sm table-bordered mb-0 align-middle order-line-items-table">
 
                     <thead class="table-dark">
 
@@ -150,9 +150,10 @@ else
                                 </td>
 
                                 <td>
-                                    <select name="vehicleMasterIds[@idx]" id="master_@idx" class="form-select form-select-sm chassis-select" data-idx="@idx" disabled>
+                                    <select id="master_@idx" class="form-select form-select-sm chassis-select" data-idx="@idx" disabled>
                                         <option value="">Select chassis</option>
                                     </select>
+                                    <input type="hidden" name="vehicleMasterIds[@idx]" id="masterId_@idx" value="0" />
                                     <input type="hidden" name="chassisNumbers[@idx]" id="chassis_@idx" />
                                 </td>
 
@@ -244,7 +245,8 @@ else
 
         <div class="card-body p-0">
 
-            <table class="table table-sm mb-0">
+            <div class="table-responsive order-details-lines">
+            <table class="table table-sm mb-0 order-line-items-table">
 
                 <thead class="table-light">
 
@@ -291,6 +293,7 @@ else
                 </tbody>
 
             </table>
+            </div>
 
         </div>
 
@@ -358,6 +361,8 @@ else
     function applyMasterSelection(idx) {
         const select = document.getElementById(`master_${idx}`);
         const opt = select.selectedOptions[0];
+        const masterId = document.getElementById(`masterId_${idx}`);
+        if (masterId) masterId.value = KrsChassisStock.getSelectValue(select) || '0';
         document.getElementById(`chassis_${idx}`).value = opt?.dataset.chassis || '';
         document.getElementById(`motor_${idx}`).value = opt?.dataset.motor || '';
         document.getElementById(`battery_${idx}`).value = opt?.dataset.battery || '';
@@ -381,6 +386,8 @@ else
         } else {
             KrsChassisStock.fillSelect(masterSelect, [], { takenIds: selectedMasterIds(idx) });
             document.getElementById(`chassis_${idx}`).value = '';
+            const masterId = document.getElementById(`masterId_${idx}`);
+            if (masterId) masterId.value = '0';
             refreshOtherChassisDropdowns(idx);
         }
     }
