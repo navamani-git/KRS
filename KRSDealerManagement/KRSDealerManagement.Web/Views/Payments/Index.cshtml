@@ -146,7 +146,7 @@
                                     @if (p.CanBeApproved() && canWritePayments)
                                     {
                                         <button class="btn btn-sm btn-success"
-                                                onclick="showApprove(@p.PaymentId, @p.Amount)">
+                                                onclick="showApprove(@p.PaymentId, @p.Amount, '@p.PaymentDate.ToString("yyyy-MM-dd HH:mm")')">
                                             <i class="bi bi-check-circle"></i>
                                         </button>
                                         <button class="btn btn-sm btn-danger"
@@ -191,7 +191,8 @@
                 @Html.AntiForgeryToken()
                 <div class="modal-body">
                     <input type="hidden" name="id" id="approveId" />
-                    <p>Requested amount: <strong id="approveAmtDisplay">₹0</strong></p>
+                    <p class="mb-1">Requested amount: <strong id="approveAmtDisplay">₹0</strong></p>
+                    <p class="mb-3">Payment date: <strong id="approvePaymentDateDisplay">—</strong></p>
                     <div class="form-group mb-3">
                         <label class="fw-bold">Actual Received Amount (₹) <span class="text-danger">*</span></label>
                         <div class="input-group">
@@ -204,8 +205,7 @@
                     <div class="form-group mb-3">
                         <label class="fw-bold">Actual Received Date &amp; Time <span class="text-danger">*</span></label>
                         <input type="datetime-local" name="actualReceivedDate" id="actualReceivedDate"
-                               class="form-control" max="@paymentDateTimeMax"
-                               value="@FormDateTimeHelper.ToDateTimeLocalValue(DateTime.Now)" required />
+                               class="form-control" max="@paymentDateTimeMax" required />
                     </div>
                     <div class="form-group mb-3">
                         <label class="fw-bold">Remarks <span class="text-danger">*</span></label>
@@ -260,13 +260,14 @@
             return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
         }
 
-        function showApprove(id, amount) {
+        function showApprove(id, amount, paymentDate) {
             document.getElementById('approveId').value = id;
             document.getElementById('approveAmtDisplay').textContent = `₹${parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+            document.getElementById('approvePaymentDateDisplay').textContent = paymentDate || '—';
             const amtEl = document.getElementById('actualReceivedAmount');
-            if (window.krsSetIndianAmount) window.krsSetIndianAmount(amtEl, parseFloat(amount));
-            else amtEl.value = parseFloat(amount).toFixed(2);
-            document.getElementById('actualReceivedDate').value = toDateTimeLocalValue(new Date());
+            if (window.krsSetIndianAmount) window.krsSetIndianAmount(amtEl, '');
+            else amtEl.value = '';
+            document.getElementById('actualReceivedDate').value = '';
             document.getElementById('actualReceivedDate').max = toDateTimeLocalValue(new Date());
             const approveRemarks = document.querySelector('#approveModal textarea[name="remarks"]');
             if (approveRemarks) approveRemarks.value = '';

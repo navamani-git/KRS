@@ -2,15 +2,15 @@ namespace KRSDealerManagement.Application.Helpers
 {
     public static class OrderTransactionReasonHelper
     {
-        /// <summary>Account statement description: chassis, model, and color on separate lines.</summary>
-        public static string Format(string chassis, string modelName, string colorName)
+        /// <summary>Account statement description: model, color, and chassis on separate lines.</summary>
+        public static string Format(string modelName, string colorName, string chassis)
         {
             var ch = (chassis ?? "").Trim().ToUpperInvariant();
-            return $"{ch}\n{modelName.Trim()}\n{colorName.Trim()}";
+            return $"{modelName.Trim()}\n{colorName.Trim()}\n{ch}";
         }
 
-        /// <summary>Legacy signature — order number is not stored in the description.</summary>
+        /// <summary>Legacy call sites — order number is ignored.</summary>
         public static string Format(string orderNumber, string chassis, string modelName, string colorName)
-            => Format(chassis, modelName, colorName);
+            => Format(modelName, colorName, chassis);
     }
 }

@@ -1,12 +1,3 @@
-lot of issues is there 
+In WarrantyClaims/Index Screen means the dealer warranty manager screen
 
-chasis - MCPL71500CJK18224 is Chinnappampatti but that is assined to kpn motors
-
-If i logged in as kpn motors i could not able to see the chasis MCPL71500CJK18224
-
-In chasis history i could not able to see MCPL71500CJK18224
-
-For kpn motors kolathur only 4 vehcile in excel but 18 vehicle is allocated to them and if i logged in as knp_motors in My Vehicles screen i can see only 5 vehicles
-
-
-All are wrong - I just taken one example but all are wrong
+1) The grid columns expected to show is Chassis, Customer , Failure Part Number, Subdealer, Status , Submitted Date, Action

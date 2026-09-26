@@ -219,5 +219,46 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     toggleBookingCompanyFields();
+
+    if (@(ViewBag.BookFromStock is true || ViewData["BookFromStock"] is true ? "true" : "false")) {
+        var modeEl = document.getElementById('paymentMode');
+        var finance = document.getElementById('financeNameId');
+        if (modeEl && finance) {
+            [modeEl, finance].forEach(function (select) {
+                select.classList.add('no-search-select');
+                if (window.KrsSearchableSelect) window.KrsSearchableSelect.destroy(select);
+            });
+            var allFinance = Array.from(finance.options).filter(function (opt) { return opt.value; }).map(function (opt) {
+                var text = (opt.textContent || '').trim();
+                return { value: opt.value, text: text, cash: opt.getAttribute('data-is-cash') === '1' || text.toLowerCase() === 'cash' };
+            });
+            function syncOwnShowroomFinance() {
+                var mode = modeEl.value;
+                var isCash = mode === 'CASH';
+                var isOther = mode === 'EMI' || mode === 'NO_HYP';
+                var previous = finance.value;
+                var cashValue = '';
+                finance.innerHTML = '';
+                var placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = '-- Select --';
+                finance.appendChild(placeholder);
+                allFinance.forEach(function (item) {
+                    if (isCash && !item.cash) return;
+                    if (isOther && item.cash) return;
+                    var opt = document.createElement('option');
+                    opt.value = item.value;
+                    opt.textContent = item.text;
+                    finance.appendChild(opt);
+                    if (item.cash) cashValue = item.value;
+                });
+                if (isCash && cashValue) finance.value = cashValue;
+                else if (allFinance.some(function (item) { return item.value === previous && (isOther ? !item.cash : !isCash); })) finance.value = previous;
+                else finance.value = '';
+            }
+            modeEl.addEventListener('change', syncOwnShowroomFinance);
+            syncOwnShowroomFinance();
+        }
+    }
 });
 </script>

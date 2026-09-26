@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using KRSDealerManagement.Application.DTOs;
+using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Shared.Helpers;
 using KRSDealerManagement.Web.Helpers;
 
@@ -17,7 +18,7 @@ namespace KRSDealerManagement.Web.Helpers
         public static IEnumerable<IReadOnlyList<object?>> BuildRows(IEnumerable<AccountTransactionDto> transactions)
         {
             var sr = 1;
-            var list = transactions.Where(t => t.TransactionId > 0).ToList();
+            var list = transactions.Where(AccountStatementOpeningHelper.IncludeInLedgerTotals).ToList();
             foreach (var t in list)
             {
                 yield return new List<object?>

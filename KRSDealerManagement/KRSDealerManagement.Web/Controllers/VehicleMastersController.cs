@@ -46,6 +46,7 @@ namespace KRSDealerManagement.Web.Controllers
                 .OrderBy(d => d.DealershipName)
                 .ToList();
             ViewBag.IsAdmin = SessionHelper.IsSystemAdmin(HttpContext.Session);
+            ViewBag.CanWriteDealerStock = SessionHelper.CanWriteMenu(HttpContext.Session, StaffMenuAccess.DealerStock);
             return View(pageItems);
         }
 
@@ -79,6 +80,12 @@ namespace KRSDealerManagement.Web.Controllers
         [AuthorizeMenu(StaffMenuAccess.DealerStock)]
         public async Task<IActionResult> Create()
         {
+            if (!SessionHelper.CanWriteMenu(HttpContext.Session, StaffMenuAccess.DealerStock))
+            {
+                TempData["Error"] = "This screen is read-only for your role.";
+                return RedirectToAction(nameof(Index));
+            }
+
             await SetupFormViewBagAsync();
             return View();
         }
@@ -92,6 +99,12 @@ namespace KRSDealerManagement.Web.Controllers
             string motorNo, string batteryNo, string chargerNo, string controllerNo, string converterNo,
             string ampereInvoiceNo, DateTime ampereInvoiceDate, DateTime receivedDate, string? remarks)
         {
+            if (!SessionHelper.CanWriteMenu(HttpContext.Session, StaffMenuAccess.DealerStock))
+            {
+                TempData["Error"] = "This screen is read-only for your role.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             var resolvedDealershipId = ResolveDealershipId(dealershipId);
             if (!userId.HasValue)

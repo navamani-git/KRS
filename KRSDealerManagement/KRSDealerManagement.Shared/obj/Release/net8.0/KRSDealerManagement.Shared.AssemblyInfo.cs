@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("KRSDealerManagement.Shared")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+930c8344c74820022209f785cfc2f1027163db7e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+99b40f4f98ab26aea0edec71e1a720f4cf35e9ca")]
 [assembly: System.Reflection.AssemblyProductAttribute("KRSDealerManagement.Shared")]
 [assembly: System.Reflection.AssemblyTitleAttribute("KRSDealerManagement.Shared")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

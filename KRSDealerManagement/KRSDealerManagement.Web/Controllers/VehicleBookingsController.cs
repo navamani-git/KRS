@@ -663,7 +663,8 @@ namespace KRSDealerManagement.Web.Controllers
                 customerName, customerMobile, alternativeMobile, customerEmail, eAadhaarPassword,
                 nomineeName, nomineeDob, nomineeRelationship, isCompanyBooking, eAadhaarFile, documentFile, gstCertificateFile,
                 customerPhoto, chassisPhoto, customerSign)
-                ?? BookingFormValidationHelper.ValidateBookingChoiceFields(fancyNumber, paymentMode, financeNameId);
+                ?? BookingFormValidationHelper.ValidateBookingChoiceFields(fancyNumber, paymentMode, financeNameId)
+                ?? await ValidateOwnShowroomFinanceAsync(paymentMode, financeNameId);
             if (validationError != null)
             {
                 TempData["Error"] = validationError;
@@ -1613,6 +1614,29 @@ namespace KRSDealerManagement.Web.Controllers
                     .FirstOrDefault(b => BookingFileHelper.BookingContainsFilePath(b, path!));
 
             return booking != null && await CanAccessBooking(booking);
+        }
+
+        private async Task<string?> ValidateOwnShowroomFinanceAsync(string? paymentMode, int? financeNameId)
+        {
+            if (!financeNameId.HasValue || financeNameId.Value <= 0)
+                return null;
+
+            var finance = await _unitOfWork.FinanceNames.GetByIdAsync(financeNameId.Value);
+            if (finance == null || !finance.IsActive)
+                return "Financier Name is required.";
+
+            var isCashFinance = string.Equals(finance.FinanceName?.Trim(), "Cash", StringComparison.OrdinalIgnoreCase);
+            if (string.Equals(paymentMode, VehiclePaymentModes.Cash, StringComparison.OrdinalIgnoreCase))
+            {
+                if (!isCashFinance)
+                    return "Financier Name must be Cash when payment mode is Cash.";
+            }
+            else if (isCashFinance)
+            {
+                return "Select a financier other than Cash for this payment mode.";
+            }
+
+            return null;
         }
 
         private async Task<SubDealer?> GetOwnShowroomOrgAsync()

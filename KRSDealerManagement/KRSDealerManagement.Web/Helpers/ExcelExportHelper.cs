@@ -110,7 +110,10 @@ namespace KRSDealerManagement.Web.Helpers
                 return;
             }
 
-            cell.Value = val?.ToString() ?? "";
+            var text = val?.ToString() ?? "";
+            cell.Value = text;
+            if (text.Contains('\n', StringComparison.Ordinal))
+                cell.Style.Alignment.WrapText = true;
         }
 
         private static bool TryCoerceDecimal(object? val, out decimal result)

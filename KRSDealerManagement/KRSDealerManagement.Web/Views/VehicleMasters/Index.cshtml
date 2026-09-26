@@ -1,10 +1,17 @@
 @using KRSDealerManagement.Application.Queries
 @model IEnumerable<KRSDealerManagement.Application.DTOs.VehicleMasterDto>
+@using KRSDealerManagement.Shared.Constants
+@using KRSDealerManagement.Web.Helpers
 @using KRSDealerManagement.Web.Models
 @{
     ViewData["Title"] = "Dealer Stock";
-    ViewData["ExcelImportKey"] = KRSDealerManagement.Web.Helpers.ExcelImport.ExcelImportKeys.VehicleMasters;
-    ViewData["ExcelImportReturnAction"] = "Index";
+    var canWrite = ViewBag.CanWriteDealerStock as bool?
+        ?? SessionHelper.CanWriteMenu(Context.Session, StaffMenuAccess.DealerStock);
+    if (canWrite)
+    {
+        ViewData["ExcelImportKey"] = KRSDealerManagement.Web.Helpers.ExcelImport.ExcelImportKeys.VehicleMasters;
+        ViewData["ExcelImportReturnAction"] = "Index";
+    }
     var searchTerm = ViewBag.SearchTerm as string;
     var isAllocated = ViewBag.IsAllocated as bool?;
     var showBranchColumn = ViewBag.ShowBranchColumn as bool? ?? false;
@@ -22,11 +29,17 @@
     </div>
     <div class="col-lg-4 text-lg-end mt-2 mt-lg-0">
         <partial name="_ExportExcel" />
-        <a href="@Url.Action("Create")" class="btn btn-primary mt-2"><i class="bi bi-plus-circle"></i> Add Vehicle</a>
+        @if (canWrite)
+        {
+            <a href="@Url.Action("Create")" class="btn btn-primary mt-2"><i class="bi bi-plus-circle"></i> Add Vehicle</a>
+        }
     </div>
 </div>
 
-<partial name="_ExcelImport" />
+@if (canWrite)
+{
+    <partial name="_ExcelImport" />
+}
 
 <div class="card mb-3">
     <div class="card-body py-2">
@@ -152,7 +165,11 @@
         }
         else
         {
-            <div class="alert alert-info m-3 mb-0">No vehicles in dealer stock. Add manually or import from Excel.</div>
+            <div class="alert alert-info m-3 mb-0">
+                @(canWrite
+                    ? "No vehicles in dealer stock. Add manually or import from Excel."
+                    : "No vehicles in dealer stock.")
+            </div>
         }
     </div>
 </div>

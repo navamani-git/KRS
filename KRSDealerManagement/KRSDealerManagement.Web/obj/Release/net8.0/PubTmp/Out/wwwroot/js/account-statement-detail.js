@@ -64,7 +64,6 @@
         setText('statementDetailApproved', detail.approvedAmount);
         setText('statementDetailDebit', detail.debit);
         setText('statementDetailCredit', detail.credit);
-        setText('statementDetailBalance', detail.balanceAfter);
         setText('statementDetailReference', detail.reference);
         setHtml('statementDetailRemarks', detail.remarks);
 

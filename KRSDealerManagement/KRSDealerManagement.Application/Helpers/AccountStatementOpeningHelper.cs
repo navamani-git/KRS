@@ -4,6 +4,13 @@ namespace KRSDealerManagement.Application.Helpers
 {
     public static class AccountStatementOpeningHelper
     {
+        /// <summary>Synthetic period carry-forward row (not a credit/debit movement in the period).</summary>
+        public static bool IsPeriodOpeningRow(AccountTransactionDto transaction)
+            => transaction.TransactionId < 0;
+
+        public static bool IncludeInLedgerTotals(AccountTransactionDto transaction)
+            => !IsPeriodOpeningRow(transaction);
+
         public static bool IsInitialBalanceTransaction(AccountTransactionDto transaction)
         {
             if (string.Equals(transaction.ReferenceType, "AccountCreation", StringComparison.OrdinalIgnoreCase))

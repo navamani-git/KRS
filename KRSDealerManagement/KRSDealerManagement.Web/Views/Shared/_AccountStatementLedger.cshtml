@@ -65,7 +65,6 @@
                         approvedAmount = t.ApprovedPaymentAmount.HasValue ? $"₹{t.ApprovedPaymentAmount.Value:N2}" : null,
                         debit = t.IsDebit() ? $"₹{t.Amount:N2}" : null,
                         credit = t.IsCredit() ? $"₹{t.Amount:N2}" : null,
-                        balanceAfter = $"₹{t.BalanceAfterTransaction:N2}",
                         reference = string.IsNullOrWhiteSpace(t.ReferenceType)
                             ? null
                             : $"{t.ReferenceType}{(t.ReferenceId.HasValue ? $" #{t.ReferenceId}" : "")}",
@@ -85,7 +84,7 @@
                             <small class="text-muted">@(statementTime?.ToString("HH:mm") ?? "—")</small>
                         </td>
                         <td><span class="badge bg-secondary">@t.CategoryLabel</span></td>
-                        <td>
+                        <td class="grid-cell-wrap">
                             @if (!string.IsNullOrEmpty(t.Reason))
                             {
                                 @Html.Raw(System.Net.WebUtility.HtmlEncode(t.Reason).Replace("\n", "<br />"))
@@ -189,10 +188,6 @@
                         <div class="col-md-6">
                             <div class="text-muted">VIN / Chassis</div>
                             <div id="statementDetailVin"><code>—</code></div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="text-muted">Balance After</div>
-                            <div id="statementDetailBalance">—</div>
                         </div>
                         <div class="col-md-3">
                             <div class="text-muted">Requested</div>

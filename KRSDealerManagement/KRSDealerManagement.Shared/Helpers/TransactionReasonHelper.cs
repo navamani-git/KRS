@@ -3,13 +3,13 @@ namespace KRSDealerManagement.Shared.Helpers
     public static class TransactionReasonHelper
     {
         public static string Commission(string? chassisNumber, string? modelName = null)
-            => $"Commission\n{FormatChassis(chassisNumber)}\n{(modelName ?? "-").Trim()}";
+            => $"Commission\n{(modelName ?? "-").Trim()}\n-\n{FormatChassis(chassisNumber)}";
 
         public static string Return(string? chassisNumber)
             => Return(chassisNumber, null, null);
 
         public static string Return(string? chassisNumber, string? modelName, string? colorName)
-            => $"Return\n{FormatChassis(chassisNumber)}\n{(modelName ?? "-").Trim()}\n{(colorName ?? "-").Trim()}";
+            => $"Return\n{(modelName ?? "-").Trim()}\n{(colorName ?? "-").Trim()}\n{FormatChassis(chassisNumber)}";
 
         public static string Reassignment(string? chassisNumber)
             => $"Vehicle reassignment - {FormatChassis(chassisNumber)}";

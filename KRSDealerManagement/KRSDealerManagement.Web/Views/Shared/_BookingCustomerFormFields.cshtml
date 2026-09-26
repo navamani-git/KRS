@@ -23,6 +23,7 @@
     var documentTypeId = IntVal(form?.DocumentTypeId, booking?.DocumentTypeId);
     var paymentMode = Val(form?.PaymentMode, booking?.PaymentMode);
     var financeNameId = IntVal(form?.FinanceNameId, booking?.FinanceNameId);
+    var lockCashFinance = ViewBag.BookFromStock is true || ViewData["BookFromStock"] is true;
     var maxNomineeDob = IstTime.DateInputMaxValue();
 }
 
@@ -150,7 +151,7 @@
         </div>
         <div class="col-md-4">
             <label class="fw-bold">Payment Mode <span class="text-danger">*</span></label>
-            <select name="paymentMode" class="form-select" required>
+            <select name="paymentMode" id="paymentMode" class="form-select@(lockCashFinance ? " no-search-select" : "")" required @(lockCashFinance ? "data-no-search" : "")>
                 <option value="">-- Select --</option>
                 @foreach (var p in (ViewBag.PaymentModes as IEnumerable<(string Value, string Label)>) ?? VehiclePaymentModes.All)
                 {
@@ -167,20 +168,25 @@
         </div>
         <div class="col-md-6">
             <label class="fw-bold">Financier Name <span class="text-danger">*</span></label>
-            <select name="financeNameId" class="form-select" required>
+            <select name="financeNameId" id="financeNameId" class="form-select@(lockCashFinance ? " no-search-select" : "")" required @(lockCashFinance ? "data-no-search" : "")>
                 <option value="">-- Select --</option>
                 @foreach (var f in (ViewBag.FinanceNames as IEnumerable<FinanceNameMaster>) ?? Enumerable.Empty<FinanceNameMaster>())
                 {
+                    var isCashFinance = string.Equals(f.FinanceName?.Trim(), "Cash", StringComparison.OrdinalIgnoreCase);
                     if (financeNameId == f.FinanceNameId)
                     {
-                        <option value="@f.FinanceNameId" selected>@f.FinanceName</option>
+                        <option value="@f.FinanceNameId" selected data-is-cash="@(isCashFinance ? "1" : "0")">@f.FinanceName</option>
                     }
                     else
                     {
-                        <option value="@f.FinanceNameId">@f.FinanceName</option>
+                        <option value="@f.FinanceNameId" data-is-cash="@(isCashFinance ? "1" : "0")">@f.FinanceName</option>
                     }
                 }
             </select>
+            @if (lockCashFinance)
+            {
+                <small class="text-muted">Cash payment uses Cash. EMI and the other mode use the remaining financiers.</small>
+            }
         </div>
     </div>
 </div>

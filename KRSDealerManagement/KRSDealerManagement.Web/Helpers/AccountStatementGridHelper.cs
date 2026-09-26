@@ -42,7 +42,7 @@ namespace KRSDealerManagement.Web.Helpers
                 balance?.CreatedDate,
                 from,
                 allTransactions).ToList();
-            ApplyTotals(controller.ViewBag, transactions.Where(t => t.TransactionId > 0).ToList());
+            ApplyTotals(controller.ViewBag, transactions.Where(AccountStatementOpeningHelper.IncludeInLedgerTotals).ToList());
 
             var (pageItems, pageInfo) = ListPagingHelper.Paginate(transactions, page, pageSize);
             ListPagingHelper.ApplyToViewBag(controller.ViewBag, pageInfo);

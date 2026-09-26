@@ -2,7 +2,8 @@
 @{
     ViewData["Title"] = "Book Vehicle";
     var vehicle = ViewBag.Vehicle as VehicleDto;
-    var bookFromStock = ViewBag.BookFromStock as bool? == true;
+    var bookFromStock = ViewBag.BookFromStock is true;
+    ViewData["BookFromStock"] = bookFromStock;
 }
 
 <div class="row mb-3">
