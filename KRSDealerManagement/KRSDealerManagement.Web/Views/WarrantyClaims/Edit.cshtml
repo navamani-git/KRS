@@ -145,7 +145,7 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label">Failure Part Serial #</label>
-                <input asp-for="FailurePartSerialNumber" class="form-control" />
+                <input asp-for="FailurePartSerialNumber" class="form-control text-uppercase" id="FailurePartSerialNumber" style="text-transform:uppercase" />
             </div>
             <div class="col-md-12">
                 <label class="form-label">Customer Complaint *</label>
@@ -185,7 +185,7 @@
     </div>
 
     <div class="card mb-3">
-        <div class="card-header"><strong>Attachments</strong> <small class="text-muted">(max 100 MB each)</small></div>
+        <div class="card-header"><strong>Attachments</strong> <small class="text-muted">(images max 1 MB · videos max 10 MB)</small></div>
         <div class="card-body" id="attachmentSection">
             @foreach (var att in warrantyTypes)
             {
@@ -197,7 +197,7 @@
                     {
                         <div class="small text-success mb-1"><i class="bi bi-check-circle"></i> File on record — upload only to replace</div>
                     }
-                    <input type="file" name="attachment_@att.Key" class="form-control form-control-sm warranty-attachment-file" accept="@WarrantyAttachmentTypes.GetAttachmentAccept(att.Key)" data-media-kind="@(WarrantyAttachmentTypes.IsImageAttachment(att.Key) ? "image" : "video")" data-att-type="@att.Key" data-field-label="@att.Name" data-max-mb="100" />
+                    <input type="file" name="attachment_@att.Key" class="form-control form-control-sm warranty-attachment-file" accept="@WarrantyAttachmentTypes.GetAttachmentAccept(att.Key)" data-media-kind="@(WarrantyAttachmentTypes.IsImageAttachment(att.Key) ? "image" : "video")" data-att-type="@att.Key" data-field-label="@att.Name" data-max-mb="@(WarrantyAttachmentTypes.IsImageAttachment(att.Key) ? "1" : "10")" />
                 </div>
             }
             @foreach (var att in campaignTypes.Where(a => !warrantyTypes.Any(w => w.Key == a.Key)))
@@ -210,7 +210,7 @@
                     {
                         <div class="small text-success mb-1"><i class="bi bi-check-circle"></i> File on record — upload only to replace</div>
                     }
-                    <input type="file" name="attachment_@att.Key" class="form-control form-control-sm warranty-attachment-file" accept="@WarrantyAttachmentTypes.GetAttachmentAccept(att.Key)" data-media-kind="@(WarrantyAttachmentTypes.IsImageAttachment(att.Key) ? "image" : "video")" data-att-type="@att.Key" data-field-label="@att.Name" data-max-mb="100" />
+                    <input type="file" name="attachment_@att.Key" class="form-control form-control-sm warranty-attachment-file" accept="@WarrantyAttachmentTypes.GetAttachmentAccept(att.Key)" data-media-kind="@(WarrantyAttachmentTypes.IsImageAttachment(att.Key) ? "image" : "video")" data-att-type="@att.Key" data-field-label="@att.Name" data-max-mb="@(WarrantyAttachmentTypes.IsImageAttachment(att.Key) ? "1" : "10")" />
                 </div>
             }
             <div class="mt-2">
@@ -241,6 +241,12 @@
     const partSelect = document.getElementById('WarrantyPartId');
     const otherPartDiv = document.getElementById('otherPartNameDiv');
     const otherPartInput = document.getElementById('OtherPartName');
+    const serialInput = document.getElementById('FailurePartSerialNumber');
+    if (serialInput) {
+        serialInput.addEventListener('blur', function () {
+            serialInput.value = (serialInput.value || '').trim().toUpperCase();
+        });
+    }
     const warning = document.getElementById('chassisWarning');
     const chassisHidden = document.getElementById('ChassisNo');
     const masterIdInput = document.getElementById('VehicleMasterId');

@@ -34,6 +34,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 .GroupBy(i => i.VehicleId!.Value)
                 .ToDictionary(g => g.Key, g => g.OrderByDescending(i => i.ApprovedDate ?? i.CreatedDate).First());
             var dealerships = (await _unitOfWork.Dealerships.GetAllAsync()).ToDictionary(d => d.DealershipId);
+            var masters = (await _unitOfWork.VehicleMasters.GetAllAsync()).ToDictionary(m => m.VehicleMasterId);
             var allOrgRoles = (await _unitOfWork.UserOrgRoles.GetAllAsync()).ToList();
             var warrantyOnlyVehicleIds = await WarrantyOnlyVehicleFlowHelper.GetWarrantyOnlyVehicleIdsAsync(_unitOfWork);
 
@@ -91,6 +92,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                     }
 
                     var allocated = item?.ApprovedDate ?? order?.ApprovedDate ?? v.CreatedDate;
+                    masters.TryGetValue(v.VehicleMasterId, out var master);
+                    var invoiceDate = master?.AmpereInvoiceDate;
+                    var daysBase = invoiceDate ?? allocated;
                     var chassis = UnifiedVehicleStatus.IsPlaceholderChassis(v.ChassisNumber)
                         ? "-"
                         : (v.ChassisNumber ?? "-");
@@ -107,8 +111,10 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         DealershipName = dealershipName,
                         OrderNumber = order?.OrderNumber,
                         AllocatedDate = allocated,
+                        AmpereInvoiceDate = invoiceDate,
                         CurrentPrice = v.CurrentPrice,
-                        DaysInStock = Math.Max(0, (DateTime.UtcNow.Date - allocated.Date).Days)
+                        DaysInStock = Math.Max(0, (DateTime.UtcNow.Date - daysBase.Date).Days),
+                        DaysSinceAllocated = Math.Max(0, (DateTime.UtcNow.Date - allocated.Date).Days)
                     };
                 });
 

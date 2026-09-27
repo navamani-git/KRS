@@ -9,7 +9,6 @@ using KRSDealerManagement.Web.Models;
 
 namespace KRSDealerManagement.Web.Controllers
 {
-    [AuthorizeRole(1, 4)]
     public class StockController : Controller
     {
         private readonly IMediator _mediator;
@@ -104,17 +103,18 @@ namespace KRSDealerManagement.Web.Controllers
                 await _mediator.Send(stockQuery),
                 columnFilters).ToList();
 
-            var headers = new[] { "Location", "Subdealer", "Chassis", "Model", "Color", "Order #", "Allocated", "Days in stock", "Price" };
+            var headers = new[] { "Location", "Subdealer", "Model", "Color", "Chassis", "Ampere Invoice", "Days (invoice)", "Allocated", "Days (allocated)", "Price" };
             var rows = stock.Select(r => (IReadOnlyList<object?>)new List<object?>
             {
                 r.DealershipLocation,
                 r.SubdealerName,
-                r.ChassisNumber,
                 r.ModelName,
                 r.ColorName,
-                r.OrderNumber,
-                r.AllocatedDate?.ToString("yyyy-MM-dd"),
+                r.ChassisNumber,
+                r.AmpereInvoiceDate?.ToString("yyyy-MM-dd"),
                 r.DaysInStock,
+                r.AllocatedDate?.ToString("yyyy-MM-dd"),
+                r.DaysSinceAllocated,
                 r.CurrentPrice
             });
             return ExcelExportHelper.ToFileResult(this, $"showroom_stock_{DateTime.Now:yyyyMMdd}.xlsx", headers, rows, "Showroom Stock");

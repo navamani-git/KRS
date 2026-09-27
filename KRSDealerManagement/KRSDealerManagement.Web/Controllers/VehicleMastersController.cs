@@ -9,7 +9,6 @@ using KRSDealerManagement.Web.Models;
 
 namespace KRSDealerManagement.Web.Controllers
 {
-    [AuthorizeRole(1, 4)]
     public class VehicleMastersController : Controller
     {
         private readonly IMediator _mediator;
@@ -321,7 +320,41 @@ namespace KRSDealerManagement.Web.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.DealerStock)]
+        public async Task<IActionResult> DetailsJson(int id)
+        {
+            var mastersQuery = new GetVehicleMastersQuery();
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, mastersQuery);
+            var master = (await _mediator.Send(mastersQuery))
+                .FirstOrDefault(m => m.VehicleMasterId == id);
+            if (master == null)
+                return Json(new { success = false, message = "Vehicle not found or you do not have access." });
+
+            return Json(new
+            {
+                success = true,
+                source = "dealerStock",
+                vehicleMasterId = master.VehicleMasterId,
+                modelName = master.ModelName,
+                colorName = master.ColorName,
+                chassisNumber = master.ChassisNumber,
+                statusName = master.IsAllocated ? "Allocated" : "Available",
+                motorNo = master.MotorNo,
+                batteryNo = master.BatteryNo,
+                chargerNo = master.ChargerNo,
+                controllerNo = master.ControllerNo,
+                converterNo = master.ConverterNo,
+                ampereInvoiceNo = master.AmpereInvoiceNo,
+                ampereInvoiceDate = master.AmpereInvoiceDate.ToString("dd-MMM-yyyy"),
+                receivedDate = master.ReceivedDate.ToString("dd-MMM-yyyy"),
+                daysInStock = master.DaysInStock,
+                dealershipName = master.DealershipName,
+                allocatedTo = master.AllocatedToSubdealerName,
+                remarks = master.Remarks,
+                warrantyOnly = master.WarrantyOnly
+            });
+        }
+        [AuthorizeMenuAny(StaffMenuAccess.DealerStock, StaffMenuAccess.Orders)]
         public async Task<IActionResult> Available(int modelId, int colorId, int? dealershipId)
         {
             var availableQuery = new GetAvailableVehicleMastersQuery

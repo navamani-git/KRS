@@ -4,13 +4,14 @@ using KRSDealerManagement.Application.Commands;
 using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Domain.Repositories;
+using KRSDealerManagement.Shared.Constants;
 using KRSDealerManagement.Web.Helpers;
 using KRSDealerManagement.Web.Filters;
 using KRSDealerManagement.Web.Models;
 
 namespace KRSDealerManagement.Web.Controllers
 {
-    [AuthorizeRole(1)] // Admin only
+    [AuthorizeMenu(StaffMenuAccess.Prices)]
     public class PricesController : Controller
     {
         private readonly IMediator _mediator;

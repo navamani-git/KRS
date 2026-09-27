@@ -10,7 +10,6 @@ using KRSDealerManagement.Domain.Repositories;
 
 namespace KRSDealerManagement.Web.Controllers
 {
-    [AuthorizeRole(1, 4)]
     [AuthorizeMenu(StaffMenuAccess.Subdealers)]
     public class SubdealersController : Controller
     {

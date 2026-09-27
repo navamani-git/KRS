@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace KRSDealerManagement.Web.Controllers
 {
-    [AuthorizeRole(1)]
     [AuthorizeMenu(StaffMenuAccess.PriceUpdateJob, StaffOnly = true)]
     public class PriceUpdateRunsController : Controller
     {

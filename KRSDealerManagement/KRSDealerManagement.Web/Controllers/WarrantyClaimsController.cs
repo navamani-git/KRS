@@ -69,6 +69,119 @@ namespace KRSDealerManagement.Web.Controllers
             return View(pageItems);
         }
 
+        [AuthorizeMenu(StaffMenuAccess.WarrantyClaims, StaffOnly = true)]
+        public async Task<IActionResult> Export(int? status, string? claimType, int? subdealerUserId)
+        {
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.WarrantyClaims);
+            var claimsQuery = new GetWarrantyClaimsQuery
+            {
+                Status = status,
+                ClaimType = claimType,
+                ExcludeDraft = true,
+                ExcludeComplete = true,
+                SubdealerUserId = subdealerUserId
+            };
+            DealershipScopeWebHelper.ApplyStaffScope(HttpContext.Session, claimsQuery);
+            var list = GridScreenFilterHelper.ApplyWarrantyClaims(
+                await _mediator.Send(claimsQuery),
+                columnFilters).ToList();
+
+            var ids = list.Select(c => c.WarrantyClaimId).ToHashSet();
+            var entities = (await _unitOfWork.WarrantyClaims.GetAllAsync())
+                .Where(c => ids.Contains(c.WarrantyClaimId))
+                .ToDictionary(c => c.WarrantyClaimId);
+            var resolutionNames = (await _unitOfWork.WarrantyResolutionTypes.GetAllAsync())
+                .ToDictionary(r => r.Code, r => r.Name, StringComparer.OrdinalIgnoreCase);
+
+            static string Yn(bool v) => v ? "Yes" : "No";
+            static string D(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? "";
+
+            var headers = new[]
+            {
+                "Claim #", "Type", "Status", "Location", "Subdealer",
+                "Chassis", "Model", "Color", "KMs",
+                "Customer", "Customer Mobile", "Contact Person", "Contact Mobile",
+                "Sale Date", "Complaint Date",
+                "Part Name", "Part Code", "Failure Serial #",
+                "Customer Complaint", "Dealer Observation", "Remarks",
+                "Submitted Date", "Accepted Date", "Applied to Ampere", "Ampere Approved",
+                "SO Number",
+                "Rejection Reason", "More Info Notes",
+                "Resolution", "Closed Part #", "Invoice #", "Closed Date",
+                "Replacement Received", "Replacement Docket", "Replacement Courier", "Replacement Part #",
+                "Subdealer Part Received", "Received By",
+                "Defective Handover", "Handover By", "Ack Receipt #",
+                "Courier Sent", "Courier Docket", "Courier Name",
+                "Resolution Done", "Invoice Done", "Replacement Done", "Subdealer Received Done", "Handover Done", "Sent to Ampere Done"
+            };
+
+            var rows = list.Select(row =>
+            {
+                entities.TryGetValue(row.WarrantyClaimId, out var c);
+                c ??= new Domain.Entities.WarrantyClaim();
+                var resolutionName = !string.IsNullOrWhiteSpace(c.DealerResolutionType)
+                    && resolutionNames.TryGetValue(c.DealerResolutionType, out var rn)
+                        ? rn
+                        : (c.DealerResolutionType ?? "");
+
+                return (IReadOnlyList<object?>)new List<object?>
+                {
+                    row.ClaimNumber,
+                    row.ClaimType,
+                    row.StatusName ?? row.Status.ToString(),
+                    row.DealershipName,
+                    row.AccountName,
+                    c.ChassisNo,
+                    c.ModelName,
+                    c.ColorName,
+                    c.CurrentKms,
+                    c.CustomerName,
+                    c.CustomerMobile,
+                    c.ContactPerson,
+                    c.ContactMobile,
+                    D(c.SaleDate),
+                    D(c.ComplaintDate),
+                    row.PartName,
+                    row.PartCode ?? c.PartCode,
+                    c.FailurePartSerialNumber,
+                    c.CustomerComplaint,
+                    c.DealerObservation,
+                    c.Remarks,
+                    D(c.SubmittedDate),
+                    D(c.ApprovedDate),
+                    D(c.AmpereAppliedDate),
+                    D(c.AmpereApprovedDate),
+                    c.SoNumber,
+                    c.RejectionReason,
+                    c.MoreInfoNotes,
+                    resolutionName,
+                    c.DealerClosedPartNumber,
+                    c.DealerClosedInvoiceNumber,
+                    D(c.DealerClosedDate),
+                    D(c.ProductReceivedDate),
+                    c.ReplacementDocketNumber,
+                    c.ReplacementCourierCompanyName,
+                    c.ReplacementReceivedPartNumber,
+                    D(c.CollectedDate),
+                    c.CollectedByName,
+                    D(c.DefectiveSubmittedDate),
+                    c.DefectiveSubmittedByName,
+                    c.DefectiveHandoverAcknowledgementNumber,
+                    D(c.DefectiveSentToAmpereDate),
+                    c.DefectiveCourierDocketNumber,
+                    c.DefectiveCourierName,
+                    Yn(c.ResolutionPartCompleted),
+                    Yn(c.DealerInvoiceClosedCompleted),
+                    Yn(c.ReplacementPartReceivedCompleted),
+                    Yn(c.SubdealerPartReceivedCompleted),
+                    Yn(c.DefectiveHandoverCompleted),
+                    Yn(c.DefectiveSentToAmpereCompleted)
+                };
+            });
+
+            return ExcelExportHelper.ToFileResult(this, $"warranty_claims_{DateTime.Now:yyyyMMdd}.xlsx", headers, rows, "Warranty Claims");
+        }
+
         [AuthorizeMenu(StaffMenuAccess.WarrantyCompleted, StaffOnly = true)]
         public async Task<IActionResult> Completed(int? subdealerUserId, DateTime? fromDate, DateTime? toDate, int? page, int? pageSize)
         {
@@ -139,6 +252,35 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.Statuses = (await _statuses.GetActiveByCategoryAsync(StatusCategories.Warranty))
                 .Where(s => s.StatusValue != WarrantyClaimStatus.Complete);
             return View(pageItems);
+        }
+
+        [AuthorizeMenu(MenuKeys.MyWarrantyClaims, SubdealerOnly = true)]
+        public async Task<IActionResult> ExportMyClaims(int? status)
+        {
+            var userId = SessionHelper.GetUserId(HttpContext.Session);
+            var account = await SubdealerOrgService.GetPermissionAccountAsync(_unitOfWork, userId!.Value);
+            var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.MyWarrantyClaims);
+            var claims = GridScreenFilterHelper.ApplyMyWarrantyClaims(
+                await _mediator.Send(new GetWarrantyClaimsQuery
+                {
+                    Status = status,
+                    AccountId = account?.AccountId,
+                    SubdealerUserId = userId,
+                    ExcludeComplete = true
+                }),
+                columnFilters).ToList();
+
+            var headers = new[] { "Claim #", "Type", "Chassis", "Part", "Status", "Submitted Date" };
+            var rows = claims.Select(c => (IReadOnlyList<object?>)new List<object?>
+            {
+                c.ClaimNumber,
+                c.ClaimType,
+                c.ChassisNo,
+                c.PartName,
+                c.StatusName ?? c.Status.ToString(),
+                c.SubmittedDate?.ToString("yyyy-MM-dd")
+            });
+            return ExcelExportHelper.ToFileResult(this, $"my_warranty_claims_{DateTime.Now:yyyyMMdd}.xlsx", headers, rows, "My Warranty Claims");
         }
 
         [AuthorizeMenu(StaffMenuAccess.WarrantyApply, StaffOnly = true)]
@@ -401,6 +543,11 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.CanStaffEditWorkflow = isStaff
                 && (ViewBag.CanStaffEdit as bool? == true)
                 && WarrantyClaimStatus.CanStaffEditPostAmpereWorkflow(detail.Status, detail.DefectiveSentToAmpereCompleted);
+            ViewBag.ResolutionTypes = (await _unitOfWork.WarrantyResolutionTypes.GetAllAsync())
+                .Where(r => r.IsActive)
+                .OrderBy(r => r.SortOrder)
+                .ThenBy(r => r.Name)
+                .ToList();
             return View(detail);
         }
 
@@ -525,14 +672,25 @@ namespace KRSDealerManagement.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AuthorizeMenu(StaffMenuAccess.WarrantyClaims, StaffOnly = true)]
-        public async Task<IActionResult> MarkReplacementPartReceived(int id, string? notes, string? actionDate)
-            => await StaffAction(id, notes, new MarkWarrantyReplacementPartReceivedCommand { ActionDate = ParseActionDate(actionDate) });
+        public async Task<IActionResult> MarkReplacementPartReceived(int id, string docketNumber, string courierCompanyName, string receivedPartNumber, string? notes, string? actionDate)
+            => await StaffAction(id, notes, new MarkWarrantyReplacementPartReceivedCommand
+            {
+                ActionDate = ParseActionDate(actionDate),
+                DocketNumber = docketNumber?.Trim() ?? "",
+                CourierCompanyName = courierCompanyName?.Trim() ?? "",
+                ReceivedPartNumber = receivedPartNumber?.Trim() ?? ""
+            });
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AuthorizeMenu(StaffMenuAccess.WarrantyClaims, StaffOnly = true)]
-        public async Task<IActionResult> MarkDefectiveSentToAmpere(int id, string? notes, string? actionDate)
-            => await StaffAction(id, notes, new MarkWarrantyDefectiveSentToAmpereCommand { ActionDate = ParseActionDate(actionDate) });
+        public async Task<IActionResult> MarkDefectiveSentToAmpere(int id, string courierDocketNumber, string courierName, string? notes, string? actionDate)
+            => await StaffAction(id, notes, new MarkWarrantyDefectiveSentToAmpereCommand
+            {
+                ActionDate = ParseActionDate(actionDate),
+                CourierDocketNumber = courierDocketNumber?.Trim() ?? "",
+                CourierName = courierName?.Trim() ?? ""
+            });
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -558,7 +716,7 @@ namespace KRSDealerManagement.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AuthorizeMenu(StaffMenuAccess.WarrantyClaims, StaffOnly = true)]
-        public async Task<IActionResult> StaffMarkDefectiveHandover(int id, string handoverByName, string? actionDate)
+        public async Task<IActionResult> StaffMarkDefectiveHandover(int id, string handoverByName, string acknowledgementReceiptNumber, string? actionDate)
         {
             var claim = await _unitOfWork.WarrantyClaims.GetByIdAsync(id);
             if (claim == null) return RedirectToAction(nameof(Index));
@@ -569,6 +727,7 @@ namespace KRSDealerManagement.Web.Controllers
                 UserId = userId,
                 AccountId = claim.AccountId,
                 HandoverByName = handoverByName?.Trim() ?? "",
+                AcknowledgementReceiptNumber = acknowledgementReceiptNumber?.Trim() ?? "",
                 ActionDate = ParseActionDate(actionDate),
                 OnBehalfOfSubdealerByStaff = true
             });
@@ -599,7 +758,7 @@ namespace KRSDealerManagement.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AuthorizeMenu(MenuKeys.MyWarrantyClaims, SubdealerOnly = true)]
-        public async Task<IActionResult> MarkDefectiveHandover(int id, string handoverByName, string? actionDate)
+        public async Task<IActionResult> MarkDefectiveHandover(int id, string handoverByName, string acknowledgementReceiptNumber, string? actionDate)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session)!.Value;
             var account = await SubdealerOrgService.GetPermissionAccountAsync(_unitOfWork, userId);
@@ -610,6 +769,7 @@ namespace KRSDealerManagement.Web.Controllers
                 UserId = userId,
                 AccountId = account.AccountId,
                 HandoverByName = handoverByName?.Trim() ?? "",
+                AcknowledgementReceiptNumber = acknowledgementReceiptNumber?.Trim() ?? "",
                 ActionDate = ParseActionDate(actionDate)
             });
             TempData[ok ? "Success" : "Error"] = ok ? "Defective handover recorded." : "Unable to update claim.";

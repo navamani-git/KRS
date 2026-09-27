@@ -31,5 +31,6 @@ namespace KRSDealerManagement.Web.Models
         public const string WarrantyClaims = KRSDealerManagement.Shared.Constants.GridScreenIds.WarrantyClaims;
         public const string MyWarrantyClaims = KRSDealerManagement.Shared.Constants.GridScreenIds.MyWarrantyClaims;
         public const string WarrantyParts = KRSDealerManagement.Shared.Constants.GridScreenIds.WarrantyParts;
+        public const string WarrantyResolutionTypes = KRSDealerManagement.Shared.Constants.GridScreenIds.WarrantyResolutionTypes;
     }
 }

@@ -283,12 +283,13 @@ namespace KRSDealerManagement.Web.Helpers
                     ["chassis"] = r => r.ChassisNumber,
                     ["model"] = r => r.ModelName,
                     ["color"] = r => r.ColorName,
-                    ["order"] = r => r.OrderNumber,
                     ["days"] = r => r.DaysInStock.ToString(),
+                    ["daysAllocated"] = r => r.DaysSinceAllocated.ToString(),
                     ["price"] = r => r.CurrentPrice.ToString("N2")
                 },
                 new Dictionary<string, Func<ShowroomStockRowDto, DateTime?>>(StringComparer.OrdinalIgnoreCase)
                 {
+                    ["invoice"] = r => r.AmpereInvoiceDate,
                     ["allocated"] = r => r.AllocatedDate
                 });
 
@@ -324,11 +325,10 @@ namespace KRSDealerManagement.Web.Helpers
                     ["chassis"] = r => r.ChassisNumber,
                     ["model"] = r => r.ModelName,
                     ["color"] = r => r.ColorName,
-                    ["motor"] = r => r.MotorNo,
-                    ["battery"] = r => r.BatteryNo,
                     ["status"] = r => r.IsAllocated ? "Allocated" : "Available",
                     ["invoiceNo"] = r => r.AmpereInvoiceNo,
-                    ["allocatedTo"] = r => r.AllocatedToSubdealerName
+                    ["allocatedTo"] = r => r.AllocatedToSubdealerName,
+                    ["days"] = r => r.DaysInStock.ToString()
                 },
                 new Dictionary<string, Func<VehicleMasterDto, DateTime?>>(StringComparer.OrdinalIgnoreCase)
                 {
@@ -355,13 +355,10 @@ namespace KRSDealerManagement.Web.Helpers
             => GridRowFilterApplier.Apply(GridScreenIds.WarrantyClaims, rows, filters,
                 new Dictionary<string, Func<Application.DTOs.WarrantyClaimDto, string?>>(StringComparer.OrdinalIgnoreCase)
                 {
-                    ["claimNo"] = c => c.ClaimNumber,
-                    ["type"] = c => c.ClaimType,
                     ["chassis"] = c => c.ChassisNo,
                     ["customer"] = c => c.CustomerName,
-                    ["part"] = c => c.PartName,
+                    ["failurePart"] = c => string.Join(" ", new[] { c.PartName, c.PartCode, c.FailurePartSerialNumber }.Where(x => !string.IsNullOrWhiteSpace(x))),
                     ["subdealer"] = c => c.AccountName,
-                    ["location"] = c => c.DealershipName,
                     ["status"] = c => c.StatusName
                 },
                 new Dictionary<string, Func<Application.DTOs.WarrantyClaimDto, DateTime?>>(StringComparer.OrdinalIgnoreCase)
@@ -395,6 +392,18 @@ namespace KRSDealerManagement.Web.Helpers
                     ["name"] = p => p.PartName,
                     ["code"] = p => p.PartCode,
                     ["status"] = p => p.IsActive ? "Active" : "Inactive"
+                });
+
+        public static IEnumerable<Domain.Entities.WarrantyResolutionType> ApplyWarrantyResolutionTypes(
+            IEnumerable<Domain.Entities.WarrantyResolutionType> rows,
+            IReadOnlyDictionary<string, string>? filters)
+            => GridRowFilterApplier.Apply(GridScreenIds.WarrantyResolutionTypes, rows, filters,
+                new Dictionary<string, Func<Domain.Entities.WarrantyResolutionType, string?>>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["code"] = r => r.Code,
+                    ["name"] = r => r.Name,
+                    ["action"] = r => r.ActionType,
+                    ["status"] = r => r.IsActive ? "Active" : "Inactive"
                 });
     }
 }

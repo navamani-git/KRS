@@ -8,7 +8,6 @@ using KRSDealerManagement.Web.Models;
 
 namespace KRSDealerManagement.Web.Controllers
 {
-    [AuthorizeRole(1)]
     [AuthorizeMenu(StaffMenuAccess.PaymentTypes)]
     public class PaymentTypesController : Controller
     {

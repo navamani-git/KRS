@@ -31,7 +31,7 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         // GET: Commissions (Admin - Commission Rates)
-        [AuthorizeRole(1)]
+        [AuthorizeMenu(StaffMenuAccess.CommissionRates)]
         public async Task<IActionResult> Index(int? modelId, bool? activeOnly, DateTime? effectiveFrom, DateTime? effectiveTo, int? page, int? pageSize)
         {
             var now = DateTime.Now;
@@ -63,7 +63,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1)]
+        [AuthorizeMenu(StaffMenuAccess.CommissionRates)]
         public async Task<IActionResult> CarryForward()
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
@@ -88,7 +88,7 @@ namespace KRSDealerManagement.Web.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        [AuthorizeRole(1)]
+        [AuthorizeMenu(StaffMenuAccess.CommissionRates)]
         public async Task<IActionResult> Export(int? modelId, bool? activeOnly, DateTime? effectiveFrom, DateTime? effectiveTo)
         {
             var now = DateTime.Now;
@@ -114,7 +114,7 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         // GET: Commissions/CreateRate (Admin)
-        [AuthorizeRole(1)]
+        [AuthorizeMenu(StaffMenuAccess.CommissionRates)]
         public async Task<IActionResult> CreateRate()
         {
             var models = await _mediator.Send(new GetVehicleModelsQuery { IsActive = true });
@@ -128,7 +128,7 @@ namespace KRSDealerManagement.Web.Controllers
         // POST: Commissions/CreateRate (Admin)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1)]
+        [AuthorizeMenu(StaffMenuAccess.CommissionRates)]
         public async Task<IActionResult> CreateRate(int modelId, decimal commissionAmount,
             DateTime effectiveFrom, DateTime effectiveTo, string notes)
         {
@@ -169,7 +169,7 @@ namespace KRSDealerManagement.Web.Controllers
             }
         }
 
-        [AuthorizeRole(1)]
+        [AuthorizeMenu(StaffMenuAccess.CommissionRates)]
         public async Task<IActionResult> EditRate(int id)
         {
             var row = await _unitOfWork.CommissionRates.GetByIdAsync(id);
@@ -186,7 +186,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1)]
+        [AuthorizeMenu(StaffMenuAccess.CommissionRates)]
         public async Task<IActionResult> EditRate(int id, decimal commissionAmount,
             DateTime effectiveFrom, DateTime effectiveTo, string? notes)
         {
@@ -234,7 +234,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1)]
+        [AuthorizeMenu(StaffMenuAccess.CommissionRates)]
         public async Task<IActionResult> DeleteRate(int id)
         {
             var row = await _unitOfWork.CommissionRates.GetByIdAsync(id);
@@ -250,7 +250,6 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         // GET: Commissions/Submit (Subdealer - Submit Commission)
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.CommissionSubmit)]
         public async Task<IActionResult> Submit()
         {
@@ -280,8 +279,6 @@ namespace KRSDealerManagement.Web.Controllers
 
             return View(pending);
         }
-
-        [AuthorizeRole(2)]
         [AuthorizeMenuAny(MenuKeys.CommissionInvoiced, MenuKeys.CommissionSubmit)]
         public async Task<IActionResult> InvoicedVehicles()
         {
@@ -297,7 +294,7 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         // GET: Commissions/ValidateChassis (AJAX — subdealer chassis check)
-        [AuthorizeRole(2)]
+        [AuthorizeMenu(MenuKeys.CommissionSubmit)]
         public async Task<IActionResult> ValidateChassis(string chassisNumber, int? modelId, int? colorId)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
@@ -352,7 +349,7 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         // GET: Commissions/GetRate?modelId=1&invoiceDate=2026-01-10 (AJAX)
-        [AuthorizeRole(2)]
+        [AuthorizeMenu(MenuKeys.CommissionSubmit)]
         public async Task<IActionResult> GetRate(int modelId, DateTime? invoiceDate, int? month, int? year)
         {
             if (invoiceDate.HasValue)
@@ -377,7 +374,7 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         // GET: Commissions/Preview?fromDate&toDate (AJAX — cross-verification grid)
-        [AuthorizeRole(2)]
+        [AuthorizeMenu(MenuKeys.CommissionSubmit)]
         public async Task<IActionResult> Preview(DateTime? fromDate, DateTime? toDate)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
@@ -409,7 +406,6 @@ namespace KRSDealerManagement.Web.Controllers
         // POST: Commissions/SubmitRow (Subdealer — submit one vehicle from grid)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.CommissionSubmit)]
         public async Task<IActionResult> SubmitRow(int vehicleId)
         {
@@ -473,7 +469,7 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         // GET: Commissions/Approvals (Admin — review submitted commissions)
-        [AuthorizeRole(1)]
+        [AuthorizeMenu(StaffMenuAccess.CommissionApprovals)]
         public async Task<IActionResult> Approvals(int? status, int? subdealerId, DateTime? fromDate, DateTime? toDate, int? page, int? pageSize)
         {
             if (!Request.Query.ContainsKey("status"))
@@ -504,8 +500,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             return View(pageItems);
         }
-
-        [AuthorizeRole(1)]
+        [AuthorizeMenu(StaffMenuAccess.CommissionApprovals)]
         public async Task<IActionResult> ExportApprovals(int? status, int? subdealerId, DateTime? fromDate, DateTime? toDate)
         {
             if (!Request.Query.ContainsKey("status"))
@@ -532,7 +527,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1)]
+        [AuthorizeMenu(StaffMenuAccess.CommissionApprovals)]
         public async Task<IActionResult> Approve(int id, string remarks, DateTime approvalDate)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
@@ -562,7 +557,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1)]
+        [AuthorizeMenu(StaffMenuAccess.CommissionApprovals)]
         public async Task<IActionResult> Reject(int id, string remarks)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
@@ -590,7 +585,6 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         // GET: Commissions/MyCommissions (Subdealer)
-        [AuthorizeRole(2)]
         [AuthorizeMenuAny(MenuKeys.CommissionSubmit, MenuKeys.CommissionView)]
         public async Task<IActionResult> MyCommissions()
         {

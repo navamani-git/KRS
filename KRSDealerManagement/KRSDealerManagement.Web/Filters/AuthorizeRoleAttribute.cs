@@ -5,9 +5,10 @@ using KRSDealerManagement.Web.Helpers;
 namespace KRSDealerManagement.Web.Filters
 {
     /// <summary>
-    /// Authorization filter for role-based access control
-    /// Usage: [AuthorizeRole(1)] for Admin only, [AuthorizeRole(1, 2)] for Admin and Subdealer
+    /// Legacy numeric UserRole gate. Prefer <see cref="AuthorizeMenuAttribute"/> / <see cref="AuthorizeMenuAnyAttribute"/>.
+    /// Kept only so old references compile; do not use on new screens.
     /// </summary>
+    [Obsolete("Use AuthorizeMenu / AuthorizeMenuAny. Access is driven by RoleMenus, not hardcoded role ids.")]
     public class AuthorizeRoleAttribute : ActionFilterAttribute
     {
         private readonly int[] _allowedRoles;
@@ -21,14 +22,12 @@ namespace KRSDealerManagement.Web.Filters
         {
             var session = context.HttpContext.Session;
 
-            // Check if user is authenticated
             if (!SessionHelper.IsAuthenticated(session))
             {
                 context.Result = new RedirectToActionResult("Login", "Account", null);
                 return;
             }
 
-            // Check if user has required role
             var userRole = SessionHelper.GetUserRole(session);
             if (userRole == null || !_allowedRoles.Contains(userRole.Value))
             {

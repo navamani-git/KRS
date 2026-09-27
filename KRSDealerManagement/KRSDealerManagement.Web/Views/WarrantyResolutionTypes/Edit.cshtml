@@ -1,0 +1,43 @@
+@model KRSDealerManagement.Domain.Entities.WarrantyResolutionType
+@using KRSDealerManagement.Shared.Constants
+@{
+    ViewData["Title"] = "Edit Resolution Type";
+}
+
+<h1 class="mb-3"><i class="bi bi-pencil"></i> Edit Resolution Type</h1>
+
+<form method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" value="@Model.WarrantyResolutionTypeId" />
+    <div class="card">
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Code</label>
+                <input class="form-control" value="@Model.Code" disabled />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Name *</label>
+                <input name="name" class="form-control" value="@Model.Name" required maxlength="100" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Action Type *</label>
+                <select name="actionType" class="form-select" required>
+                    @foreach (var a in WarrantyResolutionActionTypes.All)
+                    {
+                        <option value="@a" selected="@(string.Equals(Model.ActionType, a, StringComparison.OrdinalIgnoreCase))">@a</option>
+                    }
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Sort Order</label>
+                <input name="sortOrder" type="number" class="form-control" value="@Model.SortOrder" />
+            </div>
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" name="isActive" value="true" id="isActive" checked="@Model.IsActive" />
+                <label class="form-check-label" for="isActive">Active</label>
+            </div>
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a href="@Url.Action("Index")" class="btn btn-link">Cancel</a>
+        </div>
+    </div>
+</form>

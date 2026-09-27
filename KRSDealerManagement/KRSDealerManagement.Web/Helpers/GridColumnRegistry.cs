@@ -38,6 +38,7 @@ namespace KRSDealerManagement.Web.Helpers
                 GridIds.WarrantyClaims => WarrantyClaims(),
                 GridIds.MyWarrantyClaims => MyWarrantyClaims(),
                 GridIds.WarrantyParts => WarrantyParts(),
+                GridIds.WarrantyResolutionTypes => WarrantyResolutionTypes(),
                 _ => Array.Empty<GridFilterColumn>()
             };
         }
@@ -65,9 +66,6 @@ namespace KRSDealerManagement.Web.Helpers
             if (!isSubdealer) cols.Add(GridFilterColumn.Combo("subdealer", "Subdealer"));
             cols.AddRange(new[]
             {
-                GridFilterColumn.DateCol("orderDate", "Order Date"),
-                GridFilterColumn.Combo("orderNumber", "Order #"),
-                GridFilterColumn.DateCol("allocated", "Allocated"),
                 GridFilterColumn.Combo("model", "Model"),
                 GridFilterColumn.Combo("color", "Color"),
                 GridFilterColumn.Combo("chassis", "Chassis")
@@ -429,12 +427,13 @@ namespace KRSDealerManagement.Web.Helpers
             GridFilterColumn.Skip(),
             GridFilterColumn.Combo("location", "Location"),
             GridFilterColumn.Combo("subdealer", "Subdealer"),
-            GridFilterColumn.Combo("chassis", "Chassis"),
             GridFilterColumn.Combo("model", "Model"),
             GridFilterColumn.Combo("color", "Color"),
-            GridFilterColumn.Combo("order", "Order #"),
+            GridFilterColumn.Combo("chassis", "Chassis"),
+            GridFilterColumn.DateCol("invoice", "Ampere Invoice"),
+            GridFilterColumn.Combo("days", "Days (invoice)"),
             GridFilterColumn.DateCol("allocated", "Allocated"),
-            GridFilterColumn.Combo("days", "Days in stock"),
+            GridFilterColumn.Combo("daysAllocated", "Days (allocated)"),
             GridFilterColumn.Combo("price", "Price")
         };
 
@@ -445,13 +444,12 @@ namespace KRSDealerManagement.Web.Helpers
                 cols.Add(GridFilterColumn.Combo("dealer", "Branch"));
             cols.AddRange(new[]
             {
-                GridFilterColumn.Combo("chassis", "Chassis"),
                 GridFilterColumn.Combo("model", "Model"),
                 GridFilterColumn.Combo("color", "Color"),
-                GridFilterColumn.Combo("motor", "Motor"),
-                GridFilterColumn.Combo("battery", "Battery"),
+                GridFilterColumn.Combo("chassis", "Chassis"),
                 GridFilterColumn.DateCol("received", "Received"),
                 GridFilterColumn.DateCol("invoice", "Ampere Invoice"),
+                GridFilterColumn.Combo("days", "Days in stock"),
                 GridFilterColumn.Combo("invoiceNo", "Invoice No"),
                 GridFilterColumn.Combo("allocatedTo", "Allocated To"),
                 GridFilterColumn.Select("status", "Available", "Allocated"),
@@ -488,15 +486,12 @@ namespace KRSDealerManagement.Web.Helpers
         private static List<GridFilterColumn> WarrantyClaims() => new()
         {
             GridFilterColumn.Skip(),
-            GridFilterColumn.Combo("claimNo", "Claim #"),
-            GridFilterColumn.Select("type", "WARRANTY", "CAMPAIGN"),
             GridFilterColumn.Combo("chassis", "Chassis"),
             GridFilterColumn.Combo("customer", "Customer"),
-            GridFilterColumn.Combo("part", "Part"),
+            GridFilterColumn.Combo("failurePart", "Failure Part Number"),
             GridFilterColumn.Combo("subdealer", "Subdealer"),
-            GridFilterColumn.Combo("location", "Location"),
             GridFilterColumn.Combo("status", "Status"),
-            GridFilterColumn.DateCol("submitted", "Submitted"),
+            GridFilterColumn.DateCol("submitted", "Submitted Date"),
             GridFilterColumn.Actions()
         };
 
@@ -517,6 +512,17 @@ namespace KRSDealerManagement.Web.Helpers
             GridFilterColumn.Skip(),
             GridFilterColumn.Combo("name", "Part Name"),
             GridFilterColumn.Combo("code", "Part Code"),
+            GridFilterColumn.Select("status", "Active", "Inactive"),
+            GridFilterColumn.Actions()
+        };
+
+        private static List<GridFilterColumn> WarrantyResolutionTypes() => new()
+        {
+            GridFilterColumn.Skip(),
+            GridFilterColumn.Combo("code", "Code"),
+            GridFilterColumn.Combo("name", "Name"),
+            GridFilterColumn.Combo("action", "Action Type"),
+            GridFilterColumn.Skip(),
             GridFilterColumn.Select("status", "Active", "Inactive"),
             GridFilterColumn.Actions()
         };

@@ -595,6 +595,18 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcV2FycmFudHlQYXJ0c1xJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/WarrantyResolutionTypes/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcV2FycmFudHlSZXNvbHV0aW9uVHlwZXNcQ3JlYXRlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/WarrantyResolutionTypes/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcV2FycmFudHlSZXNvbHV0aW9uVHlwZXNcRWRpdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/WarrantyResolutionTypes/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcV2FycmFudHlSZXNvbHV0aW9uVHlwZXNcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/_ViewImports.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcX1ZpZXdJbXBvcnRzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 

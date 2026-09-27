@@ -7,7 +7,6 @@ using KRSDealerManagement.Shared.Constants;
 
 namespace KRSDealerManagement.Web.Controllers
 {
-    [AuthorizeRole(1)]
     [AuthorizeMenu(StaffMenuAccess.RtoDistricts)]
     public class RtoDistrictsController : Controller
     {

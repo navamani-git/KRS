@@ -92,6 +92,8 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         ChassisNo = c.ChassisNo,
                         CustomerName = c.CustomerName,
                         PartName = WarrantyPartHelper.ResolveDisplayName(part, c.OtherPartName),
+                        PartCode = c.PartCode ?? part?.PartCode,
+                        FailurePartSerialNumber = c.FailurePartSerialNumber,
                         CurrentKms = c.CurrentKms,
                         SubmittedDate = c.SubmittedDate,
                         CompletedDate = c.CompletedDate,
@@ -194,7 +196,9 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 AcceptedDate = claim.ApprovedDate,
                 AcceptedByName = Name(claim.ApprovedByUserId),
                 DealerResolutionType = claim.DealerResolutionType,
-                DealerResolutionTypeName = WarrantyDealerResolutionTypes.GetDisplayName(claim.DealerResolutionType),
+                DealerResolutionTypeName = (await _unitOfWork.WarrantyResolutionTypes.GetAllAsync())
+                    .FirstOrDefault(r => r.Code.Equals(claim.DealerResolutionType ?? "", StringComparison.OrdinalIgnoreCase))?.Name
+                    ?? WarrantyDealerResolutionTypes.GetDisplayName(claim.DealerResolutionType),
                 DealerClosedPartNumber = claim.DealerClosedPartNumber,
                 DealerClosedDate = claim.DealerClosedDate,
                 DealerClosedInvoiceNumber = claim.DealerClosedInvoiceNumber,
@@ -208,12 +212,18 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                 DefectiveHandoverLockedByStaff = claim.DefectiveHandoverStaffUserId.HasValue,
                 ReplacementPartReceivedDate = claim.ProductReceivedDate,
                 ReplacementPartReceivedByName = Name(claim.ProductReceivedByUserId),
+                ReplacementDocketNumber = claim.ReplacementDocketNumber,
+                ReplacementCourierCompanyName = claim.ReplacementCourierCompanyName,
+                ReplacementReceivedPartNumber = claim.ReplacementReceivedPartNumber,
                 SubdealerPartReceivedDate = claim.CollectedDate,
                 SubdealerPartReceivedByName = claim.CollectedByName,
                 DefectiveHandoverDate = claim.DefectiveSubmittedDate,
                 DefectiveHandoverByName = claim.DefectiveSubmittedByName,
+                DefectiveHandoverAcknowledgementNumber = claim.DefectiveHandoverAcknowledgementNumber,
                 DefectiveSentToAmpereDate = claim.DefectiveSentToAmpereDate,
                 DefectiveSentToAmpereByName = Name(claim.DefectiveSentToAmpereByUserId),
+                DefectiveCourierDocketNumber = claim.DefectiveCourierDocketNumber,
+                DefectiveCourierName = claim.DefectiveCourierName,
                 ServiceEntries = (await _unitOfWork.WarrantyClaimServiceEntries.GetAllAsync())
                     .Where(e => e.WarrantyClaimId == claim.WarrantyClaimId)
                     .OrderBy(e => e.SortOrder)

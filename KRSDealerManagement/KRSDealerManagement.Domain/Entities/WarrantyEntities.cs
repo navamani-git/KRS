@@ -11,6 +11,18 @@ namespace KRSDealerManagement.Domain.Entities
         public DateTime ModifiedDate { get; set; } = DateTime.UtcNow;
     }
 
+    public class WarrantyResolutionType
+    {
+        public int WarrantyResolutionTypeId { get; set; }
+        public string Code { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string ActionType { get; set; } = "Normal";
+        public bool IsActive { get; set; } = true;
+        public int SortOrder { get; set; }
+        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+        public DateTime ModifiedDate { get; set; } = DateTime.UtcNow;
+    }
+
     public class WarrantyClaim
     {
         public int WarrantyClaimId { get; set; }
@@ -77,6 +89,13 @@ namespace KRSDealerManagement.Domain.Entities
         public string? DealerClosedInvoiceNumber { get; set; }
         public string? CollectedByName { get; set; }
         public string? DefectiveSubmittedByName { get; set; }
+
+        public string? ReplacementDocketNumber { get; set; }
+        public string? ReplacementCourierCompanyName { get; set; }
+        public string? ReplacementReceivedPartNumber { get; set; }
+        public string? DefectiveHandoverAcknowledgementNumber { get; set; }
+        public string? DefectiveCourierDocketNumber { get; set; }
+        public string? DefectiveCourierName { get; set; }
 
         public bool ResolutionPartCompleted { get; set; }
         public int? ResolutionPartCompletedByUserId { get; set; }

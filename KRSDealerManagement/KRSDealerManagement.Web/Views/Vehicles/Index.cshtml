@@ -266,9 +266,6 @@
                             {
                                 <th>Subdealer</th>
                             }
-                            <th>Order Date</th>
-                            <th>Order #</th>
-                            <th>Allocated</th>
                             <th>Model</th>
                             <th class="grid-col-color">Color</th>
                             <th class="grid-col-chassis">Chassis</th>
@@ -293,38 +290,6 @@
                                 {
                                     <td><small>@v.SubdealerName</small></td>
                                 }
-                                <td>
-                                    @if (v.OrderDate.HasValue)
-                                    {
-                                        <small>@v.OrderDate.Value.ToString("yyyy-MM-dd")</small>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">—</span>
-                                    }
-                                </td>
-                                <td>
-                                    @if (v.PurchaseOrderId.HasValue)
-                                    {
-                                        <a href="@Url.EAction(QueryCrypto, "Details", new { id = v.PurchaseOrderId }, "Orders")">
-                                            <small>@(v.OrderNumber ?? $"#{v.PurchaseOrderId}")</small>
-                                        </a>
-                                    }
-                                    else
-                                    {
-                                        <small class="text-muted">—</small>
-                                    }
-                                </td>
-                                <td>
-                                    @if (v.AllocatedDate.HasValue)
-                                    {
-                                        <small>@v.AllocatedDate.Value.ToString("yyyy-MM-dd HH:mm")</small>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">—</span>
-                                    }
-                                </td>
                                 <td>@v.ModelName</td>
                                 <td class="grid-col-color">@v.ColorName</td>
                                 <td class="grid-col-chassis">

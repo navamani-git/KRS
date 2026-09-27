@@ -78,6 +78,7 @@ namespace KRSDealerManagement.Application.Handlers.Queries
                         ConverterNo = m.ConverterNo,
                         AmpereInvoiceNo = m.AmpereInvoiceNo,
                         AmpereInvoiceDate = m.AmpereInvoiceDate,
+                        DaysInStock = Math.Max(0, (DateTime.UtcNow.Date - m.AmpereInvoiceDate.Date).Days),
                         ReceivedDate = m.ReceivedDate,
                         IsAllocated = m.IsAllocated,
                         WarrantyOnly = m.WarrantyOnly,

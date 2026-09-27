@@ -196,7 +196,6 @@ namespace KRSDealerManagement.Web.Controllers
         /// Subdealer account statement — /Account/Statement
         /// </summary>
         [HttpGet]
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.AccountStatements)]
         public async Task<IActionResult> Statement(DateTime? fromDate, DateTime? toDate, int? page, int? pageSize)
         {
@@ -230,7 +229,6 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         [HttpGet]
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.AccountStatements)]
         public async Task<IActionResult> ExportStatement(DateTime? fromDate, DateTime? toDate)
         {

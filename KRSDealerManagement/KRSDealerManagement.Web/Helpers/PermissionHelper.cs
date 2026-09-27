@@ -53,6 +53,21 @@ namespace KRSDealerManagement.Web.Helpers
 
 namespace KRSDealerManagement.Web.Filters
 {
+    /// <summary>Requires an authenticated session. Use when any logged-in user may call the action; pair with menu checks inside or on sibling actions.</summary>
+    public class AuthorizeAuthenticatedAttribute : ActionFilterAttribute
+    {
+        public override void OnActionExecuting(ActionExecutingContext context)
+        {
+            if (!SessionHelper.IsAuthenticated(context.HttpContext.Session))
+            {
+                context.Result = new RedirectToActionResult("Login", "Account", null);
+                return;
+            }
+
+            base.OnActionExecuting(context);
+        }
+    }
+
     /// <summary>Requires a RoleMenus MenuKey (or System Admin). Does not use numeric UserRole ids.</summary>
     public class AuthorizeMenuAttribute : ActionFilterAttribute
     {

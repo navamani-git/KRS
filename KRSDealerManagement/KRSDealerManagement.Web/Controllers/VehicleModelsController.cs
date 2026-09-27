@@ -2,13 +2,14 @@ using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using KRSDealerManagement.Application.Commands;
 using KRSDealerManagement.Application.Queries;
+using KRSDealerManagement.Shared.Constants;
 using KRSDealerManagement.Web.Helpers;
 using KRSDealerManagement.Web.Filters;
 using KRSDealerManagement.Web.Models;
 
 namespace KRSDealerManagement.Web.Controllers
 {
-    [AuthorizeRole(1)] // Admin only
+    [AuthorizeMenu(StaffMenuAccess.VehicleModels)]
     public class VehicleModelsController : Controller
     {
         private readonly IMediator _mediator;

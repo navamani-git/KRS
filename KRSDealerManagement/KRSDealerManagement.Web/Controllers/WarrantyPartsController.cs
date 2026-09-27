@@ -8,7 +8,6 @@ using KRSDealerManagement.Web.Models;
 
 namespace KRSDealerManagement.Web.Controllers
 {
-    [AuthorizeRole(1, 4)]
     [AuthorizeMenu(StaffMenuAccess.WarrantyParts)]
     public class WarrantyPartsController : Controller
     {

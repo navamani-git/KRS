@@ -96,13 +96,12 @@
                             {
                                 <th>Branch</th>
                             }
-                            <th>Chassis</th>
                             <th>Model</th>
                             <th>Color</th>
-                            <th>Motor</th>
-                            <th>Battery</th>
+                            <th>Chassis</th>
                             <th>Received</th>
                             <th>Ampere Invoice</th>
+                            <th>Days in stock</th>
                             <th>Invoice No</th>
                             <th>Allocated To</th>
                             <th>Status</th>
@@ -120,13 +119,18 @@
                                 {
                                     <td>@m.DealershipName</td>
                                 }
-                                <td><strong>@m.ChassisNumber</strong></td>
                                 <td>@m.ModelName</td>
                                 <td>@m.ColorName</td>
-                                <td><small>@m.MotorNo</small></td>
-                                <td><small>@m.BatteryNo</small></td>
+                                <td>
+                                    <a href="javascript:void(0)" class="text-decoration-none chassis-link"
+                                       data-master-id="@m.VehicleMasterId" data-no-loader="true"
+                                       title="View full stock details">
+                                        <code class="small"><strong>@m.ChassisNumber</strong></code>
+                                    </a>
+                                </td>
                                 <td>@m.ReceivedDate.ToString("dd-MMM-yyyy")</td>
                                 <td>@m.AmpereInvoiceDate.ToString("dd-MMM-yyyy")</td>
+                                <td><span class="badge bg-light text-dark border">@m.DaysInStock</span></td>
                                 <td><small>@m.AmpereInvoiceNo</small></td>
                                 <td><small>@(m.AllocatedToSubdealerName ?? "—")</small></td>
                                 <td>

@@ -219,8 +219,6 @@ namespace KRSDealerManagement.Web.Controllers
             detail = await _mediator.Send(detailQuery);
             return detail != null;
         }
-
-        [AuthorizeRole(1)]
         [AuthorizeMenu(StaffMenuAccess.AccountAdjustments)]
         public async Task<IActionResult> Adjust(int? subdealerId)
         {
@@ -241,7 +239,6 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1)]
         [AuthorizeMenu(StaffMenuAccess.AccountAdjustments)]
         public async Task<IActionResult> Adjust(
             int subdealerId, string adjustmentType, decimal amount, string description, string? remarks,
@@ -278,8 +275,6 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction(nameof(Adjust), new { subdealerId });
             }
         }
-
-        [AuthorizeRole(1)]
         [AuthorizeMenu(StaffMenuAccess.AccountTransactions)]
         public async Task<IActionResult> Transactions(int? accountId, DateTime? fromDate, DateTime? toDate)
         {
@@ -319,8 +314,6 @@ namespace KRSDealerManagement.Web.Controllers
 
             return View(transactions);
         }
-
-        [AuthorizeRole(1)]
         [AuthorizeMenu(StaffMenuAccess.AccountTransactions)]
         public async Task<IActionResult> TransactionCorrections(int? accountId, DateTime? fromDate, DateTime? toDate)
         {
@@ -342,8 +335,6 @@ namespace KRSDealerManagement.Web.Controllers
 
             return View(corrections);
         }
-
-        [AuthorizeRole(1)]
         [AuthorizeMenu(StaffMenuAccess.AccountTransactions)]
         public async Task<IActionResult> AdminEditTransaction(int id)
         {
@@ -385,7 +376,6 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1)]
         [AuthorizeMenu(StaffMenuAccess.AccountTransactions)]
         public async Task<IActionResult> AdminEditTransaction(
             int transactionId,
@@ -473,7 +463,6 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1)]
         [AuthorizeMenu(StaffMenuAccess.AccountTransactions)]
         public async Task<IActionResult> AdminDeleteTransaction(int transactionId, string deleteReason)
         {

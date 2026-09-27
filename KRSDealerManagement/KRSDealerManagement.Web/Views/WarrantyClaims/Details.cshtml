@@ -163,12 +163,28 @@
                     <div class="mb-1">@(Model.ResolutionPartCompleted ? "✓" : "○") Resolution + Part #: @(Model.ResolutionPartCompleted ? $"{Model.DealerResolutionTypeName} · {Model.DealerClosedPartNumber}" : "—")</div>
                     <div class="mb-1">@(Model.DealerInvoiceClosedCompleted ? "✓" : "○") Invoice + Closed: @(Model.DealerInvoiceClosedCompleted ? $"Invoice {Model.DealerClosedInvoiceNumber} · {Model.DealerClosedDate:dd-MMM-yyyy}" : "—")</div>
                     <div class="mb-1">@(Model.ReplacementPartReceivedCompleted ? "✓" : "○") Replacement received: @(Model.ReplacementPartReceivedDate?.ToString("dd-MMM-yyyy") ?? "—") @Model.ReplacementPartReceivedByName</div>
+                    @if (Model.ReplacementPartReceivedCompleted)
+                    {
+                        <div class="mb-1 ps-3 text-muted">Docket @Model.ReplacementDocketNumber · @Model.ReplacementCourierCompanyName · Part # @Model.ReplacementReceivedPartNumber</div>
+                    }
+                }
+                else if (Model.ReplacementPartReceivedCompleted)
+                {
+                    <div class="mb-1">✓ Replacement received: @(Model.ReplacementPartReceivedDate?.ToString("dd-MMM-yyyy") ?? "—")</div>
                 }
                 <div class="mb-1">@(Model.SubdealerPartReceivedCompleted ? "✓" : "○") Subdealer received: @(Model.SubdealerPartReceivedDate?.ToString("dd-MMM-yyyy") ?? "—") @Model.SubdealerPartReceivedByName</div>
                 <div class="mb-1">@(Model.DefectiveHandoverCompleted ? "✓" : "○") Defective handover: @(Model.DefectiveHandoverDate?.ToString("dd-MMM-yyyy") ?? "—") @Model.DefectiveHandoverByName</div>
+                @if (isStaff && Model.DefectiveHandoverCompleted)
+                {
+                    <div class="mb-1 ps-3 text-muted">Ack # @Model.DefectiveHandoverAcknowledgementNumber</div>
+                }
                 @if (isStaff)
                 {
-                    <div>@(Model.DefectiveSentToAmpereCompleted ? "✓" : "○") Sent to Ampere: @(Model.DefectiveSentToAmpereDate?.ToString("dd-MMM-yyyy") ?? "—") @Model.DefectiveSentToAmpereByName</div>
+                    <div>@(Model.DefectiveSentToAmpereCompleted ? "✓" : "○") Courier sent: @(Model.DefectiveSentToAmpereDate?.ToString("dd-MMM-yyyy") ?? "—") @Model.DefectiveSentToAmpereByName</div>
+                    @if (Model.DefectiveSentToAmpereCompleted)
+                    {
+                        <div class="ps-3 text-muted">Docket @Model.DefectiveCourierDocketNumber · @Model.DefectiveCourierName</div>
+                    }
                 }
                 @if (Model.Status == WarrantyClaimStatus.Complete)
                 {
@@ -222,22 +238,6 @@
                     </div>
                 </div>
             }
-            @if (WarrantyClaimStatus.CanMarkAmpereApproved(Model.Status))
-            {
-                <div class="card mb-2">
-                    <div class="card-header py-2"><strong>Ampere Approved</strong></div>
-                    <div class="card-body py-2">
-                        <p class="small text-muted mb-2">Record when Ampere approved this claim.</p>
-                        <form method="post" asp-action="MarkAmpereApproved">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="id" value="@Model.WarrantyClaimId" />
-                            <label class="form-label small mb-1">Ampere Approved Date *</label>
-                            <input type="date" name="actionDate" class="form-control form-control-sm mb-1" required max="@todayDate" value="@todayDate" />
-                            <button type="submit" class="btn btn-primary btn-sm w-100">Mark Ampere Approved</button>
-                        </form>
-                    </div>
-                </div>
-            }
             @if (WarrantyClaimStatus.CanStaffEditSoNumber(Model.Status, Model.DefectiveSentToAmpereCompleted))
             {
                 <div class="card mb-2">
@@ -254,26 +254,54 @@
                     </div>
                 </div>
             }
+            @if (WarrantyClaimStatus.CanMarkAmpereApproved(Model.Status))
+            {
+                <div class="card mb-2">
+                    <div class="card-header py-2"><strong>Ampere Approved</strong></div>
+                    <div class="card-body py-2">
+                        <p class="small text-muted mb-2">Record when Ampere approved this claim.</p>
+                        <form method="post" asp-action="MarkAmpereApproved">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.WarrantyClaimId" />
+                            <label class="form-label small mb-1">Ampere Approved Date *</label>
+                            <input type="date" name="actionDate" class="form-control form-control-sm mb-1" required max="@todayDate" value="@todayDate" />
+                            <button type="submit" class="btn btn-primary btn-sm w-100">Mark Ampere Approved</button>
+                        </form>
+                    </div>
+                </div>
+            }
             @if (WarrantyClaimStatus.CanStaffEditResolutionPart(Model.Status, Model.DefectiveSentToAmpereCompleted))
             {
+                var resolutionTypes = ViewBag.ResolutionTypes as IEnumerable<KRSDealerManagement.Domain.Entities.WarrantyResolutionType>
+                    ?? Enumerable.Empty<KRSDealerManagement.Domain.Entities.WarrantyResolutionType>();
                 <div class="card mb-2">
                     <div class="card-header py-2"><strong>Resolution &amp; Part #</strong></div>
                     <div class="card-body py-2">
-                        <p class="small text-muted mb-2">Choose how the dealer closed the case and enter the part number.</p>
-                        <form method="post" asp-action="SaveResolutionPart">
+                        <p class="small text-muted mb-2">Choose resolution. Part # is required for Normal types; Reject / Request Info need notes only.</p>
+                        <form method="post" asp-action="SaveResolutionPart" id="warrantyResolutionForm">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="id" value="@Model.WarrantyClaimId" />
                             <label class="form-label small mb-1">Resolution *</label>
-                            <select name="dealerResolutionType" class="form-select form-select-sm mb-1" required>
+                            <select name="dealerResolutionType" id="dealerResolutionType" class="form-select form-select-sm mb-1" required>
                                 <option value="">Select resolution</option>
-                                @foreach (var resolution in WarrantyDealerResolutionTypes.All)
+                                @foreach (var resolution in resolutionTypes)
                                 {
-                                    <option value="@resolution" selected="@(string.Equals(Model.DealerResolutionType, resolution, StringComparison.OrdinalIgnoreCase))">@WarrantyDealerResolutionTypes.GetDisplayName(resolution)</option>
+                                    <option value="@resolution.Code"
+                                            data-action-type="@resolution.ActionType"
+                                            selected="@(string.Equals(Model.DealerResolutionType, resolution.Code, StringComparison.OrdinalIgnoreCase))">
+                                        @resolution.Name
+                                    </option>
                                 }
                             </select>
-                            <label class="form-label small mb-1">Part # *</label>
-                            <input type="text" name="dealerClosedPartNumber" class="form-control form-control-sm mb-1" required maxlength="100" value="@Model.DealerClosedPartNumber" />
-                            <button type="submit" class="btn btn-success btn-sm w-100">@(Model.ResolutionPartCompleted ? "Edit Resolution & Part #" : "Save Resolution & Part #")</button>
+                            <div id="resolutionPartNumberWrap">
+                                <label class="form-label small mb-1">Part # *</label>
+                                <input type="text" name="dealerClosedPartNumber" id="dealerClosedPartNumber" class="form-control form-control-sm mb-1" maxlength="100" value="@Model.DealerClosedPartNumber" />
+                            </div>
+                            <div id="resolutionNotesWrap" class="d-none">
+                                <label class="form-label small mb-1">Reason / Info notes *</label>
+                                <textarea name="notes" id="resolutionNotes" class="form-control form-control-sm mb-1" rows="2" placeholder="Required for Reject / Request For Information"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success btn-sm w-100">@(Model.ResolutionPartCompleted ? "Edit Resolution" : "Save Resolution")</button>
                         </form>
                     </div>
                 </div>
@@ -305,6 +333,12 @@
                         <form method="post" asp-action="MarkReplacementPartReceived">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="id" value="@Model.WarrantyClaimId" />
+                            <label class="form-label small mb-1">Docket Number *</label>
+                            <input type="text" name="docketNumber" class="form-control form-control-sm mb-1" required maxlength="100" value="@Model.ReplacementDocketNumber" />
+                            <label class="form-label small mb-1">Docket Company Name *</label>
+                            <input type="text" name="courierCompanyName" class="form-control form-control-sm mb-1" required maxlength="200" value="@Model.ReplacementCourierCompanyName" />
+                            <label class="form-label small mb-1">Received Part Number *</label>
+                            <input type="text" name="receivedPartNumber" class="form-control form-control-sm mb-1" required maxlength="100" value="@Model.ReplacementReceivedPartNumber" />
                             <label class="form-label small mb-1">Replacement Part Received Date *</label>
                             <input type="date" name="actionDate" class="form-control form-control-sm mb-1" required max="@todayDate" value="@(Model.ReplacementPartReceivedDate?.ToString("yyyy-MM-dd") ?? todayDate)" />
                             <button type="submit" class="btn btn-primary btn-sm w-100">@(Model.ReplacementPartReceivedCompleted ? "Edit Replacement Part Received" : "Mark Replacement Part Received")</button>
@@ -341,6 +375,8 @@
                             <input type="hidden" name="id" value="@Model.WarrantyClaimId" />
                             <label class="form-label small mb-1">Handover By *</label>
                             <input type="text" name="handoverByName" class="form-control form-control-sm mb-1" required maxlength="200" value="@Model.DefectiveHandoverByName" placeholder="Who handed over defective part" />
+                            <label class="form-label small mb-1">Acknowledgement Receipt Number *</label>
+                            <input type="text" name="acknowledgementReceiptNumber" class="form-control form-control-sm mb-1" required maxlength="100" value="@Model.DefectiveHandoverAcknowledgementNumber" />
                             <label class="form-label small mb-1">Handover Date *</label>
                             <input type="date" name="actionDate" class="form-control form-control-sm mb-1" required max="@todayDate" value="@(Model.DefectiveHandoverDate?.ToString("yyyy-MM-dd") ?? todayDate)" />
                             <button type="submit" class="btn btn-warning btn-sm w-100">@(Model.DefectiveHandoverCompleted ? "Edit Defective Handover (on behalf)" : "Record Defective Handover (on behalf)")</button>
@@ -353,12 +389,16 @@
                 <div class="card mb-2">
                     <div class="card-header py-2"><strong>Sent to Ampere</strong></div>
                     <div class="card-body py-2">
-                        <p class="small text-muted mb-2">Record when the defective part was handed over to Ampere.</p>
+                        <p class="small text-muted mb-2">Record courier details when the defective part is sent to Ampere.</p>
                         <form method="post" asp-action="MarkDefectiveSentToAmpere">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="id" value="@Model.WarrantyClaimId" />
-                            <label class="form-label small mb-1">Handover to Ampere Date *</label>
+                            <label class="form-label small mb-1">Courier Sent Date *</label>
                             <input type="date" name="actionDate" class="form-control form-control-sm mb-1" required max="@todayDate" value="@todayDate" />
+                            <label class="form-label small mb-1">Docket Number *</label>
+                            <input type="text" name="courierDocketNumber" class="form-control form-control-sm mb-1" required maxlength="100" />
+                            <label class="form-label small mb-1">Courier Name *</label>
+                            <input type="text" name="courierName" class="form-control form-control-sm mb-1" required maxlength="200" />
                             <button type="submit" class="btn btn-dark btn-sm w-100">Mark Defective Sent to Ampere</button>
                         </form>
                     </div>
@@ -401,6 +441,8 @@
                             <input type="hidden" name="id" value="@Model.WarrantyClaimId" />
                             <label class="form-label small mb-1">Handover By *</label>
                             <input type="text" name="handoverByName" class="form-control form-control-sm mb-1" required maxlength="200" placeholder="Who handed over defective part" />
+                            <label class="form-label small mb-1">Acknowledgement Receipt Number *</label>
+                            <input type="text" name="acknowledgementReceiptNumber" class="form-control form-control-sm mb-1" required maxlength="100" />
                             <label class="form-label small mb-1">Handover Date *</label>
                             <input type="date" name="actionDate" class="form-control form-control-sm mb-1" required max="@todayDate" value="@todayDate" />
                             <button type="submit" class="btn btn-warning btn-sm w-100">Submit Defective Handover</button>
@@ -412,3 +454,32 @@
 
     </div>
 </div>
+
+@section Scripts {
+<script>
+(function () {
+    const select = document.getElementById('dealerResolutionType');
+    if (!select) return;
+    const partWrap = document.getElementById('resolutionPartNumberWrap');
+    const notesWrap = document.getElementById('resolutionNotesWrap');
+    const partInput = document.getElementById('dealerClosedPartNumber');
+    const notesInput = document.getElementById('resolutionNotes');
+
+    function syncResolutionFields() {
+        const opt = select.options[select.selectedIndex];
+        const action = (opt?.dataset.actionType || 'Normal').toLowerCase();
+        const needsNotes = action === 'reject' || action === 'requestinfo';
+        if (partWrap) partWrap.classList.toggle('d-none', needsNotes);
+        if (notesWrap) notesWrap.classList.toggle('d-none', !needsNotes);
+        if (partInput) {
+            partInput.required = !needsNotes;
+            if (needsNotes) partInput.value = '';
+        }
+        if (notesInput) notesInput.required = needsNotes;
+    }
+
+    select.addEventListener('change', syncResolutionFields);
+    syncResolutionFields();
+})();
+</script>
+}

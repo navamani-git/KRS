@@ -6,7 +6,7 @@ using KRSDealerManagement.Web.Helpers;
 
 namespace KRSDealerManagement.Web.Controllers
 {
-    [AuthorizeRole(1, 2, 3, 4)]
+    [AuthorizeAuthenticated]
     public class GridsController : Controller
     {
         private readonly IMediator _mediator;

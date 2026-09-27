@@ -22,7 +22,7 @@ namespace KRSDealerManagement.Web.Controllers
             _statuses = statuses;
         }
 
-        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.Returns, StaffOnly = true)]
         public async Task<IActionResult> Index(int? status, int? page, int? pageSize)
         {
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Returns);
@@ -42,7 +42,7 @@ namespace KRSDealerManagement.Web.Controllers
             return View(pageItems);
         }
 
-        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.Returns, StaffOnly = true)]
         public async Task<IActionResult> Export(int? status)
         {
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Returns);
@@ -59,8 +59,6 @@ namespace KRSDealerManagement.Web.Controllers
             });
             return ExcelExportHelper.ToFileResult(this, $"returns_{DateTime.Now:yyyyMMdd}.xlsx", headers, rows, "Returns");
         }
-
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.MyReturns)]
         public async Task<IActionResult> MyReturns(int? status, DateTime? fromDate, DateTime? toDate, int? page, int? pageSize)
         {
@@ -93,8 +91,6 @@ namespace KRSDealerManagement.Web.Controllers
 
             return View(pageItems);
         }
-
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.MyReturns)]
         public async Task<IActionResult> ExportMyReturns(int? status, DateTime? fromDate, DateTime? toDate)
         {
@@ -122,7 +118,7 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         [HttpGet]
-        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.Returns, StaffOnly = true)]
         public async Task<IActionResult> Approve(int id)
         {
             var item = await LoadReturnRequestAsync(id);
@@ -137,7 +133,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.Returns, StaffOnly = true)]
         public async Task<IActionResult> Approve(
             int id,
             decimal refundAmount,
@@ -181,7 +177,7 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         [HttpGet]
-        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.Returns, StaffOnly = true)]
         public async Task<IActionResult> Reject(int id)
         {
             var item = await LoadReturnRequestAsync(id);
@@ -196,7 +192,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.Returns, StaffOnly = true)]
         public async Task<IActionResult> Reject(int id, string remarks)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
@@ -230,7 +226,7 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         [HttpGet]
-        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.Returns, StaffOnly = true)]
         public async Task<IActionResult> Allocate(int id)
         {
             var item = await LoadReturnRequestAsync(id);
@@ -249,7 +245,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.Returns, StaffOnly = true)]
         public async Task<IActionResult> Allocate(int id, int subdealerId, string remarks)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);

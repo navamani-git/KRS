@@ -58,8 +58,7 @@ namespace KRSDealerManagement.Web.Controllers
             }
             return query;
         }
-
-        [AuthorizeRole(1, 2, 4)]
+        [AuthorizeMenuAny(StaffMenuAccess.Vehicles, MenuKeys.VehiclesView)]
         public async Task<IActionResult> Index(
             int? subdealerId,
             string? searchTerm,
@@ -71,16 +70,6 @@ namespace KRSDealerManagement.Web.Controllers
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
-
-            if (SessionHelper.IsSubdealer(HttpContext.Session))
-            {
-                if (!SessionHelper.HasMenuAccess(HttpContext.Session, MenuKeys.VehiclesView))
-                    return RedirectToAction("AccessDenied", "Account");
-            }
-            else if (!SessionHelper.HasMenuAccess(HttpContext.Session, StaffMenuAccess.Vehicles))
-            {
-                return RedirectToAction("AccessDenied", "Account");
-            }
 
             var isSubdealer = SessionHelper.IsSubdealer(HttpContext.Session);
             var columnFilters = GridViewHelper.SetupGridFilters(this, GridIds.Vehicles);
@@ -158,8 +147,6 @@ namespace KRSDealerManagement.Web.Controllers
 
             return View(pageItems);
         }
-
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.VehiclesView)]
         public async Task<IActionResult> Rejected(
             string? searchTerm,
@@ -193,8 +180,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             return View("Index", pageItems);
         }
-
-        [AuthorizeRole(1, 2, 4)]
+        [AuthorizeMenuAny(StaffMenuAccess.Vehicles, MenuKeys.VehiclesView)]
         public async Task<IActionResult> Export(
             int? subdealerId,
             string? searchTerm,
@@ -239,8 +225,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             return ExcelExportHelper.ToFileResult(this, $"vehicles_{DateTime.Now:yyyyMMdd}.xlsx", headers, rows, "Vehicles");
         }
-
-        [AuthorizeRole(1, 2, 4)]
+        [AuthorizeMenuAny(StaffMenuAccess.Vehicles, MenuKeys.VehiclesView)]
         public async Task<IActionResult> DetailsJson(int id)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
@@ -343,14 +328,11 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(2)]
+        [AuthorizeMenu(MenuKeys.VehiclesView)]
         public async Task<IActionResult> RaiseReturn(int vehicleId, string returnReason, DateTime returnDate)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
             if (!userId.HasValue) return RedirectToAction("Login", "Account");
-
-            if (!SessionHelper.HasMenuAccess(HttpContext.Session, MenuKeys.VehiclesView))
-                return RedirectToAction("AccessDenied", "Account");
 
             if (string.IsNullOrWhiteSpace(returnReason))
             {
@@ -405,7 +387,6 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.VehiclesView)]
         public async Task<IActionResult> MarkDelivered(int vehicleId, DateTime deliveryDate)
         {
@@ -429,8 +410,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             return RedirectToAction(nameof(Index));
         }
-
-        [AuthorizeRole(1)]
+        [AuthorizeMenu(StaffMenuAccess.Vehicles, StaffOnly = true)]
         public async Task<IActionResult> AdminEdit(int id)
         {
             var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(id);
@@ -455,7 +435,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1)]
+        [AuthorizeMenu(StaffMenuAccess.Vehicles, StaffOnly = true)]
         public async Task<IActionResult> AdminEdit(
             int vehicleId, int modelId, int colorId, string chassisNumber, int status,
             decimal currentPrice, int? subdealerId, DateTime? deliveryDate,
@@ -513,7 +493,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1)]
+        [AuthorizeMenu(StaffMenuAccess.Vehicles, StaffOnly = true)]
         public async Task<IActionResult> AdminDelete(int vehicleId, string deleteReason)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);

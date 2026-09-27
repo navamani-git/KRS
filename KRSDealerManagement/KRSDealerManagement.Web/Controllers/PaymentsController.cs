@@ -27,8 +27,6 @@ namespace KRSDealerManagement.Web.Controllers
             _env = env;
             _statuses = statuses;
         }
-
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.MyPayments)]
         public async Task<IActionResult> MyPayments(int? status, DateTime? fromDate, DateTime? toDate, int? page, int? pageSize)
         {
@@ -59,8 +57,6 @@ namespace KRSDealerManagement.Web.Controllers
 
             return View(pageItems);
         }
-
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.MyPayments)]
         public async Task<IActionResult> ExportMyPayments(int? status, DateTime? fromDate, DateTime? toDate)
         {
@@ -88,7 +84,6 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.MyPayments)]
         [RequestSizeLimit(20_000_000)]
         public async Task<IActionResult> Submit(
@@ -216,7 +211,6 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.MyPayments)]
         [RequestSizeLimit(20_000_000)]
         public async Task<IActionResult> SubmitCreditRequest(
@@ -285,8 +279,7 @@ namespace KRSDealerManagement.Web.Controllers
                 return RedirectToAction(nameof(MyPayments));
             }
         }
-
-        [AuthorizeRole(1, 2, 3, 4)]
+        [AuthorizeMenuAny(MenuKeys.MyPayments, StaffMenuAccess.Payments)]
         public async Task<IActionResult> ViewProof(string path)
         {
             if (!await CanAccessPaymentProofAsync(path))
@@ -304,8 +297,7 @@ namespace KRSDealerManagement.Web.Controllers
             var contentType = PaymentFileHelper.GetContentType(absolute);
             return PhysicalFile(absolute, contentType);
         }
-
-        [AuthorizeRole(1, 2, 3, 4)]
+        [AuthorizeMenuAny(MenuKeys.MyPayments, StaffMenuAccess.Payments)]
         public async Task<IActionResult> DownloadProof(string path)
         {
             if (!await CanAccessPaymentProofAsync(path))
@@ -471,8 +463,7 @@ namespace KRSDealerManagement.Web.Controllers
 
             return RedirectToAction(nameof(Index));
         }
-
-        [AuthorizeRole(1)]
+        [AuthorizeMenu(StaffMenuAccess.Payments, StaffOnly = true)]
         public async Task<IActionResult> AdminEdit(int id)
         {
             var payment = await _unitOfWork.Payments.GetByIdAsync(id);
@@ -492,7 +483,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1)]
+        [AuthorizeMenu(StaffMenuAccess.Payments, StaffOnly = true)]
         public async Task<IActionResult> AdminEdit(
             int paymentId, decimal amount, decimal? actualReceivedAmount, DateTime? actualReceivedDate,
             int paymentTypeId, DateTime paymentDate, int status,

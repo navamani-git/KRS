@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using KRSDealerManagement.Shared.Constants;
 using KRSDealerManagement.Web.Filters;
 
 namespace KRSDealerManagement.Web.Controllers
 {
-    [AuthorizeRole(1)]
+    [AuthorizeMenu(StaffMenuAccess.StaffRoles)]
     public class RoleTemplatesController : Controller
     {
         public IActionResult Index() => RedirectToStaffRoles();

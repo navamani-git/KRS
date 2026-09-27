@@ -77,7 +77,12 @@ namespace KRSDealerManagement.Application.Commands
     {
         public string DealerClosedInvoiceNumber { get; set; } = "";
     }
-    public class MarkWarrantyReplacementPartReceivedCommand : WarrantyClaimActionCommand { }
+    public class MarkWarrantyReplacementPartReceivedCommand : WarrantyClaimActionCommand
+    {
+        public string DocketNumber { get; set; } = "";
+        public string CourierCompanyName { get; set; } = "";
+        public string ReceivedPartNumber { get; set; } = "";
+    }
     public class MarkWarrantySubdealerPartReceivedCommand : WarrantyClaimActionCommand
     {
         public int AccountId { get; set; }
@@ -88,7 +93,12 @@ namespace KRSDealerManagement.Application.Commands
     {
         public int AccountId { get; set; }
         public string HandoverByName { get; set; } = "";
+        public string AcknowledgementReceiptNumber { get; set; } = "";
         public bool OnBehalfOfSubdealerByStaff { get; set; }
     }
-    public class MarkWarrantyDefectiveSentToAmpereCommand : WarrantyClaimActionCommand { }
+    public class MarkWarrantyDefectiveSentToAmpereCommand : WarrantyClaimActionCommand
+    {
+        public string CourierDocketNumber { get; set; } = "";
+        public string CourierName { get; set; } = "";
+    }
 }

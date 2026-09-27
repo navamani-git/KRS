@@ -54,7 +54,6 @@ namespace KRSDealerManagement.Web.Controllers
         // ─── SUBDEALER SCREENS ───────────────────────────────────
 
         // GET: Orders/Create  (Subdealer creates purchase order)
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.PurchaseOrderCreate)]
         public async Task<IActionResult> Create()
         {
@@ -80,7 +79,6 @@ namespace KRSDealerManagement.Web.Controllers
         // POST: Orders/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.PurchaseOrderCreate)]
         public async Task<IActionResult> Create(string subdealerNotes,
             [FromForm] List<int> modelIds, [FromForm] List<int> colorIds,
@@ -139,7 +137,6 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         // GET: Orders/MyOrders  (Subdealer views own orders)
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.PurchaseOrderView)]
         public async Task<IActionResult> MyOrders(int? status, DateTime? fromDate, DateTime? toDate, int? page, int? pageSize)
         {
@@ -173,8 +170,6 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.Statuses = await _statuses.GetActiveByCategoryAsync(StatusCategories.Vehicle);
             return View(ordersPage.Items);
         }
-
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.PurchaseOrderView)]
         public async Task<IActionResult> ExportMyOrders(int? status, DateTime? fromDate, DateTime? toDate)
         {
@@ -201,7 +196,7 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         // GET: Orders/Details/5
-        [AuthorizeRole(1, 2, 4)]
+        [AuthorizeMenuAny(StaffMenuAccess.Orders, MenuKeys.PurchaseOrderView)]
         public async Task<IActionResult> Details(int id)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
@@ -235,7 +230,7 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         // GET: Orders/Allocate/5 — dealer allocates vehicles with serial numbers
-        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.Orders, StaffOnly = true)]
         public async Task<IActionResult> Allocate(int id)
         {
             var ordersQuery = new GetPurchaseOrdersPageQuery { OrderId = id, Page = 1, PageSize = 1 };
@@ -256,7 +251,7 @@ namespace KRSDealerManagement.Web.Controllers
         // POST: Orders/Allocate
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.Orders, StaffOnly = true)]
         public async Task<IActionResult> Allocate(int orderId, string remarks, DateTime allocateDate,
             [FromForm] List<int> orderItemIds,
             [FromForm] List<string> actionFlags,
@@ -345,7 +340,7 @@ namespace KRSDealerManagement.Web.Controllers
         // ─── ADMIN/DEALER SCREENS ─────────────────────────────────
 
         // GET: Orders/Index  (System admin / branch manager)
-        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.Orders, StaffOnly = true)]
         public async Task<IActionResult> Index(int? status, int? subdealerId, string searchTerm, DateTime? fromDate, DateTime? toDate, int? page, int? pageSize)
         {
             var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
@@ -388,7 +383,7 @@ namespace KRSDealerManagement.Web.Controllers
             return View(orders.Items);
         }
 
-        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.Orders, StaffOnly = true)]
         public async Task<IActionResult> Export(int? status, int? subdealerId, string searchTerm, DateTime? fromDate, DateTime? toDate)
         {
             var (from, to) = ListPagingHelper.ResolveDateRange(fromDate, toDate);
@@ -416,7 +411,7 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         // GET: Orders/CreateForSubdealer  (Staff creates auto-approved order for subdealer)
-        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.Orders, StaffOnly = true)]
         public async Task<IActionResult> CreateForSubdealer()
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
@@ -438,7 +433,7 @@ namespace KRSDealerManagement.Web.Controllers
         // POST: Orders/CreateForSubdealer
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.Orders, StaffOnly = true)]
         public async Task<IActionResult> CreateForSubdealer(
             int subdealerId,
             string? adminNotes,
@@ -544,7 +539,7 @@ namespace KRSDealerManagement.Web.Controllers
         // Legacy whole-order approve — redirect to per-vehicle Allocate
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.Orders, StaffOnly = true)]
         public IActionResult Approve(int id, decimal amount, string remarks)
         {
             return this.RedirectEncrypted(nameof(Allocate), new { id });
@@ -553,7 +548,7 @@ namespace KRSDealerManagement.Web.Controllers
         // Legacy whole-order reject — reject all pending line items
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.Orders, StaffOnly = true)]
         public async Task<IActionResult> Reject(int id, decimal amount, string remarks)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
@@ -587,7 +582,7 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         // GET: Orders/GetPrice (AJAX - get price for model+color+month)
-        [AuthorizeRole(1, 2, 4)]
+        [AuthorizeMenuAny(StaffMenuAccess.Orders, MenuKeys.PurchaseOrderCreate, MenuKeys.PurchaseOrderView)]
         public async Task<IActionResult> GetPrice(int modelId, int colorId, DateTime? asOfDate)
         {
             var date = (asOfDate ?? DateTime.Today).Date;
@@ -614,7 +609,7 @@ namespace KRSDealerManagement.Web.Controllers
             return subdealer?.DealershipId;
         }
 
-        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.Orders, StaffOnly = true)]
         public async Task<IActionResult> GetSubdealerDealership(int subdealerId)
         {
             var dealershipId = await ResolveOrderDealershipIdAsync(subdealerId);

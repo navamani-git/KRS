@@ -2332,6 +2332,23 @@ html.krs-page-loading #krsQuickActions {
         position: static !important;
     }
 
+    table.grid-excel-table thead tr:not(.grid-column-filters) th.grid-th-sortable,
+    table.grid-excel-table thead tr:not(.grid-column-filters) th.grid-th-resizable,
+    .grid-scroll-panel table.grid-excel-table thead tr:not(.grid-column-filters) th.grid-th-sortable,
+    .grid-scroll-panel table.grid-excel-table thead tr:not(.grid-column-filters) th.grid-th-resizable {
+        position: relative !important;
+    }
+
+    table.grid-excel-table .grid-col-sort,
+    .grid-scroll-panel table.grid-excel-table .grid-col-sort {
+        right: 10px;
+        z-index: 8;
+        min-width: 1.75rem;
+        min-height: 1.75rem;
+        padding: 2px 4px;
+        opacity: 1;
+    }
+
     table.grid-excel-table .grid-column-filters .form-control-sm,
     table.grid-excel-table .grid-column-filters .form-select-sm,
     table.grid-excel-table .grid-column-filters .grid-combobox {
@@ -2992,19 +3009,28 @@ select[name="colorIds"] {
     }
 }
 
-/* Warranty claim grid action buttons — stack vertically so View is always visible */
+/* Warranty claim grid action buttons — fixed column, stacked so View stays visible */
+.warranty-grid-actions-col,
 .warranty-grid-actions {
-    min-width: 5.25rem;
+    width: 7rem;
+    min-width: 7rem;
+    max-width: 7.5rem;
     white-space: normal !important;
+    vertical-align: middle;
 }
 
 .warranty-grid-actions .btn {
     display: block;
     width: 100%;
+    white-space: nowrap;
 }
 
 .warranty-grid-actions .btn + .btn {
     margin-top: 0.25rem;
+}
+
+.warranty-failure-part > div + div {
+    margin-top: 0.15rem;
 }
 
 /* Tom Select invalid state (warranty edit chassis) */

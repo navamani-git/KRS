@@ -1,18 +1,19 @@
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using KRSDealerManagement.Application.Queries;
+using KRSDealerManagement.Shared.Constants;
 using KRSDealerManagement.Web.Filters;
 
 namespace KRSDealerManagement.Web.Controllers
 {
-    /// <summary>Admin-only vehicle traceability (chassis lifecycle).</summary>
+    /// <summary>Vehicle chassis lifecycle history.</summary>
     public class VehicleHistoryController : Controller
     {
         private readonly IMediator _mediator;
 
         public VehicleHistoryController(IMediator mediator) => _mediator = mediator;
 
-        [AuthorizeRole(1)]
+        [AuthorizeMenu(StaffMenuAccess.ChassisHistory)]
         public async Task<IActionResult> ChassisHistory(string? chassis)
         {
             chassis = chassis?.Trim().ToUpperInvariant() ?? "";

@@ -16,6 +16,8 @@ namespace KRSDealerManagement.Application.DTOs
         public string ChassisNo { get; set; } = "";
         public string? CustomerName { get; set; }
         public string? PartName { get; set; }
+        public string? PartCode { get; set; }
+        public string? FailurePartSerialNumber { get; set; }
         public int? CurrentKms { get; set; }
         public DateTime? SubmittedDate { get; set; }
         public DateTime? CompletedDate { get; set; }
@@ -37,8 +39,6 @@ namespace KRSDealerManagement.Application.DTOs
         public DateTime? ComplaintDate { get; set; }
         public int? WarrantyPartId { get; set; }
         public string? OtherPartName { get; set; }
-        public string? PartCode { get; set; }
-        public string? FailurePartSerialNumber { get; set; }
         public string? CustomerComplaint { get; set; }
         public string? DealerObservation { get; set; }
         public string? Remarks { get; set; }
@@ -70,12 +70,18 @@ namespace KRSDealerManagement.Application.DTOs
 
         public DateTime? ReplacementPartReceivedDate { get; set; }
         public string? ReplacementPartReceivedByName { get; set; }
+        public string? ReplacementDocketNumber { get; set; }
+        public string? ReplacementCourierCompanyName { get; set; }
+        public string? ReplacementReceivedPartNumber { get; set; }
         public DateTime? SubdealerPartReceivedDate { get; set; }
         public string? SubdealerPartReceivedByName { get; set; }
         public DateTime? DefectiveHandoverDate { get; set; }
         public string? DefectiveHandoverByName { get; set; }
+        public string? DefectiveHandoverAcknowledgementNumber { get; set; }
         public DateTime? DefectiveSentToAmpereDate { get; set; }
         public string? DefectiveSentToAmpereByName { get; set; }
+        public string? DefectiveCourierDocketNumber { get; set; }
+        public string? DefectiveCourierName { get; set; }
 
         public List<WarrantyClaimServiceEntryDto> ServiceEntries { get; set; } = new();
         public List<WarrantyClaimAttachmentDto> Attachments { get; set; } = new();

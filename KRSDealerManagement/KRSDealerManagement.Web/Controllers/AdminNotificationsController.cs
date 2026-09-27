@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace KRSDealerManagement.Web.Controllers
 {
-    [AuthorizeRole(1)]
     [AuthorizeMenu(StaffMenuAccess.Notifications, StaffOnly = true)]
     public class AdminNotificationsController : Controller
     {

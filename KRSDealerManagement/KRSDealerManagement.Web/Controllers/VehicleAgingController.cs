@@ -11,7 +11,6 @@ using KRSDealerManagement.Application.DTOs;
 
 namespace KRSDealerManagement.Web.Controllers
 {
-    [AuthorizeRole(1, 2, 4)]
     [AuthorizeMenuAny(StaffMenuAccess.VehicleAging, MenuKeys.VehicleAging)]
     public class VehicleAgingController : Controller
     {

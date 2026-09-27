@@ -32,5 +32,6 @@ namespace KRSDealerManagement.Shared.Constants
         public const string WarrantyClaims = "warranty_claims";
         public const string MyWarrantyClaims = "my_warranty_claims";
         public const string WarrantyParts = "warranty_parts";
+        public const string WarrantyResolutionTypes = "warranty_resolution_types";
     }
 }

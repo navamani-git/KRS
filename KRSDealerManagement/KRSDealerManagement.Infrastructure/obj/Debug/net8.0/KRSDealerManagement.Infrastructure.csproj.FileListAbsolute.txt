@@ -39,3 +39,15 @@ D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Infrastructure\obj\Debug\n
 D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Infrastructure\obj\Debug\net8.0\refint\KRSDealerManagement.Infrastructure.dll
 D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Infrastructure\obj\Debug\net8.0\KRSDealerManagement.Infrastructure.pdb
 D:\KRSGIT\KRS\KRSDealerManagement\KRSDealerManagement.Infrastructure\obj\Debug\net8.0\ref\KRSDealerManagement.Infrastructure.dll
+d:\KRSGIT\KRS\KRSDealerManagement\_buildcheck_web\KRSDealerManagement.Infrastructure.deps.json
+d:\KRSGIT\KRS\KRSDealerManagement\_buildcheck_web\KRSDealerManagement.Infrastructure.dll
+d:\KRSGIT\KRS\KRSDealerManagement\_buildcheck_web\KRSDealerManagement.Infrastructure.pdb
+d:\KRSGIT\KRS\KRSDealerManagement\_bcw\KRSDealerManagement.Infrastructure.deps.json
+d:\KRSGIT\KRS\KRSDealerManagement\_bcw\KRSDealerManagement.Infrastructure.dll
+d:\KRSGIT\KRS\KRSDealerManagement\_bcw\KRSDealerManagement.Infrastructure.pdb
+d:\KRSGIT\KRS\KRSDealerManagement\_bcauth\KRSDealerManagement.Infrastructure.deps.json
+d:\KRSGIT\KRS\KRSDealerManagement\_bcauth\KRSDealerManagement.Infrastructure.dll
+d:\KRSGIT\KRS\KRSDealerManagement\_bcauth\KRSDealerManagement.Infrastructure.pdb
+d:\KRSGIT\KRS\KRSDealerManagement\_bcauth2\KRSDealerManagement.Infrastructure.deps.json
+d:\KRSGIT\KRS\KRSDealerManagement\_bcauth2\KRSDealerManagement.Infrastructure.dll
+d:\KRSGIT\KRS\KRSDealerManagement\_bcauth2\KRSDealerManagement.Infrastructure.pdb

@@ -1,0 +1,12 @@
+---
+description: Minimize token use on every turn
+alwaysApply: true
+---
+
+# Token economy
+
+- Reply short. No summaries, recaps, or “what I did next”.
+- Touch only files needed for the ask. No exploratory sweeps.
+- Prefer targeted search over reading whole files.
+- One feature = one chat when possible; don’t reload unrelated history into work.
+- Don’t create docs/todos/extra files unless asked.

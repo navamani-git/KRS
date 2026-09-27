@@ -120,6 +120,7 @@ namespace KRSDealerManagement.Domain.Repositories
         IRepository<RtoLocationMaster> RtoLocations { get; }
         IRepository<VehicleBooking> VehicleBookings { get; }
         IRepository<WarrantyPartMaster> WarrantyParts { get; }
+        IRepository<WarrantyResolutionType> WarrantyResolutionTypes { get; }
         IRepository<WarrantyClaim> WarrantyClaims { get; }
         IRepository<WarrantyClaimServiceEntry> WarrantyClaimServiceEntries { get; }
         IRepository<WarrantyClaimAttachment> WarrantyClaimAttachments { get; }

@@ -73,6 +73,30 @@
             + '</table>';
     }
 
+    function renderDealerStockDetails(data) {
+        return ''
+            + '<h6 class="border-bottom pb-1">Dealer Stock</h6>'
+            + '<table class="table table-sm">'
+            + '<tr><td width="35%"><strong>Model</strong></td><td>' + fmt(data.modelName) + '</td></tr>'
+            + '<tr><td><strong>Color</strong></td><td>' + fmt(data.colorName) + '</td></tr>'
+            + '<tr><td><strong>Chassis</strong></td><td><code>' + fmt(data.chassisNumber) + '</code></td></tr>'
+            + '<tr><td><strong>Status</strong></td><td><span class="badge bg-primary">' + fmt(data.statusName) + '</span></td></tr>'
+            + '<tr><td><strong>Branch</strong></td><td>' + fmt(data.dealershipName) + '</td></tr>'
+            + '<tr><td><strong>Motor</strong></td><td>' + fmt(data.motorNo) + '</td></tr>'
+            + '<tr><td><strong>Battery</strong></td><td>' + fmt(data.batteryNo) + '</td></tr>'
+            + '<tr><td><strong>Charger</strong></td><td>' + fmt(data.chargerNo) + '</td></tr>'
+            + '<tr><td><strong>Controller</strong></td><td>' + fmt(data.controllerNo) + '</td></tr>'
+            + '<tr><td><strong>Converter</strong></td><td>' + fmt(data.converterNo) + '</td></tr>'
+            + '<tr><td><strong>Ampere Invoice No</strong></td><td>' + fmt(data.ampereInvoiceNo) + '</td></tr>'
+            + '<tr><td><strong>Ampere Invoice Date</strong></td><td>' + fmt(data.ampereInvoiceDate) + '</td></tr>'
+            + '<tr><td><strong>Received</strong></td><td>' + fmt(data.receivedDate) + '</td></tr>'
+            + '<tr><td><strong>Days in stock</strong></td><td>' + fmt(data.daysInStock) + '</td></tr>'
+            + '<tr><td><strong>Allocated To</strong></td><td>' + fmt(data.allocatedTo) + '</td></tr>'
+            + '<tr><td><strong>Warranty Only</strong></td><td>' + (data.warrantyOnly ? 'Yes' : 'No') + '</td></tr>'
+            + '<tr><td><strong>Remarks</strong></td><td><small style="white-space:pre-wrap">' + fmt(data.remarks) + '</small></td></tr>'
+            + '</table>';
+    }
+
     function renderVehicleDetails(data) {
         return ''
             + '<h6 class="border-bottom pb-1">Vehicle</h6>'
@@ -99,13 +123,13 @@
             + renderBookingSection(data.booking);
     }
 
-    async function openVehicleDetailsModal(vehicleId) {
+    async function openDetailsModal(url, idParam, idValue) {
         var parts = ensureModalElements();
         var modalEl = parts.modalEl;
         var bodyEl = parts.bodyEl;
 
-        if (!vehicleId) {
-            bodyEl.innerHTML = '<div class="alert alert-danger mb-0">Vehicle id is missing for this chassis link.</div>';
+        if (!idValue) {
+            bodyEl.innerHTML = '<div class="alert alert-danger mb-0">Chassis details id is missing.</div>';
             bootstrap.Modal.getOrCreateInstance(modalEl).show();
             return;
         }
@@ -115,11 +139,13 @@
 
         try {
             if (!window.KrsQueryString || typeof window.KrsQueryString.fetchGet !== 'function') {
-                bodyEl.innerHTML = '<div class="alert alert-danger mb-0">Unable to load vehicle details (query helper missing).</div>';
+                bodyEl.innerHTML = '<div class="alert alert-danger mb-0">Unable to load details (query helper missing).</div>';
                 return;
             }
 
-            var resp = await window.KrsQueryString.fetchGet('/Vehicles/DetailsJson', { id: String(vehicleId) }, { krsNoLoader: true });
+            var payload = {};
+            payload[idParam] = String(idValue);
+            var resp = await window.KrsQueryString.fetchGet(url, payload, { krsNoLoader: true });
             var data;
             try {
                 data = await resp.json();
@@ -128,14 +154,20 @@
             }
 
             if (!resp.ok || !data.success) {
-                bodyEl.innerHTML = '<div class="alert alert-danger mb-0">' + fmt(data.message || 'Unable to load vehicle details.') + '</div>';
+                bodyEl.innerHTML = '<div class="alert alert-danger mb-0">' + fmt(data.message || 'Unable to load details.') + '</div>';
                 return;
             }
 
-            bodyEl.innerHTML = renderVehicleDetails(data);
+            bodyEl.innerHTML = data.source === 'dealerStock'
+                ? renderDealerStockDetails(data)
+                : renderVehicleDetails(data);
         } catch (loadError) {
-            bodyEl.innerHTML = '<div class="alert alert-danger mb-0">Failed to load vehicle details.</div>';
+            bodyEl.innerHTML = '<div class="alert alert-danger mb-0">Failed to load details.</div>';
         }
+    }
+
+    async function openVehicleDetailsModal(vehicleId) {
+        await openDetailsModal('/Vehicles/DetailsJson', 'id', vehicleId);
     }
 
     document.addEventListener('click', function (e) {
@@ -144,6 +176,13 @@
 
         e.preventDefault();
         e.stopPropagation();
+
+        var masterId = link.dataset.masterId || link.getAttribute('data-master-id');
+        if (masterId) {
+            openDetailsModal('/VehicleMasters/DetailsJson', 'id', masterId);
+            return;
+        }
+
         openVehicleDetailsModal(link.dataset.id || link.getAttribute('data-vehicle-id'));
     }, true);
 })();

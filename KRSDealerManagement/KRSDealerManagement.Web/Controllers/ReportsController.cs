@@ -7,7 +7,6 @@ using KRSDealerManagement.Shared.Constants;
 
 namespace KRSDealerManagement.Web.Controllers
 {
-    [AuthorizeRole(1, 2, 3, 4)]
     public class ReportsController : Controller
     {
         private readonly IMediator _mediator;
@@ -17,22 +16,10 @@ namespace KRSDealerManagement.Web.Controllers
             _mediator = mediator;
         }
 
-        public IActionResult Index()
-        {
-            var session = HttpContext.Session;
-            if (!SessionHelper.IsAuthenticated(session))
-                return RedirectToAction("Login", "Account");
-
-            // Finance/System: admin_reports · Subdealer: reports
-            if (!SessionHelper.HasMenuAccess(session, StaffMenuAccess.Reports)
-                && !SessionHelper.HasMenuAccess(session, MenuKeys.Reports))
-                return RedirectToAction("AccessDenied", "Account");
-
-            return View();
-        }
+        [AuthorizeMenuAny(StaffMenuAccess.Reports, MenuKeys.Reports)]
+        public IActionResult Index() => View();
 
         // GET: Reports/AccountStatement  (Subdealer's own statement)
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.AccountStatements)]
         public async Task<IActionResult> AccountStatement(DateTime? fromDate, DateTime? toDate, int? page, int? pageSize)
         {

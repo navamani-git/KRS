@@ -76,12 +76,13 @@
                             <th class="grid-col-rownum">#</th>
                             <th>Location</th>
                             <th>Subdealer</th>
-                            <th>Chassis</th>
                             <th>Model</th>
                             <th>Color</th>
-                            <th>Order #</th>
+                            <th>Chassis</th>
+                            <th>Ampere Invoice</th>
+                            <th>Days (invoice)</th>
                             <th>Allocated</th>
-                            <th>Days in stock</th>
+                            <th>Days (allocated)</th>
                             <th class="text-end">Price (₹)</th>
                         </tr>
                         <partial name="_PaginatedGridFilters" />
@@ -94,15 +95,16 @@
                                 <td>@(sr++)</td>
                                 <td><small>@(row.DealershipLocation ?? "—")</small></td>
                                 <td><small>@row.SubdealerName</small></td>
+                                <td>@row.ModelName</td>
+                                <td>@row.ColorName</td>
                                 <td>
                                     <partial name="_ChassisLink" view-data='new ViewDataDictionary(ViewData) {
                                         { "VehicleId", row.VehicleId }, { "Chassis", row.ChassisNumber }, { "ChassisCodeClass", "small" } }' />
                                 </td>
-                                <td>@row.ModelName</td>
-                                <td>@row.ColorName</td>
-                                <td><small>@(row.OrderNumber ?? "—")</small></td>
-                                <td><small>@(row.AllocatedDate?.ToString("yyyy-MM-dd") ?? "—")</small></td>
+                                <td><small>@(row.AmpereInvoiceDate?.ToString("dd-MMM-yyyy") ?? "—")</small></td>
                                 <td><span class="badge bg-light text-dark border">@row.DaysInStock</span></td>
+                                <td><small>@(row.AllocatedDate?.ToString("dd-MMM-yyyy") ?? "—")</small></td>
+                                <td><span class="badge bg-light text-dark border">@row.DaysSinceAllocated</span></td>
                                 <td class="text-end fw-bold">₹@row.CurrentPrice.ToString("N2")</td>
                             </tr>
                         }

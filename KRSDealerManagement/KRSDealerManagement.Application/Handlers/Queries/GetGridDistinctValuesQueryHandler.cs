@@ -479,9 +479,10 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             ["chassis"] = r => r.ChassisNumber,
             ["model"] = r => r.ModelName,
             ["color"] = r => r.ColorName,
-            ["order"] = r => r.OrderNumber,
-            ["allocated"] = r => r.AllocatedDate?.ToString("yyyy-MM-dd"),
+            ["invoice"] = r => r.AmpereInvoiceDate?.ToString("yyyy-MM-dd"),
             ["days"] = r => r.DaysInStock.ToString(),
+            ["allocated"] = r => r.AllocatedDate?.ToString("yyyy-MM-dd"),
+            ["daysAllocated"] = r => r.DaysSinceAllocated.ToString(),
             ["price"] = r => r.CurrentPrice.ToString("N2")
         };
 
@@ -508,11 +509,10 @@ namespace KRSDealerManagement.Application.Handlers.Queries
             ["chassis"] = r => r.ChassisNumber,
             ["model"] = r => r.ModelName,
             ["color"] = r => r.ColorName,
-            ["motor"] = r => r.MotorNo,
-            ["battery"] = r => r.BatteryNo,
             ["status"] = r => r.IsAllocated ? "Allocated" : "Available",
             ["received"] = r => r.ReceivedDate.ToString("yyyy-MM-dd"),
             ["invoice"] = r => r.AmpereInvoiceDate.ToString("yyyy-MM-dd"),
+            ["days"] = r => r.DaysInStock.ToString(),
             ["invoiceNo"] = r => r.AmpereInvoiceNo,
             ["allocatedTo"] = r => r.AllocatedToSubdealerName
         };

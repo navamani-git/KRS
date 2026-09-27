@@ -1,3 +1,9 @@
-In WarrantyClaims/Index Screen means the dealer warranty manager screen
+Dealer Stock - Column order (Model then color then chasis) , Remove motor and battery number - Need ampere invoice date column
+ and based on that day show how many days it is in stock
 
-1) The grid columns expected to show is Chassis, Customer , Failure Part Number, Subdealer, Status , Submitted Date, Action
+Subdealer stock -  Column order (Model then color then chasis) - Remove order column - Need ampere invoice date column
+ and based on that day show how many days it is in stock
+
+Subdealer Vehicles  - Remove Order ID,OrderDate, Allocation Date
+
+I logged in as mithun I gave access to view chasis history but when I clicked it redirected to access denied

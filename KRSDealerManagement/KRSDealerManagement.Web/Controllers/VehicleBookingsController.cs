@@ -37,23 +37,15 @@ namespace KRSDealerManagement.Web.Controllers
             _env = env;
             _priceService = priceService;
         }
-
-        [AuthorizeRole(1, 4)]
         [AuthorizeMenu(StaffMenuAccess.BookedToCustomerView)]
         public Task<IActionResult> BookedToCustomer(int? subdealerId, int? dealershipId, string? searchTerm, int? page, int? pageSize)
             => ListBookingsAsync(UnifiedVehicleStatus.BookedToCustomer, subdealerId, dealershipId, searchTerm, page, pageSize, viewOnly: true, bookedToCustomerView: true);
-
-        [AuthorizeRole(1, 4)]
         [AuthorizeMenu(StaffMenuAccess.VehicleBookings)]
         public Task<IActionResult> Process(int? subdealerId, int? dealershipId, string? searchTerm, int? page, int? pageSize)
             => ListBookingsAsync(null, subdealerId, dealershipId, searchTerm, page, pageSize, viewOnly: false, bookingPhaseOnly: true);
-
-        [AuthorizeRole(1, 4)]
         [AuthorizeBookingMilestoneIndex]
         public Task<IActionResult> Index(int? status, int? subdealerId, int? dealershipId, string? searchTerm, int? page, int? pageSize)
             => ListBookingsAsync(status, subdealerId, dealershipId, searchTerm, page, pageSize, viewOnly: true);
-
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public Task<IActionResult> MyBookedToCustomer(string? searchTerm, int? page, int? pageSize)
             => ListBookingsAsync(
@@ -66,28 +58,18 @@ namespace KRSDealerManagement.Web.Controllers
                 viewOnly: true,
                 bookedToCustomerView: true,
                 subdealerView: true);
-
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public Task<IActionResult> MyPaperReceived(string? searchTerm, int? page, int? pageSize)
             => ListMyBookingsAsync(UnifiedVehicleStatus.PaperReceived, searchTerm, page, pageSize);
-
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public Task<IActionResult> MyInvoiced(string? searchTerm, int? page, int? pageSize)
             => ListMyBookingsAsync(UnifiedVehicleStatus.Invoiced, searchTerm, page, pageSize);
-
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public Task<IActionResult> MyInsuranceCreated(string? searchTerm, int? page, int? pageSize)
             => ListMyBookingsAsync(UnifiedVehicleStatus.InsuranceCreated, searchTerm, page, pageSize);
-
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public Task<IActionResult> MyRtoRequested(string? searchTerm, int? page, int? pageSize)
             => ListMyBookingsAsync(UnifiedVehicleStatus.RtoRequested, searchTerm, page, pageSize);
-
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public Task<IActionResult> MySubsidyIdPending(string? searchTerm, int? page, int? pageSize)
             => ListBookingsAsync(
@@ -100,8 +82,6 @@ namespace KRSDealerManagement.Web.Controllers
                 viewOnly: true,
                 subsidyIdPendingOnly: true,
                 subdealerView: true);
-
-        [AuthorizeRole(1, 4)]
         [AuthorizeMenu(StaffMenuAccess.BookingSubsidyIdPending)]
         public Task<IActionResult> SubsidyIdPending(int? subdealerId, int? dealershipId, string? searchTerm, int? page, int? pageSize)
             => ListBookingsAsync(
@@ -113,8 +93,6 @@ namespace KRSDealerManagement.Web.Controllers
                 pageSize,
                 viewOnly: true,
                 subsidyIdPendingOnly: true);
-
-        [AuthorizeRole(1, 4)]
         [AuthorizeMenu(StaffMenuAccess.BookingSubsidyDocsPending)]
         public Task<IActionResult> SubsidyDocsPending(int? subdealerId, int? dealershipId, string? searchTerm, int? page, int? pageSize)
             => ListBookingsAsync(
@@ -126,8 +104,6 @@ namespace KRSDealerManagement.Web.Controllers
                 pageSize,
                 viewOnly: true,
                 subsidyDocsPendingOnly: true);
-
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public Task<IActionResult> MySubsidyDocsPending(string? searchTerm, int? page, int? pageSize)
             => ListBookingsAsync(
@@ -140,8 +116,6 @@ namespace KRSDealerManagement.Web.Controllers
                 viewOnly: true,
                 subsidyDocsPendingOnly: true,
                 subdealerView: true);
-
-        [AuthorizeRole(1, 4)]
         [AuthorizeMenu(StaffMenuAccess.BookingRegistered)]
         public Task<IActionResult> RegisteredAwaitingPlate(int? subdealerId, int? dealershipId, string? searchTerm, int? page, int? pageSize)
             => ListBookingsAsync(
@@ -153,8 +127,6 @@ namespace KRSDealerManagement.Web.Controllers
                 pageSize,
                 viewOnly: true,
                 registeredAwaitingPlateOnly: true);
-
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public Task<IActionResult> MyRegisteredAwaitingPlate(string? searchTerm, int? page, int? pageSize)
             => ListBookingsAsync(
@@ -328,8 +300,6 @@ namespace KRSDealerManagement.Web.Controllers
             ViewBag.SearchTerm = searchTerm;
             return View("Index", pageItems);
         }
-
-        [AuthorizeRole(1, 4)]
         [AuthorizeMenuAny(
             StaffMenuAccess.VehicleBookings,
             StaffMenuAccess.BookedToCustomerView,
@@ -413,8 +383,6 @@ namespace KRSDealerManagement.Web.Controllers
 
             return ExcelExportHelper.ToFileResult(this, $"vehicle_bookings_{DateTime.Now:yyyyMMdd}.xlsx", headers, rows, "Bookings");
         }
-
-        [AuthorizeRole(1, 4)]
         [AuthorizeMenuAny(StaffMenuAccess.VehicleBookings, StaffMenuAccess.BookedToCustomerView)]
         [HttpGet]
         public async Task<IActionResult> SubdealersForFilter(int? dealershipId)
@@ -427,8 +395,6 @@ namespace KRSDealerManagement.Web.Controllers
 
             return Json(subdealers.Select(s => new { id = s.SubDealerId, name = s.GetFullName() }));
         }
-
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public async Task<IActionResult> Book(int vehicleId)
         {
@@ -470,7 +436,6 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public async Task<IActionResult> Book(int vehicleId, string customerName, bool isCompanyBooking,
             string customerMobile, string alternativeMobile, string customerEmail,
@@ -514,7 +479,8 @@ namespace KRSDealerManagement.Web.Controllers
                 customerName, customerMobile, alternativeMobile, customerEmail, eAadhaarPassword,
                 nomineeName, nomineeDob, nomineeRelationship, isCompanyBooking, eAadhaarFile, documentFile, gstCertificateFile,
                 customerPhoto, chassisPhoto, customerSign)
-                ?? BookingFormValidationHelper.ValidateBookingChoiceFields(fancyNumber, paymentMode, financeNameId);
+                ?? BookingFormValidationHelper.ValidateBookingChoiceFields(fancyNumber, paymentMode, financeNameId)
+                ?? await ValidateOwnShowroomFinanceAsync(paymentMode, financeNameId);
             if (validationError != null)
             {
                 TempData["Error"] = validationError;
@@ -601,8 +567,6 @@ namespace KRSDealerManagement.Web.Controllers
                     nomineeName, nomineeDob, nomineeRelationship));
             }
         }
-
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public async Task<IActionResult> BookFromStock(int vehicleMasterId)
         {
@@ -632,7 +596,6 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public async Task<IActionResult> BookFromStock(int vehicleMasterId, string customerName, bool isCompanyBooking,
             string customerMobile, string alternativeMobile, string customerEmail,
@@ -768,8 +731,6 @@ namespace KRSDealerManagement.Web.Controllers
                     nomineeName, nomineeDob, nomineeRelationship));
             }
         }
-
-        [AuthorizeRole(1, 2)]
         [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public async Task<IActionResult> Edit(int id)
         {
@@ -809,7 +770,6 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1, 2)]
         [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public async Task<IActionResult> Edit(int id, string customerName, bool isCompanyBooking,
             string customerMobile, string alternativeMobile, string customerEmail,
@@ -848,7 +808,8 @@ namespace KRSDealerManagement.Web.Controllers
                 customerName, customerMobile, alternativeMobile, customerEmail, eAadhaarPassword,
                 nomineeName, nomineeDob, nomineeRelationship, isCompanyBooking, !string.IsNullOrWhiteSpace(booking.GstCertificatePath),
                 eAadhaarFile, documentFile, gstCertificateFile, customerPhoto, chassisPhoto, customerSign)
-                ?? BookingFormValidationHelper.ValidateBookingChoiceFields(fancyNumber, paymentMode, financeNameId);
+                ?? BookingFormValidationHelper.ValidateBookingChoiceFields(fancyNumber, paymentMode, financeNameId)
+                ?? await ValidateOwnShowroomFinanceAsync(paymentMode, financeNameId);
             if (validationError != null)
             {
                 TempData["Error"] = validationError;
@@ -926,8 +887,17 @@ namespace KRSDealerManagement.Web.Controllers
                     nomineeName, nomineeDob, nomineeRelationship, editReason));
             }
         }
-
-        [AuthorizeRole(1, 2, 4)]
+        [AuthorizeMenuAny(
+            StaffMenuAccess.VehicleBookings,
+            StaffMenuAccess.BookedToCustomerView,
+            StaffMenuAccess.BookingPaperReceived,
+            StaffMenuAccess.BookingInvoiced,
+            StaffMenuAccess.BookingInsuranceCreated,
+            StaffMenuAccess.BookingRtoRequested,
+            StaffMenuAccess.BookingSubsidyIdPending,
+            StaffMenuAccess.BookingSubsidyDocsPending,
+            StaffMenuAccess.BookingRegistered,
+            MenuKeys.VehiclesBookingStages)]
         public async Task<IActionResult> Manage(int id)
         {
             var booking = await _unitOfWork.VehicleBookings.GetByIdAsync(id);
@@ -1189,7 +1159,7 @@ namespace KRSDealerManagement.Web.Controllers
         }
 
         [HttpGet]
-        [AuthorizeRole(1, 4)]
+        [AuthorizeMenu(StaffMenuAccess.VehicleBookings, StaffOnly = true)]
         public async Task<IActionResult> InvoicePricePreview(int id, DateTime invoiceDate)
         {
             var booking = await _unitOfWork.VehicleBookings.GetByIdAsync(id);
@@ -1212,7 +1182,6 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(2)]
         [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public async Task<IActionResult> MarkDelivered(int id, DateTime deliveryDate)
         {
@@ -1245,8 +1214,6 @@ namespace KRSDealerManagement.Web.Controllers
 
             return this.RedirectEncrypted(nameof(Manage), new { id });
         }
-
-        [AuthorizeRole(1, 2)]
         [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public async Task<IActionResult> SubsidyDocs(int id)
         {
@@ -1277,7 +1244,6 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1, 2)]
         [AuthorizeMenu(MenuKeys.VehiclesBookingStages)]
         public async Task<IActionResult> SubsidyDocs(int id, IFormFile? faceVerification, IFormFile? rcImage,
             IFormFile? boothPhoto, IFormFile? subsidyUndertaking)
@@ -1376,7 +1342,10 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1, 2)]
+        [AuthorizeMenuAny(
+            StaffMenuAccess.VehicleBookings,
+            StaffMenuAccess.BookingRegistered,
+            MenuKeys.VehiclesBookingStages)]
         public async Task<IActionResult> NumberPlateReceived(int id, DateTime? numberPlateReceivedDate, string? numberPlateReceivedBy)
         {
             var userId = SessionHelper.GetUserId(HttpContext.Session);
@@ -1437,7 +1406,7 @@ namespace KRSDealerManagement.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [AuthorizeRole(1)]
+        [AuthorizeMenu(StaffMenuAccess.VehicleBookings, StaffOnly = true)]
         public async Task<IActionResult> DeleteManageDocument(int id, string documentKind)
         {
             var booking = await _unitOfWork.VehicleBookings.GetByIdAsync(id);
@@ -1546,8 +1515,17 @@ namespace KRSDealerManagement.Web.Controllers
                 return this.RedirectEncrypted(nameof(Manage), new { id = bookingId.Value });
             return RedirectToAction(nameof(MyRegisteredAwaitingPlate));
         }
-
-        [AuthorizeRole(1, 2, 4)]
+        [AuthorizeMenuAny(
+            StaffMenuAccess.VehicleBookings,
+            StaffMenuAccess.BookedToCustomerView,
+            StaffMenuAccess.BookingPaperReceived,
+            StaffMenuAccess.BookingInvoiced,
+            StaffMenuAccess.BookingInsuranceCreated,
+            StaffMenuAccess.BookingRtoRequested,
+            StaffMenuAccess.BookingSubsidyIdPending,
+            StaffMenuAccess.BookingSubsidyDocsPending,
+            StaffMenuAccess.BookingRegistered,
+            MenuKeys.VehiclesBookingStages)]
         public async Task<IActionResult> Download(string path)
         {
             if (!await CanAccessBookingFileAsync(path))
@@ -1561,7 +1539,17 @@ namespace KRSDealerManagement.Web.Controllers
             return PhysicalFile(full, contentType, Path.GetFileName(full));
         }
 
-        [AuthorizeRole(1, 2, 4)]
+        [AuthorizeMenuAny(
+            StaffMenuAccess.VehicleBookings,
+            StaffMenuAccess.BookedToCustomerView,
+            StaffMenuAccess.BookingPaperReceived,
+            StaffMenuAccess.BookingInvoiced,
+            StaffMenuAccess.BookingInsuranceCreated,
+            StaffMenuAccess.BookingRtoRequested,
+            StaffMenuAccess.BookingSubsidyIdPending,
+            StaffMenuAccess.BookingSubsidyDocsPending,
+            StaffMenuAccess.BookingRegistered,
+            MenuKeys.VehiclesBookingStages)]
         public async Task<IActionResult> ViewFile(string path)
         {
             if (!await CanAccessBookingFileAsync(path))

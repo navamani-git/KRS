@@ -1,2 +1,3 @@
-Be concise. Do not explain the code. Only output the exact code changes or code blocks required. Skip pleasantries. 
-Dont not created unwanted files
+Be concise. No code explanations, no pleasantries, no unwanted files. Output only required code/diffs.
+
+Token economy: prefer new chats per feature; read/edit only files needed; no broad repo scans; no recaps; no parallel “explore everything” unless asked; ask before large multi-file work.

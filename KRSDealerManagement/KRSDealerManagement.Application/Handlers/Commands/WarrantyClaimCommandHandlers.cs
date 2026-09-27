@@ -361,7 +361,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
     {
         public RejectWarrantyClaimCommandHandler(IUnitOfWork u, IAuditService a) : base(u, a) { }
         protected override bool CanTransition(WarrantyClaim c, RejectWarrantyClaimCommand r)
-            => WarrantyClaimStatus.CanStaffReview(c.Status) && !string.IsNullOrWhiteSpace(r.Notes);
+            => WarrantyClaimStatus.CanStaffRejectOrRequestInfo(c.Status) && !string.IsNullOrWhiteSpace(r.Notes);
         protected override void ApplyTransition(WarrantyClaim c, RejectWarrantyClaimCommand r)
         {
             c.Status = WarrantyClaimStatus.Rejected;
@@ -376,7 +376,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
     {
         public RequestWarrantyInfoCommandHandler(IUnitOfWork u, IAuditService a) : base(u, a) { }
         protected override bool CanTransition(WarrantyClaim c, RequestWarrantyInfoCommand r)
-            => WarrantyClaimStatus.CanStaffReview(c.Status) && !string.IsNullOrWhiteSpace(r.Notes);
+            => WarrantyClaimStatus.CanStaffRejectOrRequestInfo(c.Status) && !string.IsNullOrWhiteSpace(r.Notes);
         protected override void ApplyTransition(WarrantyClaim c, RequestWarrantyInfoCommand r)
         {
             c.Status = WarrantyClaimStatus.MoreInfoRequested;
@@ -449,29 +449,79 @@ namespace KRSDealerManagement.Application.Handlers.Commands
         }
     }
 
-    public class SaveWarrantyResolutionPartCommandHandler : WarrantyClaimFlagHandler<SaveWarrantyResolutionPartCommand>
+    public class SaveWarrantyResolutionPartCommandHandler : IRequestHandler<SaveWarrantyResolutionPartCommand, bool>
     {
-        public SaveWarrantyResolutionPartCommandHandler(IUnitOfWork u, IAuditService a) : base(u, a) { }
-        protected override bool CanApply(WarrantyClaim c, SaveWarrantyResolutionPartCommand r)
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IAuditService _auditService;
+
+        public SaveWarrantyResolutionPartCommandHandler(IUnitOfWork unitOfWork, IAuditService auditService)
         {
-            if (!WarrantyClaimStatus.CanStaffEditResolutionPart(c.Status, c.DefectiveSentToAmpereCompleted))
-                return false;
-            if (string.IsNullOrWhiteSpace(r.DealerResolutionType)
-                || !WarrantyDealerResolutionTypes.All.Contains(r.DealerResolutionType.Trim().ToUpperInvariant()))
-                return false;
-            return !string.IsNullOrWhiteSpace(r.DealerClosedPartNumber);
+            _unitOfWork = unitOfWork;
+            _auditService = auditService;
         }
-        protected override void ApplyFlag(WarrantyClaim c, SaveWarrantyResolutionPartCommand r)
+
+        public async Task<bool> Handle(SaveWarrantyResolutionPartCommand request, CancellationToken cancellationToken)
         {
-            c.DealerResolutionType = r.DealerResolutionType.Trim().ToUpperInvariant();
-            c.DealerClosedPartNumber = r.DealerClosedPartNumber.Trim().ToUpperInvariant();
-            c.ResolutionPartCompleted = true;
-            c.ResolutionPartCompletedByUserId = r.UserId;
-            c.ResolutionPartCompletedDate = DateTime.UtcNow;
+            var claim = await _unitOfWork.WarrantyClaims.GetByIdAsync(request.WarrantyClaimId);
+            if (claim == null) return false;
+            if (!WarrantyClaimStatus.CanStaffEditResolutionPart(claim.Status, claim.DefectiveSentToAmpereCompleted))
+                return false;
+
+            var code = request.DealerResolutionType?.Trim().ToUpperInvariant() ?? "";
+            var resolution = (await _unitOfWork.WarrantyResolutionTypes.GetAllAsync())
+                .FirstOrDefault(r => r.IsActive && r.Code.Equals(code, StringComparison.OrdinalIgnoreCase));
+            if (resolution == null) return false;
+
+            var actionType = WarrantyResolutionActionTypes.Normalize(resolution.ActionType);
+            var from = claim.Status;
+            string historyNote;
+            string auditAction;
+
+            if (actionType.Equals(WarrantyResolutionActionTypes.Reject, StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(request.Notes)) return false;
+                claim.DealerResolutionType = resolution.Code;
+                claim.DealerClosedPartNumber = null;
+                claim.Status = WarrantyClaimStatus.Rejected;
+                claim.RejectedByUserId = request.UserId;
+                claim.RejectedDate = DateTime.UtcNow;
+                claim.RejectionReason = request.Notes.Trim();
+                historyNote = $"Resolution Reject: {resolution.Name} — {claim.RejectionReason}";
+                auditAction = "ResolutionReject";
+            }
+            else if (actionType.Equals(WarrantyResolutionActionTypes.RequestInfo, StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(request.Notes)) return false;
+                claim.DealerResolutionType = resolution.Code;
+                claim.DealerClosedPartNumber = null;
+                claim.Status = WarrantyClaimStatus.MoreInfoRequested;
+                claim.MoreInfoRequestedByUserId = request.UserId;
+                claim.MoreInfoRequestedDate = DateTime.UtcNow;
+                claim.MoreInfoNotes = request.Notes.Trim();
+                historyNote = $"Resolution Request Info: {resolution.Name} — {claim.MoreInfoNotes}";
+                auditAction = "ResolutionRequestInfo";
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(request.DealerClosedPartNumber)) return false;
+                claim.DealerResolutionType = resolution.Code;
+                claim.DealerClosedPartNumber = request.DealerClosedPartNumber.Trim().ToUpperInvariant();
+                claim.ResolutionPartCompleted = true;
+                claim.ResolutionPartCompletedByUserId = request.UserId;
+                claim.ResolutionPartCompletedDate = DateTime.UtcNow;
+                historyNote = $"Resolution: {resolution.Name} · Part # {claim.DealerClosedPartNumber}";
+                auditAction = "ResolutionPart";
+                WarrantyClaimWorkflowHelper.TryMarkComplete(claim);
+            }
+
+            claim.ModifiedByUserId = request.UserId;
+            claim.ModifiedDate = DateTime.UtcNow;
+            await _unitOfWork.WarrantyClaims.UpdateAsync(claim);
+            await WarrantyClaimWorkflowHelper.RecordHistoryAsync(_unitOfWork, claim.WarrantyClaimId, from, claim.Status, request.UserId, historyNote);
+            await _unitOfWork.SaveChangesAsync();
+            await _auditService.LogActionAsync("WarrantyClaim", claim.WarrantyClaimId, auditAction, request.UserId, "Staff", claim.Status.ToString());
+            return true;
         }
-        protected override string GetActionName() => "ResolutionPart";
-        protected override string? GetHistoryNote(WarrantyClaim c, SaveWarrantyResolutionPartCommand r)
-            => $"Resolution: {WarrantyDealerResolutionTypes.GetDisplayName(c.DealerResolutionType)} · Part # {c.DealerClosedPartNumber}";
     }
 
     public class SaveWarrantyDealerInvoiceClosedCommandHandler : WarrantyClaimFlagHandler<SaveWarrantyDealerInvoiceClosedCommand>
@@ -496,16 +546,22 @@ namespace KRSDealerManagement.Application.Handlers.Commands
     {
         public MarkWarrantyReplacementPartReceivedCommandHandler(IUnitOfWork u, IAuditService a) : base(u, a) { }
         protected override bool CanApply(WarrantyClaim c, MarkWarrantyReplacementPartReceivedCommand r)
-            => WarrantyClaimStatus.CanStaffEditReplacementPartReceived(c.Status, c.DefectiveSentToAmpereCompleted);
+            => WarrantyClaimStatus.CanStaffEditReplacementPartReceived(c.Status, c.DefectiveSentToAmpereCompleted)
+               && !string.IsNullOrWhiteSpace(r.DocketNumber)
+               && !string.IsNullOrWhiteSpace(r.CourierCompanyName)
+               && !string.IsNullOrWhiteSpace(r.ReceivedPartNumber);
         protected override void ApplyFlag(WarrantyClaim c, MarkWarrantyReplacementPartReceivedCommand r)
         {
+            c.ReplacementDocketNumber = r.DocketNumber.Trim().ToUpperInvariant();
+            c.ReplacementCourierCompanyName = r.CourierCompanyName.Trim();
+            c.ReplacementReceivedPartNumber = r.ReceivedPartNumber.Trim().ToUpperInvariant();
             c.ReplacementPartReceivedCompleted = true;
             c.ProductReceivedByUserId = r.UserId;
             c.ProductReceivedDate = ResolveActionDate(r.ActionDate);
         }
         protected override string GetActionName() => "ReplacementPartReceived";
         protected override string? GetHistoryNote(WarrantyClaim c, MarkWarrantyReplacementPartReceivedCommand r)
-            => $"Replacement part received {c.ProductReceivedDate:dd-MMM-yyyy}";
+            => $"Replacement received {c.ProductReceivedDate:dd-MMM-yyyy} · Docket {c.ReplacementDocketNumber} · {c.ReplacementCourierCompanyName} · Part # {c.ReplacementReceivedPartNumber}";
     }
 
     public class MarkWarrantySubdealerPartReceivedCommandHandler : WarrantyClaimFlagHandler<MarkWarrantySubdealerPartReceivedCommand>
@@ -546,7 +602,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
         public MarkWarrantyDefectiveHandoverCommandHandler(IUnitOfWork u, IAuditService a) : base(u, a) { }
         protected override bool CanApply(WarrantyClaim c, MarkWarrantyDefectiveHandoverCommand r)
         {
-            if (string.IsNullOrWhiteSpace(r.HandoverByName))
+            if (string.IsNullOrWhiteSpace(r.HandoverByName) || string.IsNullOrWhiteSpace(r.AcknowledgementReceiptNumber))
                 return false;
 
             if (r.OnBehalfOfSubdealerByStaff)
@@ -562,6 +618,7 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             c.DefectiveHandoverCompleted = true;
             c.DefectiveSubmittedByAccountId = c.AccountId;
             c.DefectiveSubmittedByName = r.HandoverByName.Trim();
+            c.DefectiveHandoverAcknowledgementNumber = r.AcknowledgementReceiptNumber.Trim().ToUpperInvariant();
             c.DefectiveSubmittedDate = ResolveActionDate(r.ActionDate);
             c.DefectiveHandoverStaffUserId = r.OnBehalfOfSubdealerByStaff ? r.UserId : null;
         }
@@ -571,22 +628,26 @@ namespace KRSDealerManagement.Application.Handlers.Commands
             => r.OnBehalfOfSubdealerByStaff ? "Staff" : "Subdealer";
         protected override string? GetHistoryNote(WarrantyClaim c, MarkWarrantyDefectiveHandoverCommand r)
             => (r.OnBehalfOfSubdealerByStaff ? "Staff recorded defective handover: " : "Defective handover by ")
-               + $"{c.DefectiveSubmittedByName} on {c.DefectiveSubmittedDate:dd-MMM-yyyy}";
+               + $"{c.DefectiveSubmittedByName} on {c.DefectiveSubmittedDate:dd-MMM-yyyy} · Ack # {c.DefectiveHandoverAcknowledgementNumber}";
     }
 
     public class MarkWarrantyDefectiveSentToAmpereCommandHandler : WarrantyClaimFlagHandler<MarkWarrantyDefectiveSentToAmpereCommand>
     {
         public MarkWarrantyDefectiveSentToAmpereCommandHandler(IUnitOfWork u, IAuditService a) : base(u, a) { }
         protected override bool CanApply(WarrantyClaim c, MarkWarrantyDefectiveSentToAmpereCommand r)
-            => WarrantyClaimStatus.CanStaffMarkDefectiveSentToAmpere(c.Status, c.DefectiveSentToAmpereCompleted);
+            => WarrantyClaimStatus.CanStaffMarkDefectiveSentToAmpere(c.Status, c.DefectiveSentToAmpereCompleted)
+               && !string.IsNullOrWhiteSpace(r.CourierDocketNumber)
+               && !string.IsNullOrWhiteSpace(r.CourierName);
         protected override void ApplyFlag(WarrantyClaim c, MarkWarrantyDefectiveSentToAmpereCommand r)
         {
+            c.DefectiveCourierDocketNumber = r.CourierDocketNumber.Trim().ToUpperInvariant();
+            c.DefectiveCourierName = r.CourierName.Trim();
             c.DefectiveSentToAmpereCompleted = true;
             c.DefectiveSentToAmpereByUserId = r.UserId;
             c.DefectiveSentToAmpereDate = ResolveActionDate(r.ActionDate);
         }
         protected override string GetActionName() => "DefectiveSentToAmpere";
         protected override string? GetHistoryNote(WarrantyClaim c, MarkWarrantyDefectiveSentToAmpereCommand r)
-            => $"Defective sent to Ampere on {c.DefectiveSentToAmpereDate:dd-MMM-yyyy}";
+            => $"Courier sent {c.DefectiveSentToAmpereDate:dd-MMM-yyyy} · Docket {c.DefectiveCourierDocketNumber} · {c.DefectiveCourierName}";
     }
 }

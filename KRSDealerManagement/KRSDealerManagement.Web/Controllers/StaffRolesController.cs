@@ -11,7 +11,6 @@ using KRSDealerManagement.Web.Helpers;
 
 namespace KRSDealerManagement.Web.Controllers
 {
-    [AuthorizeRole(1)]
     [AuthorizeMenu(StaffMenuAccess.StaffRoles)]
     public class StaffRolesController : Controller
     {

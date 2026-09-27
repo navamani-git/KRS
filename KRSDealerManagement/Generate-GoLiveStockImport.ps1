@@ -4,9 +4,20 @@
 #   .\Generate-GoLiveStockImport.ps1 -ExcelPath "D:\KRSGIT\KRS\Vehicle Current Stock Report_21-09-2026.xlsx"
 
 param(
-    [string]$ExcelPath = "D:\KRSGIT\KRS\Vehicle Current Stock Report_21-09-2026.xlsx",
-    [string]$OutputSql = "D:\KRSGIT\KRS\KRSDealerManagement\GO_LIVE_IMPORT_STOCK_FROM_REPORT.sql"
+    [string]$ExcelPath = "D:\KRSGIT\KRS\Vehicle Current Stock Report_26-09.xlsx",
+    [string]$OutputSql = "D:\KRSGIT\KRS\KRSDealerManagement\GO_LIVE_IMPORT_STOCK_FROM_REPORT_26-09.sql"
 )
+
+function Normalize-Chassis([string]$raw) {
+    if ($null -eq $raw) { return '' }
+    return $raw.Trim().TrimEnd('.').ToUpperInvariant()
+}
+
+function Test-ValidChassis([string]$chassis) {
+    if ([string]::IsNullOrWhiteSpace($chassis)) { return $false }
+    if ($chassis -match '^\d+(\.\d+)?$') { return $false }
+    return $chassis -match '^MCP[A-Z0-9]+$'
+}
 
 function Escape-Sql([string]$s) {
     if ($null -eq $s) { return "NULL" }
@@ -32,6 +43,56 @@ function Parse-Date([string]$raw) {
     }
 }
 
+function Get-StockReportColumnMap($ws) {
+    $headerRow = $null
+    for ($r = 1; $r -le 5; $r++) {
+        for ($c = 1; $c -le 20; $c++) {
+            if ($ws.Cells.Item($r, $c).Text -match '(?i)chassis') {
+                $headerRow = $r
+                break
+            }
+        }
+        if ($headerRow) { break }
+    }
+    if (-not $headerRow) { throw 'Could not find header row (column name containing Chassis).' }
+    $byHeader = @{}
+    for ($c = 1; $c -le 20; $c++) {
+        $h = $ws.Cells.Item($headerRow, $c).Text.Trim()
+        if ($h.Length -gt 0) { $byHeader[$c] = $h.ToLowerInvariant() }
+    }
+    function Find-Col([hashtable]$map, [string[]]$patterns) {
+        foreach ($entry in $map.GetEnumerator() | Sort-Object Name) {
+            foreach ($p in $patterns) {
+                if ($entry.Value -match $p) { return [int]$entry.Name }
+            }
+        }
+        return $null
+    }
+    $cols = @{
+        Branch     = Find-Col $byHeader @('^branch$')
+        Location   = Find-Col $byHeader @('^location$')
+        Model      = Find-Col $byHeader @('vehicle model', '^model$')
+        Color      = Find-Col $byHeader @('vehicle color', '^color$')
+        Chassis    = Find-Col $byHeader @('chassis')
+        Motor      = Find-Col $byHeader @('motor')
+        Battery    = Find-Col $byHeader @('battery')
+        Converter  = Find-Col $byHeader @('converter')
+        Charger    = Find-Col $byHeader @('charger')
+        Controller = Find-Col $byHeader @('controller')
+        Mfg        = Find-Col $byHeader @('mfg', 'manufactur')
+    }
+    $required = @('Branch', 'Location', 'Model', 'Color', 'Chassis', 'Motor', 'Battery', 'Converter', 'Charger', 'Controller', 'Mfg')
+    foreach ($name in $required) {
+        if (-not $cols[$name]) {
+            throw "Header row $headerRow missing column for $name. Found: $($byHeader.Values -join '; ')"
+        }
+    }
+    if ($byHeader[$cols.Chassis] -notmatch 'chassis') {
+        throw "Chassis column $($cols.Chassis) header is '$($byHeader[$cols.Chassis])', expected Chassis No."
+    }
+    return @{ HeaderRow = $headerRow; DataStartRow = $headerRow + 1; Col = $cols; Headers = $byHeader }
+}
+
 if (-not (Test-Path $ExcelPath)) {
     throw "Excel not found: $ExcelPath"
 }
@@ -41,23 +102,29 @@ $excel.Visible = $false
 $excel.DisplayAlerts = $false
 $wb = $excel.Workbooks.Open((Resolve-Path $ExcelPath).Path)
 $ws = $wb.Worksheets.Item(1)
+$map = Get-StockReportColumnMap $ws
+$c = $map.Col
 $rows = $ws.UsedRange.Rows.Count
+Write-Host ("Header row $($map.HeaderRow); data from row $($map.DataStartRow); Chassis=col $($c.Chassis)")
 
 $values = New-Object System.Collections.Generic.List[string]
-for ($r = 2; $r -le $rows; $r++) {
-    $branch = $ws.Cells.Item($r, 2).Text.Trim()
-    $location = $ws.Cells.Item($r, 3).Text.Trim()
-    $model = $ws.Cells.Item($r, 4).Text.Trim()
-    $color = $ws.Cells.Item($r, 5).Text.Trim()
-    $chassis = $ws.Cells.Item($r, 6).Text.Trim().ToUpperInvariant()
-    $motor = $ws.Cells.Item($r, 7).Text.Trim()
-    $battery = $ws.Cells.Item($r, 8).Text.Trim()
-    $converter = $ws.Cells.Item($r, 9).Text.Trim()
-    $charger = $ws.Cells.Item($r, 10).Text.Trim()
-    $controller = $ws.Cells.Item($r, 11).Text.Trim()
-    $mfg = $ws.Cells.Item($r, 12).Text.Trim()
+$seenChassis = @{}
+for ($r = $map.DataStartRow; $r -le $rows; $r++) {
+    $branch = $ws.Cells.Item($r, $c.Branch).Text.Trim()
+    $location = $ws.Cells.Item($r, $c.Location).Text.Trim()
+    $model = $ws.Cells.Item($r, $c.Model).Text.Trim()
+    $color = $ws.Cells.Item($r, $c.Color).Text.Trim()
+    $chassis = Normalize-Chassis $ws.Cells.Item($r, $c.Chassis).Text
+    $motor = $ws.Cells.Item($r, $c.Motor).Text.Trim()
+    $battery = $ws.Cells.Item($r, $c.Battery).Text.Trim()
+    $converter = $ws.Cells.Item($r, $c.Converter).Text.Trim()
+    $charger = $ws.Cells.Item($r, $c.Charger).Text.Trim()
+    $controller = $ws.Cells.Item($r, $c.Controller).Text.Trim()
+    $mfg = $ws.Cells.Item($r, $c.Mfg).Text.Trim()
 
-    if ([string]::IsNullOrWhiteSpace($chassis)) { continue }
+    if (-not (Test-ValidChassis $chassis)) { continue }
+    if ($seenChassis.ContainsKey($chassis)) { continue }
+    $seenChassis[$chassis] = $true
 
     $line = "(" +
         "$(Escape-Sql $branch), $(Escape-Sql $location), $(Escape-Sql $model), $(Escape-Sql $color), " +
@@ -77,7 +144,7 @@ $header = @'
 /*
   GO LIVE - import opening stock from Ampere report
   ===============================================
-  Source: Vehicle Current Stock Report (21-09-2026)
+  Source: Vehicle Current Stock Report (26-09; col 7 = Chassis No)
   Generated: {0}
 
   Branch mapping:
@@ -235,12 +302,10 @@ OUTER APPLY (
         FROM dbo.VehicleModels m
         WHERE LOWER(LTRIM(RTRIM(m.ModelName))) = n.ModelRaw
         UNION ALL
-        SELECT m.ModelId, 2, LEN(m.ModelName)
+        SELECT m.ModelId, 2, LEN(a.Src)
         FROM #ModelAlias a
         INNER JOIN dbo.VehicleModels m ON LOWER(LTRIM(RTRIM(m.ModelName))) = LOWER(LTRIM(RTRIM(a.Target)))
         WHERE n.ModelRaw = LOWER(LTRIM(RTRIM(a.Src)))
-           OR n.ModelRaw LIKE N'%' + LOWER(LTRIM(RTRIM(a.Src))) + N'%'
-           OR LOWER(LTRIM(RTRIM(a.Src))) LIKE N'%' + n.ModelRaw + N'%'
         UNION ALL
         SELECT m.ModelId, 3, LEN(m.ModelName)
         FROM dbo.VehicleModels m
@@ -248,7 +313,7 @@ OUTER APPLY (
           AND (CHARINDEX(LOWER(LTRIM(RTRIM(m.ModelName))), n.ModelRaw) > 0
                OR CHARINDEX(n.ModelRaw, LOWER(LTRIM(RTRIM(m.ModelName)))) > 0)
     ) x
-    ORDER BY x.Pri, x.Ln DESC
+    ORDER BY x.Pri, x.Ln DESC, x.ModelId
 ) rm
 OUTER APPLY (
     SELECT TOP (1) x.ColorId

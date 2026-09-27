@@ -17,6 +17,7 @@ namespace KRSDealerManagement.Application.DTOs
         public string ConverterNo { get; set; } = "";
         public string AmpereInvoiceNo { get; set; } = "";
         public DateTime AmpereInvoiceDate { get; set; }
+        public int DaysInStock { get; set; }
         public DateTime ReceivedDate { get; set; }
         public bool IsAllocated { get; set; }
         public bool WarrantyOnly { get; set; }

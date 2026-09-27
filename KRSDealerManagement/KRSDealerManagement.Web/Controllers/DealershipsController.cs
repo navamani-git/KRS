@@ -10,7 +10,6 @@ using KRSDealerManagement.Web.Models;
 
 namespace KRSDealerManagement.Web.Controllers
 {
-    [AuthorizeRole(1)] // System admin only
     [AuthorizeMenu(StaffMenuAccess.Dealers)]
     public class DealershipsController : Controller
     {

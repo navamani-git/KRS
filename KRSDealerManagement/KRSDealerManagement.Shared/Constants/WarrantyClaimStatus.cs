@@ -18,20 +18,23 @@ namespace KRSDealerManagement.Shared.Constants
 
         public static bool CanStaffReview(int status) => status is Submitted;
 
+        public static bool CanStaffRejectOrRequestInfo(int status)
+            => status is Submitted or AmpereApproved;
+
         public static bool CanAccept(int status) => status is Submitted;
 
         public static bool CanApplyToAmpere(int status) => status is Accepted;
 
         public static bool CanMarkAmpereApproved(int status) => status is AppliedToAmpere;
 
-        public static bool CanUpdateSoNumber(int status) => status is AmpereApproved or Complete;
+        public static bool CanUpdateSoNumber(int status) => status is AppliedToAmpere or AmpereApproved or Complete;
 
         /// <summary>Staff may correct post-Ampere workflow steps until defective handover to Ampere is recorded.</summary>
         public static bool CanStaffEditPostAmpereWorkflow(int status, bool defectiveSentToAmpereCompleted)
             => status == AmpereApproved && !defectiveSentToAmpereCompleted;
 
         public static bool CanStaffEditSoNumber(int status, bool defectiveSentToAmpereCompleted)
-            => CanStaffEditPostAmpereWorkflow(status, defectiveSentToAmpereCompleted);
+            => (status is AppliedToAmpere or AmpereApproved) && !defectiveSentToAmpereCompleted;
 
         public static bool CanStaffEditResolutionPart(int status, bool defectiveSentToAmpereCompleted)
             => CanStaffEditPostAmpereWorkflow(status, defectiveSentToAmpereCompleted);
@@ -95,6 +98,22 @@ namespace KRSDealerManagement.Shared.Constants
             => status == AmpereApproved && !completed;
     }
 
+    public static class WarrantyResolutionActionTypes
+    {
+        public const string Normal = "Normal";
+        public const string Reject = "Reject";
+        public const string RequestInfo = "RequestInfo";
+
+        public static readonly string[] All = { Normal, Reject, RequestInfo };
+
+        public static bool IsValid(string? actionType)
+            => !string.IsNullOrWhiteSpace(actionType)
+               && All.Contains(actionType.Trim(), StringComparer.OrdinalIgnoreCase);
+
+        public static string Normalize(string? actionType)
+            => All.FirstOrDefault(a => a.Equals(actionType?.Trim(), StringComparison.OrdinalIgnoreCase)) ?? Normal;
+    }
+
     public static class WarrantyDealerResolutionTypes
     {
         public const string Credit = "CREDIT";
@@ -108,6 +127,12 @@ namespace KRSDealerManagement.Shared.Constants
             Credit => "Given to subdealer as credit",
             Replacement => "Give replacement item",
             SameItem => "Give same item",
+            "PART_TO_PART" => "Part to Part",
+            "CREDIT_NOTE" => "Credit Note",
+            "ADVANCED_PART" => "Advanced Part",
+            "SAME_PART" => "Same Part",
+            "REJECT" => "Reject",
+            "REQUEST_INFO" => "Request For Information",
             _ => type ?? ""
         };
     }

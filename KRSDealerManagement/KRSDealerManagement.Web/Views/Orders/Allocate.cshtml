@@ -153,7 +153,7 @@ else
                                     <select id="master_@idx" class="form-select form-select-sm chassis-select" data-idx="@idx" disabled>
                                         <option value="">Select chassis</option>
                                     </select>
-                                    <input type="hidden" name="vehicleMasterIds[@idx]" id="masterId_@idx" value="0" />
+                                    <input type="hidden" name="vehicleMasterIds[@idx]" id="masterId_@idx" value="" />
                                     <input type="hidden" name="chassisNumbers[@idx]" id="chassis_@idx" />
                                 </td>
 
@@ -418,7 +418,7 @@ else
                 const idx = sel.dataset.idx;
                 const masterSelect = document.getElementById(`master_${idx}`);
                 const masterValue = KrsChassisStock.getSelectValue(masterSelect);
-                if (!masterValue) {
+                if (!masterValue || masterValue === '0' || parseInt(masterValue, 10) <= 0) {
                     e.preventDefault();
                     masterSelect.focus();
                     alert('Select a chassis from dealer stock for each approved row.');

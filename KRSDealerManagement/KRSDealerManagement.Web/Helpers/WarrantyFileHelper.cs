@@ -4,8 +4,12 @@ namespace KRSDealerManagement.Web.Helpers
 {
     public static class WarrantyFileHelper
     {
-        public const long MaxFileBytes = 100L * 1024 * 1024;
+        public const long MaxImageBytes = 1L * 1024 * 1024;
+        public const long MaxVideoBytes = 10L * 1024 * 1024;
+        public const long MaxFileBytes = MaxVideoBytes;
 
+        private static readonly string[] ImageExtensions = { ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp" };
+        private static readonly string[] VideoExtensions = { ".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v" };
         private static readonly string[] AllowedExtensions =
         {
             ".pdf", ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp",
@@ -18,12 +22,17 @@ namespace KRSDealerManagement.Web.Helpers
 
             if (file == null || file.Length == 0)
                 throw new InvalidOperationException(prefix + "File is empty.");
-            if (file.Length > MaxFileBytes)
-                throw new InvalidOperationException(prefix + "Maximum file size is 100 MB.");
 
             var ext = Path.GetExtension(file.FileName)?.ToLowerInvariant() ?? "";
             if (!AllowedExtensions.Contains(ext))
                 throw new InvalidOperationException(prefix + "Allowed file types: images, PDF, and video (MP4, MOV, WEBM, etc.).");
+
+            var maxBytes = ImageExtensions.Contains(ext) ? MaxImageBytes
+                : VideoExtensions.Contains(ext) ? MaxVideoBytes
+                : MaxImageBytes;
+            var maxLabel = ImageExtensions.Contains(ext) ? "1 MB" : VideoExtensions.Contains(ext) ? "10 MB" : "1 MB";
+            if (file.Length > maxBytes)
+                throw new InvalidOperationException(prefix + $"Maximum file size is {maxLabel}.");
 
             var dayFolder = DateTime.Now.ToString("yyyy_MM_dd");
             var absoluteDir = AppFileStorageHelper.EnsureSectionDayFolder(env, AppFileStorageHelper.Sections.Warranty, dayFolder);

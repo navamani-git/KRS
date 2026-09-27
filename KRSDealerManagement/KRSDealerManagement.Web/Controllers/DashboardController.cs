@@ -9,7 +9,7 @@ using KRSDealerManagement.Shared.Constants;
 
 namespace KRSDealerManagement.Web.Controllers
 {
-    [AuthorizeRole(1, 2, 3, 4)] // All authenticated roles
+    [AuthorizeAuthenticated]
     public class DashboardController : Controller
     {
         private readonly IMediator _mediator;

@@ -374,6 +374,12 @@ namespace KRSDealerManagement.Shared.Constants
                             Key = WarrantyParts, Name = "Warranty Parts",
                             Controller = "WarrantyParts", Action = "Index", Icon = "bi-tools",
                             Actions = new[] { "Index", "Create", "Edit" }
+                        },
+                        new MenuItemDefinition
+                        {
+                            Key = WarrantyParts, Name = "Resolution Types",
+                            Controller = "WarrantyResolutionTypes", Action = "Index", Icon = "bi-list-check",
+                            Actions = new[] { "Index", "Create", "Edit" }
                         }
                     }
                 },
