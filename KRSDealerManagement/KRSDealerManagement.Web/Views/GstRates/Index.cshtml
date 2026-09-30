@@ -1,0 +1,108 @@
+@model IEnumerable<KRSDealerManagement.Domain.Entities.GstRate>
+@using KRSDealerManagement.Shared.Constants
+@using KRSDealerManagement.Web.Models
+@{
+    ViewData["Title"] = "GST Rates";
+    var defaults = ViewBag.ScreenDefaults as IDictionary<string, int> ?? new Dictionary<string, int>();
+    var screens = ViewBag.ScreenDefinitions as IReadOnlyList<(string Key, string Label)> ?? GstScreenKeys.All;
+    var activeRates = ViewBag.ActiveRates as IReadOnlyList<KRSDealerManagement.Domain.Entities.GstRate>
+        ?? Model.Where(r => r.IsActive).ToList();
+}
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h1 class="m-0"><i class="bi bi-percent"></i> GST Rates</h1>
+        <p class="text-muted">Master list for GST % dropdowns and per-screen default preselect</p>
+    </div>
+    <div class="col-md-6 text-end">
+        <partial name="_ExportExcel" />
+        <a href="@Url.Action("Create")" class="btn btn-primary"><i class="bi bi-plus"></i> Add GST %</a>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header"><h3 class="card-title mb-0">Default GST per screen</h3></div>
+    <form method="post" asp-action="SaveScreenDefaults">
+        @Html.AntiForgeryToken()
+        <div class="card-body row g-3">
+            @foreach (var screen in screens)
+            {
+                var current = defaults.TryGetValue(screen.Key, out var rid) ? rid : 0;
+                <div class="col-md-4">
+                    <label class="fw-bold">@screen.Label</label>
+                    <small class="text-muted d-block mb-1">@screen.Key</small>
+                    <select name="default_@screen.Key" class="form-select" required>
+                        @foreach (var r in activeRates)
+                        {
+                            if (r.GstRateId == current)
+                            {
+                                <option value="@r.GstRateId" selected="selected">@r.RatePercent%</option>
+                            }
+                            else
+                            {
+                                <option value="@r.GstRateId">@r.RatePercent%</option>
+                            }
+                        }
+                    </select>
+                </div>
+            }
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-primary">Save screen defaults</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <form method="get" id="gridFilterForm" class="d-none" aria-hidden="true"></form>
+        <partial name="_GridScrollHint" />
+        <div class="table-responsive">
+            <table class="table table-sm table-hover table-striped mb-0 grid-excel-table grid-data-table" data-grid-id="@GridIds.GstRates">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="grid-col-rownum">#</th>
+                        <th>GST %</th>
+                        <th>Sort</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th></th>
+                    </tr>
+                    <partial name="_PaginatedGridFilters" />
+                </thead>
+                <tbody>
+                    @{ int i = 1; }
+                    @foreach (var r in Model)
+                    {
+                        <tr>
+                            <td>@(i++)</td>
+                            <td><strong>@r.RatePercent%</strong></td>
+                            <td>@r.SortOrder</td>
+                            <td><span class="badge @(r.IsActive ? "bg-success" : "bg-secondary")">@(r.IsActive ? "Active" : "Inactive")</span></td>
+                            <td><small>@r.CreatedDate.ToString("yyyy-MM-dd")</small></td>
+                            <td class="text-nowrap">
+                                @{
+                                    ViewData["CrudId"] = r.GstRateId;
+                                    ViewData["CrudController"] = "GstRates";
+                                    ViewData["CrudShowDelete"] = false;
+                                }
+                                <partial name="_CrudActions" />
+                                <form method="post" asp-action="ToggleActive" class="d-inline ms-1">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@r.GstRateId" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary" title="Toggle active">
+                                        <i class="bi bi-toggle@(r.IsActive ? "-on" : "-off")"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (!Model.Any())
+        {
+            <div class="p-3 text-muted">No GST rates yet. <a href="@Url.Action("Create")">Add one</a>.</div>
+        }
+    </div>
+</div>

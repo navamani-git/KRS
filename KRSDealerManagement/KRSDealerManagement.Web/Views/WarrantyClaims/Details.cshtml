@@ -301,6 +301,53 @@
                                 <label class="form-label small mb-1">Reason / Info notes *</label>
                                 <textarea name="notes" id="resolutionNotes" class="form-control form-control-sm mb-1" rows="2" placeholder="Required for Reject / Request For Information"></textarea>
                             </div>
+                            @{
+                                var gstRates = ViewBag.GstRates as IEnumerable<KRSDealerManagement.Domain.Entities.GstRate>
+                                    ?? Enumerable.Empty<KRSDealerManagement.Domain.Entities.GstRate>();
+                                var gstDefaults = ViewBag.GstScreenDefaults as IDictionary<string, int> ?? new Dictionary<string, int>();
+                                var cn = ViewBag.CreditNote as KRSDealerManagement.Domain.Entities.WarrantyCreditNote;
+                                int? GstSelected(int? saved, string key) => saved ?? (gstDefaults.TryGetValue(key, out var d) ? d : gstRates.FirstOrDefault()?.GstRateId);
+                                var cnRows = new[]
+                                {
+                                    (Label: "Unit Price", Amount: "cnUnitPrice", Gst: "cnUnitGstRateId", Value: cn?.UnitPrice, Selected: GstSelected(cn?.UnitPriceGstRateId, GstScreenKeys.CreditNoteUnit)),
+                                    (Label: "Handling Charges (5% of unit price)", Amount: "cnHandlingCharges", Gst: "cnHandlingGstRateId", Value: cn?.HandlingCharges, Selected: GstSelected(cn?.HandlingGstRateId, GstScreenKeys.CreditNoteHandling)),
+                                    (Label: "Labour Charges", Amount: "cnLabourCharges", Gst: "cnLabourGstRateId", Value: cn?.LabourCharges, Selected: GstSelected(cn?.LabourGstRateId, GstScreenKeys.CreditNoteLabour)),
+                                };
+                            }
+                            <div id="creditNoteWrap" class="d-none border rounded p-2 mb-2 bg-light">
+                                <div class="small fw-bold mb-1">Credit Note</div>
+                                @foreach (var row in cnRows)
+                                {
+                                    <label class="form-label small mb-1">@row.Label *</label>
+                                    <div class="input-group input-group-sm mb-1">
+                                        <input type="number" step="0.01" min="0" name="@row.Amount" id="@row.Amount"
+                                               class="form-control cn-amount" value="@row.Value?.ToString("0.00")" />
+                                        <select name="@row.Gst" id="@row.Gst" class="form-select cn-gst" style="max-width:90px" title="GST %">
+                                            @foreach (var r in gstRates)
+                                            {
+                                                if (r.GstRateId == row.Selected)
+                                                {
+                                                    <option value="@r.GstRateId" data-pct="@r.RatePercent" selected="selected">@r.RatePercent%</option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="@r.GstRateId" data-pct="@r.RatePercent">@r.RatePercent%</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                }
+                                <div class="row g-1 mt-1">
+                                    <div class="col-6">
+                                        <label class="form-label small mb-1">Total (without GST)</label>
+                                        <input type="text" id="cnTotalWithoutGst" class="form-control form-control-sm" readonly />
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small mb-1">Total (with GST)</label>
+                                        <input type="text" id="cnTotalWithGst" class="form-control form-control-sm" readonly />
+                                    </div>
+                                </div>
+                            </div>
                             <button type="submit" class="btn btn-success btn-sm w-100">@(Model.ResolutionPartCompleted ? "Edit Resolution" : "Save Resolution")</button>
                         </form>
                     </div>
@@ -476,7 +523,43 @@
             if (needsNotes) partInput.value = '';
         }
         if (notesInput) notesInput.required = needsNotes;
+
+        const isCreditNote = (select.value || '').toUpperCase() === 'CREDIT_NOTE';
+        if (cnWrap) cnWrap.classList.toggle('d-none', !isCreditNote);
+        cnWrap?.querySelectorAll('.cn-amount, .cn-gst').forEach(el => { el.required = isCreditNote; });
+        if (isCreditNote) recalcCreditNote();
     }
+
+    const cnWrap = document.getElementById('creditNoteWrap');
+    const cnUnit = document.getElementById('cnUnitPrice');
+    const cnHandling = document.getElementById('cnHandlingCharges');
+    const cnLabour = document.getElementById('cnLabourCharges');
+    const cnUnitGst = document.getElementById('cnUnitGstRateId');
+    const cnHandlingGst = document.getElementById('cnHandlingGstRateId');
+    const cnLabourGst = document.getElementById('cnLabourGstRateId');
+    const cnTotalWithout = document.getElementById('cnTotalWithoutGst');
+    const cnTotalWith = document.getElementById('cnTotalWithGst');
+
+    const num = el => parseFloat(el?.value) || 0;
+    const pct = sel => parseFloat(sel?.options[sel.selectedIndex]?.dataset.pct) || 0;
+
+    function recalcCreditNote() {
+        if (!cnWrap) return;
+        const unit = num(cnUnit), handling = num(cnHandling), labour = num(cnLabour);
+        const without = unit + handling + labour;
+        const withGst = unit * (1 + pct(cnUnitGst) / 100)
+            + handling * (1 + pct(cnHandlingGst) / 100)
+            + labour * (1 + pct(cnLabourGst) / 100);
+        cnTotalWithout.value = without.toFixed(2);
+        cnTotalWith.value = withGst.toFixed(2);
+    }
+
+    cnUnit?.addEventListener('input', () => {
+        cnHandling.value = (num(cnUnit) * 0.05).toFixed(2);
+        recalcCreditNote();
+    });
+    [cnHandling, cnLabour].forEach(el => el?.addEventListener('input', recalcCreditNote));
+    [cnUnitGst, cnHandlingGst, cnLabourGst].forEach(el => el?.addEventListener('change', recalcCreditNote));
 
     select.addEventListener('change', syncResolutionFields);
     syncResolutionFields();

@@ -44,6 +44,9 @@ namespace KRSDealerManagement.Infrastructure.Repositories
         private IRepository<UserDealership> _userDealerships;
         private IRepository<PaymentType> _paymentTypes;
         private IRepository<FinanceNameMaster> _financeNames;
+        private IRepository<GstRate> _gstRates;
+        private IGstScreenDefaultRepository _gstScreenDefaults;
+        private IWarrantyCreditNoteRepository _warrantyCreditNotes;
         private IRepository<StatusLookup> _statusLookups;
         private IRepository<DocumentTypeMaster> _documentTypes;
         private IRepository<RtoDistrictMaster> _rtoDistricts;
@@ -96,6 +99,8 @@ namespace KRSDealerManagement.Infrastructure.Repositories
         public IRepository<UserDealership> UserDealerships => _userDealerships ??= new Repository<UserDealership>(_context, "UserDealerships", "UserDealershipId");
         public IRepository<PaymentType> PaymentTypes => _paymentTypes ??= new Repository<PaymentType>(_context, "PaymentTypes", "PaymentTypeId");
         public IRepository<FinanceNameMaster> FinanceNames => _financeNames ??= new Repository<FinanceNameMaster>(_context, "FinanceNames", "FinanceNameId");
+        public IRepository<GstRate> GstRates => _gstRates ??= new Repository<GstRate>(_context, "GstRates", "GstRateId");
+        public IGstScreenDefaultRepository GstScreenDefaults => _gstScreenDefaults ??= new GstScreenDefaultRepository(_context);
         public IRepository<StatusLookup> StatusLookups => _statusLookups ??= new Repository<StatusLookup>(_context, "StatusLookups", "StatusLookupId");
         public IRepository<DocumentTypeMaster> DocumentTypes => _documentTypes ??= new Repository<DocumentTypeMaster>(_context, "DocumentTypeMasters", "DocumentTypeId");
         public IRepository<RtoDistrictMaster> RtoDistricts => _rtoDistricts ??= new Repository<RtoDistrictMaster>(_context, "RtoDistrictMasters", "RtoDistrictId");
@@ -103,6 +108,7 @@ namespace KRSDealerManagement.Infrastructure.Repositories
         public IRepository<VehicleBooking> VehicleBookings => _vehicleBookings ??= new VehicleBookingRepository(_context);
         public IRepository<WarrantyPartMaster> WarrantyParts => _warrantyParts ??= new Repository<WarrantyPartMaster>(_context, "WarrantyParts", "WarrantyPartId");
         public IRepository<WarrantyResolutionType> WarrantyResolutionTypes => _warrantyResolutionTypes ??= new Repository<WarrantyResolutionType>(_context, "WarrantyResolutionTypes", "WarrantyResolutionTypeId");
+        public IWarrantyCreditNoteRepository WarrantyCreditNotes => _warrantyCreditNotes ??= new WarrantyCreditNoteRepository(_context);
         public IRepository<WarrantyClaim> WarrantyClaims => _warrantyClaims ??= new WarrantyClaimRepository(_context);
         public IRepository<WarrantyClaimServiceEntry> WarrantyClaimServiceEntries => _warrantyClaimServiceEntries ??= new Repository<WarrantyClaimServiceEntry>(_context, "WarrantyClaimServiceEntries", "ServiceEntryId");
         public IRepository<WarrantyClaimAttachment> WarrantyClaimAttachments => _warrantyClaimAttachments ??= new Repository<WarrantyClaimAttachment>(_context, "WarrantyClaimAttachments", "AttachmentId");

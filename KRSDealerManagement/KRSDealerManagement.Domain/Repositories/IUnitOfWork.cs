@@ -114,6 +114,8 @@ namespace KRSDealerManagement.Domain.Repositories
         IRepository<UserDealership> UserDealerships { get; }
         IRepository<PaymentType> PaymentTypes { get; }
         IRepository<FinanceNameMaster> FinanceNames { get; }
+        IRepository<GstRate> GstRates { get; }
+        IGstScreenDefaultRepository GstScreenDefaults { get; }
         IRepository<StatusLookup> StatusLookups { get; }
         IRepository<DocumentTypeMaster> DocumentTypes { get; }
         IRepository<RtoDistrictMaster> RtoDistricts { get; }
@@ -121,6 +123,7 @@ namespace KRSDealerManagement.Domain.Repositories
         IRepository<VehicleBooking> VehicleBookings { get; }
         IRepository<WarrantyPartMaster> WarrantyParts { get; }
         IRepository<WarrantyResolutionType> WarrantyResolutionTypes { get; }
+        IWarrantyCreditNoteRepository WarrantyCreditNotes { get; }
         IRepository<WarrantyClaim> WarrantyClaims { get; }
         IRepository<WarrantyClaimServiceEntry> WarrantyClaimServiceEntries { get; }
         IRepository<WarrantyClaimAttachment> WarrantyClaimAttachments { get; }

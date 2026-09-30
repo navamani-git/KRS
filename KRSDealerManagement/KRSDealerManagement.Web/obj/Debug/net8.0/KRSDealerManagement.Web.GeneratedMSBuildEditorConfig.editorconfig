@@ -151,6 +151,18 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRmluYW5jZU5hbWVzXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/GstRates/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcR3N0UmF0ZXNcQ3JlYXRlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/GstRates/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcR3N0UmF0ZXNcRWRpdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/GstRates/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcR3N0UmF0ZXNcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Home/Error.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxFcnJvci5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
@@ -345,6 +357,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Shared/_GridScrollHint.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9HcmlkU2Nyb2xsSGludC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Shared/_GstRateDropdown.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9Hc3RSYXRlRHJvcGRvd24uY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [D:/KRSGIT/KRS/KRSDealerManagement/KRSDealerManagement.Web/Views/Shared/_InvoiceInsuranceLinks.cshtml]

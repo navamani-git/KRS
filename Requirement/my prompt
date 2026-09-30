@@ -1,9 +1,12 @@
-Dealer Stock - Column order (Model then color then chasis) , Remove motor and battery number - Need ampere invoice date column
- and based on that day show how many days it is in stock
+In warranty if the user selected dropdown as creditnote , before submit
+Need 6 
+1) Unit price
+2) Handling charges = 5 % unit price 
+3) labour charges
+4) GST - Dropdown to be loaded from the screen that we created ( this gST is a individual dropdown for Unit price, Handling charges, and labour charges)
+ Note for each field that will be  seperate GST 
+5) Total - Show two text box with gst and without gst 
 
-Subdealer stock -  Column order (Model then color then chasis) - Remove order column - Need ampere invoice date column
- and based on that day show how many days it is in stock
+This should be stored as a seperate table like tbl_creditnote will have the primary key as warranty ID
 
-Subdealer Vehicles  - Remove Order ID,OrderDate, Allocation Date
-
-I logged in as mithun I gave access to view chasis history but when I clicked it redirected to access denied
+This feature only will come if the selected dropdown value is creditnote

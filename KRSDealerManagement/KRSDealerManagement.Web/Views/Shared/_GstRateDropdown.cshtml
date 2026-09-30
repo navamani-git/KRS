@@ -1,0 +1,26 @@
+@using KRSDealerManagement.Domain.Entities
+@{
+    var rates = ViewBag.GstRates as IEnumerable<GstRate> ?? Enumerable.Empty<GstRate>();
+    var fieldName = ViewData["GstFieldName"] as string ?? "gstRateId";
+    var label = ViewData["GstLabel"] as string ?? "GST %";
+    var required = ViewData["GstRequired"] as bool? ?? true;
+    var cssClass = ViewData["GstCssClass"] as string ?? "form-select";
+    var selectedId = ViewData["SelectedGstRateId"] as int?;
+    if (!selectedId.HasValue && ViewBag.DefaultGstRateId is int def)
+        selectedId = def;
+}
+
+<label class="fw-bold">@label @if (required) { <span class="text-danger">*</span> }</label>
+<select name="@fieldName" id="@fieldName" class="@cssClass" @(required ? "required" : null)>
+    @foreach (var r in rates)
+    {
+        if (selectedId == r.GstRateId)
+        {
+            <option value="@r.GstRateId" selected="selected">@r.RatePercent%</option>
+        }
+        else
+        {
+            <option value="@r.GstRateId">@r.RatePercent%</option>
+        }
+    }
+</select>

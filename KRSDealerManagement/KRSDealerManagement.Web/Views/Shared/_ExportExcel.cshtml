@@ -9,6 +9,6 @@
     var actionName = ViewData["ExportAction"] as string ?? "Export";
     var exportUrl = Url.Action(actionName) + (string.IsNullOrEmpty(qs) ? "" : "?" + qs);
 }
-<a href="@exportUrl" class="btn btn-sm btn-success" data-no-loader="true">
+<a href="@exportUrl" class="btn btn-sm btn-success" data-krs-export="true" data-loader-message="Exporting to Excel...">
     <i class="bi bi-file-earmark-excel"></i> Export Excel
 </a>

@@ -33,6 +33,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
     <title>@ViewData["Title"] - KRS Dealer Management</title>
     <script>
         (function () {
@@ -68,8 +69,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(244, 246, 249, 0.72);
-            backdrop-filter: blur(2px);
+            background: rgba(244, 246, 249, 0.97);
             pointer-events: all;
         }
 
@@ -79,11 +79,6 @@
 
         html.krs-page-loading {
             overflow: hidden;
-        }
-
-        html.krs-page-loading body > .wrapper,
-        html.krs-page-loading #krsQuickActions {
-            visibility: hidden;
         }
 
         .sidebar-dark-primary {

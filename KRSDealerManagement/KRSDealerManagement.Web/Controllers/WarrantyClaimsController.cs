@@ -5,6 +5,7 @@ using KRSDealerManagement.Application.DTOs;
 using KRSDealerManagement.Application.Helpers;
 using KRSDealerManagement.Application.Queries;
 using KRSDealerManagement.Application.Services;
+using KRSDealerManagement.Domain.Entities;
 using KRSDealerManagement.Domain.Repositories;
 using KRSDealerManagement.Shared.Constants;
 using KRSDealerManagement.Web.Filters;
@@ -548,6 +549,12 @@ namespace KRSDealerManagement.Web.Controllers
                 .OrderBy(r => r.SortOrder)
                 .ThenBy(r => r.Name)
                 .ToList();
+            if (isStaff)
+            {
+                ViewBag.GstRates = await GstDropdownHelper.GetActiveRatesAsync(_unitOfWork);
+                ViewBag.GstScreenDefaults = await _unitOfWork.GstScreenDefaults.GetRateIdByScreenKeyAsync();
+                ViewBag.CreditNote = await _unitOfWork.WarrantyCreditNotes.GetByClaimIdAsync(id);
+            }
             return View(detail);
         }
 
@@ -652,12 +659,45 @@ namespace KRSDealerManagement.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [AuthorizeMenu(StaffMenuAccess.WarrantyClaims, StaffOnly = true)]
-        public async Task<IActionResult> SaveResolutionPart(int id, string dealerResolutionType, string dealerClosedPartNumber, string? notes)
-            => await StaffAction(id, notes, new SaveWarrantyResolutionPartCommand
+        public async Task<IActionResult> SaveResolutionPart(
+            int id, string dealerResolutionType, string dealerClosedPartNumber, string? notes,
+            decimal? cnUnitPrice, int? cnUnitGstRateId,
+            decimal? cnHandlingCharges, int? cnHandlingGstRateId,
+            decimal? cnLabourCharges, int? cnLabourGstRateId)
+        {
+            var resolutionCode = dealerResolutionType?.Trim() ?? "";
+            WarrantyCreditNote? creditNote = null;
+            if (string.Equals(resolutionCode, WarrantyCreditNoteRules.ResolutionCode, StringComparison.OrdinalIgnoreCase))
             {
-                DealerResolutionType = dealerResolutionType?.Trim() ?? "",
+                var rates = (await GstDropdownHelper.GetActiveRatesAsync(_unitOfWork))
+                    .ToDictionary(r => r.GstRateId, r => r.RatePercent);
+                var error = WarrantyCreditNoteRules.TryBuild(
+                    id, cnUnitPrice, cnUnitGstRateId, cnHandlingCharges, cnHandlingGstRateId,
+                    cnLabourCharges, cnLabourGstRateId, rates, out creditNote);
+                if (error != null)
+                {
+                    TempData["Error"] = error;
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+            }
+
+            var userId = SessionHelper.GetUserId(HttpContext.Session)!.Value;
+            var ok = await _mediator.Send(new SaveWarrantyResolutionPartCommand
+            {
+                WarrantyClaimId = id,
+                UserId = userId,
+                Notes = notes,
+                IsSystemAdmin = SessionHelper.IsSystemAdmin(HttpContext.Session),
+                DealerResolutionType = resolutionCode,
                 DealerClosedPartNumber = dealerClosedPartNumber?.Trim() ?? ""
             });
+
+            if (ok && creditNote != null)
+                await _unitOfWork.WarrantyCreditNotes.UpsertAsync(creditNote, userId);
+
+            TempData[ok ? "Success" : "Error"] = ok ? "Claim updated." : "Unable to update claim. Check status and required notes.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]

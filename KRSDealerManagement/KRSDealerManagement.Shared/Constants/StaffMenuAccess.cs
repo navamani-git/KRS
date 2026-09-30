@@ -28,6 +28,7 @@ namespace KRSDealerManagement.Shared.Constants
         public const string StaffRoles = "admin_staff_roles";
         public const string RoleTemplates = "admin_role_templates";
         public const string FinanceNames = "admin_finance_names";
+        public const string GstRates = "admin_gst_rates";
         public const string PaymentTypes = "admin_payment_types";
         public const string DocumentTypes = "admin_document_types";
         public const string RtoDistricts = "admin_rto_districts";
@@ -61,6 +62,7 @@ namespace KRSDealerManagement.Shared.Constants
             (Prices, "Price Management"),
             (Dealers, "Dealers"),
             (FinanceNames, "Finance Names"),
+            (GstRates, "GST Rates"),
             (PaymentTypes, "Payment Types"),
             (DocumentTypes, "Document Types"),
             (RtoDistricts, "RTO Districts"),
@@ -180,6 +182,12 @@ namespace KRSDealerManagement.Shared.Constants
                             Key = FinanceNames, Name = "Finance Names",
                             Controller = "FinanceNames", Action = "Index", Icon = "bi-bank",
                             Actions = new[] { "Index", "Create", "Edit" }
+                        },
+                        new MenuItemDefinition
+                        {
+                            Key = GstRates, Name = "GST Rates",
+                            Controller = "GstRates", Action = "Index", Icon = "bi-percent",
+                            Actions = new[] { "Index", "Create", "Edit", "SaveScreenDefaults", "ToggleActive" }
                         },
                         new MenuItemDefinition
                         {

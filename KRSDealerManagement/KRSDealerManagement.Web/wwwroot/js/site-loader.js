@@ -30,12 +30,34 @@
         document.title = pageTitle;
     }
 
+    function mountLoader() {
+        var el = getLoaderElements();
+        if (!el || !document.body) return;
+        if (!el.isConnected) {
+            document.body.insertBefore(el, document.body.firstChild);
+        }
+    }
+
+    function unmountLoader() {
+        var el = getLoaderElements();
+        if (!el || !el.isConnected) return;
+        el.hidden = true;
+        el.classList.remove('krs-page-loader-visible');
+        el.setAttribute('aria-busy', 'false');
+        el.remove();
+    }
+
     function setVisible(show) {
         var el = getLoaderElements();
         if (!el) return;
-        el.hidden = !show;
-        el.classList.toggle('krs-page-loader-visible', show);
-        el.setAttribute('aria-busy', show ? 'true' : 'false');
+        if (show) {
+            mountLoader();
+            el.hidden = false;
+            el.classList.add('krs-page-loader-visible');
+            el.setAttribute('aria-busy', 'true');
+        } else {
+            unmountLoader();
+        }
     }
 
     function syncVisible() {
@@ -131,6 +153,83 @@
         showLoader(message || 'Loading...', 'nav');
     }
 
+    function beginDownloadLoader(link, message) {
+        var msg = message
+            || (link && link.dataset.loaderMessage)
+            || 'Exporting...';
+        showLoader(msg, 'async');
+    }
+
+    function endDownloadLoader() {
+        hideLoader('async');
+    }
+
+    function parseDownloadFileName(response) {
+        var header = response.headers.get('Content-Disposition') || '';
+        var utf = /filename\*=UTF-8''([^;]+)/i.exec(header);
+        if (utf && utf[1]) {
+            try {
+                return decodeURIComponent(utf[1].trim());
+            } catch (e) { /* ignore */ }
+        }
+        var plain = /filename="?([^";\n]+)"?/i.exec(header);
+        if (plain && plain[1]) {
+            return plain[1].trim();
+        }
+        return 'export.xlsx';
+    }
+
+    function triggerBlobDownload(blob, fileName) {
+        var objectUrl = URL.createObjectURL(blob);
+        var anchor = document.createElement('a');
+        anchor.href = objectUrl;
+        anchor.download = fileName || 'export.xlsx';
+        anchor.style.display = 'none';
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        window.setTimeout(function () {
+            URL.revokeObjectURL(objectUrl);
+        }, 1500);
+    }
+
+    function isExcelResponse(response) {
+        var type = (response.headers.get('Content-Type') || '').toLowerCase();
+        return type.indexOf('spreadsheetml') >= 0
+            || type.indexOf('ms-excel') >= 0
+            || type.indexOf('octet-stream') >= 0;
+    }
+
+    function runFileDownload(href, link, message) {
+        beginDownloadLoader(link, message);
+        var absolute = new URL(href, window.location.href).href;
+        window.fetch(absolute, { credentials: 'same-origin', krsNoLoader: true })
+            .then(function (response) {
+                if (response.status === 401) {
+                    return response.clone().json().then(function (body) {
+                        if (body && body.loginRequired) {
+                            nativeAssign(body.redirectUrl || '/Account/Login');
+                        }
+                        throw new Error('login');
+                    }).catch(function () {
+                        throw new Error('export');
+                    });
+                }
+                if (!response.ok || !isExcelResponse(response)) {
+                    throw new Error('export');
+                }
+                var fileName = parseDownloadFileName(response);
+                return response.blob().then(function (blob) {
+                    triggerBlobDownload(blob, fileName);
+                });
+            })
+            .catch(function (err) {
+                if (err && err.message === 'login') return;
+                window.alert('Export failed. Please try again.');
+            })
+            .finally(endDownloadLoader);
+    }
+
     function shouldSkipFetchLoader(input, init) {
         if (init && init.krsNoLoader) return true;
 
@@ -162,7 +261,6 @@
         if (!el || el.dataset.noLoader === 'true') return true;
         if (el.classList.contains('chassis-link')) return true;
         if (el.target === '_blank' || el.hasAttribute('download')) return true;
-        if (isFileDownloadUrl(el.href)) return true;
         if (el.getAttribute('data-bs-toggle') || el.getAttribute('data-toggle')) return true;
         if (el.getAttribute('role') === 'button' && (el.getAttribute('href') || '') === '#') return true;
         return !isSameOriginNavigation(el.href);
@@ -200,7 +298,7 @@
     window.krsNavigate = function (url, message) {
         if (!url) return;
         if (isFileDownloadUrl(url)) {
-            nativeAssign(url);
+            runFileDownload(url, null, message || 'Exporting...');
             return;
         }
 
@@ -221,10 +319,21 @@
         if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
 
         var link = e.target.closest('a[href]');
-        if (!link || shouldSkipLink(link)) return;
+        if (!link) return;
 
         var href = link.getAttribute('href') || '';
         if (!href || href === '#') return;
+
+        if (link.dataset.noLoader === 'true') return;
+
+        if (isFileDownloadUrl(href) || link.dataset.krsExport === 'true') {
+            if (link.target === '_blank' || link.hasAttribute('download')) return;
+            e.preventDefault();
+            runFileDownload(href, link);
+            return;
+        }
+
+        if (shouldSkipLink(link)) return;
 
         beginNavLoader(link.dataset.loaderMessage || 'Loading...');
     });
@@ -330,11 +439,9 @@
         onPageFullyReady();
     }
 
-    window.addEventListener('pageshow', function (e) {
-        if (e.persisted) {
-            pageLoadEventFired = true;
-            resetLoader();
-        }
+    window.addEventListener('pageshow', function () {
+        pageLoadEventFired = true;
+        resetLoader();
     });
 
     bindJQueryAjax();

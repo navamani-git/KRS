@@ -10,6 +10,7 @@ namespace KRSDealerManagement.Shared.Constants
         public const string Dealerships = "dealerships";
         public const string DocumentTypes = "document_types";
         public const string FinanceNames = "finance_names";
+        public const string GstRates = "gst_rates";
         public const string Orders = "orders";
         public const string MyOrders = "my_orders";
         public const string Payments = "payments";

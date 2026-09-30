@@ -9,6 +9,7 @@ namespace KRSDealerManagement.Web.Models
         public const string Dealerships = KRSDealerManagement.Shared.Constants.GridScreenIds.Dealerships;
         public const string DocumentTypes = KRSDealerManagement.Shared.Constants.GridScreenIds.DocumentTypes;
         public const string FinanceNames = KRSDealerManagement.Shared.Constants.GridScreenIds.FinanceNames;
+        public const string GstRates = KRSDealerManagement.Shared.Constants.GridScreenIds.GstRates;
         public const string Orders = KRSDealerManagement.Shared.Constants.GridScreenIds.Orders;
         public const string MyOrders = KRSDealerManagement.Shared.Constants.GridScreenIds.MyOrders;
         public const string Payments = KRSDealerManagement.Shared.Constants.GridScreenIds.Payments;

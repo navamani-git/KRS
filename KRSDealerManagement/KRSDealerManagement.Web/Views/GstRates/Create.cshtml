@@ -1,0 +1,28 @@
+@{
+    ViewData["Title"] = "Add GST Rate";
+}
+
+<div class="row mb-3">
+    <div class="col-md-8"><h1 class="m-0">Add GST %</h1></div>
+    <div class="col-md-4 text-end"><a href="@Url.Action("Index")" class="btn btn-secondary">Back</a></div>
+</div>
+
+<div class="card card-primary" style="max-width:520px">
+    <form method="post">
+        @Html.AntiForgeryToken()
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="fw-bold">GST % <span class="text-danger">*</span></label>
+                <input name="ratePercent" type="number" step="0.01" min="0.01" max="100" class="form-control" required placeholder="e.g. 15" />
+            </div>
+            <div class="mb-0">
+                <label class="fw-bold">Sort order</label>
+                <input name="sortOrder" type="number" min="0" class="form-control" value="0" />
+                <small class="text-muted">Lower numbers appear first in dropdowns</small>
+            </div>
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+    </form>
+</div>
